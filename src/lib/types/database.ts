@@ -1,0 +1,427 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      analysis_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          hard_rules_completed: boolean
+          id: string
+          max_attempts: number
+          priority: number
+          report_generated: boolean
+          soft_rules_completed: boolean
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          submission_id: string
+          worker_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          hard_rules_completed?: boolean
+          id?: string
+          max_attempts?: number
+          priority?: number
+          report_generated?: boolean
+          soft_rules_completed?: boolean
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          submission_id: string
+          worker_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          hard_rules_completed?: boolean
+          id?: string
+          max_attempts?: number
+          priority?: number
+          report_generated?: boolean
+          soft_rules_completed?: boolean
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          submission_id?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_jobs_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      report_items: {
+        Row: {
+          category: Database["public"]["Enums"]["check_category"]
+          created_at: string
+          description: string
+          fix_suggestion: string | null
+          guideline_ref: string | null
+          id: string
+          report_id: string
+          severity: Database["public"]["Enums"]["severity_level"]
+          title: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["check_category"]
+          created_at?: string
+          description: string
+          fix_suggestion?: string | null
+          guideline_ref?: string | null
+          id?: string
+          report_id: string
+          severity: Database["public"]["Enums"]["severity_level"]
+          title: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["check_category"]
+          created_at?: string
+          description?: string
+          fix_suggestion?: string | null
+          guideline_ref?: string | null
+          id?: string
+          report_id?: string
+          severity?: Database["public"]["Enums"]["severity_level"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_items_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          score_content: number | null
+          score_metadata: number | null
+          score_overall: number | null
+          score_plist: number | null
+          score_privacy: number | null
+          score_screenshots: number | null
+          score_urls: number | null
+          submission_id: string
+          summary: string | null
+          total_critical: number
+          total_info: number
+          total_pass: number
+          total_warnings: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          score_content?: number | null
+          score_metadata?: number | null
+          score_overall?: number | null
+          score_plist?: number | null
+          score_privacy?: number | null
+          score_screenshots?: number | null
+          score_urls?: number | null
+          submission_id: string
+          summary?: string | null
+          total_critical?: number
+          total_info?: number
+          total_pass?: number
+          total_warnings?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          score_content?: number | null
+          score_metadata?: number | null
+          score_overall?: number | null
+          score_plist?: number | null
+          score_privacy?: number | null
+          score_screenshots?: number | null
+          score_urls?: number | null
+          submission_id?: string
+          summary?: string | null
+          total_critical?: number
+          total_info?: number
+          total_pass?: number
+          total_warnings?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: true
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submissions: {
+        Row: {
+          age_rating: string | null
+          amount_paid: number | null
+          app_name: string
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          keywords: string | null
+          manifest_path: string | null
+          marketing_url: string | null
+          paid_at: string | null
+          plist_path: string | null
+          privacy_url: string | null
+          review_type: Database["public"]["Enums"]["review_type"]
+          screenshot_paths: string[] | null
+          status: Database["public"]["Enums"]["submission_status"]
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
+          subtitle: string | null
+          support_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_rating?: string | null
+          amount_paid?: number | null
+          app_name: string
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          manifest_path?: string | null
+          marketing_url?: string | null
+          paid_at?: string | null
+          plist_path?: string | null
+          privacy_url?: string | null
+          review_type?: Database["public"]["Enums"]["review_type"]
+          screenshot_paths?: string[] | null
+          status?: Database["public"]["Enums"]["submission_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          subtitle?: string | null
+          support_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_rating?: string | null
+          amount_paid?: number | null
+          app_name?: string
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          manifest_path?: string | null
+          marketing_url?: string | null
+          paid_at?: string | null
+          plist_path?: string | null
+          privacy_url?: string | null
+          review_type?: Database["public"]["Enums"]["review_type"]
+          screenshot_paths?: string[] | null
+          status?: Database["public"]["Enums"]["submission_status"]
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
+          subtitle?: string | null
+          support_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      check_category:
+        | "metadata"
+        | "screenshots"
+        | "privacy_manifest"
+        | "info_plist"
+        | "urls"
+        | "content_policy"
+        | "description"
+        | "metadata_quality"
+      job_status: "pending" | "running" | "completed" | "failed" | "retrying"
+      review_type: "quick" | "full"
+      severity_level: "critical" | "warning" | "info" | "pass"
+      submission_status:
+        | "draft"
+        | "paid"
+        | "queued"
+        | "analyzing"
+        | "complete"
+        | "failed"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DefaultSchema = Database[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof Database
+}
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof Database
+}
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof Database
+}
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof Database
+}
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
