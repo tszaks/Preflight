@@ -34,7 +34,7 @@
                             if (result.type === "success") {
                                 submitted = true;
                             } else if (result.type === "failure") {
-                                error = result.data?.message ?? "Something went wrong.";
+                                error = (result.data?.message as string) ?? "Something went wrong.";
                             }
                         };
                     }}

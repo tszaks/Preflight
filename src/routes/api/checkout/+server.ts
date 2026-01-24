@@ -8,10 +8,10 @@ function getStripe() {
     return new Stripe(STRIPE_SECRET_KEY);
 }
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals: { safeGetSession, supabase } }) => {
     const stripe = getStripe();
-    const session = await locals.getSession();
-    if (!session) {
+    const { user } = await safeGetSession();
+    if (!user) {
         throw error(401, 'Not authenticated');
     }
 
@@ -23,15 +23,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         throw error(400, 'Missing submission_id or review_type');
     }
 
-    // Determine price
     const priceId = reviewType === 'full' ? STRIPE_PRICE_FULL : STRIPE_PRICE_QUICK;
-    const amount = reviewType === 'full' ? 4900 : 2900; // cents
+    const amount = reviewType === 'full' ? 4900 : 2900;
 
     if (!priceId) {
         throw error(500, 'Stripe price not configured');
     }
 
-    // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
@@ -44,15 +42,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         metadata: {
             submission_id: submissionId,
             review_type: reviewType,
-            user_id: session.user.id,
+            user_id: user.id,
         },
         success_url: `${PUBLIC_BASE_URL}/dashboard?payment=success&submission=${submissionId}`,
         cancel_url: `${PUBLIC_BASE_URL}/submit?payment=cancelled&submission=${submissionId}`,
-        customer_email: session.user.email,
+        customer_email: user.email,
     });
 
-    // Update submission with Stripe session ID
-    await locals.supabase
+    await supabase
         .from('submissions')
         .update({
             stripe_session_id: checkoutSession.id,
