@@ -1,34 +1,30 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, getSession } }) => {
-    const session = await getSession();
+export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase } }) => {
+    const { user } = await safeGetSession();
 
-    if (!session) {
-        throw redirect(303, '/login');
+    if (!user) {
+        throw redirect(303, '/auth/login');
     }
 
-    // Fetch user's submissions with associated report IDs
-    const { data: submissions } = await supabase
-        .from('submissions')
-        .select(`
-            id,
-            app_name,
-            subtitle,
-            review_type,
-            status,
-            created_at,
-            completed_at,
-            reports(id)
-        `)
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
+    try {
+        const { data: submissions, error } = await supabase
+            .from('submissions')
+            .select('id, app_name, review_type, status, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
 
-    // Flatten the report ID for easy access in the template
-    const formatted = (submissions || []).map((s: any) => ({
-        ...s,
-        report_id: s.reports?.[0]?.id || null,
-    }));
+        if (error) {
+            console.error('Dashboard query failed:', error.message);
+            return { submissions: [] };
+        }
 
-    return { submissions: formatted };
+        return {
+            submissions: submissions ?? [],
+        };
+    } catch (err) {
+        console.error('Dashboard load error:', err);
+        return { submissions: [] };
+    }
 };
