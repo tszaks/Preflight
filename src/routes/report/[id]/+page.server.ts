@@ -1,14 +1,13 @@
 import { redirect, error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params, locals }) => {
-    const session = await locals.getSession();
-    if (!session) {
-        throw redirect(303, '/login');
+export const load: PageServerLoad = async ({ params, locals: { safeGetSession, supabase } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+        throw redirect(303, '/auth/login');
     }
 
-    // Fetch report with submission info
-    const { data: report, error: reportError } = await locals.supabase
+    const { data: report, error: reportError } = await supabase
         .from('reports')
         .select(`
             *,
@@ -29,18 +28,16 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         throw error(404, 'Report not found');
     }
 
-    // Verify ownership
     const submission = (report as any).submissions;
-    if (submission.user_id !== session.user.id) {
+    if (submission.user_id !== user.id) {
         throw error(403, 'Access denied');
     }
 
-    // Fetch report items
-    const { data: items } = await locals.supabase
+    const { data: items } = await supabase
         .from('report_items')
         .select('*')
         .eq('report_id', report.id)
-        .order('severity', { ascending: true }); // critical first
+        .order('severity', { ascending: true });
 
     return {
         report,
