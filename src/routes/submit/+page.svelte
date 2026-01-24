@@ -1,6 +1,7 @@
 <script lang="ts">
     let step = $state(1);
     let loading = $state(false);
+    let errorMsg = $state("");
 
     // Form data
     let appName = $state("");
@@ -13,6 +14,7 @@
 
     let screenshots: File[] = $state([]);
     let privacyManifest: File | null = $state(null);
+    let infoPlist: File | null = $state(null);
 
     // Review type
     let reviewType = $state<"quick" | "full">("full");
@@ -38,18 +40,85 @@
         }
     }
 
+    function handlePlist(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (input.files?.[0]) {
+            infoPlist = input.files[0];
+        }
+    }
+
     async function submit() {
         loading = true;
+        errorMsg = "";
 
-        // TODO: Create submission record
-        // TODO: Upload files to Supabase Storage
-        // TODO: Redirect to Stripe checkout
+        try {
+            // Step 1: Create submission record
+            const createForm = new FormData();
+            createForm.set('app_name', appName);
+            if (subtitle) createForm.set('subtitle', subtitle);
+            if (description) createForm.set('description', description);
+            if (keywords) createForm.set('keywords', keywords);
+            if (category) createForm.set('category', category);
+            createForm.set('age_rating', ageRating);
+            if (privacyUrl) createForm.set('privacy_url', privacyUrl);
+            createForm.set('review_type', reviewType);
 
-        // For now, just simulate
-        await new Promise((r) => setTimeout(r, 1500));
+            const createRes = await fetch('/submit?/createSubmission', {
+                method: 'POST',
+                body: createForm,
+            });
 
-        alert("Submission flow will redirect to Stripe checkout. Coming soon!");
-        loading = false;
+            const createResult = await createRes.json();
+            const createData = JSON.parse(createResult.data?.[1] || '{}');
+
+            if (!createData.submissionId) {
+                throw new Error(createData.message || 'Failed to create submission');
+            }
+
+            const submissionId = createData.submissionId;
+
+            // Step 2: Upload files
+            if (screenshots.length > 0 || privacyManifest || infoPlist) {
+                const uploadForm = new FormData();
+                uploadForm.set('submission_id', submissionId);
+
+                for (const file of screenshots) {
+                    uploadForm.append('screenshots', file);
+                }
+                if (privacyManifest) {
+                    uploadForm.set('manifest', privacyManifest);
+                }
+                if (infoPlist) {
+                    uploadForm.set('plist', infoPlist);
+                }
+
+                await fetch('/submit?/uploadFiles', {
+                    method: 'POST',
+                    body: uploadForm,
+                });
+            }
+
+            // Step 3: Redirect to Stripe checkout
+            const checkoutRes = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    submission_id: submissionId,
+                    review_type: reviewType,
+                }),
+            });
+
+            const checkoutData = await checkoutRes.json();
+
+            if (checkoutData.url) {
+                window.location.href = checkoutData.url;
+            } else {
+                throw new Error('Failed to create checkout session');
+            }
+        } catch (err) {
+            errorMsg = err instanceof Error ? err.message : 'Something went wrong';
+            loading = false;
+        }
     }
 </script>
 
@@ -227,12 +296,30 @@
                     <div class="file-upload">
                         <input
                             type="file"
-                            accept=".xcprivacy,.plist"
+                            accept=".xcprivacy,.plist,.xml"
                             onchange={handleManifest}
                         />
                         <p>
                             {privacyManifest
                                 ? privacyManifest.name
+                                : "Drop file here or click to browse"}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"
+                        >Info.plist</label
+                    >
+                    <div class="file-upload">
+                        <input
+                            type="file"
+                            accept=".plist,.xml"
+                            onchange={handlePlist}
+                        />
+                        <p>
+                            {infoPlist
+                                ? infoPlist.name
                                 : "Drop file here or click to browse"}
                         </p>
                     </div>
@@ -309,17 +396,21 @@
                     </div>
                     <div class="summary-row">
                         <span>Privacy manifest</span>
-                        <span
-                            >{privacyManifest
-                                ? "Included"
-                                : "Not included"}</span
-                        >
+                        <span>{privacyManifest ? "Included" : "Not included"}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Info.plist</span>
+                        <span>{infoPlist ? "Included" : "Not included"}</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total</span>
                         <span>{reviewType === "quick" ? "$29" : "$49"}</span>
                     </div>
                 </div>
+
+                {#if errorMsg}
+                    <div class="error-msg">{errorMsg}</div>
+                {/if}
 
                 <div class="step-actions">
                     <button class="btn btn-secondary" onclick={() => (step = 2)}
@@ -532,5 +623,15 @@
         border-bottom: none;
         font-weight: 600;
         font-size: 1.1rem;
+    }
+
+    .error-msg {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 8px;
+        color: #ef4444;
+        font-size: 0.9rem;
     }
 </style>
