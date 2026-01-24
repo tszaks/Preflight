@@ -20,7 +20,7 @@
 	<title>PreFlight</title>
 	<meta
 		name="description"
-		content="Catch common App Store issues before you submit."
+		content="AI-powered App Store review simulation. Catch rejections before you submit."
 	/>
 </svelte:head>
 
@@ -33,14 +33,10 @@
 			{#if data.user}
 				<a href="/dashboard" class="nav-link">Dashboard</a>
 				<form action="/auth/logout" method="POST">
-					<button type="submit" class="nav-link btn-text"
-						>Log out</button
-					>
+					<button type="submit" class="nav-link btn-text">Log out</button>
 				</form>
-			{:else}
-				<a href="/login" class="nav-link">Log in</a>
-				<a href="/signup" class="btn btn-primary btn-sm">Sign up</a>
 			{/if}
+			<!-- Login/signup hidden during waitlist phase -->
 		</div>
 	</div>
 </nav>
