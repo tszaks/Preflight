@@ -1,5 +1,5 @@
 import type { CheckResult, HardRulesInput, ScreenshotData } from '../types';
-import { SCREENSHOT_LIMITS, VALID_SCREENSHOT_DIMENSIONS } from '../knowledge-base/requirements';
+import { SCREENSHOT_LIMITS } from '../knowledge-base/requirements';
 import { VALID_SCREENSHOT_DIMENSIONS as DIMENSIONS } from '../types';
 import { getGuidelineRef } from '../knowledge-base/guidelines';
 

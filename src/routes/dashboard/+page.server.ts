@@ -8,11 +8,27 @@ export const load: PageServerLoad = async ({ locals: { supabase, getSession } })
         throw redirect(303, '/login');
     }
 
-    // TODO: Fetch user's submissions from database
-    // For now, return mock data
-    const submissions = [
-        // Empty for new users
-    ];
+    // Fetch user's submissions with associated report IDs
+    const { data: submissions } = await supabase
+        .from('submissions')
+        .select(`
+            id,
+            app_name,
+            subtitle,
+            review_type,
+            status,
+            created_at,
+            completed_at,
+            reports(id)
+        `)
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
 
-    return { submissions };
+    // Flatten the report ID for easy access in the template
+    const formatted = (submissions || []).map((s: any) => ({
+        ...s,
+        report_id: s.reports?.[0]?.id || null,
+    }));
+
+    return { submissions: formatted };
 };

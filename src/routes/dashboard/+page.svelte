@@ -21,22 +21,40 @@
         {:else}
             <div class="submissions-list">
                 {#each data.submissions as submission}
-                    <a
-                        href="/report/{submission.id}"
-                        class="card submission-card"
-                    >
-                        <div class="submission-info">
-                            <h3>{submission.app_name}</h3>
-                            <p class="text-subtle">
-                                {new Date(
-                                    submission.created_at,
-                                ).toLocaleDateString()}
-                            </p>
-                        </div>
-                        <span class="badge badge-{submission.status}"
-                            >{submission.status}</span
+                    {#if submission.status === 'complete' && submission.report_id}
+                        <a
+                            href="/report/{submission.report_id}"
+                            class="card submission-card clickable"
                         >
-                    </a>
+                            <div class="submission-info">
+                                <h3>{submission.app_name}</h3>
+                                <p class="text-subtle">
+                                    {submission.review_type === 'full' ? 'Full' : 'Quick'} Review
+                                    &middot; {new Date(submission.completed_at || submission.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                            <span class="badge badge-complete">Complete</span>
+                        </a>
+                    {:else}
+                        <div class="card submission-card">
+                            <div class="submission-info">
+                                <h3>{submission.app_name}</h3>
+                                <p class="text-subtle">
+                                    {submission.review_type === 'full' ? 'Full' : 'Quick'} Review
+                                    &middot; {new Date(submission.created_at).toLocaleDateString()}
+                                </p>
+                            </div>
+                            <span class="badge badge-{submission.status}">
+                                {#if submission.status === 'queued' || submission.status === 'processing'}
+                                    ⏳ {submission.status}
+                                {:else if submission.status === 'failed'}
+                                    ❌ Failed
+                                {:else}
+                                    {submission.status}
+                                {/if}
+                            </span>
+                        </div>
+                    {/if}
                 {/each}
             </div>
         {/if}
@@ -94,5 +112,39 @@
     .submission-info h3 {
         font-size: 1rem;
         margin-bottom: 0.25rem;
+    }
+
+    .submission-card.clickable:hover {
+        border-color: var(--accent);
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 100px;
+        text-transform: capitalize;
+    }
+
+    .badge-complete {
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+    }
+
+    .badge-queued,
+    .badge-processing {
+        background: rgba(212, 168, 83, 0.1);
+        color: var(--accent);
+    }
+
+    .badge-paid,
+    .badge-draft {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--gray-400);
+    }
+
+    .badge-failed {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
     }
 </style>
