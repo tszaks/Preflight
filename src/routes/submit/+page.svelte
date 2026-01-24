@@ -1,0 +1,536 @@
+<script lang="ts">
+    let step = $state(1);
+    let loading = $state(false);
+
+    // Form data
+    let appName = $state("");
+    let subtitle = $state("");
+    let description = $state("");
+    let keywords = $state("");
+    let category = $state("");
+    let ageRating = $state("4+");
+    let privacyUrl = $state("");
+
+    let screenshots: File[] = $state([]);
+    let privacyManifest: File | null = $state(null);
+
+    // Review type
+    let reviewType = $state<"quick" | "full">("full");
+
+    function handleScreenshots(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (input.files) {
+            screenshots = [...screenshots, ...Array.from(input.files)].slice(
+                0,
+                10,
+            );
+        }
+    }
+
+    function removeScreenshot(index: number) {
+        screenshots = screenshots.filter((_, i) => i !== index);
+    }
+
+    function handleManifest(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (input.files?.[0]) {
+            privacyManifest = input.files[0];
+        }
+    }
+
+    async function submit() {
+        loading = true;
+
+        // TODO: Create submission record
+        // TODO: Upload files to Supabase Storage
+        // TODO: Redirect to Stripe checkout
+
+        // For now, just simulate
+        await new Promise((r) => setTimeout(r, 1500));
+
+        alert("Submission flow will redirect to Stripe checkout. Coming soon!");
+        loading = false;
+    }
+</script>
+
+<main class="submit-page">
+    <div class="container">
+        <header class="submit-header">
+            <h1>New Review</h1>
+            <p class="text-muted">Step {step} of 3</p>
+        </header>
+
+        <!-- Progress bar -->
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {(step / 3) * 100}%"></div>
+        </div>
+
+        {#if step === 1}
+            <!-- Step 1: Metadata -->
+            <div class="step-content">
+                <h2>App Metadata</h2>
+                <p class="text-muted mb-4">
+                    Enter the information from your App Store listing
+                </p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="appName" class="form-label"
+                            >App Name *</label
+                        >
+                        <input
+                            type="text"
+                            id="appName"
+                            class="input"
+                            bind:value={appName}
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subtitle" class="form-label">Subtitle</label
+                        >
+                        <input
+                            type="text"
+                            id="subtitle"
+                            class="input"
+                            bind:value={subtitle}
+                        />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description" class="form-label"
+                        >Description *</label
+                    >
+                    <textarea
+                        id="description"
+                        class="input textarea"
+                        bind:value={description}
+                        rows="5"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="keywords" class="form-label">Keywords</label>
+                    <input
+                        type="text"
+                        id="keywords"
+                        class="input"
+                        bind:value={keywords}
+                        placeholder="Comma separated"
+                    />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="category" class="form-label">Category</label
+                        >
+                        <select
+                            id="category"
+                            class="input"
+                            bind:value={category}
+                        >
+                            <option value="">Select category</option>
+                            <option value="games">Games</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="health">Health & Fitness</option>
+                            <option value="finance">Finance</option>
+                            <option value="education">Education</option>
+                            <option value="social">Social Networking</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ageRating" class="form-label"
+                            >Age Rating</label
+                        >
+                        <select
+                            id="ageRating"
+                            class="input"
+                            bind:value={ageRating}
+                        >
+                            <option value="4+">4+</option>
+                            <option value="9+">9+</option>
+                            <option value="12+">12+</option>
+                            <option value="17+">17+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="privacyUrl" class="form-label"
+                        >Privacy Policy URL</label
+                    >
+                    <input
+                        type="url"
+                        id="privacyUrl"
+                        class="input"
+                        bind:value={privacyUrl}
+                    />
+                </div>
+
+                <div class="step-actions">
+                    <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+                    <button
+                        class="btn btn-primary"
+                        onclick={() => (step = 2)}
+                        disabled={!appName || !description}
+                    >
+                        Continue
+                    </button>
+                </div>
+            </div>
+        {:else if step === 2}
+            <!-- Step 2: Files -->
+            <div class="step-content">
+                <h2>Screenshots & Files</h2>
+                <p class="text-muted mb-4">Upload your App Store assets</p>
+
+                <div class="form-group">
+                    <label class="form-label">Screenshots (up to 10)</label>
+                    <div class="file-upload">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onchange={handleScreenshots}
+                        />
+                        <p>Drop screenshots here or click to browse</p>
+                    </div>
+
+                    {#if screenshots.length > 0}
+                        <div class="file-list">
+                            {#each screenshots as file, i}
+                                <div class="file-item">
+                                    <span>{file.name}</span>
+                                    <button
+                                        class="remove-btn"
+                                        onclick={() => removeScreenshot(i)}
+                                        >×</button
+                                    >
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"
+                        >Privacy Manifest (PrivacyInfo.xcprivacy)</label
+                    >
+                    <div class="file-upload">
+                        <input
+                            type="file"
+                            accept=".xcprivacy,.plist"
+                            onchange={handleManifest}
+                        />
+                        <p>
+                            {privacyManifest
+                                ? privacyManifest.name
+                                : "Drop file here or click to browse"}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick={() => (step = 1)}
+                        >Back</button
+                    >
+                    <button class="btn btn-primary" onclick={() => (step = 3)}
+                        >Continue</button
+                    >
+                </div>
+            </div>
+        {:else if step === 3}
+            <!-- Step 3: Review type & checkout -->
+            <div class="step-content">
+                <h2>Choose Review Type</h2>
+                <p class="text-muted mb-4">Select the depth of analysis</p>
+
+                <div class="review-options">
+                    <label
+                        class="review-option"
+                        class:selected={reviewType === "quick"}
+                    >
+                        <input
+                            type="radio"
+                            name="reviewType"
+                            value="quick"
+                            bind:group={reviewType}
+                        />
+                        <div class="option-content">
+                            <div class="option-header">
+                                <h3>Quick Review</h3>
+                                <span class="price">$29</span>
+                            </div>
+                            <p class="text-muted">
+                                Metadata & screenshot analysis
+                            </p>
+                        </div>
+                    </label>
+
+                    <label
+                        class="review-option"
+                        class:selected={reviewType === "full"}
+                    >
+                        <input
+                            type="radio"
+                            name="reviewType"
+                            value="full"
+                            bind:group={reviewType}
+                        />
+                        <div class="option-content">
+                            <div class="option-header">
+                                <h3>Full Review</h3>
+                                <span class="price">$49</span>
+                            </div>
+                            <p class="text-muted">
+                                + Privacy manifest deep analysis
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="summary-card card">
+                    <h3>Summary</h3>
+                    <div class="summary-row">
+                        <span>App</span>
+                        <span>{appName}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Screenshots</span>
+                        <span>{screenshots.length} files</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Privacy manifest</span>
+                        <span
+                            >{privacyManifest
+                                ? "Included"
+                                : "Not included"}</span
+                        >
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total</span>
+                        <span>{reviewType === "quick" ? "$29" : "$49"}</span>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick={() => (step = 2)}
+                        >Back</button
+                    >
+                    <button
+                        class="btn btn-primary"
+                        onclick={submit}
+                        disabled={loading}
+                    >
+                        {loading ? "Processing..." : "Continue to Payment"}
+                    </button>
+                </div>
+            </div>
+        {/if}
+    </div>
+</main>
+
+<style>
+    .submit-page {
+        padding: 120px 0 60px;
+        min-height: 100vh;
+    }
+
+    .submit-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .submit-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .progress-bar {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin-bottom: 3rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+
+    .step-content {
+        max-width: 600px;
+    }
+
+    .step-content h2 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    select.input {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6862' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 14px center;
+        padding-right: 40px;
+    }
+
+    .file-upload {
+        border: 2px dashed rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        transition: border-color 0.2s;
+    }
+
+    .file-upload:hover {
+        border-color: var(--accent);
+    }
+
+    .file-upload input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-upload p {
+        color: var(--gray-500);
+    }
+
+    .file-list {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+    }
+
+    .remove-btn {
+        background: none;
+        border: none;
+        color: var(--gray-500);
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .remove-btn:hover {
+        color: #ef4444;
+    }
+
+    .step-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .review-options {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .review-option {
+        display: block;
+        cursor: pointer;
+    }
+
+    .review-option input {
+        display: none;
+    }
+
+    .option-content {
+        padding: 1.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        transition: all 0.2s;
+    }
+
+    .review-option.selected .option-content {
+        border-color: var(--accent);
+        background: rgba(212, 168, 83, 0.05);
+    }
+
+    .option-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
+    }
+
+    .option-header h3 {
+        font-size: 1rem;
+    }
+
+    .price {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .summary-card {
+        margin-top: 2rem;
+    }
+
+    .summary-card h3 {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-500);
+        margin-bottom: 1rem;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .summary-row.total {
+        border-bottom: none;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+</style>
