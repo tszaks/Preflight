@@ -1,19 +1,19 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
-    const session = await locals.getSession();
-    if (!session) {
-        throw redirect(303, '/login');
+export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+        throw redirect(303, '/auth/login');
     }
 
-    return { user: session.user };
+    return { user };
 };
 
 export const actions: Actions = {
-    createSubmission: async ({ request, locals }) => {
-        const session = await locals.getSession();
-        if (!session) {
+    createSubmission: async ({ request, locals: { safeGetSession, supabase } }) => {
+        const { user } = await safeGetSession();
+        if (!user) {
             return fail(401, { message: 'Not authenticated' });
         }
 
@@ -32,11 +32,10 @@ export const actions: Actions = {
             return fail(400, { message: 'App name is required' });
         }
 
-        // Create submission record
-        const { data: submission, error } = await locals.supabase
+        const { data: submission, error } = await supabase
             .from('submissions')
             .insert({
-                user_id: session.user.id,
+                user_id: user.id,
                 app_name,
                 subtitle,
                 description,
@@ -58,9 +57,9 @@ export const actions: Actions = {
         return { submissionId: submission.id };
     },
 
-    uploadFiles: async ({ request, locals }) => {
-        const session = await locals.getSession();
-        if (!session) {
+    uploadFiles: async ({ request, locals: { safeGetSession, supabase } }) => {
+        const { user } = await safeGetSession();
+        if (!user) {
             return fail(401, { message: 'Not authenticated' });
         }
 
@@ -71,8 +70,7 @@ export const actions: Actions = {
             return fail(400, { message: 'Missing submission ID' });
         }
 
-        const userId = session.user.id;
-        const basePath = `${userId}/${submissionId}`;
+        const basePath = `${user.id}/${submissionId}`;
         const screenshotPaths: string[] = [];
 
         // Upload screenshots
@@ -84,7 +82,7 @@ export const actions: Actions = {
             const ext = file.name.split('.').pop() || 'png';
             const path = `${basePath}/screenshot_${i}.${ext}`;
 
-            const { error } = await locals.supabase.storage
+            const { error } = await supabase.storage
                 .from('screenshots')
                 .upload(path, file, { upsert: true });
 
@@ -98,7 +96,7 @@ export const actions: Actions = {
         const manifest = formData.get('manifest') as File | null;
         if (manifest && manifest.size > 0) {
             const path = `${basePath}/PrivacyInfo.xcprivacy`;
-            const { error } = await locals.supabase.storage
+            const { error } = await supabase.storage
                 .from('manifests')
                 .upload(path, manifest, { upsert: true });
 
@@ -110,7 +108,7 @@ export const actions: Actions = {
         const plist = formData.get('plist') as File | null;
         if (plist && plist.size > 0) {
             const path = `${basePath}/Info.plist`;
-            const { error } = await locals.supabase.storage
+            const { error } = await supabase.storage
                 .from('plists')
                 .upload(path, plist, { upsert: true });
 
@@ -118,7 +116,7 @@ export const actions: Actions = {
         }
 
         // Update submission with file paths
-        await locals.supabase
+        await supabase
             .from('submissions')
             .update({
                 screenshot_paths: screenshotPaths,
