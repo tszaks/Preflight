@@ -231,7 +231,8 @@
 
 <style>
     .pro-tips-section {
-        background: #f8fafc;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 16px;
         padding: 24px;
     }
@@ -249,26 +250,26 @@
     .section-header h3 {
         font-size: 18px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0;
     }
 
     .header-subtitle {
         font-size: 13px;
-        color: #64748b;
+        color: var(--gray-400);
         margin: 4px 0 0 0;
     }
 
     .no-tips {
-        background: #dcfce7;
-        border: 1px solid #16a34a;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
         border-radius: 8px;
         padding: 16px;
     }
 
     .no-tips p {
         margin: 0;
-        color: #166534;
+        color: #4ade80;
         font-size: 14px;
     }
 
@@ -295,14 +296,14 @@
     .category-header h4 {
         font-size: 14px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0;
         flex: 1;
     }
 
     .tip-count {
-        background: #e2e8f0;
-        color: #475569;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--gray-300);
         font-size: 11px;
         font-weight: 600;
         padding: 2px 8px;
@@ -317,10 +318,10 @@
     }
 
     .tip-card {
-        background: white;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .tip-card.critical {
@@ -348,29 +349,29 @@
     }
 
     .tip-header:hover {
-        background: #f8fafc;
+        background: rgba(255, 255, 255, 0.05);
     }
 
     .tip-title {
         font-size: 14px;
         font-weight: 500;
-        color: #1e293b;
+        color: var(--fg);
     }
 
     .expand-icon {
         font-size: 18px;
-        color: #94a3b8;
+        color: var(--gray-500);
         font-weight: 300;
     }
 
     .tip-content {
         padding: 0 16px 16px 16px;
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .tip-description {
         font-size: 14px;
-        color: #475569;
+        color: var(--gray-300);
         line-height: 1.6;
         margin: 12px 0;
     }
@@ -383,7 +384,7 @@
         display: block;
         font-size: 11px;
         font-weight: 600;
-        color: #64748b;
+        color: var(--gray-400);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
@@ -391,23 +392,24 @@
 
     .tip-detail p {
         font-size: 13px;
-        color: #475569;
+        color: var(--gray-300);
         line-height: 1.5;
         margin: 0;
     }
 
     .tip-detail.action {
-        background: #f0fdf4;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.2);
         border-radius: 6px;
         padding: 12px;
     }
 
     .tip-detail.action .detail-label {
-        color: #166534;
+        color: #4ade80;
     }
 
     .tip-detail.action p {
-        color: #166534;
+        color: #86efac;
     }
 
     .impacts {
@@ -424,19 +426,19 @@
     }
 
     .impact.cost {
-        background: #fef3c7;
-        color: #92400e;
+        background: rgba(212, 168, 83, 0.15);
+        color: var(--accent);
     }
 
     .impact.time {
-        background: #dbeafe;
-        color: #1e40af;
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
     }
 
     .tip-link {
         display: inline-block;
         font-size: 13px;
-        color: #3b82f6;
+        color: var(--accent);
         text-decoration: none;
         font-weight: 500;
     }
@@ -449,8 +451,8 @@
     .education-footer {
         display: flex;
         gap: 12px;
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
+        background: rgba(212, 168, 83, 0.1);
+        border: 1px solid rgba(212, 168, 83, 0.3);
         border-radius: 8px;
         padding: 16px;
         margin-top: 24px;
@@ -463,12 +465,12 @@
 
     .education-footer p {
         font-size: 13px;
-        color: #1e40af;
+        color: var(--gray-300);
         line-height: 1.5;
         margin: 0;
     }
 
     .education-footer strong {
-        color: #1e3a8a;
+        color: var(--accent);
     }
 </style>

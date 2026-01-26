@@ -207,7 +207,8 @@
 
 <style>
     .listing-preview {
-        background: #f8fafc;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 16px;
         padding: 24px;
     }
@@ -218,8 +219,8 @@
 
     .preview-badge {
         display: inline-block;
-        background: #6366f1;
-        color: white;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: var(--bg);
         font-size: 10px;
         font-weight: 600;
         padding: 2px 8px;
@@ -230,21 +231,21 @@
     .preview-header h3 {
         font-size: 18px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0 0 4px 0;
     }
 
     .preview-subtitle {
         font-size: 13px;
-        color: #64748b;
+        color: var(--gray-400);
         margin: 0;
     }
 
     .app-store-card {
-        background: white;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
         padding: 20px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     /* App Header */
@@ -283,7 +284,7 @@
     .app-name {
         font-size: 18px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0;
         white-space: nowrap;
         overflow: hidden;
@@ -292,7 +293,7 @@
 
     .app-subtitle {
         font-size: 13px;
-        color: #64748b;
+        color: var(--gray-400);
         margin: 2px 0 0 0;
         white-space: nowrap;
         overflow: hidden;
@@ -301,7 +302,7 @@
 
     .app-developer {
         font-size: 12px;
-        color: #3b82f6;
+        color: var(--accent);
         margin: 4px 0 0 0;
     }
 
@@ -325,7 +326,7 @@
 
     .iap-label {
         font-size: 9px;
-        color: #94a3b8;
+        color: var(--gray-500);
     }
 
     /* Meta Bar */
@@ -334,8 +335,8 @@
         align-items: center;
         justify-content: space-around;
         padding: 12px 0;
-        border-top: 1px solid #e2e8f0;
-        border-bottom: 1px solid #e2e8f0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         margin-bottom: 16px;
     }
 
@@ -349,23 +350,23 @@
     .meta-value {
         font-size: 14px;
         font-weight: 600;
-        color: #64748b;
+        color: var(--gray-300);
     }
 
     .meta-label {
         font-size: 10px;
-        color: #94a3b8;
+        color: var(--gray-500);
         text-transform: uppercase;
     }
 
     .meta-divider {
         width: 1px;
         height: 24px;
-        background: #e2e8f0;
+        background: rgba(255, 255, 255, 0.08);
     }
 
     .category-icon {
-        color: #3b82f6;
+        color: var(--accent);
     }
 
     /* Screenshots */
@@ -376,7 +377,7 @@
     .screenshots-section h4 {
         font-size: 14px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0 0 12px 0;
     }
 
@@ -391,7 +392,7 @@
         flex-shrink: 0;
         width: 100px;
         height: 217px;
-        background: #f1f5f9;
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 8px;
         overflow: hidden;
     }
@@ -406,13 +407,13 @@
         flex-shrink: 0;
         width: 60px;
         height: 217px;
-        background: #f1f5f9;
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 12px;
-        color: #64748b;
+        color: var(--gray-400);
     }
 
     .screenshots-empty {
@@ -424,9 +425,9 @@
     .empty-screenshot {
         width: 100px;
         height: 217px;
-        background: #f1f5f9;
+        background: rgba(255, 255, 255, 0.03);
         border-radius: 8px;
-        border: 2px dashed #cbd5e1;
+        border: 2px dashed rgba(255, 255, 255, 0.15);
     }
 
     .screenshots-section.empty .empty-text {
@@ -435,7 +436,7 @@
         left: 50%;
         transform: translate(-50%, -50%);
         font-size: 12px;
-        color: #94a3b8;
+        color: var(--gray-500);
         white-space: nowrap;
     }
 
@@ -446,7 +447,7 @@
 
     .description-text {
         font-size: 14px;
-        color: #475569;
+        color: var(--gray-300);
         line-height: 1.5;
         margin: 0;
     }
@@ -454,7 +455,7 @@
     .more-link {
         background: none;
         border: none;
-        color: #3b82f6;
+        color: var(--accent);
         font-size: 14px;
         cursor: pointer;
         padding: 0;
@@ -462,7 +463,7 @@
 
     .description-placeholder {
         font-size: 14px;
-        color: #94a3b8;
+        color: var(--gray-500);
         font-style: italic;
         margin: 0;
     }
@@ -470,14 +471,14 @@
     /* What's New */
     .whats-new-section {
         padding: 16px 0;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
         margin-bottom: 16px;
     }
 
     .whats-new-section h4 {
         font-size: 14px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0 0 8px 0;
     }
 
@@ -489,30 +490,30 @@
 
     .version {
         font-size: 12px;
-        color: #64748b;
+        color: var(--gray-400);
     }
 
     .date {
         font-size: 12px;
-        color: #94a3b8;
+        color: var(--gray-500);
     }
 
     .whats-new-text {
         font-size: 14px;
-        color: #475569;
+        color: var(--gray-300);
         margin: 0;
     }
 
     /* Information Section */
     .info-section {
         padding-top: 16px;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .info-section h4 {
         font-size: 14px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0 0 12px 0;
     }
 
@@ -530,38 +531,38 @@
 
     .info-label {
         font-size: 11px;
-        color: #94a3b8;
+        color: var(--gray-500);
     }
 
     .info-value {
         font-size: 13px;
-        color: #475569;
+        color: var(--gray-300);
     }
 
     /* Education Note */
     .education-note {
         display: flex;
         gap: 12px;
-        background: #fef3c7;
-        border: 1px solid #f59e0b;
+        background: rgba(212, 168, 83, 0.1);
+        border: 1px solid rgba(212, 168, 83, 0.3);
         border-radius: 8px;
         padding: 16px;
         margin-top: 16px;
     }
 
     .note-icon {
-        color: #d97706;
+        color: var(--accent);
         flex-shrink: 0;
     }
 
     .education-note strong {
         font-size: 13px;
-        color: #92400e;
+        color: var(--accent);
     }
 
     .education-note p {
         font-size: 13px;
-        color: #92400e;
+        color: var(--gray-300);
         margin: 4px 0 0 0;
         line-height: 1.5;
     }
