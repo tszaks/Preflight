@@ -1,13 +1,15 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { WORKER_SECRET, ANTHROPIC_API_KEY } from '$env/static/private';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
     const { user } = await safeGetSession();
-    if (!user) {
-        throw redirect(303, '/auth/login');
-    }
+    // TEMP: Skip auth for testing
+    // if (!user) {
+    //     throw redirect(303, '/auth/login');
+    // }
 
-    return { user };
+    return { user: user || { id: 'test-user' } };
 };
 
 export const actions: Actions = {
@@ -126,5 +128,134 @@ export const actions: Actions = {
             .eq('id', submissionId);
 
         return { success: true, screenshotPaths, manifestPath, plistPath };
+    },
+
+    // Test mode: Skip Stripe, run analysis immediately
+    testSubmit: async ({ request, locals: { safeGetSession, supabase }, fetch }) => {
+        const { user } = await safeGetSession();
+        // TEMP: Use test user if not authenticated
+        const userId = user?.id || 'test-user';
+
+        const formData = await request.formData();
+
+        // Step 1: Create submission
+        const app_name = formData.get('app_name')?.toString().trim();
+        if (!app_name) {
+            return fail(400, { message: 'App name is required' });
+        }
+
+        const { data: submission, error: subError } = await supabase
+            .from('submissions')
+            .insert({
+                user_id: userId,
+                app_name,
+                subtitle: formData.get('subtitle')?.toString().trim() || null,
+                description: formData.get('description')?.toString().trim() || null,
+                keywords: formData.get('keywords')?.toString().trim() || null,
+                category: formData.get('category')?.toString() || null,
+                age_rating: formData.get('age_rating')?.toString() || '4+',
+                privacy_url: formData.get('privacy_url')?.toString().trim() || null,
+                review_type: 'full',
+                status: 'analyzing',
+            })
+            .select('id')
+            .single();
+
+        if (subError || !submission) {
+            console.error('Submission creation failed:', subError);
+            return fail(500, { message: 'Failed to create submission' });
+        }
+
+        const submissionId = submission.id;
+        const basePath = `${userId}/${submissionId}`;
+        const screenshotPaths: string[] = [];
+
+        // Step 2: Upload files
+        const screenshots = formData.getAll('screenshots') as File[];
+        for (let i = 0; i < screenshots.length; i++) {
+            const file = screenshots[i];
+            if (file.size === 0) continue;
+
+            const ext = file.name.split('.').pop() || 'png';
+            const path = `${basePath}/screenshot_${i}.${ext}`;
+            const { error } = await supabase.storage
+                .from('screenshots')
+                .upload(path, file, { upsert: true });
+
+            if (!error) screenshotPaths.push(path);
+        }
+
+        let manifestPath: string | null = null;
+        const manifest = formData.get('manifest') as File | null;
+        if (manifest && manifest.size > 0) {
+            const path = `${basePath}/PrivacyInfo.xcprivacy`;
+            const { error } = await supabase.storage
+                .from('manifests')
+                .upload(path, manifest, { upsert: true });
+            if (!error) manifestPath = path;
+        }
+
+        let plistPath: string | null = null;
+        const plist = formData.get('plist') as File | null;
+        if (plist && plist.size > 0) {
+            const path = `${basePath}/Info.plist`;
+            const { error } = await supabase.storage
+                .from('plists')
+                .upload(path, plist, { upsert: true });
+            if (!error) plistPath = path;
+        }
+
+        await supabase
+            .from('submissions')
+            .update({
+                screenshot_paths: screenshotPaths,
+                manifest_path: manifestPath,
+                plist_path: plistPath,
+            })
+            .eq('id', submissionId);
+
+        // Step 3: Create analysis job
+        const { data: job, error: jobError } = await supabase
+            .from('analysis_jobs')
+            .insert({
+                submission_id: submissionId,
+                status: 'pending',
+                priority: 100, // High priority for test
+            })
+            .select('id')
+            .single();
+
+        if (jobError || !job) {
+            console.error('Job creation failed:', jobError);
+            return fail(500, { message: 'Failed to create analysis job' });
+        }
+
+        // Step 4: Trigger worker immediately (call worker endpoint)
+        try {
+            const workerResponse = await fetch('/api/worker', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${WORKER_SECRET}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const workerResult = await workerResponse.json();
+
+            if (workerResult.reportId) {
+                // Analysis completed! Redirect to report
+                throw redirect(303, `/report/${workerResult.reportId}`);
+            } else {
+                // Analysis failed
+                return fail(500, {
+                    message: workerResult.error || 'Analysis failed',
+                    submissionId
+                });
+            }
+        } catch (e) {
+            if (e instanceof Response) throw e; // Re-throw redirect
+            console.error('Worker call failed:', e);
+            return fail(500, { message: 'Failed to trigger analysis', submissionId });
+        }
     },
 };
