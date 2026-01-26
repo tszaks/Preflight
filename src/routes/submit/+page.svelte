@@ -22,6 +22,16 @@
     // Pricing (single tier for now, recheck discount coming later)
     const PRICE = 49;
 
+    // Required files validation
+    let missingFiles = $derived.by(() => {
+        const missing: string[] = [];
+        if (screenshots.length === 0) missing.push('At least 1 screenshot');
+        if (!privacyManifest) missing.push('Privacy manifest (PrivacyInfo.xcprivacy)');
+        if (!infoPlist) missing.push('Info.plist');
+        return missing;
+    });
+    let canSubmit = $derived(missingFiles.length === 0);
+
     // Project scanner state
     let scanResults: ScanResults | null = $state(null);
     let showScanResults = $state(false);
@@ -98,6 +108,12 @@
     }
 
     async function submit() {
+        // Validate required files
+        if (!canSubmit) {
+            errorMsg = `Missing required files: ${missingFiles.join(', ')}`;
+            return;
+        }
+
         loading = true;
         errorMsg = "";
 
