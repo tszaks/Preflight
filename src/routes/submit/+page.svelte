@@ -166,6 +166,53 @@
             loading = false;
         }
     }
+
+    async function testSubmit() {
+        loading = true;
+        errorMsg = "";
+
+        try {
+            const formData = new FormData();
+            formData.set('app_name', appName);
+            if (subtitle) formData.set('subtitle', subtitle);
+            if (description) formData.set('description', description);
+            if (keywords) formData.set('keywords', keywords);
+            if (category) formData.set('category', category);
+            formData.set('age_rating', ageRating);
+            if (privacyUrl) formData.set('privacy_url', privacyUrl);
+
+            for (const file of screenshots) {
+                formData.append('screenshots', file);
+            }
+            if (privacyManifest) {
+                formData.set('manifest', privacyManifest);
+            }
+            if (infoPlist) {
+                formData.set('plist', infoPlist);
+            }
+
+            const response = await fetch('/submit?/testSubmit', {
+                method: 'POST',
+                body: formData,
+            });
+
+            // Handle redirect
+            if (response.redirected) {
+                window.location.href = response.url;
+                return;
+            }
+
+            const result = await response.text();
+            const parsedResult = deserialize(result);
+
+            if (parsedResult.type === 'failure') {
+                throw new Error((parsedResult.data as { message?: string })?.message || 'Test submission failed');
+            }
+        } catch (err) {
+            errorMsg = err instanceof Error ? err.message : 'Something went wrong';
+            loading = false;
+        }
+    }
 </script>
 
 <main class="submit-page">
@@ -537,13 +584,22 @@
                     <button class="btn btn-secondary" onclick={() => (step = 2)}
                         >Back</button
                     >
-                    <button
-                        class="btn btn-primary"
-                        onclick={submit}
-                        disabled={loading}
-                    >
-                        {loading ? "Processing..." : "Continue to Payment"}
-                    </button>
+                    <div class="action-group">
+                        <button
+                            class="btn btn-accent"
+                            onclick={testSubmit}
+                            disabled={loading}
+                        >
+                            {loading ? "Analyzing..." : "🧪 Test Mode (Skip Payment)"}
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick={submit}
+                            disabled={loading}
+                        >
+                            {loading ? "Processing..." : "Continue to Payment"}
+                        </button>
+                    </div>
                 </div>
             </div>
         {/if}
@@ -674,6 +730,33 @@
         margin-top: 2rem;
         padding-top: 2rem;
         border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .action-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-accent {
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: var(--bg);
+        font-weight: 600;
+        border: none;
+        padding: 0.875rem 1.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+    }
+
+    .btn-accent:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(212, 168, 83, 0.3);
+    }
+
+    .btn-accent:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
     }
 
     .review-options {
