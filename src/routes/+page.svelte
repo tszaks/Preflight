@@ -84,7 +84,7 @@
             <div class="section-header">
                 <span class="overline">Buy Credits</span>
                 <h2>Pre-purchase credits. Use anytime.</h2>
-                <p class="section-sub">100 credits = 1 full review. 25 credits = 1 re-review. Credits never expire.</p>
+                <p class="section-sub">No subscriptions. Credits never expire.</p>
             </div>
 
             <div class="pricing-grid">
