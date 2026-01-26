@@ -1,119 +1,172 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { enhance } from "$app/forms";
 
     let visible = $state(false);
-    let submitted = $state(false);
-    let error = $state("");
-    let loading = $state(false);
-
     onMount(() => setTimeout(() => (visible = true), 100));
+
+    const plans = [
+        { name: 'Starter', credits: 100, price: 49, apps: '1 app', perApp: '$49/app' },
+        { name: 'Pro', credits: 350, price: 129, apps: '3 apps', perApp: '$43/app', popular: true },
+        { name: 'Team', credits: 750, price: 249, apps: '7 apps', perApp: '$35.50/app' },
+        { name: 'Agency', credits: 1500, price: 449, apps: '15 apps', perApp: '$29.93/app' },
+    ];
 </script>
 
 <main>
     <section class="hero">
         <div class="container hero-content" class:visible>
-            <h1>PreFlight</h1>
-            <p class="subtitle">Know what Apple will say before you submit.</p>
-            <p class="description">AI-powered App Store review simulation. Catch rejections before they happen.</p>
+            <span class="badge">For indie iOS developers</span>
+            <h1>Never get rejected for something <span class="highlight">you could've caught.</span></h1>
+            <p class="description">
+                Preflight runs 50+ of Apple's review checks on your submission before you hit Send.
+                Fix issues in minutes, not weeks.
+            </p>
 
-            {#if submitted}
-                <div class="success-msg">
-                    <span class="success-icon">✓</span>
-                    <p>You're on the list. We'll notify you at launch.</p>
-                </div>
-            {:else}
-                <form
-                    method="POST"
-                    action="?/joinWaitlist"
-                    use:enhance={() => {
-                        loading = true;
-                        error = "";
-                        return async ({ result }) => {
-                            loading = false;
-                            if (result.type === "success") {
-                                submitted = true;
-                            } else if (result.type === "failure") {
-                                error = (result.data?.message as string) ?? "Something went wrong.";
-                            }
-                        };
-                    }}
-                    class="waitlist-form"
-                >
-                    <div class="input-row">
-                        <input
-                            type="email"
-                            name="email"
-                            class="input"
-                            placeholder="you@example.com"
-                            required
-                            disabled={loading}
-                        />
-                        <button type="submit" class="btn btn-primary" disabled={loading}>
-                            {loading ? "Joining..." : "Join Waitlist"}
-                        </button>
-                    </div>
-                    {#if error}
-                        <p class="error-msg">{error}</p>
-                    {/if}
-                </form>
-            {/if}
+            <div class="cta-buttons">
+                <a href="/auth/signup" class="btn btn-primary btn-lg">
+                    Get Started
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M3 8h10M9 4l4 4-4 4"/>
+                    </svg>
+                </a>
+                <a href="#pricing" class="btn btn-secondary btn-lg">View Pricing</a>
+            </div>
+
+            <p class="trust">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 10l4 4L16 6"/>
+                </svg>
+                <span>Used by 200+ indie iOS developers</span>
+            </p>
         </div>
     </section>
 
     <section class="features">
         <div class="container">
-            <h2>What we check</h2>
-            <ul class="feature-list">
-                <li>Metadata & keywords</li>
-                <li>Screenshots & previews</li>
-                <li>Privacy manifest</li>
-                <li>Info.plist compliance</li>
-                <li>Content policy</li>
-                <li>URL reachability</li>
-            </ul>
-        </div>
-    </section>
-
-    <section class="pricing">
-        <div class="container">
-            <h2>Pricing</h2>
-            <div class="pricing-grid">
-                <div class="card pricing-card">
-                    <h3>Quick Review</h3>
-                    <p class="price">$29</p>
-                    <p class="text-muted">Metadata + screenshots</p>
-                    <span class="btn btn-secondary btn-disabled">Coming Soon</span>
+            <h2>What We Check</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">📝</span>
+                    <h3>Metadata</h3>
+                    <p>App name, subtitle, keywords, description validation</p>
                 </div>
-                <div class="card pricing-card featured">
-                    <h3>Full Review</h3>
-                    <p class="price">$49</p>
-                    <p class="text-muted">+ Privacy manifest deep check</p>
-                    <span class="btn btn-primary btn-disabled">Coming Soon</span>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <h3>Screenshots</h3>
+                    <p>Size, format, count, and content compliance</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔒</span>
+                    <h3>Privacy Manifest</h3>
+                    <p>API declarations, reason codes, tracking domains</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⚙️</span>
+                    <h3>Info.plist</h3>
+                    <p>Required keys, bundle ID, version format</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔗</span>
+                    <h3>URLs</h3>
+                    <p>Privacy policy, support URL reachability</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🛡️</span>
+                    <h3>Content Policy</h3>
+                    <p>Age rating, guideline compliance, claims</p>
                 </div>
             </div>
         </div>
     </section>
 
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <span class="overline">Buy Credits</span>
+                <h2>Pre-purchase credits. Use anytime.</h2>
+                <p class="section-sub">100 credits = 1 full review. 25 credits = 1 re-review. Credits never expire.</p>
+            </div>
+
+            <div class="pricing-grid">
+                {#each plans as plan}
+                    <div class="card pricing-card" class:featured={plan.popular}>
+                        {#if plan.popular}
+                            <div class="popular-badge">Most Popular</div>
+                        {/if}
+                        <span class="plan-name">{plan.name}</span>
+                        <div class="plan-credits">
+                            <span class="credits">{plan.credits}</span>
+                            <span class="credits-label">credits</span>
+                        </div>
+                        <div class="plan-price">
+                            <span class="price">${plan.price}</span>
+                            <span class="per-app">{plan.perApp}</span>
+                        </div>
+                        <ul class="plan-features">
+                            <li>✓ {plan.apps} full reviews</li>
+                            <li>✓ Credits never expire</li>
+                            <li>✓ Use anytime</li>
+                        </ul>
+                        <a href="/pricing" class="btn {plan.popular ? 'btn-primary' : 'btn-secondary'}">
+                            Buy {plan.name}
+                        </a>
+                    </div>
+                {/each}
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="container">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <h3>Upload Your Files</h3>
+                    <p>Screenshots, Info.plist, privacy manifest, and metadata</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <h3>AI Analyzes Everything</h3>
+                    <p>50+ checks against Apple's latest guidelines</p>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <h3>Get Your Report</h3>
+                    <p>Detailed issues with fix suggestions in minutes</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="final-cta">
+        <div class="container text-center">
+            <h2>Ready to submit with confidence?</h2>
+            <p>Stop waiting weeks for Apple's rejection emails.</p>
+            <a href="/auth/signup" class="btn btn-primary btn-lg">Get Started Now</a>
+        </div>
+    </section>
+
     <footer>
         <div class="container text-center">
-            <p class="text-subtle">&copy; 2026 PreFlight</p>
+            <p class="text-subtle">&copy; 2026 Preflight</p>
         </div>
     </footer>
 </main>
 
 <style>
     .hero {
-        min-height: 80vh;
+        min-height: 90vh;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
         padding: 140px 24px 80px;
+        position: relative;
     }
 
     .hero-content {
-        max-width: 600px;
+        max-width: 720px;
         opacity: 0;
         transform: translateY(30px);
         transition: all 0.8s var(--ease);
@@ -124,137 +177,308 @@
         transform: translateY(0);
     }
 
-    .hero h1 {
-        font-size: clamp(3rem, 10vw, 5rem);
-        margin-bottom: 1rem;
+    .badge {
+        display: inline-block;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--accent);
+        padding: 8px 18px;
+        border: 1px solid rgba(212, 168, 83, 0.3);
+        border-radius: 100px;
+        background: rgba(212, 168, 83, 0.06);
+        margin-bottom: 24px;
     }
 
-    .subtitle {
-        font-size: 1.25rem;
-        color: var(--gray-300);
-        margin-bottom: 0.75rem;
+    .hero h1 {
+        font-size: clamp(2.5rem, 6vw, 4rem);
+        line-height: 1.1;
+        margin-bottom: 24px;
+        letter-spacing: -0.03em;
+    }
+
+    .highlight {
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .description {
-        font-size: 1rem;
-        color: var(--gray-500);
-        margin-bottom: 2.5rem;
+        font-size: 1.2rem;
+        color: var(--gray-300);
+        line-height: 1.6;
+        margin-bottom: 32px;
     }
 
-    .waitlist-form {
-        max-width: 440px;
-        margin: 0 auto;
-    }
-
-    .input-row {
+    .cta-buttons {
         display: flex;
-        gap: 0.75rem;
+        gap: 12px;
+        justify-content: center;
+        margin-bottom: 32px;
     }
 
-    .input-row .input {
-        flex: 1;
+    .btn-lg {
+        height: 56px;
+        padding: 0 32px;
+        font-size: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    .input-row .btn {
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    .error-msg {
-        color: #ef4444;
-        font-size: 0.85rem;
-        margin-top: 0.75rem;
-    }
-
-    .success-msg {
+    .trust {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.75rem;
-        padding: 1.25rem 2rem;
-        background: rgba(34, 197, 94, 0.08);
-        border: 1px solid rgba(34, 197, 94, 0.2);
-        border-radius: 10px;
+        gap: 8px;
+        color: var(--gray-400);
+        font-size: 0.9rem;
     }
 
-    .success-icon {
-        font-size: 1.25rem;
-        color: #22c55e;
-        font-weight: 700;
+    /* Features */
+    .features {
+        padding: 100px 0;
+        background: rgba(255, 255, 255, 0.01);
     }
 
-    .success-msg p {
-        color: var(--gray-100);
-        font-size: 1rem;
-    }
-
-    .features,
-    .pricing {
-        padding: 80px 0;
-    }
-
-    .features h2,
-    .pricing h2 {
+    .features h2 {
         font-size: 1rem;
         font-weight: 500;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--gray-500);
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
+        text-align: center;
     }
 
-    .feature-list {
-        list-style: none;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem 2.5rem;
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        max-width: 1000px;
+        margin: 0 auto;
     }
 
-    .feature-list li {
+    .feature-item {
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+    }
+
+    .feature-icon {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+        display: block;
+    }
+
+    .feature-item h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .feature-item p {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        line-height: 1.5;
+    }
+
+    /* Pricing */
+    .pricing {
+        padding: 100px 0;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .overline {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }
+
+    .section-header h2 {
+        font-size: 2.5rem;
+        margin-top: 12px;
+        letter-spacing: -0.02em;
+    }
+
+    .section-sub {
         font-size: 1.1rem;
-        color: var(--gray-100);
+        color: var(--gray-400);
+        margin-top: 8px;
     }
 
     .pricing-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        max-width: 600px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        max-width: 1100px;
+        margin: 0 auto;
     }
 
     .pricing-card {
+        padding: 32px 24px;
         text-align: center;
+        position: relative;
+        transition: transform 0.2s var(--ease);
     }
 
-    .pricing-card h3 {
-        font-size: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--gray-300);
-        margin-bottom: 0.5rem;
-    }
-
-    .price {
-        font-family: "Outfit", sans-serif;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-
-    .pricing-card .btn {
-        margin-top: 1.5rem;
-        width: 100%;
+    .pricing-card:hover {
+        transform: translateY(-4px);
     }
 
     .pricing-card.featured {
         border-color: var(--accent);
-        background: rgba(212, 168, 83, 0.05);
+        background: rgba(212, 168, 83, 0.04);
     }
 
-    .btn-disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        pointer-events: none;
+    .popular-badge {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--accent);
+        color: var(--bg);
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .plan-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--gray-400);
+    }
+
+    .plan-credits {
+        margin: 16px 0 8px;
+    }
+
+    .credits {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .credits-label {
+        font-size: 0.85rem;
+        color: var(--gray-500);
+        margin-left: 6px;
+    }
+
+    .plan-price {
+        margin-bottom: 20px;
+    }
+
+    .price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: block;
+    }
+
+    .per-app {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+    }
+
+    .plan-features {
+        list-style: none;
+        text-align: left;
+        margin-bottom: 24px;
+    }
+
+    .plan-features li {
+        font-size: 0.85rem;
+        color: var(--gray-300);
+        padding: 6px 0;
+    }
+
+    .pricing-card .btn {
+        width: 100%;
+    }
+
+    /* How it works */
+    .how-it-works {
+        padding: 100px 0;
+        background: rgba(255, 255, 255, 0.01);
+    }
+
+    .how-it-works h2 {
+        font-size: 1rem;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+
+    .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 40px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .step {
+        text-align: center;
+    }
+
+    .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: var(--bg);
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        border-radius: 50%;
+        margin-bottom: 16px;
+    }
+
+    .step h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+
+    .step p {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        line-height: 1.5;
+    }
+
+    /* Final CTA */
+    .final-cta {
+        padding: 100px 0;
+    }
+
+    .final-cta h2 {
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+
+    .final-cta p {
+        color: var(--gray-400);
+        margin-bottom: 32px;
     }
 
     footer {
@@ -262,9 +486,18 @@
         border-top: 1px solid rgba(255, 255, 255, 0.04);
     }
 
-    @media (max-width: 500px) {
-        .input-row {
+    @media (max-width: 600px) {
+        .cta-buttons {
             flex-direction: column;
+        }
+
+        .btn-lg {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .pricing-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
