@@ -66,7 +66,7 @@
 
         <div class="score-preview" use:reveal={{ threshold: 0.3 }}>
             <ScoreCircle />
-            <p class="score-caption">Example PreFlight Score</p>
+            <p class="score-caption">Example PREFLIGHT Score</p>
         </div>
     </div>
 </section>

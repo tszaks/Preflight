@@ -1,7 +1,7 @@
 <footer class="footer">
     <div class="container footer-inner">
         <div class="footer-brand">
-            <span class="logo">PreFlight<span class="dot">.</span></span>
+            <span class="logo">PREFLIGHT<span class="dot">.</span></span>
             <p>Your pre-submission copilot.</p>
         </div>
 
@@ -25,7 +25,7 @@
     </div>
 
     <div class="container footer-bottom">
-        <span>&copy; 2026 PreFlight. All rights reserved.</span>
+        <span>&copy; 2026 PREFLIGHT. All rights reserved.</span>
     </div>
 </footer>
 
