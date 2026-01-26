@@ -26,16 +26,22 @@
     let scanResults: ScanResults | null = $state(null);
     let showScanResults = $state(false);
     let scanning = $state(false);
+    let scanProgress = $state("");
+    let applyingFiles = $state(false);
 
     function handleFolderSelect(e: Event) {
         const input = e.target as HTMLInputElement;
         if (!input.files || input.files.length === 0) return;
 
+        const fileCount = input.files.length;
         scanning = true;
+        scanProgress = `Scanning ${fileCount.toLocaleString()} files...`;
+
         // Use setTimeout to let the UI update before processing
         setTimeout(() => {
             scanResults = scanProjectFolder(input.files!);
             scanning = false;
+            scanProgress = "";
             showScanResults = true;
         }, 50);
     }
@@ -43,14 +49,19 @@
     function applyScanResults() {
         if (!scanResults) return;
 
-        if (scanResults.infoPlist) {
-            infoPlist = scanResults.infoPlist;
-        }
-        if (scanResults.privacyManifest) {
-            privacyManifest = scanResults.privacyManifest;
-        }
-
+        applyingFiles = true;
         showScanResults = false;
+
+        // Small delay to show loading state, then apply files
+        setTimeout(() => {
+            if (scanResults?.infoPlist) {
+                infoPlist = scanResults.infoPlist;
+            }
+            if (scanResults?.privacyManifest) {
+                privacyManifest = scanResults.privacyManifest;
+            }
+            applyingFiles = false;
+        }, 100);
     }
 
     function closeScanResults() {
@@ -472,6 +483,22 @@
                     >
                 </div>
             </div>
+
+            <!-- Scanning/Applying Overlay -->
+            {#if scanning || applyingFiles}
+                <div class="loading-overlay">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text">
+                            {#if scanning}
+                                {scanProgress || "Scanning project..."}
+                            {:else}
+                                Applying files...
+                            {/if}
+                        </p>
+                    </div>
+                </div>
+            {/if}
 
             <!-- Scan Results Modal -->
             {#if showScanResults && scanResults}
@@ -1070,5 +1097,42 @@
         font-size: 0.8rem;
         color: var(--gray-500);
         word-break: break-all;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 8, 10, 0.9);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+    }
+
+    .loading-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(212, 168, 83, 0.2);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+        font-size: 1rem;
+        color: var(--gray-300);
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
     }
 </style>
