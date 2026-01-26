@@ -111,19 +111,19 @@
             <h2>How Credits Work</h2>
             <div class="faq-grid">
                 <div class="faq-item">
-                    <h4>💯 Full Review</h4>
+                    <h4>Full Review</h4>
                     <p>100 credits for a complete app analysis</p>
                 </div>
                 <div class="faq-item">
-                    <h4>🔄 Re-Review</h4>
+                    <h4>Re-Review</h4>
                     <p>Only 25 credits to re-check after fixes</p>
                 </div>
                 <div class="faq-item">
-                    <h4>♾️ Never Expire</h4>
+                    <h4>Never Expire</h4>
                     <p>Use your credits whenever you need them</p>
                 </div>
                 <div class="faq-item">
-                    <h4>📊 Track Usage</h4>
+                    <h4>Track Usage</h4>
                     <p>See your balance and history anytime</p>
                 </div>
             </div>
@@ -154,12 +154,18 @@
 
     .pricing-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        grid-template-columns: repeat(4, 1fr);
         gap: 1.5rem;
         margin-bottom: 4rem;
         max-width: 1200px;
         margin-left: auto;
         margin-right: auto;
+    }
+
+    @media (max-width: 1000px) {
+        .pricing-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     .pricing-card {
@@ -264,8 +270,14 @@
 
     .faq-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(4, 1fr);
         gap: 1.5rem;
+    }
+
+    @media (max-width: 800px) {
+        .faq-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     .faq-item {
@@ -286,8 +298,11 @@
         line-height: 1.5;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 600px) {
         .pricing-grid {
+            grid-template-columns: 1fr;
+        }
+        .faq-grid {
             grid-template-columns: 1fr;
         }
     }
