@@ -5,11 +5,15 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 
     let credits = 0;
     if (user) {
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
             .from('profiles')
             .select('credits')
             .eq('id', user.id)
             .single();
+
+        if (error) {
+            console.error('Failed to fetch credits:', error);
+        }
         credits = profile?.credits ?? 0;
     }
 
