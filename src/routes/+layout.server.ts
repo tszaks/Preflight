@@ -1,11 +1,22 @@
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ locals: { safeGetSession }, cookies }) => {
+export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase }, cookies }) => {
     const { session, user } = await safeGetSession();
+
+    let credits = 0;
+    if (user) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', user.id)
+            .single();
+        credits = profile?.credits ?? 0;
+    }
 
     return {
         session,
         user,
+        credits,
         cookies: cookies.getAll(),
     };
 };

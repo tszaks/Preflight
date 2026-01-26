@@ -29,6 +29,8 @@
 		data.user?.email ? data.user.email[0].toUpperCase() : '?'
 	);
 
+	let credits = $derived(data.credits ?? 0);
+
 	let isAuthPage = $derived(
 		$page.url.pathname.startsWith('/auth')
 	);
@@ -53,6 +55,10 @@
 		{#if !isLandingPage}
 		<div class="nav-right">
 			{#if data.user}
+				<div class="credit-badge">
+					<span class="credit-amount">{credits}</span>
+					<span class="credit-label">credits</span>
+				</div>
 				<a href="/dashboard" class="nav-link" class:active={$page.url.pathname === '/dashboard'}>Dashboard</a>
 				<div class="avatar" title={data.user.email}>
 					{userInitial}
@@ -115,6 +121,28 @@
 		display: flex;
 		align-items: center;
 		gap: 20px;
+	}
+
+	.credit-badge {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		background: rgba(212, 168, 83, 0.08);
+		border: 1px solid rgba(212, 168, 83, 0.2);
+		border-radius: 6px;
+	}
+
+	.credit-amount {
+		font-family: 'Outfit', sans-serif;
+		font-size: 14px;
+		font-weight: 700;
+		color: var(--accent);
+	}
+
+	.credit-label {
+		font-size: 12px;
+		color: var(--gray-400);
 	}
 
 	.nav-link {
