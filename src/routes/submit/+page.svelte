@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { deserialize } from "$app/forms";
     import { scanProjectFolder, formatPath, type ScanResults } from "$lib/utils/project-scanner";
 
     let step = $state(1);
@@ -106,14 +107,17 @@
                 body: createForm,
             });
 
-            const createResult = await createRes.json();
-            const createData = JSON.parse(createResult.data?.[1] || '{}');
+            const createResult = deserialize(await createRes.text());
 
-            if (!createData.submissionId) {
-                throw new Error(createData.message || 'Failed to create submission');
+            if (createResult.type === 'failure') {
+                throw new Error((createResult.data as { message?: string })?.message || 'Failed to create submission');
             }
 
-            const submissionId = createData.submissionId;
+            if (createResult.type !== 'success' || !createResult.data?.submissionId) {
+                throw new Error('Failed to create submission');
+            }
+
+            const submissionId = createResult.data.submissionId as string;
 
             // Step 2: Upload files
             if (screenshots.length > 0 || privacyManifest || infoPlist) {
