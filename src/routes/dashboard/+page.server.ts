@@ -9,6 +9,16 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase 
     }
 
     try {
+        // Fetch user's credit balance
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', user.id)
+            .single();
+
+        const credits = profile?.credits ?? 0;
+
+        // Fetch submissions
         const { data: submissions, error } = await supabase
             .from('submissions')
             .select('id, app_name, review_type, status, created_at')
@@ -17,14 +27,15 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase 
 
         if (error) {
             console.error('Dashboard query failed:', error.message);
-            return { submissions: [] };
+            return { submissions: [], credits };
         }
 
         return {
             submissions: submissions ?? [],
+            credits,
         };
     } catch (err) {
         console.error('Dashboard load error:', err);
-        return { submissions: [] };
+        return { submissions: [], credits: 0 };
     }
 };
