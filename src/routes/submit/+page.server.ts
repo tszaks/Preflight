@@ -2,14 +2,34 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { WORKER_SECRET, ANTHROPIC_API_KEY } from '$env/static/private';
 
-export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
+export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
     const { user } = await safeGetSession();
     // TEMP: Skip auth for testing
     // if (!user) {
     //     throw redirect(303, '/auth/login');
     // }
 
-    return { user: user || { id: 'test-user' } };
+    const userId = user?.id || 'test-user';
+
+    // Check if re-submitting (pre-fill form with previous data)
+    const resubmitId = url.searchParams.get('resubmit');
+    let originalSubmission = null;
+
+    if (resubmitId) {
+        const { data } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('id', resubmitId)
+            .eq('user_id', userId)
+            .single();
+
+        originalSubmission = data;
+    }
+
+    return {
+        user: user || { id: 'test-user' },
+        originalSubmission,
+    };
 };
 
 export const actions: Actions = {
