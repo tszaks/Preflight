@@ -1,27 +1,11 @@
-import { createServerClient } from '@supabase/ssr';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ cookies }) => {
-    const supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
-        cookies: {
-            getAll() {
-                return cookies.getAll();
-            },
-            setAll(cookiesToSet) {
-                cookiesToSet.forEach(({ name, value, options }) => {
-                    cookies.set(name, value, { ...options, path: '/' });
-                });
-            }
-        }
-    });
-
-    const {
-        data: { session }
-    } = await supabase.auth.getSession();
+export const load: LayoutServerLoad = async ({ locals: { safeGetSession }, cookies }) => {
+    const { session, user } = await safeGetSession();
 
     return {
         session,
-        cookies: cookies.getAll()
+        user,
+        cookies: cookies.getAll(),
     };
 };

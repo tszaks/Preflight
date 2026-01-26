@@ -1,0 +1,118 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.svelte';
+import Footer from '../components/Footer.svelte';
+---
+
+<Layout>
+    <Nav client:load />
+    <main class="legal-page">
+        <div class="container">
+            <h1>Privacy Policy</h1>
+            <p class="updated">Last updated: January 24, 2026</p>
+
+            <section>
+                <h2>What We Collect</h2>
+                <p>When you use PreFlight, we collect the following information:</p>
+                <ul>
+                    <li><strong>Email address</strong> when you join our waitlist or create an account.</li>
+                    <li><strong>App submission data</strong> (metadata, screenshots, privacy manifests, Info.plist files) that you upload for review.</li>
+                    <li><strong>Payment information</strong> processed securely through Stripe. We never store your card details.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>How We Use Your Data</h2>
+                <ul>
+                    <li>To run our review checks against your submission and generate your report.</li>
+                    <li>To send you your report results and account notifications.</li>
+                    <li>To process payments for review services.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Data Retention</h2>
+                <p>Your submission data (screenshots, manifests, plists) is encrypted in transit and at rest. We retain submission data for 24 hours after your review completes, then permanently delete it. Your account information and reports are retained until you request deletion.</p>
+            </section>
+
+            <section>
+                <h2>Data Sharing</h2>
+                <p>We do not sell, rent, or share your personal data or submission content with third parties. Your app data is never used to train AI models. We use the following service providers:</p>
+                <ul>
+                    <li><strong>Supabase</strong> for database and file storage.</li>
+                    <li><strong>Stripe</strong> for payment processing.</li>
+                    <li><strong>Anthropic</strong> for AI-powered content analysis (your data is not retained by Anthropic).</li>
+                    <li><strong>Vercel</strong> for hosting.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Your Rights</h2>
+                <p>You can request deletion of your account and all associated data at any time by emailing <a href="mailto:hello@mypreflight.app">hello@mypreflight.app</a>.</p>
+            </section>
+
+            <section>
+                <h2>Contact</h2>
+                <p>Questions about this policy? Email us at <a href="mailto:hello@mypreflight.app">hello@mypreflight.app</a>.</p>
+            </section>
+        </div>
+    </main>
+    <Footer />
+</Layout>
+
+<style>
+    .legal-page {
+        padding: 140px 0 80px;
+    }
+
+    .legal-page .container {
+        max-width: 700px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        letter-spacing: -0.03em;
+        margin-bottom: 8px;
+    }
+
+    .updated {
+        color: var(--gray-500);
+        font-size: 0.875rem;
+        margin-bottom: 48px;
+    }
+
+    section {
+        margin-bottom: 40px;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+        margin-bottom: 12px;
+        color: var(--gray-100);
+    }
+
+    p, li {
+        font-size: 0.9375rem;
+        color: var(--gray-300);
+        line-height: 1.7;
+    }
+
+    ul {
+        padding-left: 20px;
+        margin-top: 8px;
+    }
+
+    li {
+        margin-bottom: 8px;
+    }
+
+    a {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    a:hover {
+        color: var(--accent-hover);
+    }
+</style>
