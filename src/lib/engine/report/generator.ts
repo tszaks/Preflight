@@ -12,12 +12,15 @@ export async function generateReport(
     submissionId: string,
     checks: CheckResult[]
 ): Promise<{ reportId: string; success: boolean; error?: string }> {
+    // Deduplicate similar issues (hard rules + soft rules can flag same thing)
+    const deduplicatedChecks = deduplicateChecks(checks);
+
     // Calculate scores
-    const scores = calculateScores(checks);
-    const counts = countBySeverity(checks);
+    const scores = calculateScores(deduplicatedChecks);
+    const counts = countBySeverity(deduplicatedChecks);
 
     // Generate summary
-    const summary = generateSummary(checks, scores.score_overall);
+    const summary = generateSummary(deduplicatedChecks, scores.score_overall);
 
     // Create report record
     const { data: report, error: reportError } = await supabase
@@ -40,7 +43,7 @@ export async function generateReport(
     }
 
     // Create report items (filter out pass results to keep it clean)
-    const items = checks
+    const items = deduplicatedChecks
         .filter(check => check.severity !== 'pass')
         .map(check => ({
             report_id: report.id,
@@ -95,4 +98,68 @@ function generateSummary(checks: CheckResult[], overallScore: number): string {
     }
 
     return `${criticals.length} critical issue(s) found that will likely cause rejection. Fix these before submitting. ${warnings.length > 0 ? `Also review ${warnings.length} warning(s).` : ''}`;
+}
+
+/**
+ * Deduplicate similar checks that may come from both hard and soft rules.
+ * Uses title similarity to identify duplicates - keeps the higher severity version.
+ */
+function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
+    const severityRank: Record<string, number> = {
+        'critical': 4,
+        'warning': 3,
+        'info': 2,
+        'pass': 1,
+    };
+
+    // Normalize title for comparison (lowercase, remove extra spaces)
+    const normalizeTitle = (title: string) => title.toLowerCase().trim().replace(/\s+/g, ' ');
+
+    // Group by similar titles
+    const groups = new Map<string, CheckResult[]>();
+
+    for (const check of checks) {
+        const normalizedTitle = normalizeTitle(check.title);
+
+        // Check for similar existing titles (contains key words)
+        let matchedKey: string | null = null;
+
+        // Keywords that indicate similar issues
+        const titleWords = normalizedTitle.split(' ').filter(w => w.length > 3);
+
+        for (const [existingKey] of groups) {
+            const existingWords = existingKey.split(' ').filter(w => w.length > 3);
+            // If 60%+ of significant words match, consider it similar
+            const matchingWords = titleWords.filter(w => existingWords.includes(w));
+            const similarity = matchingWords.length / Math.max(titleWords.length, existingWords.length);
+
+            if (similarity >= 0.6) {
+                matchedKey = existingKey;
+                break;
+            }
+        }
+
+        const key = matchedKey || normalizedTitle;
+        const existing = groups.get(key) || [];
+        existing.push(check);
+        groups.set(key, existing);
+    }
+
+    // For each group, keep the highest severity version (or merge info)
+    const result: CheckResult[] = [];
+
+    for (const [, groupChecks] of groups) {
+        if (groupChecks.length === 1) {
+            result.push(groupChecks[0]);
+        } else {
+            // Sort by severity (highest first)
+            groupChecks.sort((a, b) =>
+                (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0)
+            );
+            // Keep the highest severity version
+            result.push(groupChecks[0]);
+        }
+    }
+
+    return result;
 }

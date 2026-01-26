@@ -15,14 +15,9 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
     const results: CheckResult[] = [];
 
     if (!plistContent) {
-        results.push({
-            category: 'info_plist',
-            severity: 'info',
-            title: 'No Info.plist provided',
-            description: 'Info.plist was not uploaded. Some compliance checks cannot be performed.',
-            guideline_ref: getGuidelineRef('2.1'),
-            fix_suggestion: 'Upload your Info.plist for a more comprehensive review.',
-        });
+        // Return empty array - no plist means no checks performed
+        // The category will show as "not checked" rather than falsely scoring 100
+        // We still add it to suggestions via a separate mechanism
         return results;
     }
 
