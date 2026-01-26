@@ -299,38 +299,6 @@
                 <h2>Screenshots & Files</h2>
                 <p class="text-muted mb-4">Upload your App Store assets</p>
 
-                <!-- Project Scanner -->
-                <div class="scanner-card">
-                    <div class="scanner-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-                            <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-                            <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-                            <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="m16 16-1.5-1.5"/>
-                        </svg>
-                    </div>
-                    <div class="scanner-content">
-                        <h3>Scan Xcode Project</h3>
-                        <p class="text-muted">Auto-detect Info.plist and Privacy Manifest from your project folder</p>
-                    </div>
-                    <label class="btn btn-secondary scanner-btn">
-                        {scanning ? "Scanning..." : "Select Folder"}
-                        <input
-                            type="file"
-                            webkitdirectory
-                            onchange={handleFolderSelect}
-                            disabled={scanning}
-                            style="display: none;"
-                        />
-                    </label>
-                </div>
-
-                <div class="divider">
-                    <span>or upload manually</span>
-                </div>
-
                 <div class="form-group">
                     <label class="form-label">Screenshots (up to 10)</label>
                     <div class="file-upload">
@@ -359,70 +327,85 @@
                     {/if}
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">
-                        Privacy Manifest (PrivacyInfo.xcprivacy)
-                        <span class="tooltip-trigger" title="Required for iOS 17+. Declares which privacy-sensitive APIs your app uses. Usually at: YourApp/Resources/PrivacyInfo.xcprivacy">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 16v-4"/>
-                                <path d="M12 8h.01"/>
-                            </svg>
-                        </span>
-                    </label>
-                    <div class="file-upload" class:has-file={privacyManifest}>
-                        <input
-                            type="file"
-                            accept=".xcprivacy,.plist,.xml"
-                            onchange={handleManifest}
-                        />
-                        <p>
-                            {privacyManifest
-                                ? privacyManifest.name
-                                : "Drop file here or click to browse"}
-                        </p>
-                    </div>
-                    {#if privacyManifest}
-                        <div class="file-list">
-                            <div class="file-item file-item-success">
-                                <span>{privacyManifest.name}</span>
-                                <button class="remove-btn" onclick={() => privacyManifest = null}>×</button>
-                            </div>
+                <!-- Config Files Section -->
+                <div class="config-files-section">
+                    <div class="config-header">
+                        <div>
+                            <h3>Config Files</h3>
+                            <p class="text-muted">Info.plist and Privacy Manifest</p>
                         </div>
-                    {/if}
-                </div>
+                        <label class="btn btn-secondary btn-sm">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                                <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                                <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            {scanning ? "Scanning..." : "Scan Project"}
+                            <input
+                                type="file"
+                                webkitdirectory
+                                onchange={handleFolderSelect}
+                                disabled={scanning}
+                                style="display: none;"
+                            />
+                        </label>
+                    </div>
 
-                <div class="form-group">
-                    <label class="form-label">
-                        Info.plist
-                        <span class="tooltip-trigger" title="Your app's configuration file containing bundle ID, permissions, and settings. Usually at: YourApp/Info.plist or YourApp/Resources/Info.plist">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 16v-4"/>
-                                <path d="M12 8h.01"/>
-                            </svg>
-                        </span>
-                    </label>
-                    <div class="file-upload" class:has-file={infoPlist}>
-                        <input
-                            type="file"
-                            accept=".plist,.xml"
-                            onchange={handlePlist}
-                        />
-                        <p>
-                            {infoPlist
-                                ? infoPlist.name
-                                : "Drop file here or click to browse"}
-                        </p>
-                    </div>
-                    {#if infoPlist}
-                        <div class="file-list">
-                            <div class="file-item file-item-success">
-                                <span>{infoPlist.name}</span>
-                                <button class="remove-btn" onclick={() => infoPlist = null}>×</button>
+                    <div class="config-files-list">
+                        <!-- Info.plist -->
+                        <div class="config-file-row">
+                            <div class="config-file-info">
+                                <strong>Info.plist</strong>
+                                <span class="tooltip-trigger" title="Your app's configuration file containing bundle ID, permissions, and settings.">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 16v-4"/>
+                                        <path d="M12 8h.01"/>
+                                    </svg>
+                                </span>
                             </div>
+                            {#if infoPlist}
+                                <div class="config-file-status success">
+                                    <span>{infoPlist.name}</span>
+                                    <button class="remove-btn" onclick={() => infoPlist = null}>×</button>
+                                </div>
+                            {:else}
+                                <label class="config-file-status empty">
+                                    <span>Not added</span>
+                                    <span class="upload-link">upload</span>
+                                    <input type="file" accept=".plist,.xml" onchange={handlePlist} style="display: none;" />
+                                </label>
+                            {/if}
                         </div>
-                    {/if}
+
+                        <!-- Privacy Manifest -->
+                        <div class="config-file-row">
+                            <div class="config-file-info">
+                                <strong>Privacy Manifest</strong>
+                                <span class="tooltip-trigger" title="Required for iOS 17+. Declares which privacy-sensitive APIs your app uses.">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M12 16v-4"/>
+                                        <path d="M12 8h.01"/>
+                                    </svg>
+                                </span>
+                            </div>
+                            {#if privacyManifest}
+                                <div class="config-file-status success">
+                                    <span>{privacyManifest.name}</span>
+                                    <button class="remove-btn" onclick={() => privacyManifest = null}>×</button>
+                                </div>
+                            {:else}
+                                <label class="config-file-status empty">
+                                    <span>Not added</span>
+                                    <span class="upload-link">upload</span>
+                                    <input type="file" accept=".xcprivacy,.plist,.xml" onchange={handleManifest} style="display: none;" />
+                                </label>
+                            {/if}
+                        </div>
+                    </div>
                 </div>
 
                 <div class="step-actions">
@@ -798,72 +781,103 @@
         font-size: 0.9rem;
     }
 
-    /* Scanner Card */
-    .scanner-card {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+    /* Config Files Section */
+    .config-files-section {
+        margin-top: 2rem;
         padding: 1.25rem;
-        background: rgba(212, 168, 83, 0.05);
-        border: 1px solid rgba(212, 168, 83, 0.2);
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 10px;
-        margin-bottom: 1.5rem;
     }
 
-    .scanner-icon {
-        flex-shrink: 0;
-        width: 48px;
-        height: 48px;
+    .config-header {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        justify-content: center;
-        background: rgba(212, 168, 83, 0.1);
-        border-radius: 10px;
-        color: var(--accent);
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .scanner-content {
-        flex: 1;
-    }
-
-    .scanner-content h3 {
+    .config-header h3 {
         font-size: 1rem;
-        margin-bottom: 0.25rem;
+        margin: 0 0 0.25rem 0;
     }
 
-    .scanner-content p {
+    .config-header p {
         font-size: 0.85rem;
         margin: 0;
     }
 
-    .scanner-btn {
-        flex-shrink: 0;
+    .btn-sm {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         cursor: pointer;
     }
 
-    /* Divider */
-    .divider {
+    .config-files-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .config-file-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+    }
+
+    .config-file-info {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        margin: 1.5rem 0;
-        color: var(--gray-500);
+        gap: 0.25rem;
+    }
+
+    .config-file-info strong {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .config-file-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         font-size: 0.85rem;
     }
 
-    .divider::before,
-    .divider::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: rgba(255, 255, 255, 0.08);
+    .config-file-status.empty {
+        color: var(--gray-500);
+        cursor: pointer;
+    }
+
+    .config-file-status.success {
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+        padding: 0.375rem 0.625rem;
+        border-radius: 6px;
+    }
+
+    .upload-link {
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .config-file-status.empty:hover .upload-link {
+        color: white;
     }
 
     /* Tooltip */
     .tooltip-trigger {
         display: inline-flex;
         align-items: center;
-        margin-left: 0.5rem;
+        margin-left: 0.25rem;
         color: var(--gray-500);
         cursor: help;
         vertical-align: middle;
@@ -871,11 +885,6 @@
 
     .tooltip-trigger:hover {
         color: var(--accent);
-    }
-
-    /* File upload states */
-    .file-upload.has-file {
-        display: none;
     }
 
     .file-item-success {
