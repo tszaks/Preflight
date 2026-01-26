@@ -19,8 +19,8 @@
     let privacyManifest: File | null = $state(null);
     let infoPlist: File | null = $state(null);
 
-    // Review type
-    let reviewType = $state<"quick" | "full">("full");
+    // Pricing (single tier for now, recheck discount coming later)
+    const PRICE = 49;
 
     // Project scanner state
     let scanResults: ScanResults | null = $state(null);
@@ -100,7 +100,7 @@
             if (category) createForm.set('category', category);
             createForm.set('age_rating', ageRating);
             if (privacyUrl) createForm.set('privacy_url', privacyUrl);
-            createForm.set('review_type', reviewType);
+            createForm.set('review_type', 'full');
 
             const createRes = await fetch('/submit?/createSubmission', {
                 method: 'POST',
@@ -146,7 +146,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     submission_id: submissionId,
-                    review_type: reviewType,
+                    review_type: 'full',
                 }),
             });
 
@@ -489,54 +489,10 @@
                 </div>
             {/if}
         {:else if step === 3}
-            <!-- Step 3: Review type & checkout -->
+            <!-- Step 3: Confirm & checkout -->
             <div class="step-content">
-                <h2>Choose Review Type</h2>
-                <p class="text-muted mb-4">Select the depth of analysis</p>
-
-                <div class="review-options">
-                    <label
-                        class="review-option"
-                        class:selected={reviewType === "quick"}
-                    >
-                        <input
-                            type="radio"
-                            name="reviewType"
-                            value="quick"
-                            bind:group={reviewType}
-                        />
-                        <div class="option-content">
-                            <div class="option-header">
-                                <h3>Quick Review</h3>
-                                <span class="price">$29</span>
-                            </div>
-                            <p class="text-muted">
-                                Metadata & screenshot analysis
-                            </p>
-                        </div>
-                    </label>
-
-                    <label
-                        class="review-option"
-                        class:selected={reviewType === "full"}
-                    >
-                        <input
-                            type="radio"
-                            name="reviewType"
-                            value="full"
-                            bind:group={reviewType}
-                        />
-                        <div class="option-content">
-                            <div class="option-header">
-                                <h3>Full Review</h3>
-                                <span class="price">$49</span>
-                            </div>
-                            <p class="text-muted">
-                                + Privacy manifest deep analysis
-                            </p>
-                        </div>
-                    </label>
-                </div>
+                <h2>Confirm & Pay</h2>
+                <p class="text-muted mb-4">Review your submission details</p>
 
                 <div class="summary-card card">
                     <h3>Summary</h3>
@@ -558,8 +514,19 @@
                     </div>
                     <div class="summary-row total">
                         <span>Total</span>
-                        <span>{reviewType === "quick" ? "$29" : "$49"}</span>
+                        <span>${PRICE}</span>
                     </div>
+                </div>
+
+                <div class="whats-included card">
+                    <h3>What's Included</h3>
+                    <ul>
+                        <li>Full metadata analysis (name, description, keywords)</li>
+                        <li>Screenshot review for guideline compliance</li>
+                        <li>Privacy manifest deep analysis</li>
+                        <li>Info.plist validation</li>
+                        <li>Actionable fix recommendations</li>
+                    </ul>
                 </div>
 
                 {#if errorMsg}
