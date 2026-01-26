@@ -7,7 +7,12 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
         throw redirect(303, '/auth/login');
     }
 
-    const { data: report, error: reportError } = await supabase
+    // Try to find report by report ID first, then by submission ID
+    let report;
+    let reportError;
+
+    // First try: params.id is a report ID
+    const { data: byReportId, error: err1 } = await supabase
         .from('reports')
         .select(`
             *,
@@ -34,7 +39,42 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
         .eq('id', params.id)
         .single();
 
-    if (reportError || !report) {
+    if (byReportId) {
+        report = byReportId;
+    } else {
+        // Second try: params.id is a submission ID
+        const { data: bySubmissionId, error: err2 } = await supabase
+            .from('reports')
+            .select(`
+                *,
+                submissions!inner(
+                    id,
+                    app_name,
+                    subtitle,
+                    description,
+                    keywords,
+                    category,
+                    age_rating,
+                    privacy_url,
+                    support_url,
+                    marketing_url,
+                    review_type,
+                    created_at,
+                    completed_at,
+                    user_id,
+                    manifest_path,
+                    plist_path,
+                    screenshot_paths
+                )
+            `)
+            .eq('submission_id', params.id)
+            .single();
+
+        report = bySubmissionId;
+        reportError = err2;
+    }
+
+    if (!report) {
         throw error(404, 'Report not found');
     }
 
