@@ -76,8 +76,10 @@
     const warningItems = $derived(items.filter(i => i.severity === 'warning'));
     const infoItems = $derived(items.filter(i => i.severity === 'info'));
 
-    function scoreColor(score: number | null): string {
+    function scoreColor(score: number | null, hasCriticalIssues: boolean = false): string {
         if (score === null) return 'var(--gray-500)';
+        // Critical issues = red regardless of score
+        if (hasCriticalIssues) return '#ef4444';
         if (score >= 80) return '#22c55e';
         if (score >= 50) return '#f59e0b';
         return '#ef4444';
@@ -424,7 +426,7 @@
 
     <!-- Overall Score -->
     <section class="score-section">
-        <div class="overall-score" style="--score-color: {scoreColor(report.score_overall)}">
+        <div class="overall-score" style="--score-color: {scoreColor(report.score_overall, criticalItems.length > 0)}">
             <div class="score-circle">
                 <span class="score-number">{report.score_overall ?? '--'}</span>
             </div>
