@@ -6,43 +6,12 @@
     <div class="container">
         <div class="section-header" use:reveal>
             <span class="overline">Simple Pricing</span>
-            <h2>Pay per review. No subscription.</h2>
-            <p class="section-sub">One-time payment for each app submission review.</p>
+            <h2>One price. Complete review.</h2>
+            <p class="section-sub">No subscriptions. No hidden fees. Pay per review.</p>
         </div>
 
-        <div class="pricing-grid">
-            <div class="pricing-card" use:reveal={{ delay: 0 }}>
-                <div class="card-header">
-                    <span class="plan-name">Quick Review</span>
-                    <div class="plan-price">
-                        <span class="price">$29</span>
-                        <span class="per">per review</span>
-                    </div>
-                </div>
-                <div class="divider"></div>
-                <ul class="features">
-                    <li>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Metadata validation
-                    </li>
-                    <li>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Screenshot compliance
-                    </li>
-                    <li>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        URL reachability
-                    </li>
-                    <li>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Basic Info.plist check
-                    </li>
-                </ul>
-                <button class="btn btn-ghost" disabled>Coming Soon</button>
-            </div>
-
-            <div class="pricing-card featured" use:reveal={{ delay: 150 }}>
-                <div class="recommended-badge">Recommended</div>
+        <div class="pricing-single" use:reveal={{ delay: 150 }}>
+            <div class="pricing-card featured">
                 <div class="card-header">
                     <span class="plan-name">Full Review</span>
                     <div class="plan-price">
@@ -54,11 +23,23 @@
                 <ul class="features">
                     <li>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Everything in Quick, plus:
+                        Metadata & keyword validation
+                    </li>
+                    <li>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Screenshot compliance check
                     </li>
                     <li>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         Privacy manifest deep analysis
+                    </li>
+                    <li>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Info.plist verification
+                    </li>
+                    <li>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        URL reachability testing
                     </li>
                     <li>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -68,12 +49,10 @@
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         Detailed fix instructions
                     </li>
-                    <li>
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        Priority processing
-                    </li>
                 </ul>
-                <button class="btn btn-primary" disabled>Coming Soon</button>
+                <a href="https://preflight-production-998a.up.railway.app/auth/signup" class="btn btn-primary">Get Started</a>
+
+                <p class="recheck-note">Need a recheck after fixes? Just $19.</p>
             </div>
         </div>
     </div>
@@ -97,22 +76,21 @@
         margin-top: 8px;
     }
 
-    .pricing-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        max-width: 800px;
-        margin: 0 auto;
+    .pricing-single {
+        display: flex;
+        justify-content: center;
     }
 
     .pricing-card {
         background: var(--bg-elevated);
         border: 1px solid var(--gray-800);
         border-radius: 20px;
-        padding: 40px 32px;
+        padding: 48px 40px;
         display: flex;
         flex-direction: column;
         position: relative;
+        max-width: 420px;
+        width: 100%;
     }
 
     .pricing-card.featured {
@@ -150,21 +128,6 @@
         to { --angle: 360deg; }
     }
 
-    .recommended-badge {
-        position: absolute;
-        top: -12px;
-        right: 24px;
-        background: var(--accent);
-        color: #0a0a0a;
-        font-family: 'Outfit', sans-serif;
-        font-size: 0.75rem;
-        font-weight: 700;
-        padding: 4px 14px;
-        border-radius: var(--radius-full);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
     .plan-name {
         font-family: 'Outfit', sans-serif;
         font-size: 1rem;
@@ -178,7 +141,7 @@
 
     .price {
         font-family: 'Outfit', sans-serif;
-        font-size: 3rem;
+        font-size: 3.5rem;
         font-weight: 800;
     }
 
@@ -210,28 +173,27 @@
     .features li {
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-size: 0.9rem;
+        gap: 12px;
+        font-size: 0.95rem;
         color: var(--gray-100);
-        padding: 8px 0;
+        padding: 10px 0;
     }
 
     .pricing-card .btn {
         width: 100%;
     }
 
-    .pricing-card .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+    .recheck-note {
+        text-align: center;
+        margin-top: 16px;
+        font-size: 0.85rem;
+        color: var(--gray-500);
     }
 
     @media (max-width: 768px) {
         .section-header h2 { font-size: 2rem; }
-        .pricing-grid {
-            grid-template-columns: 1fr;
-        }
-        .pricing-card.featured {
-            order: -1;
+        .pricing-card {
+            padding: 32px 24px;
         }
     }
 </style>

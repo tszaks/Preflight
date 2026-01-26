@@ -3,12 +3,12 @@
 
     const faqs = [
         {
-            q: 'How does PreFlight work?',
+            q: 'How does PREFLIGHT work?',
             a: 'Upload your app\'s metadata (or .ipa file for Full Review). Our AI simulates Apple\'s review guidelines against your submission, checking 50+ potential rejection reasons. You get a detailed report in under 5 minutes.',
         },
         {
             q: 'Is this guaranteed to prevent rejection?',
-            a: 'No tool can guarantee approval - Apple\'s review is ultimately human. But PreFlight catches the most common rejection reasons (metadata issues, missing privacy declarations, screenshot violations) that account for ~70% of first-time rejections.',
+            a: 'No tool can guarantee approval - Apple\'s review is ultimately human. But PREFLIGHT catches the most common rejection reasons (metadata issues, missing privacy declarations, screenshot violations) that account for ~70% of first-time rejections.',
         },
         {
             q: 'What\'s the difference between Quick and Full?',
@@ -20,10 +20,10 @@
         },
         {
             q: 'Can I use this for app updates too?',
-            a: 'Absolutely. Many developers run PreFlight before every update, not just initial submissions. The guidelines change frequently, and PreFlight stays current.',
+            a: 'Absolutely. Many developers run PREFLIGHT before every update, not just initial submissions. The guidelines change frequently, and PREFLIGHT stays current.',
         },
         {
-            q: 'When does PreFlight launch?',
+            q: 'When does PREFLIGHT launch?',
             a: 'We\'re currently in private beta. Join the waitlist to get early access and a launch discount.',
         },
     ];

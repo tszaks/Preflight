@@ -14,10 +14,10 @@
 <nav class="nav" class:scrolled>
     <div class="nav-inner">
         <a href="/" class="logo">
-            PreFlight<span class="dot">.</span>
+            PREFLIGHT<span class="dot">.</span>
         </a>
         <div class="nav-actions">
-            <a href="/auth/login" class="nav-link">Log in</a>
+            <a href="https://preflight-production-998a.up.railway.app/auth/login" class="nav-link">Log in</a>
             <a href="#waitlist" class="btn btn-primary btn-sm">Join Waitlist</a>
         </div>
     </div>

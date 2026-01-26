@@ -43,7 +43,7 @@
         </h1>
 
         <p class="subhead" style="--delay: 600ms">
-            PreFlight runs 50+ of Apple's review checks on your submission
+            PREFLIGHT runs 50+ of Apple's review checks on your submission
             before you hit Send. Fix issues in minutes, not weeks.
         </p>
 

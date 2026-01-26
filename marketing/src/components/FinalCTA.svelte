@@ -19,7 +19,7 @@
     <div class="cta-glow"></div>
     <div class="container cta-content">
         <h2>Ready to stop guessing?</h2>
-        <p>Join the waitlist. Be first to know when PreFlight launches.</p>
+        <p>Join the waitlist. Be first to know when PREFLIGHT launches.</p>
 
         <div class="form-wrapper">
             {#if submitted}
