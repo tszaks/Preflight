@@ -71,10 +71,17 @@ export const POST: RequestHandler = async ({ request }) => {
     };
 
     // Run analysis
+    console.log('[Worker] Starting analysis. ANTHROPIC_API_KEY present:', !!ANTHROPIC_API_KEY);
+    console.log('[Worker] Submission ID:', submission.id);
+    console.log('[Worker] Review type:', submission.review_type);
+    console.log('[Worker] Has manifest content:', !!files.manifestContent);
+
     const result = await runAnalysis(supabase, submission.id, input, {
         anthropicApiKey: ANTHROPIC_API_KEY,
         skipSoftRules: submission.review_type === 'quick' && !files.manifestContent,
     });
+
+    console.log('[Worker] Analysis result:', result);
 
     return json({
         success: result.success,

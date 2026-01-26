@@ -32,7 +32,10 @@ export async function runAnalysis(
     await updateJobStatus(supabase, submissionId, 'running');
 
     try {
+        console.log('[Analysis] Starting analysis for submission:', submissionId);
+
         // === Phase 1: Hard Rules ===
+        console.log('[Analysis] Running hard rules...');
         const hardInput: HardRulesInput = {
             app_name: input.app_name,
             subtitle: input.subtitle,
@@ -55,6 +58,7 @@ export async function runAnalysis(
         });
 
         allChecks.push(...hardResult.checks);
+        console.log('[Analysis] Hard rules complete. Found', hardResult.checks.length, 'checks');
 
         // Mark hard rules done
         await supabase
@@ -64,18 +68,28 @@ export async function runAnalysis(
 
         // === Phase 2: Soft Rules ===
         if (!options.skipSoftRules) {
+            console.log('[Analysis] Running soft rules (Claude API)...');
+            if (!options.anthropicApiKey) {
+                console.error('[Analysis] ANTHROPIC_API_KEY is missing!');
+                throw new Error('ANTHROPIC_API_KEY is not configured');
+            }
             const softResult = await runSoftRules(input, options.anthropicApiKey);
             allChecks.push(...softResult.checks);
+            console.log('[Analysis] Soft rules complete. Found', softResult.checks.length, 'checks');
 
             // Mark soft rules done
             await supabase
                 .from('analysis_jobs')
                 .update({ soft_rules_completed: true })
                 .eq('submission_id', submissionId);
+        } else {
+            console.log('[Analysis] Skipping soft rules');
         }
 
         // === Phase 3: Generate Report ===
+        console.log('[Analysis] Generating report with', allChecks.length, 'total checks...');
         const reportResult = await generateReport(supabase, submissionId, allChecks);
+        console.log('[Analysis] Report generation result:', reportResult);
 
         if (reportResult.success) {
             // Mark job complete
@@ -91,7 +105,9 @@ export async function runAnalysis(
 
         return reportResult;
     } catch (error) {
+        console.error('[Analysis] Error caught:', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[Analysis] Error message:', message);
 
         // Mark job failed
         await supabase
