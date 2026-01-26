@@ -677,7 +677,7 @@
                 </section>
             {:else if activeTab === 'checklist'}
                 <section class="checklist-section">
-                    <LaunchChecklist items={LAUNCH_CHECKLIST} appCategory={submission.category} />
+                    <LaunchChecklist items={LAUNCH_CHECKLIST} />
                 </section>
             {/if}
         </div>

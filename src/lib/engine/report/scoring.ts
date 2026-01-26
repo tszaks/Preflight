@@ -10,6 +10,7 @@ import type { CheckResult, ScoreResult, CheckCategory } from '../types';
  * - Info: -0 points (suggestions only)
  * - Pass: +0 (no penalty)
  * - Minimum score: 0
+ * - Categories with NO data (only "not provided" checks) return null
  *
  * Overall score is a weighted average of category scores.
  */
@@ -17,9 +18,9 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
     const categoryChecks = groupByCategory(checks);
 
     const score_metadata = scoreCategory(categoryChecks.metadata || []);
-    const score_screenshots = scoreCategory(categoryChecks.screenshots || []);
-    const score_privacy = scoreCategory(categoryChecks.privacy_manifest || []);
-    const score_plist = scoreCategory(categoryChecks.info_plist || []);
+    const score_screenshots = scoreCategoryOrNull(categoryChecks.screenshots || [], 'No screenshots provided');
+    const score_privacy = scoreCategoryOrNull(categoryChecks.privacy_manifest || [], 'No privacy manifest provided');
+    const score_plist = scoreCategoryOrNull(categoryChecks.info_plist || [], 'No Info.plist provided');
     const score_urls = scoreCategory(categoryChecks.urls || []);
     const score_content = scoreCategory([
         ...(categoryChecks.content_policy || []),
@@ -74,6 +75,19 @@ function scoreCategory(checks: CheckResult[]): number {
     }
 
     return Math.max(0, Math.min(100, score));
+}
+
+/**
+ * Returns null if the only check is "not provided" - meaning we can't score this category.
+ * Otherwise scores normally.
+ */
+function scoreCategoryOrNull(checks: CheckResult[], notProvidedTitle: string): number | null {
+    // If empty or only contains "not provided" check, return null (not checked)
+    if (checks.length === 0) return null;
+    if (checks.length === 1 && checks[0].title === notProvidedTitle) return null;
+
+    // Otherwise score normally
+    return scoreCategory(checks);
 }
 
 function groupByCategory(checks: CheckResult[]): Partial<Record<CheckCategory, CheckResult[]>> {
