@@ -255,7 +255,8 @@
 
 <style>
     .launch-checklist {
-        background: #f8fafc;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 16px;
         padding: 24px;
     }
@@ -273,13 +274,13 @@
     .section-header h3 {
         font-size: 18px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0;
     }
 
     .header-subtitle {
         font-size: 13px;
-        color: #64748b;
+        color: var(--gray-400);
         margin: 4px 0 0 0;
     }
 
@@ -311,13 +312,13 @@
     .phase-header h4 {
         font-size: 16px;
         font-weight: 600;
-        color: #1e293b;
+        color: var(--fg);
         margin: 0;
     }
 
     .phase-count {
         font-size: 12px;
-        color: #64748b;
+        color: var(--gray-400);
         margin: 2px 0 0 0;
     }
 
@@ -329,10 +330,10 @@
     }
 
     .checklist-item {
-        background: white;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .item-header {
@@ -348,7 +349,7 @@
     }
 
     .item-header:hover {
-        background: #f8fafc;
+        background: rgba(255, 255, 255, 0.05);
     }
 
     .item-icon {
@@ -360,15 +361,15 @@
         flex: 1;
         font-size: 14px;
         font-weight: 500;
-        color: #1e293b;
+        color: var(--fg);
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
     .required-badge {
-        background: #fee2e2;
-        color: #dc2626;
+        background: rgba(220, 38, 38, 0.2);
+        color: #f87171;
         font-size: 10px;
         font-weight: 500;
         padding: 2px 6px;
@@ -377,25 +378,25 @@
 
     .time-estimate {
         font-size: 12px;
-        color: #94a3b8;
+        color: var(--gray-500);
         flex-shrink: 0;
     }
 
     .expand-icon {
         font-size: 18px;
-        color: #94a3b8;
+        color: var(--gray-500);
         flex-shrink: 0;
     }
 
     /* Item Content */
     .item-content {
         padding: 0 16px 16px 16px;
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .item-description {
         font-size: 14px;
-        color: #475569;
+        color: var(--gray-300);
         line-height: 1.6;
         margin: 12px 0;
     }
@@ -407,7 +408,7 @@
     .content-section h5 {
         font-size: 12px;
         font-weight: 600;
-        color: #64748b;
+        color: var(--gray-400);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin: 0 0 8px 0;
@@ -415,45 +416,47 @@
 
     .content-section p {
         font-size: 13px;
-        color: #475569;
+        color: var(--gray-300);
         line-height: 1.6;
         margin: 0;
     }
 
     .content-section.why {
-        background: #fef3c7;
+        background: rgba(212, 168, 83, 0.1);
+        border: 1px solid rgba(212, 168, 83, 0.2);
         border-radius: 6px;
         padding: 12px;
     }
 
     .content-section.why h5 {
-        color: #92400e;
+        color: var(--accent);
     }
 
     .content-section.why p {
-        color: #78350f;
+        color: #d4a853;
     }
 
     .content-section.how {
-        background: #dcfce7;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.2);
         border-radius: 6px;
         padding: 12px;
     }
 
     .content-section.how h5 {
-        color: #166534;
+        color: #4ade80;
     }
 
     .content-section.how p,
     .how-content {
-        color: #166534;
+        color: #86efac;
         white-space: pre-wrap;
     }
 
     .helpful-link {
         display: inline-block;
         font-size: 13px;
-        color: #3b82f6;
+        color: var(--accent);
         text-decoration: none;
         font-weight: 500;
     }
@@ -464,8 +467,8 @@
 
     /* Education Footer */
     .education-footer {
-        background: #eff6ff;
-        border: 1px solid #bfdbfe;
+        background: rgba(212, 168, 83, 0.1);
+        border: 1px solid rgba(212, 168, 83, 0.3);
         border-radius: 8px;
         padding: 16px;
         margin-top: 8px;
@@ -483,12 +486,12 @@
 
     .education-footer strong {
         font-size: 13px;
-        color: #1e3a8a;
+        color: var(--accent);
     }
 
     .education-footer p {
         font-size: 13px;
-        color: #1e40af;
+        color: var(--gray-300);
         line-height: 1.5;
         margin: 4px 0 0 0;
     }
