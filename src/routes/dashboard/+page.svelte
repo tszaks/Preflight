@@ -26,11 +26,6 @@
     <header class="dash-header">
         <h1>Your Reviews</h1>
         <div class="header-actions">
-            <div class="credit-badge">
-                <span class="credit-icon">💳</span>
-                <span class="credit-amount">{credits}</span>
-                <span class="credit-label">credits</span>
-            </div>
             <a href="/pricing" class="btn btn-secondary btn-sm">Buy Credits</a>
             <a href="/submit" class="btn btn-primary">
                 <span class="plus">+</span> New Review
