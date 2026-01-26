@@ -316,10 +316,16 @@
 
     .pricing-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 24px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
         max-width: 1100px;
         margin: 0 auto;
+    }
+
+    @media (max-width: 900px) {
+        .pricing-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     .pricing-card {
@@ -497,6 +503,10 @@
         }
 
         .pricing-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .feature-grid {
             grid-template-columns: 1fr;
         }
     }
