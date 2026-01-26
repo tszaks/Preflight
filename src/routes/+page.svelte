@@ -46,32 +46,26 @@
             <h2>What We Check</h2>
             <div class="feature-grid">
                 <div class="feature-item">
-                    <span class="feature-icon">📝</span>
                     <h3>Metadata</h3>
                     <p>App name, subtitle, keywords, description validation</p>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">📱</span>
                     <h3>Screenshots</h3>
                     <p>Size, format, count, and content compliance</p>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">🔒</span>
                     <h3>Privacy Manifest</h3>
                     <p>API declarations, reason codes, tracking domains</p>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">⚙️</span>
                     <h3>Info.plist</h3>
                     <p>Required keys, bundle ID, version format</p>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">🔗</span>
                     <h3>URLs</h3>
                     <p>Privacy policy, support URL reachability</p>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">🛡️</span>
                     <h3>Content Policy</h3>
                     <p>Age rating, guideline compliance, claims</p>
                 </div>
@@ -103,9 +97,9 @@
                             <span class="per-app">{plan.perApp}</span>
                         </div>
                         <ul class="plan-features">
-                            <li>✓ {plan.apps} full reviews</li>
-                            <li>✓ Credits never expire</li>
-                            <li>✓ Use anytime</li>
+                            <li>{plan.apps} full reviews</li>
+                            <li>Credits never expire</li>
+                            <li>Use anytime</li>
                         </ul>
                         <a href="/pricing" class="btn {plan.popular ? 'btn-primary' : 'btn-secondary'}">
                             Buy {plan.name}
@@ -264,12 +258,6 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
-    }
-
-    .feature-icon {
-        font-size: 1.5rem;
-        margin-bottom: 12px;
-        display: block;
     }
 
     .feature-item h3 {
