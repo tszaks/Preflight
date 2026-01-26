@@ -80,7 +80,7 @@
 		left: 0;
 		right: 0;
 		z-index: 100;
-		height: 100px;
+		height: 64px;
 		display: flex;
 		align-items: center;
 		background: rgba(8, 8, 10, 0.92);
@@ -107,7 +107,7 @@
 	}
 
 	.logo-img {
-		height: 84px;
+		height: 42px;
 		width: auto;
 	}
 
@@ -170,7 +170,7 @@
 	}
 
 	.app-shell {
-		padding-top: 100px;
+		padding-top: 64px;
 		min-height: 100vh;
 	}
 
