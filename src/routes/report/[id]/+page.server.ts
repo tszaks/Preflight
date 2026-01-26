@@ -15,10 +15,20 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
                 id,
                 app_name,
                 subtitle,
+                description,
+                keywords,
+                category,
+                age_rating,
+                privacy_url,
+                support_url,
+                marketing_url,
                 review_type,
                 created_at,
                 completed_at,
-                user_id
+                user_id,
+                manifest_path,
+                plist_path,
+                screenshot_paths
             )
         `)
         .eq('id', params.id)
