@@ -617,7 +617,7 @@
                             onclick={testSubmit}
                             disabled={loading}
                         >
-                            {loading ? "Analyzing..." : "🧪 Test Mode (Skip Payment)"}
+                            {loading ? "Analyzing..." : "Test Mode (Skip Payment)"}
                         </button>
                         <button
                             class="btn btn-primary"

@@ -30,17 +30,17 @@
         }
     }
 
+    // SVG icons for severity levels - replaces emoji for professional appearance
+    const severityIcons: Record<string, string> = {
+        critical: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+        important: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+        helpful: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>`,
+    };
+
+    const defaultSeverityIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+
     function getSeverityIcon(severity: string) {
-        switch (severity) {
-            case 'critical':
-                return '🚨';
-            case 'important':
-                return '⚠️';
-            case 'helpful':
-                return '💡';
-            default:
-                return '📌';
-        }
+        return severityIcons[severity] || defaultSeverityIcon;
     }
 
     function getSeverityLabel(severity: string) {
@@ -59,7 +59,11 @@
 
 <div class="pro-tips-section">
     <div class="section-header">
-        <div class="header-icon">💎</div>
+        <div class="header-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+        </div>
         <div>
             <h3>Insider Tips {#if appCategory}for {appCategory} Apps{/if}</h3>
             <p class="header-subtitle">
@@ -77,7 +81,11 @@
         {#if categorizedTips.critical.length > 0}
             <div class="tips-category critical">
                 <div class="category-header">
-                    <span class="category-icon">🚨</span>
+                    <span class="category-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </span>
                     <h4>Must Know Before You Submit</h4>
                     <span class="tip-count">{categorizedTips.critical.length}</span>
                 </div>
@@ -105,10 +113,16 @@
                                     {#if tip.cost_impact || tip.time_impact}
                                         <div class="impacts">
                                             {#if tip.cost_impact}
-                                                <span class="impact cost">💰 {tip.cost_impact}</span>
+                                                <span class="impact cost">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                                    {tip.cost_impact}
+                                                </span>
                                             {/if}
                                             {#if tip.time_impact}
-                                                <span class="impact time">⏱️ {tip.time_impact}</span>
+                                                <span class="impact time">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                                    {tip.time_impact}
+                                                </span>
                                             {/if}
                                         </div>
                                     {/if}
@@ -130,7 +144,11 @@
         {#if categorizedTips.important.length > 0}
             <div class="tips-category important">
                 <div class="category-header">
-                    <span class="category-icon">⚠️</span>
+                    <span class="category-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </span>
                     <h4>Important to Know</h4>
                     <span class="tip-count">{categorizedTips.important.length}</span>
                 </div>
@@ -172,7 +190,11 @@
         {#if categorizedTips.helpful.length > 0}
             <div class="tips-category helpful">
                 <div class="category-header">
-                    <span class="category-icon">💡</span>
+                    <span class="category-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+                        </svg>
+                    </span>
                     <h4>Pro Tips</h4>
                     <span class="tip-count">{categorizedTips.helpful.length}</span>
                 </div>
@@ -199,7 +221,10 @@
 
                                     {#if tip.cost_impact}
                                         <div class="impacts">
-                                            <span class="impact cost">💰 {tip.cost_impact}</span>
+                                            <span class="impact cost">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                                    {tip.cost_impact}
+                                                </span>
                                         </div>
                                     {/if}
 
@@ -219,7 +244,11 @@
 
     <!-- Educational Footer -->
     <div class="education-footer">
-        <div class="footer-icon">📚</div>
+        <div class="footer-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+        </div>
         <p>
             <strong>These tips are based on real developer experiences.</strong>
             We've compiled gotchas from Apple Developer Forums, Reddit r/iOSProgramming,

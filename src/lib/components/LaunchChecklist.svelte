@@ -58,28 +58,36 @@
         }
     }
 
+    // SVG icons for each category - replaces emoji for professional appearance
+    const categoryIcons: Record<string, string> = {
+        'account_setup': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+        'app_preparation': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>`,
+        'metadata': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+        'screenshots_media': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+        'legal_privacy': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+        'testing': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
+        'submission': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+        'review_process': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+        'communication': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+        'launch_marketing': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
+        'optimization': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+        'maintenance': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+    };
+
+    const defaultIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`;
+
     function getCategoryIcon(category: string) {
-        const icons: Record<string, string> = {
-            'account_setup': '🔐',
-            'app_preparation': '📱',
-            'metadata': '📝',
-            'screenshots_media': '🖼️',
-            'legal_privacy': '⚖️',
-            'testing': '🧪',
-            'submission': '📤',
-            'review_process': '⏳',
-            'communication': '💬',
-            'launch_marketing': '🚀',
-            'optimization': '📊',
-            'maintenance': '🔧',
-        };
-        return icons[category] || '📋';
+        return categoryIcons[category] || defaultIcon;
     }
 </script>
 
 <div class="launch-checklist">
     <div class="section-header">
-        <div class="header-icon">🚀</div>
+        <div class="header-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+        </div>
         <div>
             <h3>Your Launch Checklist</h3>
             <p class="header-subtitle">
@@ -102,7 +110,7 @@
             {#each preSubmission as item}
                 <div class="checklist-item" class:expanded={expandedItems.has(item.id)}>
                     <button class="item-header" onclick={() => toggleItem(item.id)}>
-                        <span class="item-icon">{getCategoryIcon(item.category)}</span>
+                        <span class="item-icon">{@html getCategoryIcon(item.category)}</span>
                         <span class="item-title">
                             {item.title}
                             {#if item.is_required}
@@ -131,7 +139,7 @@
 
                             {#if item.helpful_link}
                                 <a href={item.helpful_link} target="_blank" rel="noopener" class="helpful-link">
-                                    📖 Read Apple's Guide →
+                                    Read Apple's Guide →
                                 </a>
                             {/if}
                         </div>
@@ -155,7 +163,7 @@
             {#each duringReview as item}
                 <div class="checklist-item" class:expanded={expandedItems.has(item.id)}>
                     <button class="item-header" onclick={() => toggleItem(item.id)}>
-                        <span class="item-icon">{getCategoryIcon(item.category)}</span>
+                        <span class="item-icon">{@html getCategoryIcon(item.category)}</span>
                         <span class="item-title">{item.title}</span>
                         {#if item.estimated_time}
                             <span class="time-estimate">{item.estimated_time}</span>
@@ -179,7 +187,7 @@
 
                             {#if item.helpful_link}
                                 <a href={item.helpful_link} target="_blank" rel="noopener" class="helpful-link">
-                                    📖 Learn More →
+                                    Learn More →
                                 </a>
                             {/if}
                         </div>
@@ -203,7 +211,7 @@
             {#each postApproval as item}
                 <div class="checklist-item" class:expanded={expandedItems.has(item.id)}>
                     <button class="item-header" onclick={() => toggleItem(item.id)}>
-                        <span class="item-icon">{getCategoryIcon(item.category)}</span>
+                        <span class="item-icon">{@html getCategoryIcon(item.category)}</span>
                         <span class="item-title">{item.title}</span>
                         {#if item.estimated_time}
                             <span class="time-estimate">{item.estimated_time}</span>
@@ -227,7 +235,7 @@
 
                             {#if item.helpful_link}
                                 <a href={item.helpful_link} target="_blank" rel="noopener" class="helpful-link">
-                                    📖 Read More →
+                                    Read More →
                                 </a>
                             {/if}
                         </div>
@@ -240,7 +248,11 @@
     <!-- Educational Footer -->
     <div class="education-footer">
         <div class="footer-content">
-            <span class="footer-icon">💡</span>
+            <span class="footer-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+                </svg>
+            </span>
             <div>
                 <strong>Tip: Don't rush!</strong>
                 <p>
