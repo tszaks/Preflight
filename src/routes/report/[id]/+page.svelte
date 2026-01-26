@@ -1,8 +1,6 @@
 <script lang="ts">
     import AppStoreListingPreview from '$lib/components/AppStoreListingPreview.svelte';
-    import ProTipsSection from '$lib/components/ProTipsSection.svelte';
     import LaunchChecklist from '$lib/components/LaunchChecklist.svelte';
-    import { getApplicableProTips } from '$lib/engine/knowledge-base/pro-tips';
     import { LAUNCH_CHECKLIST } from '$lib/engine/knowledge-base/launch-checklist';
     import {
         REVIEW_TIMES_BY_CATEGORY,
@@ -19,16 +17,8 @@
     let copySuccess = $state(false);
 
     // Tab navigation for premium features
-    type PremiumTab = 'timeline' | 'preview' | 'tips' | 'checklist';
+    type PremiumTab = 'timeline' | 'preview' | 'checklist';
     let activeTab = $state<PremiumTab>('timeline');
-
-    // Premium feature data - get applicable pro tips based on category and description
-    let proTips = $derived(getApplicableProTips(
-        submission.category || '',
-        submission.description || '',
-        undefined, // manifest content
-        true // include general tips
-    ));
 
     // Get review time estimate
     let categoryId = $derived.by(() => {
@@ -559,6 +549,60 @@
         </section>
     {/if}
 
+    <!-- What's Next - Simple, encouraging next steps -->
+    <section class="whats-next-section">
+        <h2>What's Next</h2>
+        <div class="next-steps">
+            {#if criticalItems.length > 0}
+                <div class="next-step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <strong>Fix the {criticalItems.length} critical issue{criticalItems.length > 1 ? 's' : ''} above</strong>
+                        <p>These will cause Apple to reject your app.</p>
+                    </div>
+                </div>
+                <div class="next-step">
+                    <span class="step-number">2</span>
+                    <div class="step-content">
+                        <strong>Re-run this review</strong>
+                        <p>Make sure everything passes before submitting.</p>
+                    </div>
+                </div>
+            {:else if warningItems.length > 0}
+                <div class="next-step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <strong>Consider fixing the {warningItems.length} warning{warningItems.length > 1 ? 's' : ''}</strong>
+                        <p>Not required, but reduces rejection risk.</p>
+                    </div>
+                </div>
+                <div class="next-step">
+                    <span class="step-number">2</span>
+                    <div class="step-content">
+                        <strong>Submit to App Store Connect</strong>
+                        <p>You're ready to go.</p>
+                    </div>
+                </div>
+            {:else}
+                <div class="next-step">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <strong>Submit to App Store Connect</strong>
+                        <p>Your app looks ready.</p>
+                    </div>
+                </div>
+            {/if}
+            <div class="next-step">
+                <span class="step-number">{criticalItems.length > 0 ? '3' : (warningItems.length > 0 ? '3' : '2')}</span>
+                <div class="step-content">
+                    <strong>Wait for Apple's review</strong>
+                    <p>Usually 24-48 hours. Check the Timeline tab below for details.</p>
+                </div>
+            </div>
+        </div>
+        <p class="encouragement">You've got this.</p>
+    </section>
+
     <!-- Premium Features Section with Tabs -->
     <div class="premium-features">
         <div class="premium-header">
@@ -588,19 +632,6 @@
                     <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
                 </svg>
                 Preview
-            </button>
-            <button
-                class="tab-btn"
-                class:active={activeTab === 'tips'}
-                onclick={() => activeTab = 'tips'}
-            >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-                Pro Tips
-                {#if proTips.length > 0}
-                    <span class="tab-count">{proTips.length}</span>
-                {/if}
             </button>
             <button
                 class="tab-btn"
@@ -664,16 +695,6 @@
                         ageRating={submission.age_rating}
                         developerName="Your Developer Name"
                     />
-                </section>
-            {:else if activeTab === 'tips'}
-                <section class="tips-section">
-                    {#if proTips.length > 0}
-                        <ProTipsSection tips={proTips} appCategory={submission.category} />
-                    {:else}
-                        <div class="empty-state">
-                            <p>No specific tips for your app configuration. You're in good shape!</p>
-                        </div>
-                    {/if}
                 </section>
             {:else if activeTab === 'checklist'}
                 <section class="checklist-section">
@@ -1387,9 +1408,71 @@
         line-height: 1.5;
     }
 
+    /* What's Next Section */
+    .whats-next-section {
+        margin-bottom: 2.5rem;
+        padding: 1.5rem;
+        background: rgba(34, 197, 94, 0.05);
+        border: 1px solid rgba(34, 197, 94, 0.15);
+        border-radius: 12px;
+    }
+
+    .whats-next-section h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--fg);
+        margin-bottom: 1rem;
+    }
+
+    .next-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .next-step {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .step-number {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .step-content strong {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--fg);
+        margin-bottom: 0.15rem;
+    }
+
+    .step-content p {
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        margin: 0;
+    }
+
+    .encouragement {
+        margin-top: 1rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #4ade80;
+        text-align: center;
+    }
+
     /* Preview Section */
     .preview-section,
-    .tips-section,
     .checklist-section,
     .quick-tips-section {
         margin-bottom: 2rem;
