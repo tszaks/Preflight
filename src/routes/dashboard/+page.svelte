@@ -10,6 +10,7 @@
     };
 
     let submissions: Submission[] = $derived(data.submissions ?? []);
+    let credits: number = $derived(data.credits ?? 0);
 
     function formatDate(dateStr: string): string {
         const date = new Date(dateStr);
@@ -24,9 +25,17 @@
 <div class="dashboard container">
     <header class="dash-header">
         <h1>Your Reviews</h1>
-        <a href="/submit" class="btn btn-primary">
-            <span class="plus">+</span> New Review
-        </a>
+        <div class="header-actions">
+            <div class="credit-badge">
+                <span class="credit-icon">💳</span>
+                <span class="credit-amount">{credits}</span>
+                <span class="credit-label">credits</span>
+            </div>
+            <a href="/pricing" class="btn btn-secondary btn-sm">Buy Credits</a>
+            <a href="/submit" class="btn btn-primary">
+                <span class="plus">+</span> New Review
+            </a>
+        </div>
     </header>
 
     {#if submissions.length === 0}
@@ -100,11 +109,49 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 32px;
+        gap: 1.5rem;
     }
 
     .dash-header h1 {
         font-size: 28px;
         letter-spacing: -0.03em;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .credit-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(212, 168, 83, 0.08);
+        border: 1px solid rgba(212, 168, 83, 0.2);
+        border-radius: 8px;
+    }
+
+    .credit-icon {
+        font-size: 1.25rem;
+    }
+
+    .credit-amount {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .credit-label {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+    }
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
     }
 
     .plus {
@@ -292,11 +339,30 @@
     }
 
     /* === Responsive === */
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
         .dash-header {
             flex-direction: column;
             align-items: stretch;
             gap: 16px;
+        }
+
+        .header-actions {
+            flex-wrap: wrap;
+        }
+
+        .credit-badge {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .dash-header .btn {
+            flex: 1;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .header-actions {
+            flex-direction: column;
         }
 
         .dash-header .btn {

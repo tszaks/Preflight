@@ -138,7 +138,30 @@ export const actions: Actions = {
 
         const formData = await request.formData();
 
-        // Step 1: Create submission
+        // Check if this is a re-review
+        const isRereviewing = formData.get('is_rereviewing') === 'true';
+        const originalSubmissionId = formData.get('original_submission_id')?.toString() || null;
+
+        // Credit cost: 100 for full review, 25 for re-review
+        const creditCost = isRereviewing ? 25 : 100;
+
+        // Step 1: Check user has enough credits
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', userId)
+            .single();
+
+        const userCredits = profile?.credits ?? 0;
+
+        if (userCredits < creditCost) {
+            return fail(402, {
+                message: `Insufficient credits. You need ${creditCost} credits but only have ${userCredits}.`,
+                credits: userCredits
+            });
+        }
+
+        // Step 2: Create submission
         const app_name = formData.get('app_name')?.toString().trim();
         if (!app_name) {
             return fail(400, { message: 'App name is required' });
@@ -157,6 +180,9 @@ export const actions: Actions = {
                 privacy_url: formData.get('privacy_url')?.toString().trim() || null,
                 review_type: 'full',
                 status: 'analyzing',
+                credits_used: creditCost,
+                is_rereviewing: isRereviewing,
+                original_submission_id: originalSubmissionId,
             })
             .select('id')
             .single();
@@ -243,10 +269,16 @@ export const actions: Actions = {
             const workerResult = await workerResponse.json();
 
             if (workerResult.reportId) {
-                // Analysis completed! Redirect to report
+                // Analysis completed! Deduct credits from user
+                await supabase
+                    .from('profiles')
+                    .update({ credits: userCredits - creditCost })
+                    .eq('id', userId);
+
+                // Redirect to report
                 throw redirect(303, `/report/${workerResult.reportId}`);
             } else {
-                // Analysis failed
+                // Analysis failed - don't deduct credits
                 return fail(500, {
                     message: workerResult.error || 'Analysis failed',
                     submissionId
