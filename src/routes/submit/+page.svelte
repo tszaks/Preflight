@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { scanProjectFolder, formatPath, type ScanResults } from "$lib/utils/project-scanner";
+
     let step = $state(1);
     let loading = $state(false);
     let errorMsg = $state("");
@@ -18,6 +20,42 @@
 
     // Review type
     let reviewType = $state<"quick" | "full">("full");
+
+    // Project scanner state
+    let scanResults: ScanResults | null = $state(null);
+    let showScanResults = $state(false);
+    let scanning = $state(false);
+
+    function handleFolderSelect(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (!input.files || input.files.length === 0) return;
+
+        scanning = true;
+        // Use setTimeout to let the UI update before processing
+        setTimeout(() => {
+            scanResults = scanProjectFolder(input.files!);
+            scanning = false;
+            showScanResults = true;
+        }, 50);
+    }
+
+    function applyScanResults() {
+        if (!scanResults) return;
+
+        if (scanResults.infoPlist) {
+            infoPlist = scanResults.infoPlist;
+        }
+        if (scanResults.privacyManifest) {
+            privacyManifest = scanResults.privacyManifest;
+        }
+
+        showScanResults = false;
+    }
+
+    function closeScanResults() {
+        showScanResults = false;
+        scanResults = null;
+    }
 
     function handleScreenshots(e: Event) {
         const input = e.target as HTMLInputElement;
@@ -261,6 +299,38 @@
                 <h2>Screenshots & Files</h2>
                 <p class="text-muted mb-4">Upload your App Store assets</p>
 
+                <!-- Project Scanner -->
+                <div class="scanner-card">
+                    <div class="scanner-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                            <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                            <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                            <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="m16 16-1.5-1.5"/>
+                        </svg>
+                    </div>
+                    <div class="scanner-content">
+                        <h3>Scan Xcode Project</h3>
+                        <p class="text-muted">Auto-detect Info.plist and Privacy Manifest from your project folder</p>
+                    </div>
+                    <label class="btn btn-secondary scanner-btn">
+                        {scanning ? "Scanning..." : "Select Folder"}
+                        <input
+                            type="file"
+                            webkitdirectory
+                            onchange={handleFolderSelect}
+                            disabled={scanning}
+                            style="display: none;"
+                        />
+                    </label>
+                </div>
+
+                <div class="divider">
+                    <span>or upload manually</span>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">Screenshots (up to 10)</label>
                     <div class="file-upload">
@@ -290,10 +360,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label"
-                        >Privacy Manifest (PrivacyInfo.xcprivacy)</label
-                    >
-                    <div class="file-upload">
+                    <label class="form-label">
+                        Privacy Manifest (PrivacyInfo.xcprivacy)
+                        <span class="tooltip-trigger" title="Required for iOS 17+. Declares which privacy-sensitive APIs your app uses. Usually at: YourApp/Resources/PrivacyInfo.xcprivacy">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 16v-4"/>
+                                <path d="M12 8h.01"/>
+                            </svg>
+                        </span>
+                    </label>
+                    <div class="file-upload" class:has-file={privacyManifest}>
                         <input
                             type="file"
                             accept=".xcprivacy,.plist,.xml"
@@ -305,13 +382,28 @@
                                 : "Drop file here or click to browse"}
                         </p>
                     </div>
+                    {#if privacyManifest}
+                        <div class="file-list">
+                            <div class="file-item file-item-success">
+                                <span>{privacyManifest.name}</span>
+                                <button class="remove-btn" onclick={() => privacyManifest = null}>×</button>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label"
-                        >Info.plist</label
-                    >
-                    <div class="file-upload">
+                    <label class="form-label">
+                        Info.plist
+                        <span class="tooltip-trigger" title="Your app's configuration file containing bundle ID, permissions, and settings. Usually at: YourApp/Info.plist or YourApp/Resources/Info.plist">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 16v-4"/>
+                                <path d="M12 8h.01"/>
+                            </svg>
+                        </span>
+                    </label>
+                    <div class="file-upload" class:has-file={infoPlist}>
                         <input
                             type="file"
                             accept=".plist,.xml"
@@ -323,6 +415,14 @@
                                 : "Drop file here or click to browse"}
                         </p>
                     </div>
+                    {#if infoPlist}
+                        <div class="file-list">
+                            <div class="file-item file-item-success">
+                                <span>{infoPlist.name}</span>
+                                <button class="remove-btn" onclick={() => infoPlist = null}>×</button>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
 
                 <div class="step-actions">
@@ -334,6 +434,69 @@
                     >
                 </div>
             </div>
+
+            <!-- Scan Results Modal -->
+            {#if showScanResults && scanResults}
+                <div class="modal-overlay" onclick={closeScanResults}>
+                    <div class="modal" onclick={(e) => e.stopPropagation()}>
+                        <div class="modal-header">
+                            <h3>
+                                {#if scanResults.infoPlist || scanResults.privacyManifest}
+                                    Found files in {scanResults.projectName}/
+                                {:else}
+                                    No config files found
+                                {/if}
+                            </h3>
+                            <button class="modal-close" onclick={closeScanResults}>×</button>
+                        </div>
+
+                        <div class="modal-body">
+                            {#if scanResults.infoPlist}
+                                <div class="scan-result-item success">
+                                    <div class="result-icon">✓</div>
+                                    <div class="result-content">
+                                        <strong>Info.plist</strong>
+                                        <span class="result-path">{formatPath(scanResults.infoPlistPath || '')}</span>
+                                    </div>
+                                </div>
+                            {:else}
+                                <div class="scan-result-item warning">
+                                    <div class="result-icon">!</div>
+                                    <div class="result-content">
+                                        <strong>Info.plist</strong>
+                                        <span class="result-path">Not found - upload manually</span>
+                                    </div>
+                                </div>
+                            {/if}
+
+                            {#if scanResults.privacyManifest}
+                                <div class="scan-result-item success">
+                                    <div class="result-icon">✓</div>
+                                    <div class="result-content">
+                                        <strong>Privacy Manifest</strong>
+                                        <span class="result-path">{formatPath(scanResults.privacyManifestPath || '')}</span>
+                                    </div>
+                                </div>
+                            {:else}
+                                <div class="scan-result-item warning">
+                                    <div class="result-icon">!</div>
+                                    <div class="result-content">
+                                        <strong>Privacy Manifest</strong>
+                                        <span class="result-path">Not found - may not be required for your app</span>
+                                    </div>
+                                </div>
+                            {/if}
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick={closeScanResults}>Cancel</button>
+                            {#if scanResults.infoPlist || scanResults.privacyManifest}
+                                <button class="btn btn-primary" onclick={applyScanResults}>Use These Files</button>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+            {/if}
         {:else if step === 3}
             <!-- Step 3: Review type & checkout -->
             <div class="step-content">
@@ -633,5 +796,212 @@
         border-radius: 8px;
         color: #ef4444;
         font-size: 0.9rem;
+    }
+
+    /* Scanner Card */
+    .scanner-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: rgba(212, 168, 83, 0.05);
+        border: 1px solid rgba(212, 168, 83, 0.2);
+        border-radius: 10px;
+        margin-bottom: 1.5rem;
+    }
+
+    .scanner-icon {
+        flex-shrink: 0;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(212, 168, 83, 0.1);
+        border-radius: 10px;
+        color: var(--accent);
+    }
+
+    .scanner-content {
+        flex: 1;
+    }
+
+    .scanner-content h3 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .scanner-content p {
+        font-size: 0.85rem;
+        margin: 0;
+    }
+
+    .scanner-btn {
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    /* Divider */
+    .divider {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 1.5rem 0;
+        color: var(--gray-500);
+        font-size: 0.85rem;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Tooltip */
+    .tooltip-trigger {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 0.5rem;
+        color: var(--gray-500);
+        cursor: help;
+        vertical-align: middle;
+    }
+
+    .tooltip-trigger:hover {
+        color: var(--accent);
+    }
+
+    /* File upload states */
+    .file-upload.has-file {
+        display: none;
+    }
+
+    .file-item-success {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+
+    .modal {
+        background: var(--bg-dark);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 420px;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .modal-header h3 {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        color: var(--gray-500);
+        font-size: 1.5rem;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .modal-close:hover {
+        color: white;
+    }
+
+    .modal-body {
+        padding: 1.25rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1.25rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* Scan Results */
+    .scan-result-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+    }
+
+    .scan-result-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .scan-result-item.success {
+        background: rgba(34, 197, 94, 0.08);
+    }
+
+    .scan-result-item.warning {
+        background: rgba(251, 191, 36, 0.08);
+    }
+
+    .result-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .scan-result-item.success .result-icon {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+
+    .scan-result-item.warning .result-icon {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+    }
+
+    .result-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .result-content strong {
+        display: block;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .result-path {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        word-break: break-all;
     }
 </style>
