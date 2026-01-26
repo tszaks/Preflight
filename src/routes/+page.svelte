@@ -436,10 +436,16 @@
 
     .steps {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: repeat(3, 1fr);
         gap: 40px;
         max-width: 900px;
         margin: 0 auto;
+    }
+
+    @media (max-width: 700px) {
+        .steps {
+            grid-template-columns: 1fr;
+        }
     }
 
     .step {
@@ -475,6 +481,7 @@
     /* Final CTA */
     .final-cta {
         padding: 100px 0;
+        text-align: center;
     }
 
     .final-cta h2 {
@@ -485,6 +492,10 @@
     .final-cta p {
         color: var(--gray-400);
         margin-bottom: 32px;
+    }
+
+    .final-cta .btn {
+        display: inline-flex;
     }
 
     footer {
