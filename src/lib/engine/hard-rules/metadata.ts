@@ -32,8 +32,10 @@ export function checkMetadata(input: HardRulesInput): CheckResult[] {
         results.push(...checkKeywords(input.keywords));
     }
 
-    // Category check
-    if (input.category && !APP_CATEGORIES.includes(input.category as any)) {
+    // Category check (case-insensitive)
+    const categoryLower = input.category?.toLowerCase();
+    const validCategory = APP_CATEGORIES.some(cat => cat.toLowerCase() === categoryLower);
+    if (input.category && !validCategory) {
         results.push({
             category: 'metadata',
             severity: 'warning',

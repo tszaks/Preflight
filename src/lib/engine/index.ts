@@ -58,6 +58,19 @@ export async function runAnalysis(
         });
 
         allChecks.push(...hardResult.checks);
+
+        // Add info-level suggestion if no Info.plist was provided
+        // (This is separate from scoring - just a helpful reminder)
+        if (!input.plist_content) {
+            allChecks.push({
+                category: 'info_plist',
+                severity: 'info',
+                title: 'No Info.plist provided',
+                description: 'Info.plist was not uploaded. Some compliance checks cannot be performed.',
+                fix_suggestion: 'Upload your Info.plist for a more comprehensive review.',
+            });
+        }
+
         console.log('[Analysis] Hard rules complete. Found', hardResult.checks.length, 'checks');
 
         // Mark hard rules done

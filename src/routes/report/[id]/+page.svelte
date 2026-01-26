@@ -83,8 +83,10 @@
         return '#ef4444';
     }
 
-    function scoreEmoji(score: number | null): string {
+    function scoreEmoji(score: number | null, hasCriticalIssues: boolean = false): string {
         if (score === null) return '';
+        // Critical issues = guaranteed rejection, never say "Looking good!"
+        if (hasCriticalIssues) return 'Not ready';
         if (score >= 80) return 'Looking good!';
         if (score >= 50) return 'Needs work';
         return 'High risk';
@@ -426,7 +428,7 @@
             <div class="score-circle">
                 <span class="score-number">{report.score_overall ?? '--'}</span>
             </div>
-            <span class="score-verdict">{scoreEmoji(report.score_overall)}</span>
+            <span class="score-verdict">{scoreEmoji(report.score_overall, criticalItems.length > 0)}</span>
         </div>
         <div class="score-summary">
             <p class="summary-text">{report.summary}</p>
