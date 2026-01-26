@@ -195,6 +195,12 @@
     }
 
     async function testSubmit() {
+        // Validate required files
+        if (!canSubmit) {
+            errorMsg = `Missing required files: ${missingFiles.join(', ')}`;
+            return;
+        }
+
         loading = true;
         errorMsg = "";
 
@@ -623,6 +629,12 @@
                     <div class="error-msg">{errorMsg}</div>
                 {/if}
 
+                {#if !canSubmit}
+                    <div class="missing-files-warning">
+                        <strong>Missing required files:</strong> {missingFiles.join(', ')}
+                    </div>
+                {/if}
+
                 <div class="step-actions">
                     <button class="btn btn-secondary" onclick={() => (step = 2)}
                         >Back</button
@@ -631,14 +643,14 @@
                         <button
                             class="btn btn-accent"
                             onclick={testSubmit}
-                            disabled={loading}
+                            disabled={loading || !canSubmit}
                         >
                             {loading ? "Analyzing..." : "Test Mode (Skip Payment)"}
                         </button>
                         <button
                             class="btn btn-primary"
                             onclick={submit}
-                            disabled={loading}
+                            disabled={loading || !canSubmit}
                         >
                             {loading ? "Processing..." : "Continue to Payment"}
                         </button>
@@ -880,6 +892,20 @@
         border-radius: 8px;
         color: #ef4444;
         font-size: 0.9rem;
+    }
+
+    .missing-files-warning {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: rgba(245, 158, 11, 0.08);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 8px;
+        color: #f59e0b;
+        font-size: 0.9rem;
+    }
+
+    .missing-files-warning strong {
+        font-weight: 600;
     }
 
     /* Config Files Section */
