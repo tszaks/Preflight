@@ -46,8 +46,8 @@
 {#if !isAuthPage}
 <nav class="nav" class:scrolled>
 	<div class="container nav-content">
-		<a href="/dashboard" class="logo">
-			PreFlight<span class="dot">.</span>
+		<a href="/" class="logo">
+			<img src="/preflight_logo.png" alt="Preflight" class="logo-img" />
 		</a>
 
 		{#if !isLandingPage}
@@ -102,22 +102,13 @@
 	}
 
 	.logo {
-		font-family: 'Outfit', sans-serif;
-		font-size: 16px;
-		font-weight: 600;
-		color: var(--fg);
-		letter-spacing: -0.02em;
+		display: flex;
+		align-items: center;
 	}
 
-	.dot {
-		color: var(--accent);
-		font-weight: 800;
-		display: inline-block;
-		transition: transform 0.4s var(--ease-spring);
-	}
-
-	.logo:hover .dot {
-		transform: scale(1.3);
+	.logo-img {
+		height: 28px;
+		width: auto;
 	}
 
 	.nav-right {
