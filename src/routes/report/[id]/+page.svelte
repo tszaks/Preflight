@@ -18,6 +18,10 @@
     let showExportMenu = $state(false);
     let copySuccess = $state(false);
 
+    // Tab navigation for premium features
+    type PremiumTab = 'timeline' | 'preview' | 'tips' | 'checklist';
+    let activeTab = $state<PremiumTab>('timeline');
+
     // Premium feature data - get applicable pro tips based on category and description
     let proTips = $derived(getApplicableProTips(
         submission.category || '',
@@ -551,7 +555,7 @@
         </section>
     {/if}
 
-    <!-- Premium Features Section -->
+    <!-- Premium Features Section with Tabs -->
     <div class="premium-features">
         <div class="premium-header">
             <span class="premium-badge">PREMIUM INSIGHTS</span>
@@ -559,78 +563,120 @@
             <p>First-time publisher? We've got you covered with expert guidance.</p>
         </div>
 
-        <!-- Review Time Estimate -->
-        <section class="review-timeline-section card">
-            <div class="timeline-header">
-                <div class="timeline-icon">⏱️</div>
-                <div>
-                    <h3>Estimated Review Time</h3>
-                    <p class="timeline-subtitle">Based on your app category and features</p>
-                </div>
-            </div>
-            <div class="timeline-content">
-                <div class="timeline-estimate">
-                    <span class="estimate-range">{reviewTimeEstimate.minHours}-{reviewTimeEstimate.maxHours}</span>
-                    <span class="estimate-unit">hours</span>
-                </div>
-                <div class="timeline-factors">
-                    <h4>Factors affecting your review:</h4>
-                    <ul>
-                        {#each reviewTimeEstimate.factors as factor}
-                            <li>{factor}</li>
-                        {/each}
-                    </ul>
-                </div>
-                {#if todayRecommendation}
-                    <div class="today-recommendation" class:good={todayRecommendation.recommendation === 'excellent' || todayRecommendation.recommendation === 'good'} class:avoid={todayRecommendation.recommendation === 'avoid'}>
-                        <strong>Submit Today?</strong>
-                        <span class="rec-badge rec-{todayRecommendation.recommendation}">{todayRecommendation.recommendation}</span>
-                        <p>{todayRecommendation.notes}</p>
-                    </div>
+        <!-- Tab Navigation -->
+        <nav class="premium-tabs">
+            <button
+                class="tab-btn"
+                class:active={activeTab === 'timeline'}
+                onclick={() => activeTab = 'timeline'}
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                Timeline
+            </button>
+            <button
+                class="tab-btn"
+                class:active={activeTab === 'preview'}
+                onclick={() => activeTab = 'preview'}
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
+                Preview
+            </button>
+            <button
+                class="tab-btn"
+                class:active={activeTab === 'tips'}
+                onclick={() => activeTab = 'tips'}
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                Pro Tips
+                {#if proTips.length > 0}
+                    <span class="tab-count">{proTips.length}</span>
                 {/if}
-            </div>
-        </section>
+            </button>
+            <button
+                class="tab-btn"
+                class:active={activeTab === 'checklist'}
+                onclick={() => activeTab = 'checklist'}
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Checklist
+            </button>
+        </nav>
 
-        <!-- App Store Listing Preview -->
-        <section class="preview-section">
-            <h2 class="section-title">How Your App Will Look</h2>
-            <AppStoreListingPreview
-                appName={submission.app_name}
-                subtitle={submission.subtitle}
-                description={submission.description}
-                category={submission.category}
-                ageRating={submission.age_rating}
-                developerName="Your Developer Name"
-            />
-        </section>
-
-        <!-- Pro Tips Section -->
-        {#if proTips.length > 0}
-            <section class="tips-section">
-                <h2 class="section-title">Insider Knowledge</h2>
-                <ProTipsSection tips={proTips} appCategory={submission.category} />
-            </section>
-        {/if}
-
-        <!-- Launch Checklist -->
-        <section class="checklist-section">
-            <h2 class="section-title">Your Complete Launch Guide</h2>
-            <LaunchChecklist items={LAUNCH_CHECKLIST} appCategory={submission.category} />
-        </section>
-
-        <!-- Quick Tips Grid -->
-        <section class="quick-tips-section">
-            <h2 class="section-title">Faster Approval Tips</h2>
-            <div class="quick-tips-grid">
-                {#each FASTER_APPROVAL_TIPS.slice(0, 6) as tip}
-                    <div class="quick-tip-card" class:high-impact={tip.impact === 'high'}>
-                        <span class="impact-badge impact-{tip.impact}">{tip.impact}</span>
-                        <h4>{tip.title}</h4>
-                        <p>{tip.description}</p>
+        <!-- Tab Content -->
+        <div class="tab-content">
+            {#if activeTab === 'timeline'}
+                <section class="review-timeline-section">
+                    <div class="timeline-content">
+                        <div class="timeline-estimate">
+                            <span class="estimate-range">{reviewTimeEstimate.minHours}-{reviewTimeEstimate.maxHours}</span>
+                            <span class="estimate-unit">hours estimated review time</span>
+                        </div>
+                        <div class="timeline-factors">
+                            <h4>Factors affecting your review:</h4>
+                            <ul>
+                                {#each reviewTimeEstimate.factors as factor}
+                                    <li>{factor}</li>
+                                {/each}
+                            </ul>
+                        </div>
+                        {#if todayRecommendation}
+                            <div class="today-recommendation" class:good={todayRecommendation.recommendation === 'excellent' || todayRecommendation.recommendation === 'good'} class:avoid={todayRecommendation.recommendation === 'avoid'}>
+                                <strong>Submit Today?</strong>
+                                <span class="rec-badge rec-{todayRecommendation.recommendation}">{todayRecommendation.recommendation}</span>
+                                <p>{todayRecommendation.notes}</p>
+                            </div>
+                        {/if}
                     </div>
-                {/each}
-            </div>
-        </section>
+
+                    <!-- Quick Tips inline with timeline -->
+                    <div class="quick-tips-inline">
+                        <h4>Quick Tips for Faster Approval</h4>
+                        <div class="quick-tips-grid">
+                            {#each FASTER_APPROVAL_TIPS.slice(0, 4) as tip}
+                                <div class="quick-tip-card" class:high-impact={tip.impact === 'high'}>
+                                    <span class="impact-badge impact-{tip.impact}">{tip.impact}</span>
+                                    <h4>{tip.title}</h4>
+                                    <p>{tip.description}</p>
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+                </section>
+            {:else if activeTab === 'preview'}
+                <section class="preview-section">
+                    <AppStoreListingPreview
+                        appName={submission.app_name}
+                        subtitle={submission.subtitle}
+                        description={submission.description}
+                        category={submission.category}
+                        ageRating={submission.age_rating}
+                        developerName="Your Developer Name"
+                    />
+                </section>
+            {:else if activeTab === 'tips'}
+                <section class="tips-section">
+                    {#if proTips.length > 0}
+                        <ProTipsSection tips={proTips} appCategory={submission.category} />
+                    {:else}
+                        <div class="empty-state">
+                            <p>No specific tips for your app configuration. You're in good shape!</p>
+                        </div>
+                    {/if}
+                </section>
+            {:else if activeTab === 'checklist'}
+                <section class="checklist-section">
+                    <LaunchChecklist items={LAUNCH_CHECKLIST} appCategory={submission.category} />
+                </section>
+            {/if}
+        </div>
     </div>
 
     <div class="report-footer">
@@ -1116,6 +1162,81 @@
     .premium-header p {
         font-size: 0.95rem;
         color: var(--gray-400);
+    }
+
+    /* Tab Navigation */
+    .premium-tabs {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        color: var(--gray-400);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+        color: var(--gray-200);
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn.active {
+        color: var(--fg);
+        background: rgba(212, 168, 83, 0.15);
+        border: 1px solid rgba(212, 168, 83, 0.3);
+    }
+
+    .tab-btn svg {
+        flex-shrink: 0;
+    }
+
+    .tab-count {
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: rgba(212, 168, 83, 0.2);
+        color: var(--accent);
+        padding: 0.15rem 0.4rem;
+        border-radius: 10px;
+        margin-left: 0.25rem;
+    }
+
+    .tab-content {
+        min-height: 400px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--gray-400);
+    }
+
+    .quick-tips-inline {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .quick-tips-inline h4 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin-bottom: 1rem;
     }
 
     .section-title {
