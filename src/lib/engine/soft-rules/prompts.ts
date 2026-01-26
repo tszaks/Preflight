@@ -51,34 +51,177 @@ Return JSON array of issues found:
 
 If no issues found, return: [{"severity": "pass", "title": "Description analysis passed", "description": "No policy violations or rejection risks detected."}]`;
 
-export const SCREENSHOT_ANALYSIS_PROMPT = `Analyze this App Store screenshot for potential rejection risks.
+export const SCREENSHOT_ANALYSIS_PROMPT = `You are an expert App Store reviewer performing a COMPREHENSIVE screenshot analysis. This app's developer is a first-time publisher - catch EVERY issue that could cause rejection.
 
+## APP CONTEXT
 App Name: {{app_name}}
 Category: {{category}}
-Screenshot {{index}} of {{total}}:
+Age Rating: {{age_rating}}
+App Description (first 500 chars): {{description_preview}}
+Screenshot {{index}} of {{total}}
 
-Check for:
-1. Fake UI elements that don't exist in a real iOS app
-2. System UI mockups (fake notifications, fake status bars with misleading info)
-3. Offensive or inappropriate content
-4. Text that makes misleading claims
-5. Content that doesn't match the app's stated category
-6. Wrong device frame (e.g., Android phone frame)
-7. Watermarks, stock photo marks, or copyright violations
-8. Extremely low quality or unreadable content
+---
 
-Return JSON array of issues found:
+## ANALYSIS CHECKLIST - Complete ALL sections
+
+### 1. TEXT EXTRACTION & ANALYSIS (OCR)
+Extract and analyze ALL visible text in the screenshot:
+
+**1.1 Placeholder/Debug Text Detection**
+- Look for: "Lorem ipsum", "TODO", "Test", "Sample", "Example", "Placeholder"
+- Look for: Debug strings like "null", "undefined", "NaN", "Error", "[Object]"
+- Look for: Template markers like "{{name}}", "%s", "{0}", "[insert text]"
+- Look for: Default SDK text like "Hello World", "Label", "Button", "Title"
+
+**1.2 Competitor & Trademark Issues**
+- Check for ANY mention of: competitor app names, competitor company names
+- Check for: Apple product names used inappropriately (iPhone, iPad, App Store)
+- Check for: Third-party brand names, logos, or trademarked terms
+
+**1.3 Pricing & Claims in UI**
+- Check for: Price displays that may differ from App Store pricing
+- Check for: "Free" claims that may conflict with IAP
+- Check for: Subscription prices that need clear disclosure
+- Check for: Discount percentages or "sale" language
+
+**1.4 Misleading Text Claims**
+- Check for: "#1", "Best", "Top", "Award-winning" without evidence
+- Check for: "Guaranteed", "100%", "Always" absolute claims
+- Check for: Medical/health claims without disclaimers
+- Check for: Financial return promises
+
+**1.5 Spelling & Grammar**
+- Check for: Obvious typos, misspellings
+- Check for: Grammar errors in visible UI text
+- Check for: Inconsistent capitalization
+
+### 2. VISUAL DEEP INSPECTION
+
+**2.1 Status Bar Analysis**
+- Time shown: Is it a realistic time? (Avoid "9:41" cliche if obviously fake)
+- Carrier name: Should be blank or generic, NOT competitor carriers
+- Battery: Should not show low battery or charging indicators
+- Signal bars: Should show full/adequate signal
+- Check for: Wrong iOS version indicators, missing notch/dynamic island
+
+**2.2 Debug & Development Artifacts**
+- Look for: Red/colored debug borders around views
+- Look for: Console/log overlays
+- Look for: "DEBUG", "DEV", "STAGING" labels
+- Look for: Version/build numbers visible in UI
+- Look for: Test user accounts ("test@test.com", "John Doe")
+- Look for: Obviously fake data ("$123,456.78", "1,000,000 users")
+
+**2.3 Placeholder Visual Content**
+- Look for: Gray placeholder boxes/rectangles
+- Look for: Stock photo watermarks (Shutterstock, Getty, Adobe Stock, etc.)
+- Look for: Missing images (broken image icons)
+- Look for: Default profile avatars in a social context
+- Look for: Loading spinners or skeleton screens
+
+**2.4 Content Quality**
+- Check for: Blurry or pixelated areas
+- Check for: JPEG artifacts or compression issues
+- Check for: Cut-off text or cropped content at edges
+- Check for: Overlapping UI elements
+- Check for: Text running off screen
+
+**2.5 Inappropriate Content (Age Rating: {{age_rating}})
+- Check for: Violence or graphic imagery
+- Check for: Sexual or suggestive content
+- Check for: Drug/alcohol references
+- Check for: Gambling imagery
+- Check for: Content inappropriate for stated age rating
+
+### 3. UI AUTHENTICITY & PLATFORM COMPLIANCE
+
+**3.1 iOS Design Pattern Verification**
+- Verify: Navigation patterns match iOS (back arrow style, tab bars)
+- Verify: System icons are SF Symbols style, not Material Design
+- Verify: Buttons follow iOS style (not Android Material buttons)
+- Verify: Typography follows iOS conventions
+
+**3.2 Android Elements on iOS (CRITICAL)**
+- Look for: Three-dot overflow menus (Android pattern)
+- Look for: Bottom navigation with Android styling
+- Look for: Material Design FAB (floating action button) styling
+- Look for: Android-style switches/toggles
+- Look for: Back arrows pointing right-to-left (Android)
+- Look for: Hamburger menus in top-left (less common on iOS)
+
+**3.3 Fake App Store Elements**
+- Look for: Fake star ratings displayed in screenshot
+- Look for: Fake review quotes shown in UI
+- Look for: Fake download counts or user numbers
+- Look for: Fake "Editor's Choice" or award badges
+- Look for: Screenshots showing the App Store itself
+
+**3.4 Fake System UI**
+- Look for: Fake notifications from other apps
+- Look for: Fake incoming calls or messages
+- Look for: Fake "low battery" warnings used as features
+- Look for: Manipulated system dialogs
+
+### 4. METADATA CROSS-REFERENCE
+
+**4.1 Feature Verification**
+Based on the app description provided above:
+- Verify: Features shown in screenshot are mentioned in description
+- Flag: UI showing features NOT mentioned in description (misleading)
+- Flag: Major features in description NOT visible in any screenshot
+
+**4.2 Category Appropriateness**
+- Verify: Screenshot content matches "{{category}}" category
+- Flag: Content that seems misaligned with stated category
+
+**4.3 Age Rating Compliance**
+- Verify: All visible content is appropriate for "{{age_rating}}" rating
+- Flag: Any content that exceeds the stated age rating
+
+### 5. PROFESSIONAL QUALITY ASSESSMENT
+
+**5.1 Overall Polish**
+- Assess: Does this look like a professionally designed app?
+- Assess: Is the layout clean and intentional?
+- Assess: Are colors harmonious and accessible?
+
+**5.2 Accessibility Concerns**
+- Check: Text contrast against backgrounds (WCAG standards)
+- Check: Touch target sizes appear adequate
+- Check: Color is not sole indicator of meaning
+
+---
+
+## OUTPUT FORMAT
+
+Return a JSON array of ALL issues found. Be thorough - first-time publishers need comprehensive feedback.
+
+For each issue:
+- severity: "critical" (will cause rejection), "warning" (likely rejection), "info" (suggestion)
+- title: Short, specific title
+- description: Detailed explanation with what you observed
+- guideline_ref: Specific Apple guideline (e.g., "Section 2.3.3 - Accurate Screenshots")
+- fix_suggestion: Specific, actionable fix
+
+IMPORTANT GUIDELINES:
+- Section 2.3.3: Screenshots must accurately represent the app
+- Section 2.3.7: No fake ratings, reviews, or charts in screenshots
+- Section 2.3.10: No third-party trademarks without permission
+- Section 4.0: Design guidelines must be followed
+- Section 1.1: No objectionable content
+
 [
   {
     "severity": "critical" | "warning" | "info",
-    "title": "short title",
-    "description": "detailed explanation",
+    "title": "specific issue title",
+    "description": "detailed explanation of what was found",
     "guideline_ref": "Section X.X - Title",
-    "fix_suggestion": "what to do"
+    "fix_suggestion": "specific fix instructions"
   }
 ]
 
-If no issues found, return: [{"severity": "pass", "title": "Screenshot {{index}} analysis passed", "description": "No visual policy violations detected."}]`;
+If NO issues found after thorough analysis, return:
+[{"severity": "pass", "title": "Screenshot {{index}} analysis passed", "description": "Comprehensive analysis found no policy violations. Text extraction completed, UI authenticity verified, content appropriate for stated age rating."}]`;
 
 export const PRIVACY_POLICY_REVIEW_PROMPT = `Cross-check this privacy policy against the app's privacy manifest declarations.
 
@@ -172,6 +315,64 @@ Return JSON array of suggestions (all should be "info" severity):
 ]
 
 Limit to 3-5 most impactful suggestions.`;
+
+export const ASO_ANALYSIS_PROMPT = `You are an expert App Store Optimization (ASO) specialist. Generate a comprehensive ASO analysis for this app.
+
+App Name: {{app_name}}
+Subtitle: {{subtitle}}
+Category: {{category}}
+Keywords: {{keywords}}
+Full Description:
+"""
+{{description}}
+"""
+
+IMPORTANT LIMITS:
+- App Name: max 30 characters
+- Subtitle: max 30 characters
+- Keywords field: max 100 characters (comma-separated)
+- Description: max 4000 characters
+
+Generate the following in a single JSON response:
+
+1. **optimized_description**: Rewrite the description to be ASO-optimized. Include:
+   - Compelling first 3 lines (visible before "more")
+   - Strategic keyword placement (natural, not spammy)
+   - Clear feature bullets or short paragraphs
+   - Strong call-to-action at the end
+   - Stay under 4000 characters
+
+2. **suggested_keywords**: Array of exactly 20 keyword suggestions based on:
+   - The app's category and functionality
+   - Search volume potential (common user searches)
+   - Competition level (mix of head terms and long-tail)
+   - Include variations (singular/plural, abbreviations)
+   - Each keyword should be 1-3 words max
+
+3. **character_optimization**: Array of objects analyzing each metadata field:
+   - app_name: Current length vs 30 max
+   - subtitle: Current length vs 30 max
+   - keywords: Current length vs 100 max
+   - description: Current length vs 4000 max
+   - Include actionable tips for each
+
+4. **positioning_statement**: A single compelling sentence (under 100 chars) that captures:
+   - What makes this app unique vs competitors
+   - The core value proposition
+   - Target user benefit
+
+Return ONLY valid JSON in this exact format:
+{
+  "optimized_description": "...",
+  "suggested_keywords": ["keyword1", "keyword2", ...],
+  "character_optimization": [
+    {"field": "app_name", "current": N, "max": 30, "tip": "..."},
+    {"field": "subtitle", "current": N, "max": 30, "tip": "..."},
+    {"field": "keywords", "current": N, "max": 100, "tip": "..."},
+    {"field": "description", "current": N, "max": 4000, "tip": "..."}
+  ],
+  "positioning_statement": "..."
+}`;
 
 /**
  * Replace template variables in a prompt string

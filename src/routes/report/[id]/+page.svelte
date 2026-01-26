@@ -1,10 +1,61 @@
 <script lang="ts">
+    import AppStoreListingPreview from '$lib/components/AppStoreListingPreview.svelte';
+    import ProTipsSection from '$lib/components/ProTipsSection.svelte';
+    import LaunchChecklist from '$lib/components/LaunchChecklist.svelte';
+    import { getApplicableProTips } from '$lib/engine/knowledge-base/pro-tips';
+    import { LAUNCH_CHECKLIST } from '$lib/engine/knowledge-base/launch-checklist';
+    import {
+        REVIEW_TIMES_BY_CATEGORY,
+        SUBMISSION_TIMING,
+        estimateReviewTime,
+        FASTER_APPROVAL_TIPS
+    } from '$lib/engine/knowledge-base/review-timeline';
+
     let { data } = $props();
 
     const { report, submission, items } = data;
 
     let showExportMenu = $state(false);
     let copySuccess = $state(false);
+
+    // Premium feature data - get applicable pro tips based on category and description
+    let proTips = $derived(getApplicableProTips(
+        submission.category || '',
+        submission.description || '',
+        undefined, // manifest content
+        true // include general tips
+    ));
+
+    // Get review time estimate
+    let categoryId = $derived.by(() => {
+        const categoryMap: Record<string, number> = {
+            'Finance': 6015,
+            'Games': 6014,
+            'Health & Fitness': 6013,
+            'Social Networking': 6005,
+            'Entertainment': 6016,
+            'Medical': 6020,
+            'Photo & Video': 6008,
+            'Productivity': 6007,
+            'Education': 6017,
+            'Business': 6000,
+            'Utilities': 6002,
+            'Travel': 6003,
+        };
+        return categoryMap[submission.category || ''] || 6002; // Default to Utilities
+    });
+
+    let reviewTimeEstimate = $derived(estimateReviewTime({
+        categoryId,
+        isNewApp: true, // Assume new apps for first-time publishers
+        hasIAP: submission.description?.toLowerCase().includes('in-app purchase') ?? false,
+        hasSubscription: submission.description?.toLowerCase().includes('subscription') ?? false,
+        hasUGC: submission.description?.toLowerCase().includes('user') ?? false,
+        isNewDeveloper: true, // Target audience is first-time publishers
+        submissionDay: new Date().getDay(),
+    }));
+
+    let todayRecommendation = $derived(SUBMISSION_TIMING.find(d => d.dayIndex === new Date().getDay()));
 
     // Group items by category
     const grouped = $derived.by(() => {
@@ -500,6 +551,88 @@
         </section>
     {/if}
 
+    <!-- Premium Features Section -->
+    <div class="premium-features">
+        <div class="premium-header">
+            <span class="premium-badge">PREMIUM INSIGHTS</span>
+            <h2>Everything You Need to Launch</h2>
+            <p>First-time publisher? We've got you covered with expert guidance.</p>
+        </div>
+
+        <!-- Review Time Estimate -->
+        <section class="review-timeline-section card">
+            <div class="timeline-header">
+                <div class="timeline-icon">⏱️</div>
+                <div>
+                    <h3>Estimated Review Time</h3>
+                    <p class="timeline-subtitle">Based on your app category and features</p>
+                </div>
+            </div>
+            <div class="timeline-content">
+                <div class="timeline-estimate">
+                    <span class="estimate-range">{reviewTimeEstimate.minHours}-{reviewTimeEstimate.maxHours}</span>
+                    <span class="estimate-unit">hours</span>
+                </div>
+                <div class="timeline-factors">
+                    <h4>Factors affecting your review:</h4>
+                    <ul>
+                        {#each reviewTimeEstimate.factors as factor}
+                            <li>{factor}</li>
+                        {/each}
+                    </ul>
+                </div>
+                {#if todayRecommendation}
+                    <div class="today-recommendation" class:good={todayRecommendation.recommendation === 'excellent' || todayRecommendation.recommendation === 'good'} class:avoid={todayRecommendation.recommendation === 'avoid'}>
+                        <strong>Submit Today?</strong>
+                        <span class="rec-badge rec-{todayRecommendation.recommendation}">{todayRecommendation.recommendation}</span>
+                        <p>{todayRecommendation.notes}</p>
+                    </div>
+                {/if}
+            </div>
+        </section>
+
+        <!-- App Store Listing Preview -->
+        <section class="preview-section">
+            <h2 class="section-title">How Your App Will Look</h2>
+            <AppStoreListingPreview
+                appName={submission.app_name}
+                subtitle={submission.subtitle}
+                description={submission.description}
+                category={submission.category}
+                ageRating={submission.age_rating}
+                developerName="Your Developer Name"
+            />
+        </section>
+
+        <!-- Pro Tips Section -->
+        {#if proTips.length > 0}
+            <section class="tips-section">
+                <h2 class="section-title">Insider Knowledge</h2>
+                <ProTipsSection tips={proTips} appCategory={submission.category} />
+            </section>
+        {/if}
+
+        <!-- Launch Checklist -->
+        <section class="checklist-section">
+            <h2 class="section-title">Your Complete Launch Guide</h2>
+            <LaunchChecklist items={LAUNCH_CHECKLIST} appCategory={submission.category} />
+        </section>
+
+        <!-- Quick Tips Grid -->
+        <section class="quick-tips-section">
+            <h2 class="section-title">Faster Approval Tips</h2>
+            <div class="quick-tips-grid">
+                {#each FASTER_APPROVAL_TIPS.slice(0, 6) as tip}
+                    <div class="quick-tip-card" class:high-impact={tip.impact === 'high'}>
+                        <span class="impact-badge impact-{tip.impact}">{tip.impact}</span>
+                        <h4>{tip.title}</h4>
+                        <p>{tip.description}</p>
+                    </div>
+                {/each}
+            </div>
+        </section>
+    </div>
+
     <div class="report-footer">
         <div class="footer-actions">
             {#if report.total_critical > 0 || report.total_warnings > 0}
@@ -949,6 +1082,256 @@
         box-shadow: 0 8px 20px rgba(212, 168, 83, 0.3);
     }
 
+    /* Premium Features Section */
+    .premium-features {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 2px solid rgba(212, 168, 83, 0.2);
+    }
+
+    .premium-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .premium-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: var(--bg);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        padding: 0.35rem 0.875rem;
+        border-radius: 20px;
+        margin-bottom: 1rem;
+    }
+
+    .premium-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--fg);
+        margin-bottom: 0.5rem;
+    }
+
+    .premium-header p {
+        font-size: 0.95rem;
+        color: var(--gray-400);
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin-bottom: 1rem;
+    }
+
+    /* Review Timeline Section */
+    .review-timeline-section {
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .timeline-header {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
+    }
+
+    .timeline-icon {
+        font-size: 1.75rem;
+        flex-shrink: 0;
+    }
+
+    .timeline-header h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--fg);
+    }
+
+    .timeline-subtitle {
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        margin: 0.25rem 0 0 0;
+    }
+
+    .timeline-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .timeline-estimate {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+    }
+
+    .estimate-range {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .estimate-unit {
+        font-size: 1rem;
+        color: var(--gray-400);
+    }
+
+    .timeline-factors {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .timeline-factors h4 {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--gray-300);
+        margin: 0 0 0.75rem 0;
+    }
+
+    .timeline-factors ul {
+        margin: 0;
+        padding-left: 1.25rem;
+    }
+
+    .timeline-factors li {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        margin-bottom: 0.35rem;
+    }
+
+    .today-recommendation {
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.02);
+        border-left: 3px solid var(--gray-600);
+    }
+
+    .today-recommendation.good {
+        background: rgba(34, 197, 94, 0.08);
+        border-left-color: #22c55e;
+    }
+
+    .today-recommendation.avoid {
+        background: rgba(239, 68, 68, 0.08);
+        border-left-color: #ef4444;
+    }
+
+    .today-recommendation strong {
+        font-size: 0.85rem;
+        color: var(--gray-200);
+    }
+
+    .rec-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        margin-left: 0.5rem;
+    }
+
+    .rec-excellent, .rec-good {
+        background: rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+    }
+
+    .rec-okay {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+    }
+
+    .rec-avoid {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+    }
+
+    .today-recommendation p {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        margin: 0.5rem 0 0 0;
+        line-height: 1.5;
+    }
+
+    /* Preview Section */
+    .preview-section,
+    .tips-section,
+    .checklist-section,
+    .quick-tips-section {
+        margin-bottom: 2rem;
+    }
+
+    /* Quick Tips Grid */
+    .quick-tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .quick-tip-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 1.25rem;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .quick-tip-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .quick-tip-card.high-impact {
+        border-color: rgba(212, 168, 83, 0.3);
+    }
+
+    .quick-tip-card h4 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--fg);
+        margin: 0.75rem 0 0.5rem 0;
+    }
+
+    .quick-tip-card p {
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .impact-badge {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .impact-high {
+        background: rgba(212, 168, 83, 0.2);
+        color: #d4a853;
+    }
+
+    .impact-medium {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+    }
+
+    .impact-low {
+        background: rgba(107, 114, 128, 0.2);
+        color: #9ca3af;
+    }
+
     @media (max-width: 600px) {
         .score-section {
             flex-direction: column;
@@ -971,6 +1354,15 @@
 
         .footer-actions {
             flex-direction: column;
+        }
+
+        .quick-tips-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .timeline-estimate {
+            flex-direction: column;
+            gap: 0.25rem;
         }
     }
 </style>

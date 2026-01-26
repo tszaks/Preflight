@@ -69,6 +69,21 @@ export interface ScoreResult {
     score_overall: number;
 }
 
+// ASO (App Store Optimization) Analysis Types
+export interface CharacterOptimization {
+    field: string;
+    current: number;
+    max: number;
+    tip: string;
+}
+
+export interface ASOAnalysisResult {
+    optimized_description: string;
+    suggested_keywords: string[];
+    character_optimization: CharacterOptimization[];
+    positioning_statement: string;
+}
+
 // Valid screenshot dimensions (points × scale factor)
 export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number; device: string }> = [
     // iPhone 6.7" (iPhone 15 Pro Max, 14 Pro Max)
