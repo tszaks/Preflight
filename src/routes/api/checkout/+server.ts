@@ -30,24 +30,30 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession, 
         throw error(500, 'Stripe price not configured');
     }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        payment_method_types: ['card'],
-        line_items: [
-            {
-                price: priceId,
-                quantity: 1,
+    let checkoutSession;
+    try {
+        checkoutSession = await stripe.checkout.sessions.create({
+            mode: 'payment',
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price: priceId,
+                    quantity: 1,
+                },
+            ],
+            metadata: {
+                submission_id: submissionId,
+                review_type: reviewType,
+                user_id: user.id,
             },
-        ],
-        metadata: {
-            submission_id: submissionId,
-            review_type: reviewType,
-            user_id: user.id,
-        },
-        success_url: `${PUBLIC_BASE_URL}/dashboard?payment=success&submission=${submissionId}`,
-        cancel_url: `${PUBLIC_BASE_URL}/submit?payment=cancelled&submission=${submissionId}`,
-        customer_email: user.email,
-    });
+            success_url: `${PUBLIC_BASE_URL}/dashboard?payment=success&submission=${submissionId}`,
+            cancel_url: `${PUBLIC_BASE_URL}/submit?payment=cancelled&submission=${submissionId}`,
+            customer_email: user.email,
+        });
+    } catch (stripeError) {
+        console.error('Stripe checkout error:', stripeError);
+        throw error(500, `Stripe error: ${stripeError instanceof Error ? stripeError.message : 'Unknown error'}`);
+    }
 
     await supabase
         .from('submissions')

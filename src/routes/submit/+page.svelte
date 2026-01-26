@@ -152,10 +152,14 @@
 
             const checkoutData = await checkoutRes.json();
 
+            if (!checkoutRes.ok) {
+                throw new Error(checkoutData.message || `Checkout failed: ${checkoutRes.status}`);
+            }
+
             if (checkoutData.url) {
                 window.location.href = checkoutData.url;
             } else {
-                throw new Error('Failed to create checkout session');
+                throw new Error('No checkout URL returned');
             }
         } catch (err) {
             errorMsg = err instanceof Error ? err.message : 'Something went wrong';
