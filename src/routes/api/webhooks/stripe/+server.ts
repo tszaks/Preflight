@@ -34,12 +34,44 @@ export const POST: RequestHandler = async ({ request }) => {
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // Check if this is a credit purchase or single review purchase
+        const userId = session.metadata?.user_id;
+        const credits = session.metadata?.credits;
         const submissionId = session.metadata?.submission_id;
         const reviewType = session.metadata?.review_type;
 
+        // === Credit Purchase Flow ===
+        if (userId && credits) {
+            const creditAmount = parseInt(credits);
+
+            // Add credits to user's account
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('credits')
+                .eq('id', userId)
+                .single();
+
+            const currentCredits = profile?.credits ?? 0;
+
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ credits: currentCredits + creditAmount })
+                .eq('id', userId);
+
+            if (updateError) {
+                console.error('Failed to update user credits:', updateError);
+                return json({ error: 'Credit update failed' }, { status: 500 });
+            }
+
+            console.log(`Added ${creditAmount} credits to user ${userId}. New balance: ${currentCredits + creditAmount}`);
+            return json({ received: true });
+        }
+
+        // === Single Review Purchase Flow (Legacy) ===
         if (!submissionId) {
-            console.error('Webhook: No submission_id in metadata');
-            return json({ error: 'Missing submission_id' }, { status: 400 });
+            console.error('Webhook: No submission_id or user_id in metadata');
+            return json({ error: 'Missing required metadata' }, { status: 400 });
         }
 
         // Update submission to paid

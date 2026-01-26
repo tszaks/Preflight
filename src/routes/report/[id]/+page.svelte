@@ -154,7 +154,12 @@
     </section>
 
     <div class="report-footer">
-        <a href="/submit" class="btn btn-primary">Submit Another App</a>
+        {#if report.total_critical > 0 || report.total_warnings > 0}
+            <a href="/submit?resubmit={submission.id}" class="btn btn-accent btn-lg">
+                🔄 Fix Issues & Re-Review (25 credits)
+            </a>
+        {/if}
+        <a href="/submit" class="btn btn-secondary">Submit Another App</a>
     </div>
 </main>
 
@@ -373,6 +378,25 @@
         margin-top: 3rem;
         padding-top: 2rem;
         border-top: 1px solid rgba(255, 255, 255, 0.04);
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .btn-lg {
+        padding: 1rem 2rem;
+        font-size: 1.05rem;
+    }
+
+    .btn-accent {
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: var(--bg);
+        font-weight: 600;
+    }
+
+    .btn-accent:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(212, 168, 83, 0.3);
     }
 
     @media (max-width: 600px) {
