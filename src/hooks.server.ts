@@ -9,12 +9,15 @@ export const handle: Handle = async ({ event, resolve }) => {
             getAll: () => event.cookies.getAll(),
             setAll: (cookiesToSet) => {
                 cookiesToSet.forEach(({ name, value, options }) => {
-                    // Preserve Supabase's maxAge/expires settings for session persistence
-                    // Only use secure cookies in production (HTTPS)
+                    // Ensure cookies persist across browser sessions
+                    // Default to 1 year if Supabase doesn't provide maxAge
+                    const maxAge = options?.maxAge ?? 60 * 60 * 24 * 365; // 1 year
+
                     event.cookies.set(name, value, {
                         ...options,
                         path: '/',
-                        secure: !dev, // false on localhost, true in production
+                        maxAge,
+                        secure: !dev,
                         httpOnly: true,
                         sameSite: 'lax',
                     });
