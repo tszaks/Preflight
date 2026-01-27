@@ -582,7 +582,7 @@
                                 <span class="value"
                                     >{report.score_overall ?? "--"}</span
                                 >
-                                <span class="label">READY_SCORE</span>
+                                <span class="label">Score</span>
                             </div>
                         </div>
                     </div>
@@ -591,12 +591,10 @@
                     <div class="hud-info-group">
                         <div class="hud-meta-tags">
                             <span class="hud-tag"
-                                >ID: {submission.id
-                                    .slice(0, 8)
-                                    .toUpperCase()}</span
+                                >ID: {submission.id.slice(0, 8).toUpperCase()}</span
                             >
                             <span class="hud-tag"
-                                >SCAN_TYPE: {submission.review_type.toUpperCase()}</span
+                                >{submission.review_type === "full" ? "Full Review" : "Quick Check"}</span
                             >
                         </div>
                         <div
@@ -611,7 +609,7 @@
                                 {scoreEmoji(
                                     report.score_overall,
                                     criticalItems.length > 0,
-                                ).toUpperCase()}
+                                )}
                             </div>
                             <div
                                 class="hud-alert-msg {criticalItems.length > 0
@@ -804,12 +802,12 @@
                             <span class="matrix-val">{score ?? "--"}%</span>
                             <span class="matrix-status"
                                 >{score === null
-                                    ? "PENDING"
+                                    ? "Pending"
                                     : score >= 80
-                                      ? "OPTIMAL"
+                                      ? "Passing"
                                       : score >= 50
-                                        ? "ADVISORY"
-                                        : "CRITICAL"}</span
+                                        ? "Needs work"
+                                        : "Failing"}</span
                             >
                         </div>
                     </CockpitPanel>
