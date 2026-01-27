@@ -1,6 +1,11 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
-    import { scanProjectFolder, formatPath, type ScanResults } from "$lib/utils/project-scanner";
+    import {
+        scanProjectFolder,
+        formatPath,
+        type ScanResults,
+    } from "$lib/utils/project-scanner";
+    import CockpitPanel from "$lib/components/CockpitPanel.svelte";
 
     let step = $state(1);
     let loading = $state(false);
@@ -25,9 +30,10 @@
     // Required files validation
     let missingFiles = $derived.by(() => {
         const missing: string[] = [];
-        if (screenshots.length === 0) missing.push('At least 1 screenshot');
-        if (!privacyManifest) missing.push('Privacy manifest (PrivacyInfo.xcprivacy)');
-        if (!infoPlist) missing.push('Info.plist');
+        if (screenshots.length === 0) missing.push("At least 1 screenshot");
+        if (!privacyManifest)
+            missing.push("Privacy manifest (PrivacyInfo.xcprivacy)");
+        if (!infoPlist) missing.push("Info.plist");
         return missing;
     });
     let canSubmit = $derived(missingFiles.length === 0);
@@ -110,7 +116,7 @@
     async function submit() {
         // Validate required files
         if (!canSubmit) {
-            errorMsg = `Missing required files: ${missingFiles.join(', ')}`;
+            errorMsg = `Missing required files: ${missingFiles.join(", ")}`;
             return;
         }
 
@@ -120,28 +126,34 @@
         try {
             // Step 1: Create submission record
             const createForm = new FormData();
-            createForm.set('app_name', appName);
-            if (subtitle) createForm.set('subtitle', subtitle);
-            if (description) createForm.set('description', description);
-            if (keywords) createForm.set('keywords', keywords);
-            if (category) createForm.set('category', category);
-            createForm.set('age_rating', ageRating);
-            if (privacyUrl) createForm.set('privacy_url', privacyUrl);
-            createForm.set('review_type', 'full');
+            createForm.set("app_name", appName);
+            if (subtitle) createForm.set("subtitle", subtitle);
+            if (description) createForm.set("description", description);
+            if (keywords) createForm.set("keywords", keywords);
+            if (category) createForm.set("category", category);
+            createForm.set("age_rating", ageRating);
+            if (privacyUrl) createForm.set("privacy_url", privacyUrl);
+            createForm.set("review_type", "full");
 
-            const createRes = await fetch('/submit?/createSubmission', {
-                method: 'POST',
+            const createRes = await fetch("/submit?/createSubmission", {
+                method: "POST",
                 body: createForm,
             });
 
             const createResult = deserialize(await createRes.text());
 
-            if (createResult.type === 'failure') {
-                throw new Error((createResult.data as { message?: string })?.message || 'Failed to create submission');
+            if (createResult.type === "failure") {
+                throw new Error(
+                    (createResult.data as { message?: string })?.message ||
+                        "Failed to create submission",
+                );
             }
 
-            if (createResult.type !== 'success' || !createResult.data?.submissionId) {
-                throw new Error('Failed to create submission');
+            if (
+                createResult.type !== "success" ||
+                !createResult.data?.submissionId
+            ) {
+                throw new Error("Failed to create submission");
             }
 
             const submissionId = createResult.data.submissionId as string;
@@ -149,47 +161,51 @@
             // Step 2: Upload files
             if (screenshots.length > 0 || privacyManifest || infoPlist) {
                 const uploadForm = new FormData();
-                uploadForm.set('submission_id', submissionId);
+                uploadForm.set("submission_id", submissionId);
 
                 for (const file of screenshots) {
-                    uploadForm.append('screenshots', file);
+                    uploadForm.append("screenshots", file);
                 }
                 if (privacyManifest) {
-                    uploadForm.set('manifest', privacyManifest);
+                    uploadForm.set("manifest", privacyManifest);
                 }
                 if (infoPlist) {
-                    uploadForm.set('plist', infoPlist);
+                    uploadForm.set("plist", infoPlist);
                 }
 
-                await fetch('/submit?/uploadFiles', {
-                    method: 'POST',
+                await fetch("/submit?/uploadFiles", {
+                    method: "POST",
                     body: uploadForm,
                 });
             }
 
             // Step 3: Redirect to Stripe checkout
-            const checkoutRes = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const checkoutRes = await fetch("/api/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     submission_id: submissionId,
-                    review_type: 'full',
+                    review_type: "full",
                 }),
             });
 
             const checkoutData = await checkoutRes.json();
 
             if (!checkoutRes.ok) {
-                throw new Error(checkoutData.message || `Checkout failed: ${checkoutRes.status}`);
+                throw new Error(
+                    checkoutData.message ||
+                        `Checkout failed: ${checkoutRes.status}`,
+                );
             }
 
             if (checkoutData.url) {
                 window.location.href = checkoutData.url;
             } else {
-                throw new Error('No checkout URL returned');
+                throw new Error("No checkout URL returned");
             }
         } catch (err) {
-            errorMsg = err instanceof Error ? err.message : 'Something went wrong';
+            errorMsg =
+                err instanceof Error ? err.message : "Something went wrong";
             loading = false;
         }
     }
@@ -197,7 +213,7 @@
     async function testSubmit() {
         // Validate required files
         if (!canSubmit) {
-            errorMsg = `Missing required files: ${missingFiles.join(', ')}`;
+            errorMsg = `Missing required files: ${missingFiles.join(", ")}`;
             return;
         }
 
@@ -206,26 +222,26 @@
 
         try {
             const formData = new FormData();
-            formData.set('app_name', appName);
-            if (subtitle) formData.set('subtitle', subtitle);
-            if (description) formData.set('description', description);
-            if (keywords) formData.set('keywords', keywords);
-            if (category) formData.set('category', category);
-            formData.set('age_rating', ageRating);
-            if (privacyUrl) formData.set('privacy_url', privacyUrl);
+            formData.set("app_name", appName);
+            if (subtitle) formData.set("subtitle", subtitle);
+            if (description) formData.set("description", description);
+            if (keywords) formData.set("keywords", keywords);
+            if (category) formData.set("category", category);
+            formData.set("age_rating", ageRating);
+            if (privacyUrl) formData.set("privacy_url", privacyUrl);
 
             for (const file of screenshots) {
-                formData.append('screenshots', file);
+                formData.append("screenshots", file);
             }
             if (privacyManifest) {
-                formData.set('manifest', privacyManifest);
+                formData.set("manifest", privacyManifest);
             }
             if (infoPlist) {
-                formData.set('plist', infoPlist);
+                formData.set("plist", infoPlist);
             }
 
-            const response = await fetch('/submit?/testSubmit', {
-                method: 'POST',
+            const response = await fetch("/submit?/testSubmit", {
+                method: "POST",
                 body: formData,
             });
 
@@ -238,11 +254,15 @@
             const result = await response.text();
             const parsedResult = deserialize(result);
 
-            if (parsedResult.type === 'failure') {
-                throw new Error((parsedResult.data as { message?: string })?.message || 'Test submission failed');
+            if (parsedResult.type === "failure") {
+                throw new Error(
+                    (parsedResult.data as { message?: string })?.message ||
+                        "Test submission failed",
+                );
             }
         } catch (err) {
-            errorMsg = err instanceof Error ? err.message : 'Something went wrong';
+            errorMsg =
+                err instanceof Error ? err.message : "Something went wrong";
             loading = false;
         }
     }
@@ -262,7 +282,7 @@
 
         {#if step === 1}
             <!-- Step 1: Metadata -->
-            <div class="step-content">
+            <CockpitPanel class="step-content">
                 <h2>App Metadata</h2>
                 <p class="text-muted mb-4">
                     Enter the information from your App Store listing
@@ -380,10 +400,10 @@
                         Continue
                     </button>
                 </div>
-            </div>
+            </CockpitPanel>
         {:else if step === 2}
             <!-- Step 2: Files -->
-            <div class="step-content">
+            <CockpitPanel class="step-content">
                 <h2>Screenshots & Files</h2>
                 <p class="text-muted mb-4">Upload your App Store assets</p>
 
@@ -420,15 +440,24 @@
                     <div class="config-header">
                         <div>
                             <h3>Config Files</h3>
-                            <p class="text-muted">Info.plist and Privacy Manifest</p>
+                            <p class="text-muted">
+                                Info.plist and Privacy Manifest
+                            </p>
                         </div>
                         <label class="btn btn-secondary btn-sm">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-                                <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-                                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-                                <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-                                <circle cx="12" cy="12" r="3"/>
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                                <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                                <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                                <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                                <circle cx="12" cy="12" r="3" />
                             </svg>
                             {scanning ? "Scanning..." : "Scan Project"}
                             <input
@@ -446,24 +475,43 @@
                         <div class="config-file-row">
                             <div class="config-file-info">
                                 <strong>Info.plist</strong>
-                                <span class="tooltip-trigger" title="Your app's configuration file containing bundle ID, permissions, and settings.">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path d="M12 16v-4"/>
-                                        <path d="M12 8h.01"/>
+                                <span
+                                    class="tooltip-trigger"
+                                    title="Your app's configuration file containing bundle ID, permissions, and settings."
+                                >
+                                    <svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 16v-4" />
+                                        <path d="M12 8h.01" />
                                     </svg>
                                 </span>
                             </div>
                             {#if infoPlist}
                                 <div class="config-file-status success">
                                     <span>{infoPlist.name}</span>
-                                    <button class="remove-btn" onclick={() => infoPlist = null}>×</button>
+                                    <button
+                                        class="remove-btn"
+                                        onclick={() => (infoPlist = null)}
+                                        >×</button
+                                    >
                                 </div>
                             {:else}
                                 <label class="config-file-status empty">
                                     <span>Not added</span>
                                     <span class="upload-link">upload</span>
-                                    <input type="file" accept=".plist,.xml" onchange={handlePlist} style="display: none;" />
+                                    <input
+                                        type="file"
+                                        accept=".plist,.xml"
+                                        onchange={handlePlist}
+                                        style="display: none;"
+                                    />
                                 </label>
                             {/if}
                         </div>
@@ -472,24 +520,43 @@
                         <div class="config-file-row">
                             <div class="config-file-info">
                                 <strong>Privacy Manifest</strong>
-                                <span class="tooltip-trigger" title="Required for iOS 17+. Declares which privacy-sensitive APIs your app uses.">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path d="M12 16v-4"/>
-                                        <path d="M12 8h.01"/>
+                                <span
+                                    class="tooltip-trigger"
+                                    title="Required for iOS 17+. Declares which privacy-sensitive APIs your app uses."
+                                >
+                                    <svg
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 16v-4" />
+                                        <path d="M12 8h.01" />
                                     </svg>
                                 </span>
                             </div>
                             {#if privacyManifest}
                                 <div class="config-file-status success">
                                     <span>{privacyManifest.name}</span>
-                                    <button class="remove-btn" onclick={() => privacyManifest = null}>×</button>
+                                    <button
+                                        class="remove-btn"
+                                        onclick={() => (privacyManifest = null)}
+                                        >×</button
+                                    >
                                 </div>
                             {:else}
                                 <label class="config-file-status empty">
                                     <span>Not added</span>
                                     <span class="upload-link">upload</span>
-                                    <input type="file" accept=".xcprivacy,.plist,.xml" onchange={handleManifest} style="display: none;" />
+                                    <input
+                                        type="file"
+                                        accept=".xcprivacy,.plist,.xml"
+                                        onchange={handleManifest}
+                                        style="display: none;"
+                                    />
                                 </label>
                             {/if}
                         </div>
@@ -504,7 +571,7 @@
                         >Continue</button
                     >
                 </div>
-            </div>
+            </CockpitPanel>
 
             <!-- Scanning/Applying Overlay -->
             {#if scanning || applyingFiles}
@@ -534,7 +601,10 @@
                                     No config files found
                                 {/if}
                             </h3>
-                            <button class="modal-close" onclick={closeScanResults}>×</button>
+                            <button
+                                class="modal-close"
+                                onclick={closeScanResults}>×</button
+                            >
                         </div>
 
                         <div class="modal-body">
@@ -543,7 +613,11 @@
                                     <div class="result-icon">✓</div>
                                     <div class="result-content">
                                         <strong>Info.plist</strong>
-                                        <span class="result-path">{formatPath(scanResults.infoPlistPath || '')}</span>
+                                        <span class="result-path"
+                                            >{formatPath(
+                                                scanResults.infoPlistPath || "",
+                                            )}</span
+                                        >
                                     </div>
                                 </div>
                             {:else}
@@ -551,7 +625,9 @@
                                     <div class="result-icon">!</div>
                                     <div class="result-content">
                                         <strong>Info.plist</strong>
-                                        <span class="result-path">Not found - upload manually</span>
+                                        <span class="result-path"
+                                            >Not found - upload manually</span
+                                        >
                                     </div>
                                 </div>
                             {/if}
@@ -561,7 +637,12 @@
                                     <div class="result-icon">✓</div>
                                     <div class="result-content">
                                         <strong>Privacy Manifest</strong>
-                                        <span class="result-path">{formatPath(scanResults.privacyManifestPath || '')}</span>
+                                        <span class="result-path"
+                                            >{formatPath(
+                                                scanResults.privacyManifestPath ||
+                                                    "",
+                                            )}</span
+                                        >
                                     </div>
                                 </div>
                             {:else}
@@ -569,16 +650,26 @@
                                     <div class="result-icon">!</div>
                                     <div class="result-content">
                                         <strong>Privacy Manifest</strong>
-                                        <span class="result-path">Not found - may not be required for your app</span>
+                                        <span class="result-path"
+                                            >Not found - may not be required for
+                                            your app</span
+                                        >
                                     </div>
                                 </div>
                             {/if}
                         </div>
 
                         <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick={closeScanResults}>Cancel</button>
+                            <button
+                                class="btn btn-secondary"
+                                onclick={closeScanResults}>Cancel</button
+                            >
                             {#if scanResults.infoPlist || scanResults.privacyManifest}
-                                <button class="btn btn-primary" onclick={applyScanResults}>Use These Files</button>
+                                <button
+                                    class="btn btn-primary"
+                                    onclick={applyScanResults}
+                                    >Use These Files</button
+                                >
                             {/if}
                         </div>
                     </div>
@@ -590,7 +681,7 @@
                 <h2>Confirm & Pay</h2>
                 <p class="text-muted mb-4">Review your submission details</p>
 
-                <div class="summary-card card">
+                <CockpitPanel class="summary-card">
                     <h3>Summary</h3>
                     <div class="summary-row">
                         <span>App</span>
@@ -602,7 +693,11 @@
                     </div>
                     <div class="summary-row">
                         <span>Privacy manifest</span>
-                        <span>{privacyManifest ? "Included" : "Not included"}</span>
+                        <span
+                            >{privacyManifest
+                                ? "Included"
+                                : "Not included"}</span
+                        >
                     </div>
                     <div class="summary-row">
                         <span>Info.plist</span>
@@ -612,18 +707,20 @@
                         <span>Total</span>
                         <span>${PRICE}</span>
                     </div>
-                </div>
+                </CockpitPanel>
 
-                <div class="whats-included card">
+                <CockpitPanel class="whats-included">
                     <h3>What's Included</h3>
                     <ul>
-                        <li>Full metadata analysis (name, description, keywords)</li>
+                        <li>
+                            Full metadata analysis (name, description, keywords)
+                        </li>
                         <li>Screenshot review for guideline compliance</li>
                         <li>Privacy manifest deep analysis</li>
                         <li>Info.plist validation</li>
                         <li>Actionable fix recommendations</li>
                     </ul>
-                </div>
+                </CockpitPanel>
 
                 {#if errorMsg}
                     <div class="error-msg">{errorMsg}</div>
@@ -631,7 +728,8 @@
 
                 {#if !canSubmit}
                     <div class="missing-files-warning">
-                        <strong>Missing required files:</strong> {missingFiles.join(', ')}
+                        <strong>Missing required files:</strong>
+                        {missingFiles.join(", ")}
                     </div>
                 {/if}
 
@@ -645,7 +743,9 @@
                             onclick={testSubmit}
                             disabled={loading || !canSubmit}
                         >
-                            {loading ? "Analyzing..." : "Test Mode (Skip Payment)"}
+                            {loading
+                                ? "Analyzing..."
+                                : "Test Mode (Skip Payment)"}
                         </button>
                         <button
                             class="btn btn-primary"
@@ -1175,6 +1275,8 @@
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 </style>
