@@ -8,44 +8,41 @@
         {
             id: "starter",
             name: "Starter",
-            reviewCount: 1,
-            pricePerReview: 49,
-            totalPrice: 49,
+            credits: 200,
+            price: 49,
             savings: null,
-            description: "Perfect for launching your first app",
+            description: "Perfect for your first launch",
             features: [
-                "1 full app review",
-                "Complete compliance report",
-                "Use anytime — never expires",
+                "1 full review + 4 rechecks",
+                "Or: 2 full reviews",
+                "Never expires",
             ],
         },
         {
             id: "pro",
             name: "Pro",
-            reviewCount: 3,
-            pricePerReview: 43,
-            totalPrice: 129,
-            savings: "Save $18",
+            credits: 600,
+            price: 99,
+            savings: "Save 33%",
             description: "For developers shipping regularly",
             featured: true,
             features: [
-                "3 full app reviews",
-                "Or: 1 app + 2 re-reviews after fixes",
+                "3 full reviews + 12 rechecks",
                 "Perfect for iterating before launch",
+                "Best value for active devs",
             ],
         },
         {
             id: "agency",
             name: "Agency",
-            reviewCount: 15,
-            pricePerReview: 30,
-            totalPrice: 449,
-            savings: "Save $286",
-            description: "For teams managing multiple apps",
+            credits: 2000,
+            price: 249,
+            savings: "Save 49%",
+            description: "For teams and agencies",
             features: [
-                "15 full app reviews",
+                "10 full reviews + 40 rechecks",
                 "Cover your whole app portfolio",
-                "Or: review + re-review cycles",
+                "Volume pricing for studios",
             ],
         },
     ];
@@ -69,6 +66,9 @@
             </h1>
             <p class="subhead">
                 One-time purchase. No subscription. Credits never expire.
+            </p>
+            <p class="credit-explainer">
+                Full review = 100 credits · Recheck after fixes = 25 credits
             </p>
         </header>
 
@@ -97,23 +97,17 @@
                         </header>
 
                         <div class="plan-value">
-                            <div class="review-count">
-                                <span class="count-number">{plan.reviewCount}</span>
-                                <span class="count-label">{plan.reviewCount === 1 ? 'review' : 'reviews'}</span>
+                            <div class="credit-count">
+                                <span class="count-number">{plan.credits}</span>
+                                <span class="count-label">credits</span>
                             </div>
 
-                            <div class="price-anchor">
-                                <span class="price-per">${plan.pricePerReview}</span>
-                                <span class="price-unit">per review</span>
+                            <div class="price-display">
+                                <span class="price-amount">${plan.price}</span>
+                                {#if plan.savings}
+                                    <span class="savings-badge">{plan.savings}</span>
+                                {/if}
                             </div>
-                        </div>
-
-                        <div class="plan-total">
-                            <span class="total-price">${plan.totalPrice}</span>
-                            <span class="total-label">total</span>
-                            {#if plan.savings}
-                                <span class="savings-badge">{plan.savings}</span>
-                            {/if}
                         </div>
 
                         <ul class="plan-features">
@@ -269,6 +263,15 @@
         color: var(--gray-300);
     }
 
+    .credit-explainer {
+        margin-top: 12px;
+        font-family: 'Instrument Mono', monospace;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-500);
+        letter-spacing: 0.02em;
+    }
+
     /* === Loss Aversion === */
     .loss-aversion {
         display: flex;
@@ -421,17 +424,17 @@
         line-height: 1.4;
     }
 
-    /* === Plan Value (Reviews + Price Per) === */
+    /* === Plan Value (Credits + Price) === */
     .plan-value {
         display: flex;
         align-items: flex-end;
         justify-content: space-between;
-        margin-bottom: 16px;
-        padding-bottom: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
         border-bottom: 1px solid var(--border-default);
     }
 
-    .review-count {
+    .credit-count {
         display: flex;
         align-items: baseline;
         gap: 8px;
@@ -439,14 +442,14 @@
 
     .count-number {
         font-family: 'Fraunces', serif;
-        font-size: 3.5rem;
+        font-size: 2.75rem;
         font-weight: 700;
         color: var(--fg);
         line-height: 1;
     }
 
     .pricing-card.featured .count-number {
-        font-size: 4.5rem;
+        font-size: 3.5rem;
         background: linear-gradient(135deg, #d4a853 0%, #e8c77b 50%, #c4963d 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -454,53 +457,30 @@
     }
 
     .count-label {
-        font-size: 1rem;
+        font-size: 0.9rem;
         color: var(--gray-400);
     }
 
-    .price-anchor {
+    .price-display {
         text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
     }
 
-    .price-per {
-        display: block;
+    .price-amount {
         font-family: 'Outfit', sans-serif;
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         font-weight: 700;
         color: var(--fg);
     }
 
-    .price-unit {
-        font-size: 0.8rem;
-        color: var(--gray-500);
-    }
-
-    /* === Plan Total === */
-    .plan-total {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 24px;
-    }
-
-    .total-price {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--gray-300);
-    }
-
-    .total-label {
-        font-size: 0.85rem;
-        color: var(--gray-500);
-    }
-
     .savings-badge {
-        margin-left: auto;
         background: rgba(34, 197, 94, 0.1);
         color: #4ade80;
         font-family: 'Instrument Mono', monospace;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 600;
         padding: 4px 10px;
         border-radius: 6px;
