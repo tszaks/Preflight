@@ -9,24 +9,26 @@
         {
             id: "starter",
             name: "Starter",
-            reviews: 1,
+            credits: 200,
             price: 49,
-            perReview: 49,
+            description: "1 full review + 4 rechecks",
         },
         {
             id: "pro",
             name: "Pro",
-            reviews: 3,
-            price: 129,
-            perReview: 43,
+            credits: 600,
+            price: 99,
+            description: "3 full reviews + 12 rechecks",
+            savings: "Save 33%",
             best: true,
         },
         {
             id: "agency",
             name: "Agency",
-            reviews: 15,
-            price: 449,
-            perReview: 30,
+            credits: 2000,
+            price: 249,
+            description: "10 full reviews + 40 rechecks",
+            savings: "Save 49%",
         },
     ];
 </script>
@@ -119,9 +121,9 @@
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
-                <h2>How many apps do you need to review?</h2>
+                <h2>Simple, transparent pricing</h2>
                 <p class="section-sub">
-                    The average App Store rejection costs 8 days. A review costs ${plans[0].perReview}.
+                    The average App Store rejection costs 8 days. Preflight costs $49.
                 </p>
             </div>
 
@@ -134,25 +136,27 @@
 
                         <div class="plan-name">{plan.name}</div>
 
-                        <div class="review-count">
-                            <span class="count">{plan.reviews}</span>
-                            <span class="count-label">{plan.reviews === 1 ? 'review' : 'reviews'}</span>
+                        <div class="credit-count">
+                            <span class="count">{plan.credits}</span>
+                            <span class="count-label">credits</span>
                         </div>
 
-                        <div class="per-review">
-                            <span class="per-amount">${plan.perReview}</span>
-                            <span class="per-label">per review</span>
+                        <div class="price-row">
+                            <span class="price-amount">${plan.price}</span>
+                            {#if plan.savings}
+                                <span class="savings-badge">{plan.savings}</span>
+                            {/if}
                         </div>
 
-                        <div class="total-price">
-                            ${plan.price} total
+                        <div class="plan-description">
+                            {plan.description}
                         </div>
 
                         <a
                             href="/pricing"
                             class="btn {plan.best ? 'btn-primary' : 'btn-secondary'} btn-full"
                         >
-                            Review {plan.reviews === 1 ? 'My App' : `${plan.reviews} Apps`}
+                            Get Started
                         </a>
                     </div>
                 {/each}
@@ -166,8 +170,6 @@
                     <span>Credits never expire</span>
                     <span class="dot"></span>
                     <span>Results in minutes</span>
-                    <span class="dot"></span>
-                    <span>Full refund on unused credits</span>
                 </div>
             </div>
         </div>
@@ -436,14 +438,14 @@
         color: var(--accent);
     }
 
-    .review-count {
-        margin-bottom: 16px;
+    .credit-count {
+        margin-bottom: 12px;
         margin-top: 4px;
     }
 
     .count {
         font-family: "Outfit", sans-serif;
-        font-size: 4rem;
+        font-size: 3rem;
         font-weight: 800;
         line-height: 1;
         color: var(--fg);
@@ -458,32 +460,38 @@
     }
 
     .count-label {
-        font-size: 1rem;
+        font-size: 0.85rem;
         color: var(--gray-400);
         text-transform: lowercase;
     }
 
-    .per-review {
+    .price-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         margin-bottom: 8px;
     }
 
-    .per-amount {
+    .price-amount {
         font-family: "Outfit", sans-serif;
-        font-size: 1.75rem;
+        font-size: 1.5rem;
         font-weight: 700;
         color: var(--fg);
     }
 
-    .per-label {
-        font-size: 0.9rem;
-        color: var(--gray-400);
-        margin-left: 4px;
+    .savings-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--accent);
+        background: rgba(212, 168, 83, 0.15);
+        padding: 4px 8px;
+        border-radius: 4px;
     }
 
-    .total-price {
-        font-size: 0.9rem;
-        color: var(--gray-500);
-        margin-bottom: 24px;
+    .plan-description {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        margin-bottom: 20px;
     }
 
     .btn-full {
