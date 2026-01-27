@@ -31,7 +31,11 @@
     }
 
     function isClickable(status: string): boolean {
-        return status === "complete";
+        return (
+            status === "complete" ||
+            status === "analyzing" ||
+            status === "queued"
+        );
     }
 
     function mapStatus(
