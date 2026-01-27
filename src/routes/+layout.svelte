@@ -67,8 +67,17 @@
 				/>
 			</a>
 
-			{#if !isLandingPage}
-				<div class="nav-right">
+			<div class="nav-right">
+				{#if isLandingPage}
+					<!-- Landing page: simple Dashboard button -->
+					<a
+						href={data.user ? "/dashboard" : "/auth/login"}
+						class="btn btn-primary"
+					>
+						Dashboard
+					</a>
+				{:else}
+					<!-- Other pages: full nav -->
 					{#if data.user}
 						<div class="credit-badge">
 							<span class="credit-amount">{credits}</span>
@@ -91,8 +100,8 @@
 					{:else}
 						<a href="/auth/login" class="btn btn-primary">Log in</a>
 					{/if}
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</div>
 	</nav>
 {/if}
