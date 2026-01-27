@@ -150,13 +150,14 @@
 
 <style>
     .hero {
-        min-height: 90vh;
+        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 140px 24px 80px;
+        padding: 160px 24px 100px;
         position: relative;
+        background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 168, 83, 0.08), transparent);
     }
 
     .hero-content {
@@ -173,14 +174,15 @@
 
     .badge {
         display: inline-block;
-        font-size: 0.8rem;
-        font-weight: 500;
+        font-size: 0.85rem;
+        font-weight: 600;
         color: var(--accent);
-        padding: 8px 18px;
-        border: 1px solid rgba(212, 168, 83, 0.3);
+        padding: 10px 20px;
+        border: 1px solid rgba(212, 168, 83, 0.4);
         border-radius: 100px;
-        background: rgba(212, 168, 83, 0.06);
-        margin-bottom: 24px;
+        background: rgba(212, 168, 83, 0.1);
+        margin-bottom: 28px;
+        letter-spacing: 0.02em;
     }
 
     .hero h1 {
@@ -198,10 +200,13 @@
     }
 
     .description {
-        font-size: 1.2rem;
-        color: var(--gray-300);
-        line-height: 1.6;
-        margin-bottom: 32px;
+        font-size: 1.35rem;
+        color: var(--gray-100);
+        line-height: 1.7;
+        margin-bottom: 40px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .cta-buttons {
@@ -231,17 +236,16 @@
 
     /* Features */
     .features {
-        padding: 100px 0;
-        background: rgba(255, 255, 255, 0.01);
+        padding: 120px 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
     }
 
     .features h2 {
-        font-size: 1rem;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--gray-500);
-        margin-bottom: 2rem;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+        margin-bottom: 3rem;
         text-align: center;
     }
 
@@ -254,52 +258,60 @@
     }
 
     .feature-item {
-        padding: 24px;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
+        padding: 28px;
+        background: rgba(255, 255, 255, 0.025);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        transition: all 0.3s var(--ease);
+    }
+
+    .feature-item:hover {
+        border-color: rgba(212, 168, 83, 0.3);
+        background: rgba(255, 255, 255, 0.04);
+        transform: translateY(-2px);
     }
 
     .feature-item h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 8px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: var(--fg);
     }
 
     .feature-item p {
-        font-size: 0.9rem;
-        color: var(--gray-400);
-        line-height: 1.5;
+        font-size: 0.95rem;
+        color: var(--gray-300);
+        line-height: 1.6;
     }
 
     /* Pricing */
     .pricing {
-        padding: 100px 0;
+        padding: 120px 0;
     }
 
     .section-header {
         text-align: center;
-        margin-bottom: 48px;
+        margin-bottom: 60px;
     }
 
     .overline {
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0.1em;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
         color: var(--accent);
     }
 
     .section-header h2 {
-        font-size: 2.5rem;
-        margin-top: 12px;
-        letter-spacing: -0.02em;
+        font-size: 2.75rem;
+        margin-top: 16px;
+        letter-spacing: -0.03em;
     }
 
     .section-sub {
-        font-size: 1.1rem;
-        color: var(--gray-400);
-        margin-top: 8px;
+        font-size: 1.2rem;
+        color: var(--gray-300);
+        margin-top: 12px;
     }
 
     .pricing-grid {
@@ -317,19 +329,21 @@
     }
 
     .pricing-card {
-        padding: 32px 24px;
+        padding: 36px 28px;
         text-align: center;
         position: relative;
-        transition: transform 0.2s var(--ease);
+        transition: all 0.3s var(--ease);
     }
 
     .pricing-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
     }
 
     .pricing-card.featured {
         border-color: var(--accent);
-        background: rgba(212, 168, 83, 0.04);
+        background: linear-gradient(180deg, rgba(212, 168, 83, 0.08) 0%, rgba(212, 168, 83, 0.02) 100%);
+        box-shadow: 0 0 60px rgba(212, 168, 83, 0.1);
     }
 
     .popular-badge {
@@ -408,17 +422,16 @@
 
     /* How it works */
     .how-it-works {
-        padding: 100px 0;
-        background: rgba(255, 255, 255, 0.01);
+        padding: 120px 0;
+        background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.02) 100%);
     }
 
     .how-it-works h2 {
-        font-size: 1rem;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--gray-500);
-        margin-bottom: 3rem;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+        margin-bottom: 4rem;
         text-align: center;
     }
 
@@ -468,18 +481,21 @@
 
     /* Final CTA */
     .final-cta {
-        padding: 100px 0;
+        padding: 140px 0;
         text-align: center;
+        background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(212, 168, 83, 0.06), transparent);
     }
 
     .final-cta h2 {
-        font-size: 2rem;
-        margin-bottom: 12px;
+        font-size: 2.5rem;
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
     }
 
     .final-cta p {
-        color: var(--gray-400);
-        margin-bottom: 32px;
+        color: var(--gray-300);
+        margin-bottom: 40px;
+        font-size: 1.15rem;
     }
 
     .final-cta .btn {
