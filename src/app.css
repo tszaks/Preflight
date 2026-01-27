@@ -139,13 +139,15 @@ a {
 }
 
 .btn-primary {
-    background: var(--accent);
-    color: #0a0a0a;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    color: #000000;
+    font-weight: 700;
+    text-shadow: none;
 }
 
 .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(212, 168, 83, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(212, 168, 83, 0.35), 0 0 40px rgba(212, 168, 83, 0.15);
 }
 
 .btn-primary:active {
@@ -216,6 +218,7 @@ a {
 
 .card:hover {
     border-color: var(--border-hover);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 30px rgba(212, 168, 83, 0.05);
 }
 
 .card-clickable {
