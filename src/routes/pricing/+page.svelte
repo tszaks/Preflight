@@ -162,7 +162,7 @@
             </blockquote>
             <cite>
                 <strong>Marcus Johnson</strong>
-                <span>iOS Developer, shipped 12 apps</span>
+                <span>iOS Developer, shipped 3 apps</span>
             </cite>
         </section>
 
