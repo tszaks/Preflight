@@ -25,15 +25,6 @@
             popular: true,
         },
         {
-            id: "team",
-            name: "Team",
-            credits: 750,
-            price: 249,
-            reviews: "7 full reviews",
-            savings: "Save 27%",
-            description: "For small studios and teams",
-        },
-        {
             id: "agency",
             name: "Agency",
             credits: 1500,
@@ -170,15 +161,6 @@
                     <h4>No expiration</h4>
                     <p>Buy credits when you need them. They stay in your account until you use them.</p>
                 </div>
-                <div class="info-item">
-                    <div class="info-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                        </svg>
-                    </div>
-                    <h4>Dashboard access</h4>
-                    <p>View all your reviews and reports anytime from your dashboard.</p>
-                </div>
             </div>
         </div>
     </div>
@@ -211,26 +193,22 @@
 
     .pricing-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
         margin-bottom: 64px;
-        max-width: 1100px;
+        max-width: 900px;
         margin-left: auto;
         margin-right: auto;
     }
 
-    @media (max-width: 1000px) {
+    @media (max-width: 800px) {
         .pricing-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            grid-template-columns: 1fr;
+            max-width: 400px;
+            gap: 24px;
         }
     }
 
-    @media (max-width: 600px) {
-        .pricing-grid {
-            grid-template-columns: 1fr;
-        }
-    }
 
     .pricing-card {
         position: relative;
@@ -400,17 +378,11 @@
 
     .info-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 24px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
     }
 
-    @media (max-width: 800px) {
-        .info-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 500px) {
+    @media (max-width: 700px) {
         .info-grid {
             grid-template-columns: 1fr;
         }
