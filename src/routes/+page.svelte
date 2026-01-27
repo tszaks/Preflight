@@ -329,18 +329,18 @@
         margin: 0 auto;
     }
 
-    .feature-item:hover {
+    .feature-grid :global(.feature-item:hover) {
         transform: translateY(-2px);
     }
 
-    .feature-item h3 {
+    .feature-grid :global(.feature-item h3) {
         font-size: 1.1rem;
         font-weight: 700;
         margin-bottom: 10px;
         color: var(--fg);
     }
 
-    .feature-item p {
+    .feature-grid :global(.feature-item p) {
         font-size: 0.95rem;
         color: var(--gray-300);
         line-height: 1.6;
@@ -390,13 +390,13 @@
         }
     }
 
-    .pricing-card {
+    .pricing-grid :global(.pricing-card) {
         text-align: center;
         /* Position relative needed for absolute positioned badge */
         position: relative;
     }
 
-    .pricing-card:hover {
+    .pricing-grid :global(.pricing-card:hover) {
         transform: translateY(-6px);
     }
 
@@ -470,7 +470,7 @@
         padding: 6px 0;
     }
 
-    .pricing-card .btn {
+    .pricing-grid :global(.pricing-card .btn) {
         width: 100%;
     }
 

@@ -7,8 +7,14 @@
     type Submission = {
         id: string;
         app_name: string;
-        review_type: 'quick' | 'full';
-        status: 'draft' | 'paid' | 'queued' | 'analyzing' | 'complete' | 'failed';
+        review_type: "quick" | "full";
+        status:
+            | "draft"
+            | "paid"
+            | "queued"
+            | "analyzing"
+            | "complete"
+            | "failed";
         created_at: string;
     };
 
@@ -17,21 +23,33 @@
 
     function formatDate(dateStr: string): string {
         const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
     }
 
     function isClickable(status: string): boolean {
-        return status === 'complete';
+        return status === "complete";
     }
 
-    function mapStatus(status: string): 'neutral' | 'ready' | 'processing' | 'warning' | 'critical' {
+    function mapStatus(
+        status: string,
+    ): "neutral" | "ready" | "processing" | "warning" | "critical" {
         switch (status) {
-            case 'complete': return 'ready';
-            case 'analyzing': return 'processing';
-            case 'failed': return 'critical';
-            case 'queued': return 'warning';
-            case 'paid': return 'warning'; 
-            default: return 'neutral';
+            case "complete":
+                return "ready";
+            case "analyzing":
+                return "processing";
+            case "failed":
+                return "critical";
+            case "queued":
+                return "warning";
+            case "paid":
+                return "warning";
+            default:
+                return "neutral";
         }
     }
 </script>
@@ -48,19 +66,55 @@
     </header>
 
     {#if submissions.length === 0}
-    {#if submissions.length === 0}
         <CockpitPanel class="empty-state">
             <div class="empty-icon">
-                <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="10" y="8" width="28" height="34" rx="6" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.6"/>
-                    <path d="M18 18h12M18 24h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-opacity="0.4"/>
-                    <circle cx="38" cy="36" r="10" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M43 41l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <svg
+                    width="56"
+                    height="56"
+                    viewBox="0 0 56 56"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <rect
+                        x="10"
+                        y="8"
+                        width="28"
+                        height="34"
+                        rx="6"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-opacity="0.6"
+                    />
+                    <path
+                        d="M18 18h12M18 24h8"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-opacity="0.4"
+                    />
+                    <circle
+                        cx="38"
+                        cy="36"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    />
+                    <path
+                        d="M43 41l4 4"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                    />
                 </svg>
             </div>
             <h2>No reviews yet</h2>
-            <p>Submit your first app and get a detailed compliance report before you hit Send.</p>
-            <a href="/submit" class="btn btn-primary btn-lg">Start Your First Review</a>
+            <p>
+                Submit your first app and get a detailed compliance report
+                before you hit Send.
+            </p>
+            <a href="/submit" class="btn btn-primary btn-lg"
+                >Start Your First Review</a
+            >
         </CockpitPanel>
     {:else}
         <div class="submissions-list">
@@ -70,24 +124,30 @@
                     href={clickable ? `/report/${sub.id}` : undefined}
                     class="submission-link"
                     class:clickable
-                    role={clickable ? 'link' : 'article'}
+                    role={clickable ? "link" : "article"}
                     tabindex={clickable ? 0 : -1}
                 >
                     <CockpitPanel class="submission-card" active={clickable}>
                         <div class="card-left">
                             <span class="app-name">{sub.app_name}</span>
                             <span class="card-meta">
-                                <span class="review-type" class:full={sub.review_type === 'full'}>
-                                    {sub.review_type === 'full' ? 'Full' : 'Quick'}
+                                <span
+                                    class="review-type"
+                                    class:full={sub.review_type === "full"}
+                                >
+                                    {sub.review_type === "full"
+                                        ? "Full"
+                                        : "Quick"}
                                 </span>
                                 {formatDate(sub.created_at)}
                             </span>
                         </div>
                         <div class="card-right">
-                            <StatusLight 
-                                status={mapStatus(sub.status)} 
-                                label={sub.status} 
-                                pulse={sub.status === 'analyzing' || sub.status === 'queued'} 
+                            <StatusLight
+                                status={mapStatus(sub.status)}
+                                label={sub.status}
+                                pulse={sub.status === "analyzing" ||
+                                    sub.status === "queued"}
                             />
                         </div>
                     </CockpitPanel>
@@ -137,7 +197,7 @@
     }
 
     .credit-amount {
-        font-family: 'Outfit', sans-serif;
+        font-family: "Outfit", sans-serif;
         font-size: 1.25rem;
         font-weight: 700;
         color: var(--accent);
@@ -171,10 +231,14 @@
     }
 
     .empty-state::before {
-        content: '';
+        content: "";
         position: absolute;
         inset: -40px;
-        background: radial-gradient(ellipse at 50% 40%, rgba(212, 168, 83, 0.03) 0%, transparent 60%);
+        background: radial-gradient(
+            ellipse at 50% 40%,
+            rgba(212, 168, 83, 0.03) 0%,
+            transparent 60%
+        );
         pointer-events: none;
     }
 
@@ -185,8 +249,12 @@
     }
 
     @keyframes float {
-        from { transform: translateY(0); }
-        to { transform: translateY(-4px); }
+        from {
+            transform: translateY(0);
+        }
+        to {
+            transform: translateY(-4px);
+        }
     }
 
     .empty-state h2 {
@@ -215,7 +283,7 @@
         display: block;
         transition: transform var(--duration-fast) var(--ease-out);
     }
-    
+
     .submission-link.clickable:hover {
         transform: translateX(2px);
     }
@@ -235,7 +303,7 @@
     }
 
     .app-name {
-        font-family: 'Outfit', sans-serif;
+        font-family: "Outfit", sans-serif;
         font-size: 15px;
         font-weight: 600;
     }
@@ -249,7 +317,7 @@
     }
 
     .review-type {
-        font-family: 'Outfit', sans-serif;
+        font-family: "Outfit", sans-serif;
         font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
