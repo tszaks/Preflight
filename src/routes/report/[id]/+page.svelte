@@ -854,10 +854,10 @@
                                 >{score === null
                                     ? "Pending"
                                     : score >= 80
-                                      ? "Passing"
+                                      ? "Optimal"
                                       : score >= 50
-                                        ? "Needs work"
-                                        : "Failing"}</span
+                                        ? "Advisory"
+                                        : "Critical"}</span
                             >
                         </div>
                     </CockpitPanel>
