@@ -271,27 +271,34 @@
 <main class="submit-page">
     <div class="container">
         <header class="submit-header">
-            <h1>New Review</h1>
-            <p class="text-muted">Step {step} of 3</p>
+            <div class="section-label">PRE_FLIGHT_INITIALIZATION</div>
+            <h1>Mission Parameters</h1>
+            <p class="step-meta">
+                STEP_{step.toString().padStart(2, "0")} // SEQ_CMD_{step}
+            </p>
         </header>
 
         <!-- Progress bar -->
-        <div class="progress-bar">
+        <div class="progress-container">
             <div class="progress-fill" style="width: {(step / 3) * 100}%"></div>
+            <div class="progress-grid"></div>
         </div>
 
         {#if step === 1}
             <!-- Step 1: Metadata -->
             <CockpitPanel class="step-content">
-                <h2>App Metadata</h2>
-                <p class="text-muted mb-4">
+                <div class="panel-header">
+                    <span class="panel-id">CFG_METADATA</span>
+                    <h2>App Metadata</h2>
+                </div>
+                <p class="step-desc">
                     Enter the information from your App Store listing
                 </p>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="appName" class="form-label"
-                            >App Name *</label
+                            >APP_IDENTIFIER *</label
                         >
                         <input
                             type="text"
@@ -299,17 +306,20 @@
                             class="input"
                             bind:value={appName}
                             required
+                            placeholder="Enter application name..."
                         />
                     </div>
 
                     <div class="form-group">
-                        <label for="subtitle" class="form-label">Subtitle</label
+                        <label for="subtitle" class="form-label"
+                            >APP_SUBTITLE</label
                         >
                         <input
                             type="text"
                             id="subtitle"
                             class="input"
                             bind:value={subtitle}
+                            placeholder="Enter subtitle (optional)..."
                         />
                     </div>
                 </div>
@@ -408,7 +418,7 @@
                 <p class="text-muted mb-4">Upload your App Store assets</p>
 
                 <div class="form-group">
-                    <label class="form-label">Screenshots (up to 10)</label>
+                    <label class="form-label">VISUAL_ASSETS (UP_TO_10)</label>
                     <div class="file-upload">
                         <input
                             type="file"
@@ -439,8 +449,8 @@
                 <div class="config-files-section">
                     <div class="config-header">
                         <div>
-                            <h3>Config Files</h3>
-                            <p class="text-muted">
+                            <h3>TECHNICAL_CONFIG</h3>
+                            <p class="step-desc">
                                 Info.plist and Privacy Manifest
                             </p>
                         </div>
@@ -678,34 +688,51 @@
         {:else if step === 3}
             <!-- Step 3: Confirm & checkout -->
             <div class="step-content">
-                <h2>Confirm & Pay</h2>
-                <p class="text-muted mb-4">Review your submission details</p>
+                <div class="panel-header">
+                    <span class="panel-id">CFG_VERIFICATION</span>
+                    <h2>Final Pre-Flight Check</h2>
+                </div>
+                <p class="step-desc">
+                    Review your submission parameters for deployment
+                </p>
 
                 <CockpitPanel class="summary-card">
-                    <h3>Summary</h3>
-                    <div class="summary-row">
-                        <span>App</span>
-                        <span>{appName}</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Screenshots</span>
-                        <span>{screenshots.length} files</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Privacy manifest</span>
-                        <span
-                            >{privacyManifest
-                                ? "Included"
-                                : "Not included"}</span
-                        >
-                    </div>
-                    <div class="summary-row">
-                        <span>Info.plist</span>
-                        <span>{infoPlist ? "Included" : "Not included"}</span>
-                    </div>
-                    <div class="summary-row total">
-                        <span>Total</span>
-                        <span>${PRICE}</span>
+                    <div class="section-label">READOUT_SUMMARY</div>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">APP_IDENTIFIER</span>
+                            <span class="summary-value">{appName}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">ASSET_COUNT</span>
+                            <span class="summary-value"
+                                >{screenshots.length} FILES</span
+                            >
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">PRIVACY_MANIFEST</span>
+                            <span
+                                class="summary-value status-{privacyManifest
+                                    ? 'ready'
+                                    : 'warning'}"
+                            >
+                                {privacyManifest ? "ATTACHED" : "MISSING"}
+                            </span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">INFO_PLIST</span>
+                            <span
+                                class="summary-value status-{infoPlist
+                                    ? 'ready'
+                                    : 'warning'}"
+                            >
+                                {infoPlist ? "ATTACHED" : "MISSING"}
+                            </span>
+                        </div>
+                        <div class="summary-item total">
+                            <span class="summary-label">TOTAL_FEE</span>
+                            <span class="summary-value">${PRICE}.00</span>
+                        </div>
                     </div>
                 </CockpitPanel>
 
@@ -768,35 +795,94 @@
     }
 
     .submit-header {
-        margin-bottom: 1.5rem;
+        margin-bottom: 2.5rem;
     }
 
     .submit-header h1 {
-        font-size: 2rem;
-        margin-bottom: 0.25rem;
+        font-family: "Outfit", sans-serif;
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-top: 8px;
+        letter-spacing: -0.02em;
+        color: var(--gray-100);
     }
 
-    .progress-bar {
-        height: 4px;
-        background: rgba(255, 255, 255, 0.1);
+    .step-meta {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
+        margin-top: 4px;
+    }
+
+    .progress-container {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 2px;
-        margin-bottom: 3rem;
+        margin-bottom: 3.5rem;
+        position: relative;
+        overflow: hidden;
     }
 
     .progress-fill {
         height: 100%;
         background: var(--accent);
-        border-radius: 2px;
-        transition: width 0.3s ease;
+        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        z-index: 1;
+    }
+
+    .progress-grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                0deg,
+                rgba(255, 255, 255, 0.05) 1px,
+                transparent 1px
+            );
+        background-size: 10px 100%;
+        z-index: 2;
+        pointer-events: none;
     }
 
     .step-content {
         max-width: 600px;
     }
 
+    .panel-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .panel-id {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        display: block;
+        margin-bottom: 4px;
+    }
+
     .step-content h2 {
         font-size: 1.5rem;
-        margin-bottom: 0.5rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--gray-100);
+    }
+
+    .step-desc {
+        font-size: 0.95rem;
+        color: var(--gray-400);
+        margin-bottom: 2rem;
+        line-height: 1.5;
     }
 
     .form-row {
@@ -961,27 +1047,60 @@
 
     .summary-card {
         margin-top: 2rem;
+        padding: 24px !important;
     }
 
-    .summary-card h3 {
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--gray-500);
-        margin-bottom: 1rem;
+    .summary-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.01);
     }
 
-    .summary-row {
+    .summary-item {
         display: flex;
         justify-content: space-between;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .summary-row.total {
+    .summary-label {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .summary-value {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--gray-200);
+    }
+
+    .summary-value.status-ready {
+        color: #4ade80;
+    }
+    .summary-value.status-warning {
+        color: #fbbf24;
+    }
+
+    .summary-item.total {
+        background: rgba(212, 168, 83, 0.05);
         border-bottom: none;
-        font-weight: 600;
-        font-size: 1.1rem;
+    }
+
+    .summary-item.total .summary-label {
+        color: var(--accent);
+    }
+
+    .summary-item.total .summary-value {
+        font-size: 1.25rem;
+        color: var(--accent);
     }
 
     .error-msg {

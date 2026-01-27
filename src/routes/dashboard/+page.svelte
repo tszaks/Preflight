@@ -133,23 +133,30 @@
                 >
                     <CockpitPanel class="submission-card" active={clickable}>
                         <div class="card-left">
+                            <div class="card-id">
+                                PKT_{sub.id.substring(0, 4).toUpperCase()}
+                            </div>
                             <span class="app-name">{sub.app_name}</span>
-                            <span class="card-meta">
+                            <div class="card-meta">
                                 <span
                                     class="review-type"
                                     class:full={sub.review_type === "full"}
                                 >
                                     {sub.review_type === "full"
-                                        ? "Full"
-                                        : "Quick"}
+                                        ? "DGN_FULL"
+                                        : "DGN_QUICK"}
                                 </span>
-                                {formatDate(sub.created_at)}
-                            </span>
+                                <span class="date-stamp"
+                                    >{formatDate(
+                                        sub.created_at,
+                                    ).toUpperCase()}</span
+                                >
+                            </div>
                         </div>
                         <div class="card-right">
                             <StatusLight
                                 status={mapStatus(sub.status)}
-                                label={sub.status}
+                                label={sub.status.toUpperCase()}
                                 pulse={sub.status === "analyzing" ||
                                     sub.status === "queued"}
                             />
@@ -297,43 +304,61 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 20px;
+        padding: 24px !important;
     }
 
     .card-left {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
+    }
+
+    .card-id {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
+        margin-bottom: -2px;
     }
 
     .app-name {
         font-family: "Outfit", sans-serif;
-        font-size: 15px;
-        font-weight: 600;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--fg);
     }
 
     .card-meta {
-        font-size: 13px;
-        color: var(--gray-500);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
+        margin-top: 2px;
     }
 
     .review-type {
-        font-family: "Outfit", sans-serif;
-        font-size: 11px;
-        font-weight: 600;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
         text-transform: uppercase;
-        background: rgba(168, 165, 160, 0.08);
-        color: var(--gray-300);
+        background: rgba(168, 165, 160, 0.05);
+        color: var(--gray-500);
         padding: 2px 6px;
-        border-radius: 4px;
+        border-radius: 2px;
+        letter-spacing: 0.05em;
     }
 
     .review-type.full {
-        background: rgba(212, 168, 83, 0.08);
+        background: rgba(212, 168, 83, 0.05);
         color: var(--accent);
+    }
+
+    .date-stamp {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.05em;
     }
 
     .card-right {

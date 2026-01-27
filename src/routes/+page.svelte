@@ -41,7 +41,7 @@
 <main>
     <section class="hero">
         <div class="container hero-content" class:visible>
-            <span class="badge">For indie iOS developers</span>
+            <div class="section-label">IDENTIFIER // PREFLIGHT_V2.1</div>
             <h1>
                 Never get rejected for something <span class="highlight"
                     >you could've caught.</span
@@ -92,6 +92,7 @@
 
     <section class="features">
         <div class="container">
+            <div class="section-label">DIAGNOSTIC_CAPABILITIES</div>
             <h2>What We Check</h2>
             <div class="feature-grid">
                 <CockpitPanel class="feature-item">
@@ -125,7 +126,7 @@
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
-                <span class="overline">Buy Credits</span>
+                <div class="section-label">CREDIT_ACQUISITION</div>
                 <h2>Pre-purchase credits. Use anytime.</h2>
                 <p class="section-sub">
                     No subscriptions. Credits never expire.
@@ -172,6 +173,7 @@
 
     <section class="how-it-works">
         <div class="container">
+            <div class="section-label">OPERATIONAL_FLOW</div>
             <h2>How It Works</h2>
             <div class="steps">
                 <div class="step">
@@ -416,11 +418,12 @@
     }
 
     .plan-name {
-        font-size: 0.85rem;
-        font-weight: 600;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--gray-400);
+        letter-spacing: 0.15em;
+        color: var(--gray-600);
     }
 
     .plan-credits {
@@ -438,9 +441,13 @@
     }
 
     .credits-label {
-        font-size: 0.85rem;
-        color: var(--gray-500);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: var(--gray-600);
         margin-left: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
     }
 
     .plan-price {
