@@ -18,16 +18,30 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
             }
         });
 
-    // IMPORTANT: Call getUser() first - this validates the JWT with Supabase
-    // servers and automatically refreshes expired tokens. getSession() only
-    // reads from local storage/cookies without validation.
-    const {
-        data: { user }
-    } = await supabase.auth.getUser();
+    // On server: get fresh user data (validates JWT, refreshes tokens)
+    // On browser: use server-provided data as source of truth since
+    // httpOnly cookies aren't accessible to the browser client
+    let user = data.user;
+    let session = data.session;
 
-    const {
-        data: { session }
-    } = await supabase.auth.getSession();
+    if (isBrowser()) {
+        // Browser client can still manage auth state changes
+        const { data: authData } = await supabase.auth.getSession();
+        if (authData.session) {
+            session = authData.session;
+            user = authData.session.user;
+        }
+    } else {
+        // Server-side: validate and refresh tokens
+        const { data: { user: serverUser } } = await supabase.auth.getUser();
+        if (serverUser) {
+            user = serverUser;
+        }
+        const { data: { session: serverSession } } = await supabase.auth.getSession();
+        if (serverSession) {
+            session = serverSession;
+        }
+    }
 
     return { session, supabase, user, credits: data.credits };
 };
