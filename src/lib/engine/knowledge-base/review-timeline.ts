@@ -576,7 +576,7 @@ export const FASTER_APPROVAL_TIPS: ApprovalTip[] = [
         id: 'prep-privacy',
         category: 'preparation',
         title: 'Complete Privacy Manifest Before Submission',
-        description: 'Generate and validate your PrivacyInfo.xcprivacy file. Include manifests from all third-party SDKs. This is the #1 rejection reason in 2025.',
+        description: 'Generate and validate your PrivacyInfo.xcprivacy file. Include manifests from all third-party SDKs. Still a top rejection reason.',
         impact: 'high'
     },
     {
