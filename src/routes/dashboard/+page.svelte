@@ -299,12 +299,12 @@
         transform: translateX(2px);
     }
 
-    /* Target inner cockpit panel for layout */
-    .submission-link :global(.submission-card) {
+    /* Target inner panel content for layout */
+    .submission-link :global(.submission-card .panel-content) {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 24px !important;
+        gap: 24px;
     }
 
     .card-left {
