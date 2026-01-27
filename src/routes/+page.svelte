@@ -8,12 +8,14 @@
     const plans = [
         {
             id: "starter",
+            name: "Starter",
             reviews: 1,
             price: 49,
             perReview: 49,
         },
         {
             id: "pro",
+            name: "Pro",
             reviews: 3,
             price: 129,
             perReview: 43,
@@ -21,6 +23,7 @@
         },
         {
             id: "agency",
+            name: "Agency",
             reviews: 15,
             price: 449,
             perReview: 30,
@@ -128,6 +131,8 @@
                         {#if plan.best}
                             <div class="best-badge">Best Value</div>
                         {/if}
+
+                        <div class="plan-name">{plan.name}</div>
 
                         <div class="review-count">
                             <span class="count">{plan.reviews}</span>
@@ -418,12 +423,21 @@
         white-space: nowrap;
     }
 
-    .review-count {
-        margin-bottom: 16px;
+    .plan-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--gray-500);
         margin-top: 8px;
     }
 
-    .pricing-card.best .review-count {
+    .pricing-card.best .plan-name {
+        color: var(--accent);
+    }
+
+    .review-count {
+        margin-bottom: 16px;
         margin-top: 4px;
     }
 
