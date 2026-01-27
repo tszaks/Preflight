@@ -216,12 +216,11 @@
 
 <style>
     .hero {
-        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
-        padding: 160px 24px 100px;
+        padding: 100px 24px 80px;
         position: relative;
         background: radial-gradient(
             ellipse 80% 50% at 50% -20%,
@@ -306,7 +305,7 @@
 
     /* Features */
     .features {
-        padding: 120px 0;
+        padding: 80px 0;
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.02) 0%,
@@ -319,7 +318,7 @@
         font-weight: 700;
         letter-spacing: -0.02em;
         color: var(--fg);
-        margin-bottom: 3rem;
+        margin-bottom: 2rem;
         text-align: center;
     }
 
@@ -350,12 +349,12 @@
 
     /* Pricing */
     .pricing {
-        padding: 120px 0;
+        padding: 80px 0;
     }
 
     .section-header {
         text-align: center;
-        margin-bottom: 60px;
+        margin-bottom: 40px;
     }
 
     .overline {
@@ -483,7 +482,7 @@
 
     /* How it works */
     .how-it-works {
-        padding: 120px 0;
+        padding: 80px 0;
         background: linear-gradient(
             180deg,
             transparent 0%,
@@ -496,7 +495,7 @@
         font-weight: 700;
         letter-spacing: -0.02em;
         color: var(--fg);
-        margin-bottom: 4rem;
+        margin-bottom: 2.5rem;
         text-align: center;
     }
 
@@ -546,7 +545,7 @@
 
     /* Final CTA */
     .final-cta {
-        padding: 140px 0;
+        padding: 80px 0;
         text-align: center;
         background: radial-gradient(
             ellipse 60% 40% at 50% 100%,
