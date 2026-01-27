@@ -10,30 +10,34 @@
             name: "Starter",
             credits: 100,
             price: 49,
-            apps: "1 app",
-            perApp: "$49/app",
+            reviews: "1 full review",
+            savings: null,
+            description: "Perfect for launching your first app",
         },
         {
             name: "Pro",
             credits: 350,
             price: 129,
-            apps: "3 apps",
-            perApp: "$43/app",
+            reviews: "3 full reviews",
+            savings: "Save 12%",
+            description: "For developers shipping regularly",
             popular: true,
         },
         {
             name: "Team",
             credits: 750,
             price: 249,
-            apps: "7 apps",
-            perApp: "$35.50/app",
+            reviews: "7 full reviews",
+            savings: "Save 27%",
+            description: "For small studios and teams",
         },
         {
             name: "Agency",
             credits: 1500,
             price: 449,
-            apps: "15 apps",
-            perApp: "$29.93/app",
+            reviews: "15 full reviews",
+            savings: "Save 39%",
+            description: "For agencies managing multiple apps",
         },
     ];
 </script>
@@ -126,47 +130,66 @@
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
-                <div class="section-label">Pricing</div>
-                <h2>Pre-purchase credits. Use anytime.</h2>
+                <div class="section-label">Simple Pricing</div>
+                <h2>Buy credits, review apps.</h2>
                 <p class="section-sub">
-                    No subscriptions. Credits never expire.
+                    No subscriptions. No expiration. Just reviews when you need them.
                 </p>
             </div>
 
             <div class="pricing-grid">
                 {#each plans as plan}
-                    <CockpitPanel
-                        class="pricing-card"
-                        variant={plan.popular ? "elevated" : "default"}
-                        active={plan.popular}
-                    >
+                    <div class="pricing-card" class:popular={plan.popular}>
                         {#if plan.popular}
-                            <div class="popular-badge">Most Popular</div>
+                            <div class="popular-badge">Recommended</div>
                         {/if}
-                        <span class="plan-name">{plan.name}</span>
-                        <div class="plan-credits">
-                            <span class="credits">{plan.credits}</span>
-                            <span class="credits-label">credits</span>
+                        {#if plan.savings}
+                            <div class="savings-tag">{plan.savings}</div>
+                        {/if}
+                        <div class="plan-header">
+                            <h3 class="plan-name">{plan.name}</h3>
+                            <p class="plan-description">{plan.description}</p>
                         </div>
                         <div class="plan-price">
-                            <span class="price">${plan.price}</span>
-                            <span class="per-app">{plan.perApp}</span>
+                            <span class="price-amount">${plan.price}</span>
+                            <span class="price-once">one-time</span>
                         </div>
-                        <ul class="plan-features">
-                            <li>{plan.apps} full reviews</li>
-                            <li>Credits never expire</li>
-                            <li>Use anytime</li>
-                        </ul>
+                        <div class="plan-value">
+                            <span class="credits-count">{plan.credits}</span>
+                            <span class="credits-label">credits</span>
+                        </div>
+                        <div class="plan-details">
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span>{plan.reviews}</span>
+                            </div>
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span>Credits never expire</span>
+                            </div>
+                            <div class="detail-item">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span>Full compliance report</span>
+                            </div>
+                        </div>
                         <a
                             href="/pricing"
-                            class="btn {plan.popular
-                                ? 'btn-primary'
-                                : 'btn-secondary'}"
+                            class="btn {plan.popular ? 'btn-primary' : 'btn-secondary'} btn-full"
                         >
-                            Buy {plan.name}
+                            Get {plan.name}
                         </a>
-                    </CockpitPanel>
+                    </div>
                 {/each}
+            </div>
+
+            <div class="pricing-footnote">
+                <p>100 credits = 1 full app review with detailed compliance report</p>
             </div>
         </div>
     </section>
@@ -344,25 +367,17 @@
 
     .section-header {
         text-align: center;
-        margin-bottom: 40px;
-    }
-
-    .overline {
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: var(--accent);
+        margin-bottom: 48px;
     }
 
     .section-header h2 {
-        font-size: 2.75rem;
+        font-size: 2.5rem;
         margin-top: 16px;
         letter-spacing: -0.03em;
     }
 
     .section-sub {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         color: var(--gray-300);
         margin-top: 12px;
     }
@@ -370,104 +385,183 @@
     .pricing-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
+        gap: 16px;
         max-width: 1100px;
         margin: 0 auto;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1000px) {
         .pricing-grid {
             grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
         }
     }
 
-    .pricing-grid :global(.pricing-card) {
-        text-align: center;
-        /* Position relative needed for absolute positioned badge */
-        position: relative;
+    @media (max-width: 600px) {
+        .pricing-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
-    .pricing-grid :global(.pricing-card:hover) {
-        transform: translateY(-6px);
+    .pricing-card {
+        position: relative;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 28px 24px;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+    }
+
+    .pricing-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-4px);
+    }
+
+    .pricing-card.popular {
+        background: rgba(212, 168, 83, 0.04);
+        border-color: rgba(212, 168, 83, 0.25);
+        box-shadow: 0 0 40px rgba(212, 168, 83, 0.08);
+    }
+
+    .pricing-card.popular:hover {
+        border-color: rgba(212, 168, 83, 0.4);
+        box-shadow: 0 0 50px rgba(212, 168, 83, 0.12);
     }
 
     .popular-badge {
         position: absolute;
-        top: -12px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
-        background: var(--accent);
-        color: var(--bg);
-        font-size: 0.7rem;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: #0a0a0c;
+        font-size: 0.65rem;
         font-weight: 700;
-        padding: 4px 12px;
+        padding: 5px 14px;
         border-radius: 20px;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+    }
+
+    .savings-tag {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #22c55e;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    .plan-header {
+        margin-bottom: 20px;
+        padding-top: 8px;
+    }
+
+    .pricing-card.popular .plan-header {
+        padding-top: 4px;
     }
 
     .plan-name {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.65rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: var(--gray-600);
-    }
-
-    .plan-credits {
-        margin: 16px 0 8px;
-    }
-
-    .credits {
         font-family: "Outfit", sans-serif;
-        font-size: 2.5rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--fg);
+        margin-bottom: 6px;
+    }
+
+    .plan-description {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        line-height: 1.4;
+    }
+
+    .plan-price {
+        margin-bottom: 8px;
+    }
+
+    .price-amount {
+        font-family: "Outfit", sans-serif;
+        font-size: 2.25rem;
         font-weight: 800;
+        color: var(--fg);
+        letter-spacing: -0.02em;
+    }
+
+    .pricing-card.popular .price-amount {
         background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
-    .credits-label {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        margin-left: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-    }
-
-    .plan-price {
-        margin-bottom: 20px;
-    }
-
-    .price {
-        font-size: 1.5rem;
-        font-weight: 700;
-        display: block;
-    }
-
-    .per-app {
+    .price-once {
         font-size: 0.8rem;
         color: var(--gray-500);
+        margin-left: 4px;
     }
 
-    .plan-features {
-        list-style: none;
-        text-align: left;
-        margin-bottom: 24px;
+    .plan-value {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .plan-features li {
+    .credits-count {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .credits-label {
         font-size: 0.85rem;
-        color: var(--gray-300);
-        padding: 6px 0;
+        color: var(--gray-400);
     }
 
-    .pricing-grid :global(.pricing-card .btn) {
+    .plan-details {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-grow: 1;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: var(--gray-300);
+    }
+
+    .detail-item svg {
+        color: #22c55e;
+        flex-shrink: 0;
+    }
+
+    .btn-full {
         width: 100%;
+        justify-content: center;
+    }
+
+    .pricing-footnote {
+        text-align: center;
+        margin-top: 32px;
+    }
+
+    .pricing-footnote p {
+        font-size: 0.9rem;
+        color: var(--gray-500);
     }
 
     /* How it works */
