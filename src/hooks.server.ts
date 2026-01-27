@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import type { Handle } from '@sveltejs/kit';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { dev } from '$app/environment';
 
 export const handle: Handle = async ({ event, resolve }) => {
     event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
@@ -8,11 +9,12 @@ export const handle: Handle = async ({ event, resolve }) => {
             getAll: () => event.cookies.getAll(),
             setAll: (cookiesToSet) => {
                 cookiesToSet.forEach(({ name, value, options }) => {
-                    // Ensure cookies persist properly across browser sessions
+                    // Preserve Supabase's maxAge/expires settings for session persistence
+                    // Only use secure cookies in production (HTTPS)
                     event.cookies.set(name, value, {
                         ...options,
                         path: '/',
-                        secure: true,
+                        secure: !dev, // false on localhost, true in production
                         httpOnly: true,
                         sameSite: 'lax',
                     });
