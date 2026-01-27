@@ -72,10 +72,10 @@
 <style>
     .log-terminal {
         background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(34, 197, 94, 0.2);
-        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
         padding: 16px;
-        font-family: "JetBrains Mono", "Fira Code", monospace;
+        font-family: "Instrument Mono", monospace;
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -86,13 +86,13 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        color: var(--status-ready-fg, #22c55e);
-        font-size: 0.75rem;
+        color: var(--accent);
+        font-size: 0.65rem;
         font-weight: 700;
         letter-spacing: 0.1em;
         margin-bottom: 12px;
         padding-bottom: 8px;
-        border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .status-dot {
@@ -110,8 +110,8 @@
         flex-direction: column;
         justify-content: flex-end;
         gap: 4px;
-        font-size: 0.85rem;
-        color: rgba(34, 197, 94, 0.9);
+        font-size: 0.75rem;
+        color: var(--gray-300);
     }
 
     .log-line {

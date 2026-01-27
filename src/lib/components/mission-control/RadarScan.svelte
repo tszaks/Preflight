@@ -36,20 +36,24 @@
         border-radius: 50%;
         background: radial-gradient(
             circle at center,
-            rgba(34, 197, 94, 0.05) 0%,
+            var(--accent-glow) 0%,
             rgba(0, 0, 0, 0) 70%
         );
-        box-shadow: 0 0 30px rgba(34, 197, 94, 0.05) inset;
+        box-shadow: 0 0 30px var(--accent-glow) inset;
     }
 
     .grid-lines {
         position: absolute;
         inset: 0;
         background-image: linear-gradient(
-                rgba(34, 197, 94, 0.1) 1px,
+                rgba(255, 255, 255, 0.03) 1px,
                 transparent 1px
             ),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+            linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.03) 1px,
+                transparent 1px
+            );
         background-size: 40px 40px;
         background-position: center;
         opacity: 0.3;
@@ -63,8 +67,8 @@
             from 0deg,
             transparent 0deg,
             transparent 270deg,
-            rgba(34, 197, 94, 0.1) 300deg,
-            rgba(34, 197, 94, 0.4) 360deg
+            var(--accent-subtle) 300deg,
+            var(--accent) 360deg
         );
         border-radius: 50%;
         opacity: 0;
@@ -77,7 +81,7 @@
 
     .ring {
         position: absolute;
-        border: 1px solid rgba(34, 197, 94, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.03);
         border-radius: 50%;
     }
 
@@ -106,14 +110,15 @@
         position: absolute;
         width: 20px;
         height: 20px;
-        border: 1px solid rgba(34, 197, 94, 0.5);
+        border: 1px solid var(--accent);
+        opacity: 0.5;
     }
 
     .crosshair::before,
     .crosshair::after {
         content: "";
         position: absolute;
-        background: rgba(34, 197, 94, 0.5);
+        background: var(--accent);
     }
 
     .crosshair::before {

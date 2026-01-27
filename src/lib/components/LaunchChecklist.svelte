@@ -154,11 +154,13 @@
 
     .panel-subtitle {
         font-family: "Instrument Mono", monospace;
-        font-size: 11px;
+        font-size: 0.6rem;
+        font-weight: 700;
         color: var(--accent);
-        margin: 4px 0 0 0;
-        letter-spacing: 0.1em;
-        opacity: 0.8;
+        margin: 6px 0 0 0;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        opacity: 0.6;
     }
 
     .phase-container {
@@ -179,19 +181,22 @@
 
     .phase-index {
         font-family: "Instrument Mono", monospace;
-        font-size: 12px;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 2px 6px;
-        border-radius: 4px;
-        color: var(--fg);
+        font-size: 0.6rem;
+        font-weight: 700;
+        background: var(--accent-subtle);
+        padding: 4px 8px;
+        border-radius: 2px;
+        color: var(--accent);
+        border: 1px solid var(--accent-glow);
     }
 
     .phase-name {
-        font-family: "Outfit", sans-serif;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.1em;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
+        color: var(--gray-500);
     }
 
     .diagnostic-grid {
@@ -205,15 +210,21 @@
     }
 
     .diagnostic-row {
-        background: rgba(15, 15, 18, 0.4); /* Row bg */
-        padding: 16px;
+        background: rgba(255, 255, 255, 0.01);
+        padding: 20px 24px;
         display: flex;
-        gap: 16px;
-        transition: background 0.2s ease;
+        gap: 20px;
+        transition: all 0.2s var(--ease);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .diagnostic-row:last-child {
+        border-bottom: none;
     }
 
     .diagnostic-row:hover {
         background: rgba(255, 255, 255, 0.03);
+        transform: translateX(4px);
     }
 
     .toggle-switch {
@@ -252,31 +263,34 @@
 
     .tag-required {
         font-family: "Instrument Mono", monospace;
-        font-size: 9px;
+        font-size: 0.55rem;
+        font-weight: 700;
         color: var(--status-failed-fg);
-        background: rgba(239, 68, 68, 0.1);
-        padding: 2px 6px;
+        background: var(--status-failed-bg);
+        padding: 3px 8px;
         border-radius: 2px;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border: 1px solid rgba(239, 68, 68, 0.2);
+        letter-spacing: 0.1em;
+        border: 1px solid rgba(239, 68, 68, 0.1);
     }
 
     .item-desc {
-        font-size: 13px;
+        font-size: 0.9rem;
         color: var(--gray-400);
-        line-height: 1.5;
-        margin: 0 0 8px 0;
+        line-height: 1.6;
+        margin: 0 0 12px 0;
         max-width: 90%;
     }
 
     .link-action {
         font-family: "Instrument Mono", monospace;
-        font-size: 11px;
+        font-size: 0.65rem;
+        font-weight: 700;
         color: var(--accent);
         text-decoration: none;
-        opacity: 0.8;
-        transition: opacity 0.2s;
+        opacity: 0.6;
+        transition: all 0.2s var(--ease);
+        letter-spacing: 0.05em;
     }
 
     .link-action:hover {

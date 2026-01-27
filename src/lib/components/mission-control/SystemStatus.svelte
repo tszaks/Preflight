@@ -60,18 +60,20 @@
 <style>
     .system-status {
         background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(34, 197, 94, 0.2);
-        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
         padding: 16px;
-        font-family: "JetBrains Mono", "Fira Code", monospace;
+        font-family: "Instrument Mono", monospace;
     }
 
     .header {
-        font-size: 0.75rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
         font-weight: 700;
-        color: rgba(34, 197, 94, 0.6);
-        letter-spacing: 0.1em;
+        color: var(--gray-600);
+        letter-spacing: 0.15em;
         margin-bottom: 16px;
+        text-transform: uppercase;
     }
 
     .metric {
@@ -85,8 +87,11 @@
     .label {
         display: flex;
         justify-content: space-between;
-        font-size: 0.75rem;
-        color: rgba(34, 197, 94, 0.9);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--accent);
+        text-transform: uppercase;
         margin-bottom: 4px;
     }
 
@@ -99,8 +104,8 @@
 
     .bar {
         height: 100%;
-        background: var(--status-ready-fg, #22c55e);
+        background: var(--accent);
         transition: width 0.5s ease-out;
-        box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        box-shadow: 0 0 8px var(--accent-glow);
     }
 </style>
