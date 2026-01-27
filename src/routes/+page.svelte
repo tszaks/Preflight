@@ -195,7 +195,7 @@
                 <div class="step">
                     <span class="step-number">3</span>
                     <h3>Get Your Report</h3>
-                    <p>Detailed issues with fix suggestions in minutes</p>
+                    <p>A detailed report with complete analysis, suggestions, and recommendations</p>
                 </div>
             </div>
         </div>
