@@ -574,19 +574,17 @@
         {@const totalCategories = 6}
 
         {#if criticalItems.length === 0 && warningItems.length > 0}
-            <div class="encouragement-banner">
-                <div class="banner-icon">🎯</div>
+            <div class="status-banner">
                 <div class="banner-content">
-                    <strong>You're almost there!</strong>
-                    <p>No blocking issues found. Address the warnings below to maximize your approval chances.</p>
+                    <strong>No blocking issues</strong>
+                    <p>{warningItems.length} warning{warningItems.length === 1 ? '' : 's'} to review before submission.</p>
                 </div>
             </div>
         {:else if criticalItems.length === 0 && warningItems.length === 0}
-            <div class="encouragement-banner success">
-                <div class="banner-icon">✅</div>
+            <div class="status-banner clear">
                 <div class="banner-content">
-                    <strong>Looking great!</strong>
-                    <p>No issues detected. Your app appears ready for App Store submission.</p>
+                    <strong>No issues detected</strong>
+                    <p>This submission passes all automated checks.</p>
                 </div>
             </div>
         {/if}
@@ -1724,42 +1722,32 @@
         color: #4ade80;
     }
 
-    /* Encouragement Banner */
-    .encouragement-banner {
-        display: flex;
-        align-items: flex-start;
-        gap: 16px;
-        padding: 20px 24px;
-        background: rgba(212, 168, 83, 0.06);
-        border: 1px solid rgba(212, 168, 83, 0.15);
-        border-radius: 8px;
+    /* Status Banner */
+    .status-banner {
+        padding: 16px 20px;
+        background: rgba(245, 158, 11, 0.04);
+        border-left: 2px solid rgba(245, 158, 11, 0.4);
         margin-bottom: 32px;
     }
 
-    .encouragement-banner.success {
-        background: rgba(34, 197, 94, 0.06);
-        border-color: rgba(34, 197, 94, 0.15);
+    .status-banner.clear {
+        background: rgba(34, 197, 94, 0.04);
+        border-left-color: rgba(34, 197, 94, 0.4);
     }
 
-    .banner-icon {
-        font-size: 1.5rem;
-        line-height: 1;
-        flex-shrink: 0;
-    }
-
-    .banner-content strong {
+    .status-banner .banner-content strong {
         display: block;
         font-family: "Outfit", sans-serif;
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: var(--fg);
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
 
-    .banner-content p {
-        font-size: 0.9rem;
-        color: var(--gray-300);
-        line-height: 1.5;
+    .status-banner .banner-content p {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        line-height: 1.4;
         margin: 0;
     }
 
