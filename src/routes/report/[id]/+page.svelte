@@ -555,129 +555,146 @@
 
         <section class="score-section">
             <CockpitPanel class="high-level-score" variant="elevated">
-                <div class="hud-cluster">
-                    <div
-                        class="hud-gauge"
-                        style="--score-color: {scoreColor(
-                            report.score_overall,
-                            criticalItems.length > 0,
-                        )}"
-                    >
-                        <svg viewBox="0 0 100 100">
-                            <circle class="track" cx="50" cy="50" r="45" />
-                            <circle
-                                class="fill"
-                                cx="50"
-                                cy="50"
-                                r="45"
-                                style="stroke-dasharray: {2 *
-                                    Math.PI *
-                                    45 *
-                                    (report.score_overall / 100)}, 1000"
-                            />
-                        </svg>
-                        <div class="gauge-value">
-                            <span class="value"
-                                >{report.score_overall ?? "--"}</span
-                            >
-                            <span class="label">READY SCORE</span>
+                <div class="hud-main-panel">
+                    <!-- Gauge Section -->
+                    <div class="hud-gauge-group">
+                        <div
+                            class="hud-gauge"
+                            style="--score-color: {scoreColor(
+                                report.score_overall,
+                                criticalItems.length > 0,
+                            )}"
+                        >
+                            <svg viewBox="0 0 100 100">
+                                <circle class="track" cx="50" cy="50" r="45" />
+                                <circle
+                                    class="fill"
+                                    cx="50"
+                                    cy="50"
+                                    r="45"
+                                    style="stroke-dasharray: {2 *
+                                        Math.PI *
+                                        45 *
+                                        (report.score_overall / 100)}, 1000"
+                                />
+                            </svg>
+                            <div class="gauge-value">
+                                <span class="value"
+                                    >{report.score_overall ?? "--"}</span
+                                >
+                                <span class="label">READY_SCORE</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="hud-info">
-                        <div class="hud-row">
+                    <!-- Core Info Section -->
+                    <div class="hud-info-group">
+                        <div class="hud-meta-tags">
                             <span class="hud-tag"
                                 >ID: {submission.id
                                     .slice(0, 8)
                                     .toUpperCase()}</span
                             >
                             <span class="hud-tag"
-                                >TYPE: {submission.review_type.toUpperCase()}</span
+                                >SCAN_TYPE: {submission.review_type.toUpperCase()}</span
                             >
                         </div>
-                        <div class="hud-verdict-row">
-                            <span
-                                class="hud-verdict"
-                                style="color: {scoreColor(
-                                    report.score_overall,
-                                    criticalItems.length > 0,
-                                )}"
-                            >
+                        <div
+                            class="hud-status-box"
+                            style="--status-color: {scoreColor(
+                                report.score_overall,
+                                criticalItems.length > 0,
+                            )}"
+                        >
+                            <div class="status-label">SYSTEM_CONDITION</div>
+                            <div class="hud-verdict">
                                 {scoreEmoji(
                                     report.score_overall,
                                     criticalItems.length > 0,
-                                )}
-                            </span>
-                            {#if criticalItems.length > 0}
-                                <div class="hud-alert-badge critical">
-                                    HAZARD DETECTED
-                                </div>
-                            {:else if warningItems.length > 0}
-                                <div class="hud-alert-badge warning">
-                                    DUE DILIGENCE REQ
-                                </div>
-                            {:else}
-                                <div class="hud-alert-badge safe">
-                                    NOMINAL STATUS
-                                </div>
-                            {/if}
+                                ).toUpperCase()}
+                            </div>
+                            <div
+                                class="hud-alert-msg {criticalItems.length > 0
+                                    ? 'critical'
+                                    : warningItems.length > 0
+                                      ? 'warning'
+                                      : 'safe'}"
+                            >
+                                {#if criticalItems.length > 0}
+                                    <span class="msg">HAZARD_DETECTED</span>
+                                {:else if warningItems.length > 0}
+                                    <span class="msg">CAUTION_ADVISED</span>
+                                {:else}
+                                    <span class="msg">NOMINAL_OPERATIONS</span>
+                                {/if}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="hud-separator"></div>
+                    <!-- Diagnostic Matrix Section -->
+                    <div class="hud-diagnostic-matrix">
+                        <div
+                            class="stat-readout {report.total_critical > 0
+                                ? 'critical'
+                                : 'dim'}"
+                        >
+                            <div class="readout-header">
+                                <span class="readout-label">C_ERROR</span>
+                                <StatusLight
+                                    status={report.total_critical > 0
+                                        ? "critical"
+                                        : "neutral"}
+                                    size="sm"
+                                    pulse={report.total_critical > 0}
+                                />
+                            </div>
+                            <span class="readout-value"
+                                >{report.total_critical}</span
+                            >
+                        </div>
+                        <div
+                            class="stat-readout {report.total_warnings > 0
+                                ? 'warning'
+                                : 'dim'}"
+                        >
+                            <div class="readout-header">
+                                <span class="readout-label">W_WARN</span>
+                                <StatusLight
+                                    status={report.total_warnings > 0
+                                        ? "warning"
+                                        : "neutral"}
+                                    size="sm"
+                                />
+                            </div>
+                            <span class="readout-value"
+                                >{report.total_warnings}</span
+                            >
+                        </div>
+                        <div
+                            class="stat-readout {report.total_info > 0
+                                ? 'info'
+                                : 'dim'}"
+                        >
+                            <div class="readout-header">
+                                <span class="readout-label">I_INFO</span>
+                                <StatusLight
+                                    status={report.total_info > 0
+                                        ? "ready"
+                                        : "neutral"}
+                                    size="sm"
+                                />
+                            </div>
+                            <span class="readout-value"
+                                >{report.total_info}</span
+                            >
+                        </div>
+                    </div>
 
-                <div class="hud-stats-matrix">
-                    <div
-                        class="stat-readout {report.total_critical > 0
-                            ? 'critical'
-                            : 'dim'}"
-                    >
-                        <div class="readout-header">
-                            <span class="readout-label">CRITICAL</span>
-                            <StatusLight
-                                status={report.total_critical > 0
-                                    ? "critical"
-                                    : "neutral"}
-                                pulse={report.total_critical > 0}
-                            />
-                        </div>
-                        <span class="readout-value"
-                            >{report.total_critical}</span
-                        >
-                    </div>
-                    <div
-                        class="stat-readout {report.total_warnings > 0
-                            ? 'warning'
-                            : 'dim'}"
-                    >
-                        <div class="readout-header">
-                            <span class="readout-label">WARNING</span>
-                            <StatusLight
-                                status={report.total_warnings > 0
-                                    ? "warning"
-                                    : "neutral"}
-                            />
-                        </div>
-                        <span class="readout-value"
-                            >{report.total_warnings}</span
-                        >
-                    </div>
-                    <div
-                        class="stat-readout {report.total_info > 0
-                            ? 'info'
-                            : 'dim'}"
-                    >
-                        <div class="readout-header">
-                            <span class="readout-label">INFO</span>
-                            <StatusLight
-                                status={report.total_info > 0
-                                    ? "ready"
-                                    : "neutral"}
-                            />
-                        </div>
-                        <span class="readout-value">{report.total_info}</span>
-                    </div>
+                    <!-- Technical Noise Accents -->
+                    <div class="hud-noise top-left">GRID_REF: 4022.99</div>
+                    <div class="hud-noise top-right">SCAN_DEPTH: 100%</div>
+                    <div class="hud-noise bottom-left">LAT: 37.7749</div>
+                    <div class="hud-noise bottom-right">LNG: -122.4194</div>
                 </div>
             </CockpitPanel>
         </section>
@@ -685,23 +702,35 @@
         <!-- What You Need to Do (simplified action items) -->
         {#if criticalItems.length > 0 || warningItems.length > 0}
             <section class="action-section">
-                <h2>Action Required</h2>
+                <div class="section-label">DIAGNOSTIC_ALERTS</div>
 
                 {#if criticalItems.length > 0}
                     <div class="action-group">
                         <div class="group-header critical">
-                            <StatusLight status="critical" pulse />
-                            <h3>Critical Issues (Fix Before Submission)</h3>
+                            <StatusLight status="critical" size="sm" pulse />
+                            <div class="header-text">
+                                <h3>CRITICAL_PRIORITY</h3>
+                                <div class="sub-label">
+                                    IMMEDIATE_RESOLUTION_REQUIRED
+                                </div>
+                            </div>
                         </div>
                         {#each criticalItems as item}
                             <CockpitPanel class="action-item critical-item">
                                 <div class="action-content">
+                                    <div class="item-meta">
+                                        CAT: {item.category.toUpperCase()}
+                                    </div>
                                     <strong>{item.title}</strong>
                                     <p>{item.description}</p>
                                     {#if item.fix_suggestion}
                                         <div class="fix-tip">
-                                            <div class="tip-icon">💡</div>
-                                            <div>{item.fix_suggestion}</div>
+                                            <div class="tip-header">
+                                                REMEDIATION_PROTOCOL
+                                            </div>
+                                            <div class="tip-body">
+                                                {item.fix_suggestion}
+                                            </div>
                                         </div>
                                     {/if}
                                 </div>
@@ -713,18 +742,30 @@
                 {#if warningItems.length > 0}
                     <div class="action-group">
                         <div class="group-header warning">
-                            <StatusLight status="warning" />
-                            <h3>Warnings (Recommended)</h3>
+                            <StatusLight status="warning" size="sm" />
+                            <div class="header-text">
+                                <h3>ADVISORY_CAUTION</h3>
+                                <div class="sub-label">
+                                    SYSTEM_WARNING_LOGGED
+                                </div>
+                            </div>
                         </div>
                         {#each warningItems as item}
                             <CockpitPanel class="action-item warning-item">
                                 <div class="action-content">
+                                    <div class="item-meta">
+                                        CAT: {item.category.toUpperCase()}
+                                    </div>
                                     <strong>{item.title}</strong>
                                     <p>{item.description}</p>
                                     {#if item.fix_suggestion}
                                         <div class="fix-tip">
-                                            <div class="tip-icon">💡</div>
-                                            <div>{item.fix_suggestion}</div>
+                                            <div class="tip-header">
+                                                REMEDIATION_PROTOCOL
+                                            </div>
+                                            <div class="tip-body">
+                                                {item.fix_suggestion}
+                                            </div>
                                         </div>
                                     {/if}
                                 </div>
@@ -736,20 +777,18 @@
         {/if}
 
         <!-- Category Scores -->
-        <section class="categories">
-            <h2>Score Breakdown</h2>
-            <div class="category-grid">
-                {#each ["metadata", "screenshots", "privacy_manifest", "info_plist", "urls", "content_policy"] as cat}
+        <section class="performance-matrix">
+            <div class="section-label">PERFORMANCE_BREAKDOWN</div>
+            <div class="matrix-grid">
+                {#each ["metadata", "screenshots", "privacy_manifest", "info_plist", "urls", "content_policy"] as cat, i}
                     {@const score = categoryScore(cat)}
-                    <CockpitPanel class="category-card">
-                        <div class="category-header">
-                            <div>
-                                <span class="category-name"
-                                    >{categoryLabel(cat)}</span
-                                >
-                                <span class="category-desc"
-                                    >{categoryDescription(cat)}</span
-                                >
+                    <CockpitPanel class="matrix-cell">
+                        <div class="matrix-header">
+                            <div class="matrix-id">
+                                ID_{i.toString().padStart(2, "0")}
+                            </div>
+                            <div class="matrix-label">
+                                {categoryLabel(cat).toUpperCase()}
                             </div>
                             <StatusLight
                                 status={score === null
@@ -759,15 +798,27 @@
                                       : score >= 50
                                         ? "warning"
                                         : "critical"}
-                                label={score ? score.toString() : "--"}
+                                size="sm"
                             />
                         </div>
-                        <div class="category-bar">
+                        <div class="matrix-meter">
                             <div
-                                class="category-fill"
+                                class="matrix-bar"
                                 style="width: {score ??
                                     0}%; background: {scoreColor(score)}"
                             ></div>
+                        </div>
+                        <div class="matrix-footer">
+                            <span class="matrix-val">{score ?? "--"}%</span>
+                            <span class="matrix-status"
+                                >{score === null
+                                    ? "PENDING"
+                                    : score >= 80
+                                      ? "OPTIMAL"
+                                      : score >= 50
+                                        ? "ADVISORY"
+                                        : "CRITICAL"}</span
+                            >
                         </div>
                     </CockpitPanel>
                 {/each}
@@ -1148,47 +1199,49 @@
         margin-bottom: 40px;
     }
 
+    /* --- REFINED HUD STYLES --- */
     .score-section :global(.high-level-score) {
-        display: flex;
-        align-items: stretch;
-        gap: 0;
-        padding: 0;
-        border-radius: 4px;
-        background: rgba(10, 10, 14, 0.4);
+        position: relative;
+        padding: 0 !important;
+        overflow: visible;
     }
 
-    .hud-cluster {
+    .hud-main-panel {
+        display: flex;
+        align-items: stretch;
+        min-height: 200px;
+    }
+
+    .hud-gauge-group {
         padding: 32px;
         display: flex;
         align-items: center;
-        gap: 32px;
-        flex: 1.2;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .hud-gauge {
         position: relative;
-        width: 110px;
-        height: 110px;
-        flex-shrink: 0;
+        width: 120px;
+        height: 120px;
     }
 
     .hud-gauge svg {
         transform: rotate(-90deg);
-        filter: drop-shadow(0 0 12px var(--score-color));
+        filter: drop-shadow(0 0 10px var(--score-color));
     }
 
     .hud-gauge .track {
         fill: none;
         stroke: rgba(255, 255, 255, 0.03);
-        stroke-width: 5;
+        stroke-width: 6;
     }
 
     .hud-gauge .fill {
         fill: none;
         stroke: var(--score-color);
-        stroke-width: 5;
+        stroke-width: 6;
         stroke-linecap: square;
-        transition: stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition: stroke-dasharray 1s ease-out;
     }
 
     .gauge-value {
@@ -1202,146 +1255,138 @@
 
     .gauge-value .value {
         font-family: "Instrument Mono", monospace;
-        font-size: 2.25rem;
+        font-size: 2.5rem;
         font-weight: 700;
-        color: var(--fg);
-        line-height: 1;
         letter-spacing: -0.05em;
+        line-height: 1;
     }
 
     .gauge-value .label {
+        font-family: "Instrument Mono", monospace;
         font-size: 0.55rem;
         font-weight: 800;
-        letter-spacing: 0.2em;
         color: var(--gray-500);
         margin-top: 4px;
-        text-transform: uppercase;
     }
 
-    .hud-info {
+    .hud-info-group {
+        flex: 1;
+        padding: 32px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        justify-content: center;
+        gap: 16px;
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .hud-row {
+    .hud-meta-tags {
         display: flex;
-        gap: 16px;
+        gap: 12px;
     }
 
     .hud-tag {
         font-family: "Instrument Mono", monospace;
         font-size: 0.6rem;
-        color: var(--gray-400);
-        background: rgba(255, 255, 255, 0.04);
-        padding: 3px 8px;
+        color: var(--gray-500);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2px 6px;
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 2px;
-        letter-spacing: 0.05em;
     }
 
-    .hud-verdict-row {
+    .hud-status-box {
         display: flex;
         flex-direction: column;
         gap: 4px;
     }
 
+    .status-label {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-500);
+        letter-spacing: 0.1em;
+    }
+
     .hud-verdict {
-        font-size: 1.75rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 1.8rem;
         font-weight: 800;
-        letter-spacing: -0.03em;
+        color: var(--status-color);
+        letter-spacing: -0.025em;
         line-height: 1;
     }
 
-    .hud-alert-badge {
+    .hud-alert-msg {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-family: "Instrument Mono", monospace;
         font-size: 0.75rem;
         font-weight: 700;
-        padding: 4px 12px;
-        border-radius: 2px;
-        letter-spacing: 0.1em;
-        width: fit-content;
+        margin-top: 4px;
     }
 
-    .hud-alert-badge.critical {
-        background: hsla(0, 85%, 60%, 0.1);
-        color: hsl(0, 85%, 70%);
-        border: 1px solid hsla(0, 85%, 60%, 0.3);
-        box-shadow: 0 0 20px hsla(0, 85%, 60%, 0.1);
-        animation: hud-warning-pulse 2s infinite ease-in-out;
+    .hud-alert-msg .msg {
+        padding: 2px 8px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .hud-alert-badge.warning {
-        background: hsla(38, 95%, 55%, 0.1);
-        color: hsl(38, 95%, 65%);
-        border: 1px solid hsla(38, 95%, 55%, 0.3);
+    .hud-alert-msg.critical .msg {
+        color: hsl(0, 85%, 65%);
+        background: hsla(0, 85%, 65%, 0.1);
+        border-color: hsla(0, 85%, 65%, 0.2);
     }
-
-    .hud-alert-badge.safe {
+    .hud-alert-msg.warning .msg {
+        color: hsl(38, 95%, 60%);
+        background: hsla(38, 95%, 60%, 0.1);
+        border-color: hsla(38, 95%, 60%, 0.2);
+    }
+    .hud-alert-msg.safe .msg {
+        color: hsl(145, 80%, 50%);
         background: hsla(145, 80%, 50%, 0.1);
-        color: hsl(145, 80%, 65%);
-        border: 1px solid hsla(145, 80%, 50%, 0.3);
+        border-color: hsla(145, 80%, 50%, 0.2);
     }
 
-    @keyframes hud-warning-pulse {
-        0%,
-        100% {
-            border-color: hsla(0, 85%, 60%, 0.2);
-            opacity: 0.9;
-        }
-        50% {
-            border-color: hsla(0, 85%, 60%, 0.6);
-            opacity: 1;
-        }
-    }
-
-    .hud-separator {
-        width: 1px;
-        background: linear-gradient(
-            rgba(255, 255, 255, 0),
-            rgba(255, 255, 255, 0.08),
-            rgba(255, 255, 255, 0)
-        );
-    }
-
-    .hud-stats-matrix {
-        flex: 1;
+    .hud-diagnostic-matrix {
+        width: 180px;
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1px;
-        background: rgba(255, 255, 255, 0.05); /* Grid line simulation */
+        grid-template-rows: repeat(3, 1fr);
+        gap: 0;
     }
 
     .stat-readout {
+        padding: 16px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        padding: 24px;
-        background: rgba(10, 10, 14, 0.5);
+        justify-content: center;
+    }
+
+    .stat-readout:last-child {
+        border-bottom: none;
     }
 
     .readout-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 4px;
     }
 
     .readout-label {
         font-family: "Instrument Mono", monospace;
-        font-size: 0.6rem;
-        font-weight: 700;
-        letter-spacing: 0.2em;
-        color: var(--gray-500);
-        text-transform: uppercase;
+        font-size: 0.55rem;
+        font-weight: 800;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
     }
 
     .readout-value {
         font-family: "Instrument Mono", monospace;
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        color: var(--fg);
         line-height: 1;
-        margin-top: 8px;
     }
 
     .stat-readout.critical .readout-value {
@@ -1354,88 +1399,224 @@
         color: hsl(200, 90%, 65%);
     }
     .stat-readout.dim {
-        opacity: 0.4;
+        opacity: 0.3;
         filter: grayscale(1);
     }
 
-    /* --- BREAKDOWN MATRIX --- */
-    .categories {
-        margin-bottom: 40px;
+    .hud-noise {
+        position: absolute;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        color: var(--gray-700);
+        opacity: 0.5;
+        pointer-events: none;
     }
 
-    .categories h2 {
+    .hud-noise.top-left {
+        top: 8px;
+        left: 8px;
+    }
+    .hud-noise.top-right {
+        top: 8px;
+        right: 8px;
+    }
+    .hud-noise.bottom-left {
+        bottom: 8px;
+        left: 8px;
+    }
+    .hud-noise.bottom-right {
+        bottom: 8px;
+        right: 8px;
+    }
+
+    /* --- PERFORMANCE MATRIX --- */
+    .performance-matrix {
+        margin-bottom: 64px;
+    }
+
+    .matrix-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+    }
+
+    .matrix-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .matrix-id {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        color: var(--gray-600);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2px 4px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .matrix-label {
         font-family: "Instrument Mono", monospace;
         font-size: 0.7rem;
         font-weight: 700;
-        letter-spacing: 0.2em;
-        color: var(--gray-500);
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-transform: uppercase;
-    }
-
-    .categories h2::after {
-        content: "";
         flex: 1;
-        height: 1px;
-        background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.08),
-            transparent
-        );
+        letter-spacing: 0.05em;
+        color: var(--gray-400);
     }
 
-    .action-group {
-        margin-bottom: 40px;
-    }
-
-    .group-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+    .matrix-meter {
+        height: 2px;
+        background: rgba(255, 255, 255, 0.03);
         margin-bottom: 12px;
+        overflow: hidden;
     }
 
-    .group-header h3 {
+    .matrix-bar {
+        height: 100%;
+        transition: width 1s ease-out;
+    }
+
+    .matrix-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .matrix-val {
         font-family: "Instrument Mono", monospace;
         font-size: 0.9rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .group-header.critical h3 {
-        color: hsl(0, 85%, 65%);
-    }
-    .group-header.warning h3 {
-        color: hsl(38, 95%, 60%);
-    }
-
-    .action-item {
-        margin-bottom: 2px;
-        padding: 20px;
-        background: rgba(18, 18, 22, 0.4) !important;
-        border: 1px solid rgba(255, 255, 255, 0.03) !important;
-        border-right: 2px solid transparent !important;
-        border-radius: 2px !important;
-    }
-
-    .action-item.critical-item {
-        border-left: 3px solid hsla(0, 85%, 60%, 0.4) !important;
-    }
-    .action-item.warning-item {
-        border-left: 3px solid hsla(38, 95%, 55%, 0.4) !important;
-    }
-
-    .action-item strong {
-        font-family: "Outfit", sans-serif;
-        font-size: 1.1rem;
         font-weight: 700;
-        color: var(--fg);
-        display: block;
-        margin-bottom: 4px;
+        color: var(--gray-100);
+    }
+
+    .matrix-status {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 800;
+        color: var(--gray-500);
+        letter-spacing: 0.1em;
+    }
+
+    /* --- SUGGESTIONS LIST --- */
+    .suggestions-section {
+        margin-bottom: 64px;
+    }
+
+    .suggestions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .suggestion-card {
+        background: rgba(10, 10, 14, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.03) !important;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .suggestion-summary {
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .suggestion-summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .suggestion-icon {
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(200, 200, 255, 0.1);
+        color: hsl(200, 90%, 70%);
+        border: 1px solid hsla(200, 90%, 70%, 0.2);
+        border-radius: 50%;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 800;
+    }
+
+    .suggestion-title {
+        flex: 1;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--gray-300);
+    }
+
+    .suggestion-category {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .suggestion-body {
+        padding: 0 24px 20px 56px;
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        line-height: 1.5;
+    }
+
+    .action-item p {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .action-content p {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .fix-tip {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 16px;
+        margin-top: 16px;
+        position: relative;
+    }
+
+    .tip-header {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 800;
+        color: var(--gray-500);
+        letter-spacing: 0.15em;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tip-header::before {
+        content: "!";
+        width: 12px;
+        height: 12px;
+        background: var(--gray-700);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 0.5rem;
+    }
+
+    .tip-body {
+        font-size: 0.85rem;
+        color: var(--gray-300);
+        line-height: 1.4;
     }
 
     .action-item p {
