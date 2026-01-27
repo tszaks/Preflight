@@ -4,7 +4,7 @@ import { STRIPE_SECRET_KEY } from '$env/static/private';
 import { PUBLIC_BASE_URL } from '$env/static/public';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' });
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-12-15.clover' });
 
 // Credit package price IDs (from Stripe dashboard)
 const PRICE_IDS = {
