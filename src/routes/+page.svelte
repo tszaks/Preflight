@@ -48,8 +48,8 @@
                 >
             </h1>
             <p class="description">
-                Preflight runs 50+ of Apple's review checks on your submission
-                before you hit Send. Fix issues in minutes, not weeks.
+                Preflight runs Apple's review checks on your submission before
+                you hit Send. Catch rejection risks before they cost you a week.
             </p>
 
             <div class="cta-buttons">
@@ -85,14 +85,14 @@
                 >
                     <path d="M4 10l4 4L16 6" />
                 </svg>
-                <span>Used by 200+ indie iOS developers</span>
+                <span>Built for indie iOS developers</span>
             </p>
         </div>
     </section>
 
     <section class="features">
         <div class="container">
-            <div class="section-label">50+ Automated Checks</div>
+            <div class="section-label">Automated Compliance Checks</div>
             <h2>What We Check</h2>
             <div class="feature-grid">
                 <CockpitPanel class="feature-item">
@@ -186,7 +186,7 @@
                 <div class="step">
                     <span class="step-number">2</span>
                     <h3>AI Analyzes Everything</h3>
-                    <p>50+ checks against Apple's latest guidelines</p>
+                    <p>Checks against Apple's latest guidelines</p>
                 </div>
                 <div class="step">
                     <span class="step-number">3</span>
