@@ -104,20 +104,20 @@
     }
 
     .label {
-        font-family: "Instrument Mono", "SF Mono", monospace; /* Monospace for tech feel */
-        font-weight: 600;
+        font-family: "Instrument Mono", monospace;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
     }
 
     .sm .label {
-        font-size: 10px;
+        font-size: 0.55rem;
     }
     .md .label {
-        font-size: 12px;
+        font-size: 0.6rem;
     }
     .lg .label {
-        font-size: 14px;
+        font-size: 0.7rem;
     }
 
     @keyframes pulse {

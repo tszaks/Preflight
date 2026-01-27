@@ -116,7 +116,7 @@
         justify-content: space-between;
         padding: 12px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        font-family: "JetBrains Mono", monospace;
+        font-family: "Instrument Mono", monospace;
     }
 
     .target-info:last-child {
@@ -124,19 +124,24 @@
     }
 
     .label {
-        font-size: 0.75rem;
-        color: var(--gray-500);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
     }
 
     .value {
-        font-size: 0.9rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.85rem;
         color: var(--fg);
         font-weight: 700;
         text-transform: uppercase;
     }
 
     .blink {
-        color: var(--status-ready-fg, #22c55e);
+        color: var(--accent);
         animation: blink 1.5s step-end infinite;
     }
 
@@ -181,17 +186,19 @@
 
     .progress-bar {
         height: 100%;
-        background: var(--status-ready-fg, #22c55e);
-        box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+        background: var(--accent);
+        box-shadow: 0 0 12px var(--accent-glow);
         transition: width 0.1s linear;
     }
 
     .progress-label {
         display: flex;
         justify-content: space-between;
-        font-family: "JetBrains Mono", monospace;
-        font-size: 0.8rem;
-        color: rgba(34, 197, 94, 0.8);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.1em;
     }
 
     .panel-right {
