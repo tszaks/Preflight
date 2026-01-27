@@ -14,7 +14,7 @@
             description: "Perfect for your first launch",
             features: [
                 "1 full review + 4 rechecks",
-                "Or: 2 full reviews",
+                "Complete compliance report",
                 "Never expires",
             ],
         },
