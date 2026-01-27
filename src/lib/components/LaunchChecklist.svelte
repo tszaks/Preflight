@@ -1,10 +1,12 @@
 <script lang="ts">
     /**
-     * Launch Checklist Component
+     * LaunchChecklist.svelte
      *
-     * Simple checklist for App Store submission requirements.
+     * "System Diagnostics" style checklist for App Store submission.
      */
-    import type { ChecklistItem, ChecklistPhase } from '$lib/engine/knowledge-base/launch-checklist';
+    import type { ChecklistItem } from "$lib/engine/knowledge-base/launch-checklist";
+    import CockpitPanel from "./CockpitPanel.svelte";
+    import StatusLight from "./StatusLight.svelte";
 
     interface Props {
         items: ChecklistItem[];
@@ -14,43 +16,65 @@
 
     // Group by phase
     let preSubmission = $derived(
-        items.filter(i => i.phase === 'pre_submission').sort((a, b) => a.order - b.order)
+        items
+            .filter((i) => i.phase === "pre_submission")
+            .sort((a, b) => a.order - b.order),
     );
     let duringReview = $derived(
-        items.filter(i => i.phase === 'during_review').sort((a, b) => a.order - b.order)
+        items
+            .filter((i) => i.phase === "during_review")
+            .sort((a, b) => a.order - b.order),
     );
     let postApproval = $derived(
-        items.filter(i => i.phase === 'post_approval').sort((a, b) => a.order - b.order)
+        items
+            .filter((i) => i.phase === "post_approval")
+            .sort((a, b) => a.order - b.order),
     );
 </script>
 
-<div class="launch-checklist">
-    <div class="section-header">
-        <h3>Launch Checklist</h3>
-        <p class="header-subtitle">What you need to submit to the App Store</p>
+<CockpitPanel class="launch-checklist">
+    <div class="header-row">
+        <div>
+            <h3 class="panel-title">PREFLIGHT CHECKLIST</h3>
+            <p class="panel-subtitle">SYSTEM DIAGNOSTICS & REQUIREMENTS</p>
+        </div>
+        <StatusLight
+            status="processing"
+            label="SYSTEM ACTIVE"
+            pulse
+            size="sm"
+        />
     </div>
 
     <!-- Phase 1: Pre-Submission -->
-    <div class="phase-section">
-        <div class="phase-header">
-            <div class="phase-number">1</div>
-            <h4>Before You Submit</h4>
+    <div class="phase-container">
+        <div class="phase-label">
+            <span class="phase-index">01</span>
+            <span class="phase-name">PRE-SUBMISSION PROTOCOLS</span>
         </div>
 
-        <div class="items-list">
+        <div class="diagnostic-grid">
             {#each preSubmission as item}
-                <div class="checklist-item">
-                    <div class="item-content">
-                        <div class="item-title">
-                            {item.title}
+                <div class="diagnostic-row">
+                    <div class="row-status">
+                        <div class="toggle-switch"></div>
+                    </div>
+                    <div class="row-content">
+                        <div class="row-header">
+                            <span class="item-title">{item.title}</span>
                             {#if item.is_required}
-                                <span class="required-badge">Required</span>
+                                <span class="tag-required">REQUIRED</span>
                             {/if}
                         </div>
-                        <p class="item-description">{item.description}</p>
+                        <p class="item-desc">{item.description}</p>
                         {#if item.helpful_link}
-                            <a href={item.helpful_link} target="_blank" rel="noopener" class="helpful-link">
-                                Learn more
+                            <a
+                                href={item.helpful_link}
+                                target="_blank"
+                                rel="noopener"
+                                class="link-action"
+                            >
+                                [ACCESS DOCS]
                             </a>
                         {/if}
                     </div>
@@ -60,23 +84,23 @@
     </div>
 
     <!-- Phase 2: During Review -->
-    <div class="phase-section">
-        <div class="phase-header">
-            <div class="phase-number">2</div>
-            <h4>During Review</h4>
+    <div class="phase-container">
+        <div class="phase-label">
+            <span class="phase-index">02</span>
+            <span class="phase-name">REVIEW MONITORING</span>
         </div>
 
-        <div class="items-list">
+        <div class="diagnostic-grid">
             {#each duringReview as item}
-                <div class="checklist-item">
-                    <div class="item-content">
-                        <div class="item-title">{item.title}</div>
-                        <p class="item-description">{item.description}</p>
-                        {#if item.helpful_link}
-                            <a href={item.helpful_link} target="_blank" rel="noopener" class="helpful-link">
-                                Learn more
-                            </a>
-                        {/if}
+                <div class="diagnostic-row">
+                    <div class="row-status">
+                        <div class="toggle-switch"></div>
+                    </div>
+                    <div class="row-content">
+                        <div class="row-header">
+                            <span class="item-title">{item.title}</span>
+                        </div>
+                        <p class="item-desc">{item.description}</p>
                     </div>
                 </div>
             {/each}
@@ -84,140 +108,179 @@
     </div>
 
     <!-- Phase 3: Post-Approval -->
-    <div class="phase-section">
-        <div class="phase-header">
-            <div class="phase-number">3</div>
-            <h4>After Approval</h4>
+    <div class="phase-container">
+        <div class="phase-label">
+            <span class="phase-index">03</span>
+            <span class="phase-name">DEPLOYMENT SEQUENCE</span>
         </div>
 
-        <div class="items-list">
+        <div class="diagnostic-grid">
             {#each postApproval as item}
-                <div class="checklist-item">
-                    <div class="item-content">
-                        <div class="item-title">{item.title}</div>
-                        <p class="item-description">{item.description}</p>
-                        {#if item.helpful_link}
-                            <a href={item.helpful_link} target="_blank" rel="noopener" class="helpful-link">
-                                Learn more
-                            </a>
-                        {/if}
+                <div class="diagnostic-row">
+                    <div class="row-status">
+                        <div class="toggle-switch"></div>
+                    </div>
+                    <div class="row-content">
+                        <div class="row-header">
+                            <span class="item-title">{item.title}</span>
+                        </div>
+                        <p class="item-desc">{item.description}</p>
                     </div>
                 </div>
             {/each}
         </div>
     </div>
-</div>
+</CockpitPanel>
 
 <style>
-    .launch-checklist {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 12px;
-        padding: 20px;
+    .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 32px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding-bottom: 20px;
     }
 
-    .section-header {
-        margin-bottom: 20px;
-    }
-
-    .section-header h3 {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--fg);
+    .panel-title {
+        font-family: "Outfit", sans-serif;
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: 0.05em;
         margin: 0;
+        color: var(--fg);
+        text-transform: uppercase;
     }
 
-    .header-subtitle {
-        font-size: 13px;
-        color: var(--gray-400);
+    .panel-subtitle {
+        font-family: "Instrument Mono", monospace;
+        font-size: 11px;
+        color: var(--accent);
         margin: 4px 0 0 0;
+        letter-spacing: 0.1em;
+        opacity: 0.8;
     }
 
-    .phase-section {
-        margin-bottom: 20px;
+    .phase-container {
+        margin-bottom: 40px;
     }
 
-    .phase-section:last-child {
+    .phase-container:last-child {
         margin-bottom: 0;
     }
 
-    .phase-header {
+    .phase-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        color: var(--gray-400);
+    }
+
+    .phase-index {
+        font-family: "Instrument Mono", monospace;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: var(--fg);
+    }
+
+    .phase-name {
+        font-family: "Outfit", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .diagnostic-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2px; /* Slight gap for grid lines */
+        background: rgba(255, 255, 255, 0.03); /* Grid line color */
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .diagnostic-row {
+        background: rgba(15, 15, 18, 0.4); /* Row bg */
+        padding: 16px;
+        display: flex;
+        gap: 16px;
+        transition: background 0.2s ease;
+    }
+
+    .diagnostic-row:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .toggle-switch {
+        width: 16px;
+        height: 16px;
+        border: 1px solid var(--gray-500);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        position: relative;
+    }
+
+    /* Simulate a checked state visually for now - functionality would be added later */
+    .toggle-switch:hover {
+        border-color: var(--accent);
+        box-shadow: 0 0 8px var(--accent-subtle);
+    }
+
+    .row-content {
+        flex: 1;
+    }
+
+    .row-header {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-bottom: 12px;
-    }
-
-    .phase-number {
-        width: 24px;
-        height: 24px;
-        background: #6366f1;
-        color: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 12px;
-        flex-shrink: 0;
-    }
-
-    .phase-header h4 {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--fg);
-        margin: 0;
-    }
-
-    .items-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-left: 34px;
-    }
-
-    .checklist-item {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        padding: 12px;
+        margin-bottom: 6px;
     }
 
     .item-title {
-        font-size: 13px;
+        font-family: "Instrument Sans", sans-serif;
+        font-size: 14px;
         font-weight: 500;
         color: var(--fg);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 4px;
     }
 
-    .required-badge {
-        background: rgba(220, 38, 38, 0.2);
-        color: #f87171;
-        font-size: 10px;
-        font-weight: 500;
+    .tag-required {
+        font-family: "Instrument Mono", monospace;
+        font-size: 9px;
+        color: var(--status-failed-fg);
+        background: rgba(239, 68, 68, 0.1);
         padding: 2px 6px;
-        border-radius: 4px;
+        border-radius: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid rgba(239, 68, 68, 0.2);
     }
 
-    .item-description {
-        font-size: 12px;
+    .item-desc {
+        font-size: 13px;
         color: var(--gray-400);
         line-height: 1.5;
-        margin: 0;
+        margin: 0 0 8px 0;
+        max-width: 90%;
     }
 
-    .helpful-link {
-        display: inline-block;
-        font-size: 12px;
+    .link-action {
+        font-family: "Instrument Mono", monospace;
+        font-size: 11px;
         color: var(--accent);
         text-decoration: none;
-        margin-top: 6px;
+        opacity: 0.8;
+        transition: opacity 0.2s;
     }
 
-    .helpful-link:hover {
-        text-decoration: underline;
+    .link-action:hover {
+        opacity: 1;
+        text-decoration: none;
     }
 </style>
