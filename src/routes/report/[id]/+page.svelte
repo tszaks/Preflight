@@ -828,11 +828,7 @@
         <!-- Suggestions (non-blocking) -->
         {#if infoItems.length > 0}
             <section class="suggestions-section">
-                <h2>Suggestions to Improve</h2>
-                <p class="section-subtitle">
-                    These won't cause rejection, but could help your app succeed
-                </p>
-
+                <div class="section-label">OPTIMIZATION_ADVISORIES</div>
                 <div class="suggestions-list">
                     {#each infoItems as item}
                         <details class="suggestion-card card">
@@ -857,35 +853,19 @@
         <!-- All Good State -->
         {#if items.length === 0}
             <section class="success-section">
+                <div class="section-label">SYSTEM_CONDITION_OPTIMAL</div>
                 <div class="success-icon">
-                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                        <circle
-                            cx="32"
-                            cy="32"
-                            r="28"
-                            stroke="#22c55e"
-                            stroke-width="3"
-                        />
-                        <path
-                            d="M20 32l8 8 16-16"
-                            stroke="#22c55e"
-                            stroke-width="3"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
+                    <p>
+                        No issues found. Your app appears ready for App Store
+                        submission.
+                    </p>
                 </div>
-                <h2>Looking Great!</h2>
-                <p>
-                    No issues found. Your app appears ready for App Store
-                    submission.
-                </p>
             </section>
         {/if}
 
         <!-- What's Next - Simple, encouraging next steps -->
         <section class="whats-next-section">
-            <h2>What's Next</h2>
+            <div class="section-label">REMEDIATION_STEPS</div>
             <div class="next-steps">
                 {#if criticalItems.length > 0}
                     <div class="next-step">
@@ -960,9 +940,9 @@
 
         <!-- Premium Features Section with Tabs -->
         <div class="premium-features">
+            <div class="section-label">LAUNCH_PREPARATION_PROTOCOL</div>
             <div class="premium-header">
-                <span class="premium-badge">PREMIUM INSIGHTS</span>
-                <h2>Everything You Need to Launch</h2>
+                <span class="premium-badge">PREMIUM_INSIGHTS</span>
                 <p>
                     First-time publisher? We've got you covered with expert
                     guidance.
@@ -1213,7 +1193,7 @@
     }
 
     .hud-gauge-group {
-        padding: 32px;
+        padding: 24px;
         display: flex;
         align-items: center;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
@@ -1271,7 +1251,7 @@
 
     .hud-info-group {
         flex: 1;
-        padding: 32px;
+        padding: 24px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -1303,8 +1283,9 @@
         font-family: "Instrument Mono", monospace;
         font-size: 0.6rem;
         font-weight: 700;
-        color: var(--gray-500);
+        color: var(--gray-600);
         letter-spacing: 0.1em;
+        text-transform: uppercase;
     }
 
     .hud-verdict {
@@ -1356,7 +1337,7 @@
     }
 
     .stat-readout {
-        padding: 16px 24px;
+        padding: 16px 20px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         display: flex;
         flex-direction: column;
@@ -1384,7 +1365,7 @@
 
     .readout-value {
         font-family: "Instrument Mono", monospace;
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         font-weight: 700;
         line-height: 1;
     }
@@ -1408,7 +1389,7 @@
         font-family: "Instrument Mono", monospace;
         font-size: 0.55rem;
         color: var(--gray-700);
-        opacity: 0.5;
+        opacity: 0.3;
         pointer-events: none;
     }
 
@@ -1450,19 +1431,25 @@
     .matrix-id {
         font-family: "Instrument Mono", monospace;
         font-size: 0.55rem;
+        font-weight: 700;
         color: var(--gray-600);
         background: rgba(255, 255, 255, 0.03);
         padding: 2px 4px;
         border: 1px solid rgba(255, 255, 255, 0.05);
+        text-transform: uppercase;
     }
 
     .matrix-label {
         font-family: "Instrument Mono", monospace;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 700;
         flex: 1;
         letter-spacing: 0.05em;
         color: var(--gray-400);
+    }
+
+    .matrix-cell {
+        padding: 16px 20px !important;
     }
 
     .matrix-meter {
@@ -1481,21 +1468,6 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-    }
-
-    .matrix-val {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--gray-100);
-    }
-
-    .matrix-status {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 800;
-        color: var(--gray-500);
-        letter-spacing: 0.1em;
     }
 
     /* --- SUGGESTIONS LIST --- */
@@ -1535,12 +1507,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(200, 200, 255, 0.1);
-        color: hsl(200, 90%, 70%);
-        border: 1px solid hsla(200, 90%, 70%, 0.2);
+        background: rgba(200, 200, 255, 0.05);
+        color: hsl(200, 90%, 60%);
+        border: 1px solid hsla(200, 90%, 60%, 0.2);
         border-radius: 50%;
         font-family: "Instrument Mono", monospace;
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 800;
     }
 
@@ -1554,6 +1526,7 @@
     .suggestion-category {
         font-family: "Instrument Mono", monospace;
         font-size: 0.6rem;
+        font-weight: 700;
         color: var(--gray-600);
         text-transform: uppercase;
         letter-spacing: 0.1em;
@@ -1566,11 +1539,61 @@
         line-height: 1.5;
     }
 
-    .action-item p {
-        font-size: 0.9rem;
-        color: var(--gray-400);
-        margin-bottom: 16px;
-        line-height: 1.5;
+    .action-group {
+        margin-bottom: 40px;
+    }
+
+    .group-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .header-text h3 {
+        font-family: "Instrument Mono", monospace;
+        font-size: 1rem;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.01em;
+    }
+
+    .header-text .sub-label {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        letter-spacing: 0.05em;
+        margin-top: 2px;
+        text-transform: uppercase;
+    }
+
+    .group-header.critical h3 {
+        color: hsl(0, 85%, 65%);
+    }
+    .group-header.warning h3 {
+        color: hsl(38, 95%, 60%);
+    }
+
+    .action-item {
+        margin-bottom: 12px;
+    }
+
+    .item-meta {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        margin-bottom: 8px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .action-content strong {
+        display: block;
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        color: var(--gray-100);
     }
 
     .action-content p {
@@ -1590,14 +1613,15 @@
 
     .tip-header {
         font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
+        font-size: 0.6rem;
         font-weight: 800;
-        color: var(--gray-500);
+        color: var(--gray-600);
         letter-spacing: 0.15em;
         margin-bottom: 8px;
         display: flex;
         align-items: center;
         gap: 8px;
+        text-transform: uppercase;
     }
 
     .tip-header::before {
@@ -1617,24 +1641,6 @@
         font-size: 0.85rem;
         color: var(--gray-300);
         line-height: 1.4;
-    }
-
-    .action-item p {
-        font-size: 0.9rem;
-        color: var(--gray-400);
-        line-height: 1.6;
-    }
-
-    .fix-tip {
-        margin-top: 16px;
-        padding: 12px 16px;
-        background: rgba(212, 168, 83, 0.03);
-        border: 1px solid rgba(212, 168, 83, 0.1);
-        border-radius: 2px;
-        display: flex;
-        gap: 12px;
-        font-size: 0.85rem;
-        color: var(--gray-300);
     }
 
     .tip-icon {
@@ -1779,23 +1785,66 @@
         line-height: 1.6;
     }
 
-    /* Success State */
+    /* --- RESULTS FOOTER & PREMIUM INSIGHTS --- */
     .success-section {
         text-align: center;
-        padding: 4rem 2rem;
+        padding: 48px 0;
+        margin-bottom: 64px;
     }
 
     .success-icon {
-        margin-bottom: 1.5rem;
-    }
-
-    .success-section h2 {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: center;
     }
 
     .success-section p {
-        color: var(--gray-300);
+        color: var(--gray-400);
+        font-size: 1.1rem;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .whats-next-section {
+        margin-bottom: 64px;
+    }
+
+    .next-steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .next-step {
+        display: flex;
+        gap: 16px;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Instrument Mono", monospace;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .step-content strong {
+        display: block;
+        font-size: 1rem;
+        color: var(--gray-200);
+        margin-bottom: 4px;
+    }
+
+    .step-content p {
+        font-size: 0.85rem;
+        color: var(--gray-500);
     }
 
     /* Footer */
@@ -1847,27 +1896,23 @@
     }
 
     .premium-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
-        color: var(--bg);
-        font-size: 0.7rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
         font-weight: 700;
-        letter-spacing: 0.1em;
-        padding: 0.35rem 0.875rem;
+        color: var(--accent);
+        background: rgba(212, 168, 83, 0.05);
+        padding: 4px 10px;
+        border: 1px solid rgba(212, 168, 83, 0.1);
         border-radius: 20px;
-        margin-bottom: 1rem;
-    }
-
-    .premium-header h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--fg);
-        margin-bottom: 0.5rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 16px;
+        display: inline-block;
     }
 
     .premium-header p {
         font-size: 0.95rem;
         color: var(--gray-400);
+        margin-top: 8px;
     }
 
     /* Tab Navigation */
@@ -2090,26 +2135,18 @@
         line-height: 1.5;
     }
 
-    /* What's Next Section */
     .whats-next-section {
-        margin-bottom: 2.5rem;
-        padding: 1.5rem;
-        background: rgba(34, 197, 94, 0.05);
-        border: 1px solid rgba(34, 197, 94, 0.15);
-        border-radius: 12px;
-    }
-
-    .whats-next-section h2 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--fg);
-        margin-bottom: 1rem;
+        margin-bottom: 64px;
+        padding: 0;
+        background: none;
+        border: none;
     }
 
     .next-steps {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 24px;
     }
 
     .next-step {

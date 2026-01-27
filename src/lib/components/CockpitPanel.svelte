@@ -60,12 +60,12 @@
         position: absolute;
         inset: 0;
         background-image: radial-gradient(
-            rgba(255, 255, 255, 0.03) 1px,
+            rgba(255, 255, 255, 0.02) 1px,
             transparent 1px
         );
         background-size: 24px 24px;
         pointer-events: none;
-        opacity: 0.5;
+        opacity: 0.3;
     }
 
     .panel-content {
@@ -95,10 +95,10 @@
 
     .corner {
         position: absolute;
-        width: 10px;
-        height: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: border-color 0.4s ease;
+        width: 8px;
+        height: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.4s ease;
     }
 
     .tl {
@@ -128,5 +128,8 @@
 
     .cockpit-panel.active .corner {
         border-color: var(--accent);
+        border-width: 1.5px;
+        width: 12px;
+        height: 12px;
     }
 </style>
