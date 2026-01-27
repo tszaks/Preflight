@@ -101,27 +101,6 @@
                             {/if}
                         </div>
 
-                        <ul class="plan-features">
-                            <li>
-                                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                Full compliance report
-                            </li>
-                            <li>
-                                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                Latest Apple guidelines
-                            </li>
-                            <li>
-                                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                Results in minutes
-                            </li>
-                        </ul>
-
                         <form
                             method="POST"
                             action="?/buyCredits"
@@ -155,6 +134,36 @@
                 </article>
             {/each}
         </div>
+
+        <section class="includes-section">
+            <h3>Every review includes</h3>
+            <div class="includes-grid">
+                <div class="include-item">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Full compliance report</span>
+                </div>
+                <div class="include-item">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Latest Apple guidelines</span>
+                </div>
+                <div class="include-item">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Results in minutes</span>
+                </div>
+                <div class="include-item">
+                    <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Credits never expire</span>
+                </div>
+            </div>
+        </section>
 
         <section class="testimonial">
             <blockquote>
@@ -501,28 +510,6 @@
         border-radius: 6px;
     }
 
-    /* === Features === */
-    .plan-features {
-        list-style: none;
-        margin-bottom: 28px;
-    }
-
-    .plan-features li {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 0.9rem;
-        color: var(--gray-300);
-        padding: 8px 0;
-    }
-
-    .check-icon {
-        width: 18px;
-        height: 18px;
-        color: #22c55e;
-        flex-shrink: 0;
-    }
-
     /* === CTA Button === */
     .cta-button {
         display: flex;
@@ -577,6 +564,45 @@
 
     @keyframes spin {
         to { transform: rotate(360deg); }
+    }
+
+    /* === Includes Section === */
+    .includes-section {
+        max-width: 700px;
+        margin: 0 auto 56px;
+        text-align: center;
+    }
+
+    .includes-section h3 {
+        font-family: 'Instrument Mono', monospace;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin-bottom: 20px;
+    }
+
+    .includes-grid {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+        flex-wrap: wrap;
+    }
+
+    .include-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        color: var(--gray-300);
+    }
+
+    .include-item svg {
+        width: 18px;
+        height: 18px;
+        color: #22c55e;
+        flex-shrink: 0;
     }
 
     /* === Testimonial === */
