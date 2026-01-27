@@ -18,13 +18,16 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
             }
         });
 
-    const {
-        data: { session }
-    } = await supabase.auth.getSession();
-
+    // IMPORTANT: Call getUser() first - this validates the JWT with Supabase
+    // servers and automatically refreshes expired tokens. getSession() only
+    // reads from local storage/cookies without validation.
     const {
         data: { user }
     } = await supabase.auth.getUser();
+
+    const {
+        data: { session }
+    } = await supabase.auth.getSession();
 
     return { session, supabase, user, credits: data.credits };
 };

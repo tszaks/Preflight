@@ -8,22 +8,32 @@ export const handle: Handle = async ({ event, resolve }) => {
             getAll: () => event.cookies.getAll(),
             setAll: (cookiesToSet) => {
                 cookiesToSet.forEach(({ name, value, options }) => {
-                    event.cookies.set(name, value, { ...options, path: '/' });
+                    // Ensure cookies persist properly across browser sessions
+                    event.cookies.set(name, value, {
+                        ...options,
+                        path: '/',
+                        secure: true,
+                        httpOnly: true,
+                        sameSite: 'lax',
+                    });
                 });
             },
         },
     });
 
     event.locals.safeGetSession = async () => {
-        const { data: { session } } = await event.locals.supabase.auth.getSession();
-        if (!session) {
+        // IMPORTANT: getUser() validates the JWT with Supabase servers AND
+        // automatically refreshes expired tokens. getSession() only reads
+        // from cookies without validation, which can return stale/expired data.
+        // Always call getUser() first to ensure tokens are refreshed.
+        const { data: { user }, error: userError } = await event.locals.supabase.auth.getUser();
+
+        if (userError || !user) {
             return { session: null, user: null };
         }
 
-        const { data: { user }, error } = await event.locals.supabase.auth.getUser();
-        if (error) {
-            return { session: null, user: null };
-        }
+        // Now get the (potentially refreshed) session
+        const { data: { session } } = await event.locals.supabase.auth.getSession();
 
         return { session, user };
     };
