@@ -555,76 +555,128 @@
 
         <section class="score-section">
             <CockpitPanel class="high-level-score" variant="elevated">
-                <div
-                    class="overall-score"
-                    style="--score-color: {scoreColor(
-                        report.score_overall,
-                        criticalItems.length > 0,
-                    )}"
-                >
-                    <div class="score-circle">
-                        <span class="score-number"
-                            >{report.score_overall ?? "--"}</span
-                        >
+                <div class="hud-cluster">
+                    <div
+                        class="hud-gauge"
+                        style="--score-color: {scoreColor(
+                            report.score_overall,
+                            criticalItems.length > 0,
+                        )}"
+                    >
+                        <svg viewBox="0 0 100 100">
+                            <circle class="track" cx="50" cy="50" r="45" />
+                            <circle
+                                class="fill"
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                style="stroke-dasharray: {2 *
+                                    Math.PI *
+                                    45 *
+                                    (report.score_overall / 100)}, 1000"
+                            />
+                        </svg>
+                        <div class="gauge-value">
+                            <span class="value"
+                                >{report.score_overall ?? "--"}</span
+                            >
+                            <span class="label">READY SCORE</span>
+                        </div>
                     </div>
-                    <div class="score-text">
-                        <span class="score-label">Overall Score</span>
-                        <div class="verdict-row">
-                            <span class="score-verdict"
-                                >{scoreEmoji(
+
+                    <div class="hud-info">
+                        <div class="hud-row">
+                            <span class="hud-tag"
+                                >ID: {submission.id
+                                    .slice(0, 8)
+                                    .toUpperCase()}</span
+                            >
+                            <span class="hud-tag"
+                                >TYPE: {submission.review_type.toUpperCase()}</span
+                            >
+                        </div>
+                        <div class="hud-verdict-row">
+                            <span
+                                class="hud-verdict"
+                                style="color: {scoreColor(
                                     report.score_overall,
                                     criticalItems.length > 0,
-                                )}</span
+                                )}"
                             >
+                                {scoreEmoji(
+                                    report.score_overall,
+                                    criticalItems.length > 0,
+                                )}
+                            </span>
                             {#if criticalItems.length > 0}
-                                <span class="risk-badge critical"
-                                    >CRITICAL RISK</span
-                                >
+                                <div class="hud-alert-badge critical">
+                                    HAZARD DETECTED
+                                </div>
                             {:else if warningItems.length > 0}
-                                <span class="risk-badge warning"
-                                    >MODERATE RISK</span
-                                >
+                                <div class="hud-alert-badge warning">
+                                    DUE DILIGENCE REQ
+                                </div>
                             {:else}
-                                <span class="risk-badge safe">READY</span>
+                                <div class="hud-alert-badge safe">
+                                    NOMINAL STATUS
+                                </div>
                             {/if}
                         </div>
                     </div>
                 </div>
 
-                <div class="score-stats">
+                <div class="hud-separator"></div>
+
+                <div class="hud-stats-matrix">
                     <div
-                        class="stat-pill {report.total_critical > 0
+                        class="stat-readout {report.total_critical > 0
                             ? 'critical'
                             : 'dim'}"
                     >
-                        <StatusLight
-                            status={report.total_critical > 0
-                                ? "critical"
-                                : "neutral"}
-                        />
-                        <span>{report.total_critical} Critical</span>
+                        <div class="readout-header">
+                            <span class="readout-label">CRITICAL</span>
+                            <StatusLight
+                                status={report.total_critical > 0
+                                    ? "critical"
+                                    : "neutral"}
+                                pulse={report.total_critical > 0}
+                            />
+                        </div>
+                        <span class="readout-value"
+                            >{report.total_critical}</span
+                        >
                     </div>
                     <div
-                        class="stat-pill {report.total_warnings > 0
+                        class="stat-readout {report.total_warnings > 0
                             ? 'warning'
                             : 'dim'}"
                     >
-                        <StatusLight
-                            status={report.total_warnings > 0
-                                ? "warning"
-                                : "neutral"}
-                        />
-                        <span>{report.total_warnings} Warnings</span>
+                        <div class="readout-header">
+                            <span class="readout-label">WARNING</span>
+                            <StatusLight
+                                status={report.total_warnings > 0
+                                    ? "warning"
+                                    : "neutral"}
+                            />
+                        </div>
+                        <span class="readout-value"
+                            >{report.total_warnings}</span
+                        >
                     </div>
                     <div
-                        class="stat-pill {report.total_info > 0
+                        class="stat-readout {report.total_info > 0
                             ? 'info'
                             : 'dim'}"
                     >
-                        <StatusLight
-                            status={report.total_info > 0 ? "ready" : "neutral"}
-                        />
-                        <span>{report.total_info} Suggestions</span>
+                        <div class="readout-header">
+                            <span class="readout-label">INFO</span>
+                            <StatusLight
+                                status={report.total_info > 0
+                                    ? "ready"
+                                    : "neutral"}
+                            />
+                        </div>
+                        <span class="readout-value">{report.total_info}</span>
                     </div>
                 </div>
             </CockpitPanel>
@@ -1093,304 +1145,413 @@
     }
 
     .score-section {
-        margin-bottom: 2.5rem;
+        margin-bottom: 40px;
     }
 
-    /* Target inner content of CockpitPanel */
     .score-section :global(.high-level-score) {
         display: flex;
-        align-items: center;
-        gap: 40px;
+        align-items: stretch;
+        gap: 0;
+        padding: 0;
+        border-radius: 4px;
+        background: rgba(10, 10, 14, 0.4);
+    }
+
+    .hud-cluster {
         padding: 32px;
-    }
-
-    .overall-score {
-        flex-shrink: 0;
         display: flex;
         align-items: center;
-        gap: 28px;
-        padding-right: 48px;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        gap: 32px;
+        flex: 1.2;
     }
 
-    .score-circle {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        border: 4px solid var(--score-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .hud-gauge {
+        position: relative;
+        width: 110px;
+        height: 110px;
         flex-shrink: 0;
-        box-shadow:
-            0 0 20px var(--score-color),
-            inset 0 0 10px var(--score-color);
-        background: rgba(0, 0, 0, 0.2);
     }
 
-    .score-number {
-        font-family: "Outfit", sans-serif;
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: var(--fg);
+    .hud-gauge svg {
+        transform: rotate(-90deg);
+        filter: drop-shadow(0 0 12px var(--score-color));
     }
 
-    .score-text {
+    .hud-gauge .track {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.03);
+        stroke-width: 5;
+    }
+
+    .hud-gauge .fill {
+        fill: none;
+        stroke: var(--score-color);
+        stroke-width: 5;
+        stroke-linecap: square;
+        transition: stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .gauge-value {
+        position: absolute;
+        inset: 0;
         display: flex;
         flex-direction: column;
+        align-items: center;
         justify-content: center;
     }
 
-    .score-label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--gray-500);
-        margin-bottom: 2px;
-    }
-
-    .score-verdict {
-        font-size: 1.25rem;
+    .gauge-value .value {
+        font-family: "Instrument Mono", monospace;
+        font-size: 2.25rem;
         font-weight: 700;
-        color: var(--score-color);
+        color: var(--fg);
+        line-height: 1;
+        letter-spacing: -0.05em;
     }
 
-    .verdict-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 4px;
-    }
-
-    .risk-badge {
-        font-size: 0.65rem;
+    .gauge-value .label {
+        font-size: 0.55rem;
         font-weight: 800;
-        padding: 2px 8px;
-        border-radius: 4px;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.2em;
+        color: var(--gray-500);
+        margin-top: 4px;
         text-transform: uppercase;
-        background: rgba(255, 255, 255, 0.05);
     }
 
-    .risk-badge.critical {
-        background: rgba(239, 68, 68, 0.2);
-        color: #fecaca;
-        border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    .risk-badge.warning {
-        background: rgba(245, 158, 11, 0.2);
-        color: #fef3c7;
-        border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-    .risk-badge.safe {
-        background: rgba(34, 197, 94, 0.2);
-        color: #d1fae5;
-        border: 1px solid rgba(34, 197, 94, 0.3);
+    .hud-info {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
 
-    .score-stats {
+    .hud-row {
+        display: flex;
+        gap: 16px;
+    }
+
+    .hud-tag {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--gray-400);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 3px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 2px;
+        letter-spacing: 0.05em;
+    }
+
+    .hud-verdict-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .hud-verdict {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1;
+    }
+
+    .hud-alert-badge {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 2px;
+        letter-spacing: 0.1em;
+        width: fit-content;
+    }
+
+    .hud-alert-badge.critical {
+        background: hsla(0, 85%, 60%, 0.1);
+        color: hsl(0, 85%, 70%);
+        border: 1px solid hsla(0, 85%, 60%, 0.3);
+        box-shadow: 0 0 20px hsla(0, 85%, 60%, 0.1);
+        animation: hud-warning-pulse 2s infinite ease-in-out;
+    }
+
+    .hud-alert-badge.warning {
+        background: hsla(38, 95%, 55%, 0.1);
+        color: hsl(38, 95%, 65%);
+        border: 1px solid hsla(38, 95%, 55%, 0.3);
+    }
+
+    .hud-alert-badge.safe {
+        background: hsla(145, 80%, 50%, 0.1);
+        color: hsl(145, 80%, 65%);
+        border: 1px solid hsla(145, 80%, 50%, 0.3);
+    }
+
+    @keyframes hud-warning-pulse {
+        0%,
+        100% {
+            border-color: hsla(0, 85%, 60%, 0.2);
+            opacity: 0.9;
+        }
+        50% {
+            border-color: hsla(0, 85%, 60%, 0.6);
+            opacity: 1;
+        }
+    }
+
+    .hud-separator {
+        width: 1px;
+        background: linear-gradient(
+            rgba(255, 255, 255, 0),
+            rgba(255, 255, 255, 0.08),
+            rgba(255, 255, 255, 0)
+        );
+    }
+
+    .hud-stats-matrix {
         flex: 1;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
+        gap: 1px;
+        background: rgba(255, 255, 255, 0.05); /* Grid line simulation */
     }
 
-    .stat-pill {
+    .stat-readout {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 24px;
+        background: rgba(10, 10, 14, 0.5);
+    }
+
+    .readout-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .readout-label {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: var(--gray-500);
+        text-transform: uppercase;
+    }
+
+    .readout-value {
+        font-family: "Instrument Mono", monospace;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--fg);
+        line-height: 1;
+        margin-top: 8px;
+    }
+
+    .stat-readout.critical .readout-value {
+        color: hsl(0, 85%, 65%);
+    }
+    .stat-readout.warning .readout-value {
+        color: hsl(38, 95%, 60%);
+    }
+    .stat-readout.info .readout-value {
+        color: hsl(200, 90%, 65%);
+    }
+    .stat-readout.dim {
+        opacity: 0.4;
+        filter: grayscale(1);
+    }
+
+    /* --- BREAKDOWN MATRIX --- */
+    .categories {
+        margin-bottom: 40px;
+    }
+
+    .categories h2 {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: var(--gray-500);
+        margin-bottom: 20px;
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
+        gap: 12px;
+        text-transform: uppercase;
     }
 
-    .stat-pill.critical {
-        color: #fecaca;
-        background: rgba(239, 68, 68, 0.1);
-    }
-    .stat-pill.warning {
-        color: #fde68a;
-        background: rgba(245, 158, 11, 0.1);
-    }
-    .stat-pill.info {
-        color: #bbf7d0;
-        background: rgba(34, 197, 94, 0.1);
-    }
-    .stat-pill.dim {
-        color: var(--gray-600);
-        opacity: 0.5;
-    }
-
-    .stat {
-        font-size: 0.8rem;
-        font-weight: 600;
-        padding: 0.35rem 0.75rem;
-        border-radius: 20px;
-    }
-
-    .stat-critical {
-        background: rgba(239, 68, 68, 0.15);
-        color: #f87171;
-    }
-    .stat-warning {
-        background: rgba(245, 158, 11, 0.15);
-        color: #fbbf24;
-    }
-    .stat-info {
-        background: rgba(34, 197, 94, 0.15);
-        color: #4ade80;
-    }
-    .stat-pass {
-        background: rgba(34, 197, 94, 0.15);
-        color: #4ade80;
-    }
-
-    /* Action Section */
-    .action-section {
-        margin-bottom: 2.5rem;
-    }
-
-    .action-section h2 {
-        font-size: 1.1rem;
-        margin-bottom: 1.25rem;
+    .categories h2::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.08),
+            transparent
+        );
     }
 
     .action-group {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        margin-bottom: 32px;
+        margin-bottom: 40px;
     }
 
     .group-header {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
     }
 
     .group-header h3 {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin: 0;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.9rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .group-header.critical h3 {
-        color: var(--status-critical-fg);
+        color: hsl(0, 85%, 65%);
     }
     .group-header.warning h3 {
-        color: var(--status-warning-fg);
+        color: hsl(38, 95%, 60%);
     }
 
     .action-item {
-        /* CockpitPanel specific overrides if needed */
+        margin-bottom: 2px;
+        padding: 20px;
+        background: rgba(18, 18, 22, 0.4) !important;
+        border: 1px solid rgba(255, 255, 255, 0.03) !important;
+        border-right: 2px solid transparent !important;
+        border-radius: 2px !important;
     }
 
-    .action-item :global(.action-content) {
-        flex: 1;
+    .action-item.critical-item {
+        border-left: 3px solid hsla(0, 85%, 60%, 0.4) !important;
+    }
+    .action-item.warning-item {
+        border-left: 3px solid hsla(38, 95%, 55%, 0.4) !important;
+    }
+
+    .action-item strong {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--fg);
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .action-item p {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        line-height: 1.6;
     }
 
     .fix-tip {
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: rgba(212, 168, 83, 0.03);
+        border: 1px solid rgba(212, 168, 83, 0.1);
+        border-radius: 2px;
         display: flex;
         gap: 12px;
-        margin-top: 12px;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        font-size: 0.9rem;
-        color: var(--gray-200);
+        font-size: 0.85rem;
+        color: var(--gray-300);
     }
 
     .tip-icon {
-        font-size: 1.2rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--accent);
+        background: rgba(212, 168, 83, 0.1);
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
     }
 
     /* Categories */
-    .categories {
-        margin-bottom: 2.5rem;
-    }
-
-    .categories h2,
-    .suggestions-section h2,
-    .action-section h2 {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--gray-500);
-        margin-bottom: 1rem;
-    }
-
-    .section-subtitle {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-        margin-top: -0.5rem;
-        margin-bottom: 1rem;
-    }
-
     .category-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: rgba(255, 255, 255, 0.05); /* Thin grid lines */
+        border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .category-card {
-        /* CockpitPanel styling */
+        padding: 24px;
+        background: rgba(12, 12, 16, 0.6);
+        border: none !important;
+        border-radius: 0 !important;
+        backdrop-filter: blur(10px);
     }
 
     .category-card :global(.category-header) {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
     }
 
     .category-name {
-        font-size: 1rem;
+        font-family: "Outfit", sans-serif;
+        font-size: 1.1rem;
         font-weight: 700;
         color: var(--fg);
         display: block;
-        letter-spacing: -0.01em;
     }
 
     .category-desc {
         font-size: 0.75rem;
         color: var(--gray-500);
-        display: block;
-        line-height: 1.4;
+        line-height: 1.5;
         margin-top: 2px;
+        display: block;
     }
 
-    .category-score-value {
-        font-family: "Instrument Mono", monospace;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--fg);
+    .category-bar {
+        height: 2px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 0;
+        overflow: hidden;
+        margin-top: 12px;
     }
 
-    /* Suggestions */
+    .category-fill {
+        height: 100%;
+        transition: width 1s ease-out;
+    }
+
+    /* --- SUGGESTIONS (HUD LIST) --- */
     .suggestions-section {
-        margin-bottom: 2.5rem;
+        margin-bottom: 40px;
     }
 
     .suggestions-list {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 2px;
     }
 
     .suggestion-card {
-        cursor: pointer;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        border-radius: 2px;
+        transition: background 0.2s ease;
+    }
+
+    .suggestion-card:hover {
+        background: rgba(255, 255, 255, 0.04);
     }
 
     .suggestion-summary {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        gap: 16px;
+        padding: 12px 20px;
         list-style: none;
+        cursor: pointer;
     }
 
     .suggestion-summary::-webkit-details-marker {
@@ -1398,38 +1559,43 @@
     }
 
     .suggestion-icon {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background: rgba(34, 197, 94, 0.15);
-        color: #4ade80;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 800;
+        color: hsl(200, 90%, 65%);
+        background: hsla(200, 90%, 65%, 0.1);
+        width: 18px;
+        height: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.7rem;
-        font-weight: 700;
+        border-radius: 2px;
         flex-shrink: 0;
     }
 
     .suggestion-title {
         flex: 1;
         font-size: 0.9rem;
-        font-weight: 500;
+        font-weight: 600;
+        color: var(--gray-200);
     }
 
     .suggestion-category {
-        font-size: 0.75rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
         color: var(--gray-500);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .suggestion-body {
-        padding: 0 1rem 1rem 2.75rem;
+        padding: 0 20px 16px 54px;
     }
 
     .suggestion-body p {
         font-size: 0.85rem;
-        color: var(--gray-300);
-        line-height: 1.5;
+        color: var(--gray-400);
+        line-height: 1.6;
     }
 
     /* Success State */
