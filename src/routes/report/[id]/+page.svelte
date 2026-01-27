@@ -425,6 +425,15 @@
         setTimeout(() => (copySuccess = false), 2000);
     }
 
+    // Track which fix tip was just copied
+    let copiedFixId: string | null = $state(null);
+
+    async function copyFixSuggestion(text: string, itemId: string) {
+        await navigator.clipboard.writeText(text);
+        copiedFixId = itemId;
+        setTimeout(() => (copiedFixId = null), 2000);
+    }
+
     function downloadMarkdown() {
         const markdown = generateMarkdownExport();
         const blob = new Blob([markdown], { type: "text/markdown" });
@@ -550,6 +559,35 @@
         {#if copySuccess}
             <div class="toast">
                 Copied to clipboard! Paste into your AI assistant.
+            </div>
+        {/if}
+
+        <!-- Progress Summary Banner -->
+        {@const passingCategories = [
+            report.score_metadata,
+            report.score_screenshots,
+            report.score_privacy,
+            report.score_plist,
+            report.score_urls,
+            report.score_content
+        ].filter(s => s !== null && s >= 80).length}
+        {@const totalCategories = 6}
+
+        {#if criticalItems.length === 0 && warningItems.length > 0}
+            <div class="encouragement-banner">
+                <div class="banner-icon">🎯</div>
+                <div class="banner-content">
+                    <strong>You're almost there!</strong>
+                    <p>No blocking issues found. Address the warnings below to maximize your approval chances.</p>
+                </div>
+            </div>
+        {:else if criticalItems.length === 0 && warningItems.length === 0}
+            <div class="encouragement-banner success">
+                <div class="banner-icon">✅</div>
+                <div class="banner-content">
+                    <strong>Looking great!</strong>
+                    <p>No issues detected. Your app appears ready for App Store submission.</p>
+                </div>
             </div>
         {/if}
 
@@ -719,7 +757,14 @@
                                     {#if item.fix_suggestion}
                                         <div class="fix-tip">
                                             <div class="tip-header">
-                                                How to Fix
+                                                <span class="tip-label">How to Fix</span>
+                                                <button
+                                                    class="copy-fix-btn"
+                                                    class:copied={copiedFixId === item.id}
+                                                    onclick={() => copyFixSuggestion(item.fix_suggestion, item.id)}
+                                                >
+                                                    {copiedFixId === item.id ? '✓ Copied' : 'Copy'}
+                                                </button>
                                             </div>
                                             <div class="tip-body">
                                                 {item.fix_suggestion}
@@ -754,7 +799,14 @@
                                     {#if item.fix_suggestion}
                                         <div class="fix-tip">
                                             <div class="tip-header">
-                                                How to Fix
+                                                <span class="tip-label">How to Fix</span>
+                                                <button
+                                                    class="copy-fix-btn"
+                                                    class:copied={copiedFixId === item.id}
+                                                    onclick={() => copyFixSuggestion(item.fix_suggestion, item.id)}
+                                                >
+                                                    {copiedFixId === item.id ? '✓ Copied' : 'Copy'}
+                                                </button>
                                             </div>
                                             <div class="tip-body">
                                                 {item.fix_suggestion}
@@ -1598,11 +1650,18 @@
         margin-bottom: 8px;
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 8px;
         text-transform: uppercase;
     }
 
-    .tip-header::before {
+    .tip-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tip-label::before {
         content: "!";
         width: 12px;
         height: 12px;
@@ -1613,6 +1672,7 @@
         justify-content: center;
         border-radius: 50%;
         font-size: 0.5rem;
+        flex-shrink: 0;
     }
 
     .tip-body {
@@ -1633,6 +1693,74 @@
         align-items: center;
         justify-content: center;
         border-radius: 50%;
+    }
+
+    /* Copy Fix Button */
+    .copy-fix-btn {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--gray-400);
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all var(--duration-fast) var(--ease-out);
+        margin-left: auto;
+    }
+
+    .copy-fix-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--gray-200);
+    }
+
+    .copy-fix-btn.copied {
+        background: rgba(34, 197, 94, 0.15);
+        border-color: rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+    }
+
+    /* Encouragement Banner */
+    .encouragement-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px 24px;
+        background: rgba(212, 168, 83, 0.06);
+        border: 1px solid rgba(212, 168, 83, 0.15);
+        border-radius: 8px;
+        margin-bottom: 32px;
+    }
+
+    .encouragement-banner.success {
+        background: rgba(34, 197, 94, 0.06);
+        border-color: rgba(34, 197, 94, 0.15);
+    }
+
+    .banner-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .banner-content strong {
+        display: block;
+        font-family: "Outfit", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--fg);
+        margin-bottom: 4px;
+    }
+
+    .banner-content p {
+        font-size: 0.9rem;
+        color: var(--gray-300);
+        line-height: 1.5;
+        margin: 0;
     }
 
     /* Categories */
