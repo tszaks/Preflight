@@ -4,641 +4,443 @@
     let loading = $state(false);
     let selectedPlan = $state<string | null>(null);
 
-    function handleSubmit(planId: string) {
-        return () => {
-            loading = true;
-            selectedPlan = planId;
-            return async ({ result }: { result: { type: string; location?: string } }) => {
-                loading = false;
-                if (result.type === "redirect" && result.location) {
-                    window.location.href = result.location;
-                }
-            };
-        };
+    const plans = [
+        {
+            id: "starter",
+            name: "Starter",
+            credits: 100,
+            price: 49,
+            reviews: "1 full review",
+            savings: null,
+            description: "Perfect for launching your first app",
+        },
+        {
+            id: "pro",
+            name: "Pro",
+            credits: 350,
+            price: 129,
+            reviews: "3 full reviews",
+            savings: "Save 12%",
+            description: "For developers shipping regularly",
+            popular: true,
+        },
+        {
+            id: "team",
+            name: "Team",
+            credits: 750,
+            price: 249,
+            reviews: "7 full reviews",
+            savings: "Save 27%",
+            description: "For small studios and teams",
+        },
+        {
+            id: "agency",
+            name: "Agency",
+            credits: 1500,
+            price: 449,
+            reviews: "15 full reviews",
+            savings: "Save 39%",
+            description: "For agencies managing multiple apps",
+        },
+    ];
+
+    function selectPlan(planId: string) {
+        selectedPlan = planId;
     }
 </script>
 
-<main class="page">
-    <!-- Decorative elements -->
-    <div class="deco-line deco-line-1"></div>
-    <div class="deco-line deco-line-2"></div>
-    <div class="deco-corner deco-corner-tl"></div>
-    <div class="deco-corner deco-corner-br"></div>
+<main class="pricing-page">
+    <div class="container">
+        <header class="pricing-header">
+            <div class="section-label">Pricing</div>
+            <h1>Buy credits, review apps.</h1>
+            <p class="header-sub">
+                No subscriptions. No expiration. Just reviews when you need them.
+            </p>
+        </header>
 
-    <div class="layout">
-        <!-- Left column: The pitch -->
-        <div class="pitch-column">
-            <div class="pitch-content">
-                <p class="eyebrow">Preflight Review</p>
+        <div class="pricing-grid">
+            {#each plans as plan}
+                <div class="pricing-card" class:popular={plan.popular}>
+                    {#if plan.popular}
+                        <div class="popular-badge">Recommended</div>
+                    {/if}
+                    {#if plan.savings}
+                        <div class="savings-tag">{plan.savings}</div>
+                    {/if}
 
-                <h1>
-                    <span class="h1-line">8 days.</span>
-                    <span class="h1-line h1-muted">That's what a rejection costs.</span>
-                </h1>
+                    <div class="plan-header">
+                        <h3 class="plan-name">{plan.name}</h3>
+                        <p class="plan-description">{plan.description}</p>
+                    </div>
 
-                <p class="pitch-body">
-                    Every App Store rejection means another week in limbo.
-                    Preflight runs the same checks Apple does—metadata, privacy manifests,
-                    screenshots, guidelines—and tells you what's wrong before you submit.
-                </p>
+                    <div class="plan-price">
+                        <span class="price-amount">${plan.price}</span>
+                        <span class="price-once">one-time</span>
+                    </div>
 
-                <div class="social-proof">
-                    <blockquote>
-                        "Caught 3 issues that would've been instant rejections."
-                    </blockquote>
-                    <cite>— Marcus J., iOS Developer</cite>
+                    <div class="plan-value">
+                        <span class="credits-count">{plan.credits}</span>
+                        <span class="credits-label">credits</span>
+                    </div>
+
+                    <div class="plan-details">
+                        <div class="detail-item">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>{plan.reviews}</span>
+                        </div>
+                        <div class="detail-item">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Credits never expire</span>
+                        </div>
+                        <div class="detail-item">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Full compliance report</span>
+                        </div>
+                    </div>
+
+                    <form
+                        method="POST"
+                        action="?/buyCredits"
+                        use:enhance={() => {
+                            loading = true;
+                            selectedPlan = plan.id;
+                            return async ({ result }) => {
+                                loading = false;
+                                if (
+                                    result.type === "redirect" &&
+                                    result.location
+                                ) {
+                                    window.location.href = result.location;
+                                }
+                            };
+                        }}
+                    >
+                        <input type="hidden" name="plan" value={plan.id} />
+                        <button
+                            type="submit"
+                            class="btn btn-full {plan.popular ? 'btn-primary' : 'btn-secondary'}"
+                            disabled={loading && selectedPlan === plan.id}
+                        >
+                            {loading && selectedPlan === plan.id
+                                ? "Processing..."
+                                : `Get ${plan.name}`}
+                        </button>
+                    </form>
                 </div>
-
-                <div class="trust-badges">
-                    <span class="trust-badge">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        Results in minutes
-                    </span>
-                    <span class="trust-badge">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        Credits never expire
-                    </span>
-                </div>
-            </div>
+            {/each}
         </div>
 
-        <!-- Right column: The pricing -->
-        <div class="pricing-column">
-            <!-- Pro - The Hero (center, dominant) -->
-            <div class="plan-card plan-pro">
-                <div class="plan-label">
-                    <span class="label-text">Recommended</span>
-                </div>
-
-                <div class="plan-reviews">
-                    <span class="reviews-number">3</span>
-                    <span class="reviews-word">Reviews</span>
-                </div>
-
-                <div class="plan-price">
-                    <span class="price-per">$43</span>
-                    <span class="price-unit">per review</span>
-                </div>
-
-                <div class="plan-total">$129 total</div>
-
-                <form method="POST" action="?/buyCredits" use:enhance={handleSubmit("pro")}>
-                    <input type="hidden" name="plan" value="pro" />
-                    <button type="submit" class="plan-cta cta-gold" disabled={loading && selectedPlan === "pro"}>
-                        {#if loading && selectedPlan === "pro"}
-                            <span class="spinner"></span>
-                        {:else}
-                            Get Started
-                        {/if}
-                    </button>
-                </form>
-            </div>
-
-            <!-- Other plans row -->
-            <div class="other-plans">
-                <!-- Starter -->
-                <div class="plan-card plan-standard">
-                    <span class="plan-name">Starter</span>
-                    <div class="plan-reviews-sm">
-                        <span class="reviews-number-sm">1</span>
-                        <span class="reviews-word-sm">Review</span>
+        <div class="pricing-info">
+            <h2>How credits work</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
                     </div>
-                    <div class="plan-price-sm">$49</div>
-
-                    <form method="POST" action="?/buyCredits" use:enhance={handleSubmit("starter")}>
-                        <input type="hidden" name="plan" value="starter" />
-                        <button type="submit" class="plan-cta cta-outline" disabled={loading && selectedPlan === "starter"}>
-                            {#if loading && selectedPlan === "starter"}
-                                <span class="spinner"></span>
-                            {:else}
-                                Select
-                            {/if}
-                        </button>
-                    </form>
+                    <h4>100 credits = 1 review</h4>
+                    <p>Each full app review uses 100 credits. Simple math, no surprises.</p>
                 </div>
-
-                <!-- Agency -->
-                <div class="plan-card plan-standard">
-                    <span class="plan-name">Agency</span>
-                    <div class="plan-reviews-sm">
-                        <span class="reviews-number-sm">15</span>
-                        <span class="reviews-word-sm">Reviews</span>
+                <div class="info-item">
+                    <div class="info-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12l2 2 4-4"/>
+                            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
                     </div>
-                    <div class="plan-price-sm">$30<span class="price-unit-sm">/review</span></div>
-                    <div class="plan-total-sm">$449 total</div>
-
-                    <form method="POST" action="?/buyCredits" use:enhance={handleSubmit("agency")}>
-                        <input type="hidden" name="plan" value="agency" />
-                        <button type="submit" class="plan-cta cta-outline" disabled={loading && selectedPlan === "agency"}>
-                            {#if loading && selectedPlan === "agency"}
-                                <span class="spinner"></span>
-                            {:else}
-                                Select
-                            {/if}
-                        </button>
-                    </form>
+                    <h4>Always up to date</h4>
+                    <p>We check against Apple's latest guidelines so you catch issues before Apple does.</p>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"/>
+                            <path d="M7 7h10M7 12h10M7 17h6"/>
+                        </svg>
+                    </div>
+                    <h4>No expiration</h4>
+                    <p>Buy credits when you need them. They stay in your account until you use them.</p>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                    </div>
+                    <h4>Dashboard access</h4>
+                    <p>View all your reviews and reports anytime from your dashboard.</p>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- What's included - horizontal strip -->
-    <section class="includes-section">
-        <h2 class="includes-title">Every review analyzes</h2>
-        <div class="includes-list">
-            <span class="include-item">Metadata</span>
-            <span class="include-sep">·</span>
-            <span class="include-item">Screenshots</span>
-            <span class="include-sep">·</span>
-            <span class="include-item">Privacy Manifest</span>
-            <span class="include-sep">·</span>
-            <span class="include-item">Info.plist</span>
-            <span class="include-sep">·</span>
-            <span class="include-item">URLs</span>
-            <span class="include-sep">·</span>
-            <span class="include-item">Apple Guidelines</span>
-        </div>
-    </section>
 </main>
 
 <style>
-    /* === Page === */
-    .page {
+    .pricing-page {
+        padding: 100px 24px 80px;
         min-height: 100vh;
-        padding: 60px 48px 80px;
-        position: relative;
-        overflow: hidden;
     }
 
-    /* === Decorative Lines === */
-    .deco-line {
-        position: absolute;
-        background: var(--accent);
-        opacity: 0.15;
-        pointer-events: none;
+    .pricing-header {
+        text-align: center;
+        margin-bottom: 48px;
     }
 
-    .deco-line-1 {
-        width: 1px;
-        height: 200px;
-        top: 0;
-        left: 15%;
-    }
-
-    .deco-line-2 {
-        width: 300px;
-        height: 1px;
-        bottom: 20%;
-        right: 0;
-    }
-
-    .deco-corner {
-        position: absolute;
-        width: 80px;
-        height: 80px;
-        border: 1px solid var(--accent);
-        opacity: 0.1;
-        pointer-events: none;
-    }
-
-    .deco-corner-tl {
-        top: 40px;
-        left: 40px;
-        border-right: none;
-        border-bottom: none;
-    }
-
-    .deco-corner-br {
-        bottom: 40px;
-        right: 40px;
-        border-left: none;
-        border-top: none;
-    }
-
-    /* === Two-Column Layout === */
-    .layout {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 80px;
-        max-width: 1200px;
-        margin: 0 auto;
-        min-height: calc(100vh - 280px);
-        align-items: center;
-    }
-
-    /* === Left Column: Pitch === */
-    .pitch-column {
-        padding-right: 40px;
-    }
-
-    .pitch-content {
-        max-width: 480px;
-    }
-
-    .eyebrow {
-        font-family: 'Instrument Mono', monospace;
-        font-size: 0.65rem;
-        font-weight: 600;
-        color: var(--accent);
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        margin-bottom: 24px;
-    }
-
-    h1 {
-        font-family: 'Outfit', sans-serif;
-        font-size: 3.5rem;
+    .pricing-header h1 {
+        font-family: "Outfit", sans-serif;
+        font-size: 2.5rem;
         font-weight: 800;
-        line-height: 1.1;
-        letter-spacing: -0.03em;
-        margin-bottom: 32px;
+        letter-spacing: -0.02em;
+        margin-top: 12px;
     }
 
-    .h1-line {
-        display: block;
-    }
-
-    .h1-muted {
-        color: var(--gray-500);
-        font-size: 0.6em;
-        font-weight: 500;
-        letter-spacing: -0.01em;
-        margin-top: 8px;
-    }
-
-    .pitch-body {
-        font-size: 1.1rem;
-        line-height: 1.7;
-        color: var(--gray-300);
-        margin-bottom: 40px;
-    }
-
-    .social-proof {
-        margin-bottom: 40px;
-        padding-left: 20px;
-        border-left: 2px solid var(--accent);
-    }
-
-    .social-proof blockquote {
-        font-family: 'Outfit', sans-serif;
+    .header-sub {
         font-size: 1.15rem;
-        font-weight: 500;
-        font-style: italic;
-        color: var(--gray-100);
-        margin-bottom: 8px;
+        color: var(--gray-300);
+        margin-top: 12px;
     }
 
-    .social-proof cite {
-        font-size: 0.85rem;
-        color: var(--gray-500);
-        font-style: normal;
-    }
-
-    .trust-badges {
-        display: flex;
-        flex-wrap: wrap;
+    .pricing-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 16px;
+        margin-bottom: 64px;
+        max-width: 1100px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    .trust-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.8rem;
-        color: var(--gray-400);
+    @media (max-width: 1000px) {
+        .pricing-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
     }
 
-    .trust-badge svg {
-        color: var(--accent);
+    @media (max-width: 600px) {
+        .pricing-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
-    /* === Right Column: Pricing === */
-    .pricing-column {
+    .pricing-card {
+        position: relative;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 28px 24px;
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        transition: all 0.3s ease;
     }
 
-    /* === Pro Card (Hero) === */
-    .plan-pro {
-        background: linear-gradient(135deg, rgba(212, 168, 83, 0.08) 0%, rgba(12, 12, 15, 0.95) 100%);
-        border: 2px solid var(--accent);
-        border-radius: 16px;
-        padding: 48px 40px;
-        text-align: center;
-        position: relative;
-        box-shadow:
-            0 0 0 1px rgba(212, 168, 83, 0.1),
-            0 25px 50px -12px rgba(0, 0, 0, 0.6),
-            0 0 100px -30px rgba(212, 168, 83, 0.2);
+    .pricing-card:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-4px);
     }
 
-    .plan-label {
+    .pricing-card.popular {
+        background: rgba(212, 168, 83, 0.04);
+        border-color: rgba(212, 168, 83, 0.25);
+        box-shadow: 0 0 40px rgba(212, 168, 83, 0.08);
+    }
+
+    .pricing-card.popular:hover {
+        border-color: rgba(212, 168, 83, 0.4);
+        box-shadow: 0 0 50px rgba(212, 168, 83, 0.12);
+    }
+
+    .popular-badge {
         position: absolute;
-        top: -1px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
-    }
-
-    .label-text {
-        display: inline-block;
-        background: var(--accent);
-        color: #000;
-        font-family: 'Instrument Mono', monospace;
-        font-size: 0.55rem;
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: #0a0a0c;
+        font-size: 0.65rem;
         font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 20px;
         text-transform: uppercase;
-        letter-spacing: 0.15em;
-        padding: 8px 24px;
-        border-radius: 0 0 8px 8px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
     }
 
-    .plan-reviews {
+    .savings-tag {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(34, 197, 94, 0.12);
+        color: #22c55e;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    .plan-header {
         margin-bottom: 20px;
-        margin-top: 16px;
+        padding-top: 8px;
     }
 
-    .reviews-number {
-        font-family: 'Outfit', sans-serif;
-        font-size: 8rem;
-        font-weight: 800;
-        line-height: 1;
-        background: linear-gradient(180deg, #fff 0%, var(--accent) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .pricing-card.popular .plan-header {
+        padding-top: 4px;
     }
 
-    .reviews-word {
-        display: block;
-        font-family: 'Instrument Sans', sans-serif;
-        font-size: 1.2rem;
-        color: var(--gray-300);
-        margin-top: -8px;
+    .plan-name {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--fg);
+        margin-bottom: 6px;
+    }
+
+    .plan-description {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        line-height: 1.4;
     }
 
     .plan-price {
         margin-bottom: 8px;
     }
 
-    .price-per {
-        font-family: 'Outfit', sans-serif;
-        font-size: 2.5rem;
-        font-weight: 700;
+    .price-amount {
+        font-family: "Outfit", sans-serif;
+        font-size: 2.25rem;
+        font-weight: 800;
         color: var(--fg);
+        letter-spacing: -0.02em;
     }
 
-    .price-unit {
-        font-size: 0.9rem;
+    .pricing-card.popular .price-amount {
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .price-once {
+        font-size: 0.8rem;
         color: var(--gray-500);
         margin-left: 4px;
     }
 
-    .plan-total {
-        font-size: 0.85rem;
-        color: var(--gray-500);
-        margin-bottom: 32px;
-    }
-
-    /* === Standard Cards (Starter/Agency) === */
-    .other-plans {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .plan-standard {
-        background: var(--surface-1);
-        border: 1px solid var(--border-default);
-        border-radius: 12px;
-        padding: 28px 24px;
-        text-align: center;
-        transition: border-color 0.2s, transform 0.2s;
-    }
-
-    .plan-standard:hover {
-        border-color: var(--border-hover);
-        transform: translateY(-2px);
-    }
-
-    .plan-name {
-        display: block;
-        font-family: 'Instrument Mono', monospace;
-        font-size: 0.6rem;
-        font-weight: 600;
-        color: var(--gray-500);
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        margin-bottom: 16px;
-    }
-
-    .plan-reviews-sm {
-        margin-bottom: 12px;
-    }
-
-    .reviews-number-sm {
-        font-family: 'Outfit', sans-serif;
-        font-size: 3rem;
-        font-weight: 800;
-        color: var(--fg);
-        line-height: 1;
-    }
-
-    .reviews-word-sm {
-        display: block;
-        font-size: 0.85rem;
-        color: var(--gray-400);
-    }
-
-    .plan-price-sm {
-        font-family: 'Outfit', sans-serif;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--fg);
-        margin-bottom: 4px;
-    }
-
-    .price-unit-sm {
-        font-size: 0.75rem;
-        color: var(--gray-500);
-        font-weight: 400;
-    }
-
-    .plan-total-sm {
-        font-size: 0.75rem;
-        color: var(--gray-600);
+    .plan-value {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
         margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
-    .plan-standard .plan-price-sm:last-of-type {
-        margin-bottom: 20px;
-    }
-
-    /* === CTAs === */
-    .plan-cta {
-        width: 100%;
-        padding: 14px 24px;
-        font-family: 'Instrument Mono', monospace;
-        font-size: 0.65rem;
+    .credits-count {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.5rem;
         font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.25s var(--ease);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 48px;
+        color: var(--accent);
     }
 
-    .cta-gold {
-        background: var(--accent);
-        color: #000;
-    }
-
-    .cta-gold:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(212, 168, 83, 0.4);
-    }
-
-    .cta-outline {
-        background: transparent;
-        color: var(--fg);
-        border: 1px solid var(--border-hover);
-    }
-
-    .cta-outline:hover:not(:disabled) {
-        border-color: var(--accent);
-        background: rgba(212, 168, 83, 0.05);
-    }
-
-    .plan-cta:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid transparent;
-        border-top-color: currentColor;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    /* === Includes Section === */
-    .includes-section {
-        max-width: 1200px;
-        margin: 80px auto 0;
-        text-align: center;
-        padding-top: 48px;
-        border-top: 1px solid var(--border-default);
-    }
-
-    .includes-title {
-        font-family: 'Instrument Mono', monospace;
-        font-size: 0.6rem;
-        font-weight: 600;
-        color: var(--gray-600);
-        text-transform: uppercase;
-        letter-spacing: 0.2em;
-        margin-bottom: 20px;
-    }
-
-    .includes-list {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
+    .credits-label {
+        font-size: 0.85rem;
         color: var(--gray-400);
-        font-size: 0.95rem;
     }
 
-    .include-item {
+    .plan-details {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-grow: 1;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.9rem;
         color: var(--gray-300);
     }
 
-    .include-sep {
-        color: var(--gray-700);
+    .detail-item svg {
+        color: #22c55e;
+        flex-shrink: 0;
     }
 
-    /* === Responsive === */
-    @media (max-width: 1000px) {
-        .layout {
-            grid-template-columns: 1fr;
-            gap: 60px;
-            text-align: center;
-        }
+    .btn-full {
+        width: 100%;
+        justify-content: center;
+    }
 
-        .pitch-column {
-            padding-right: 0;
-        }
+    /* How credits work section */
+    .pricing-info {
+        max-width: 900px;
+        margin: 0 auto;
+        text-align: center;
+    }
 
-        .pitch-content {
-            max-width: 100%;
-        }
+    .pricing-info h2 {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 32px;
+    }
 
-        h1 {
-            font-size: 2.75rem;
-        }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+    }
 
-        .social-proof {
-            border-left: none;
-            padding-left: 0;
-            border-top: 2px solid var(--accent);
-            padding-top: 20px;
-            text-align: center;
-        }
-
-        .trust-badges {
-            justify-content: center;
-        }
-
-        .reviews-number {
-            font-size: 6rem;
-        }
-
-        .deco-line-1,
-        .deco-corner {
-            display: none;
+    @media (max-width: 800px) {
+        .info-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
 
-    @media (max-width: 600px) {
-        .page {
-            padding: 40px 20px 60px;
-        }
-
-        h1 {
-            font-size: 2.25rem;
-        }
-
-        .plan-pro {
-            padding: 40px 24px;
-        }
-
-        .reviews-number {
-            font-size: 5rem;
-        }
-
-        .other-plans {
+    @media (max-width: 500px) {
+        .info-grid {
             grid-template-columns: 1fr;
         }
+    }
 
-        .includes-list {
-            flex-direction: column;
-            gap: 8px;
-        }
+    .info-item {
+        text-align: left;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+    }
 
-        .include-sep {
-            display: none;
-        }
+    .info-icon {
+        color: var(--accent);
+        margin-bottom: 12px;
+        opacity: 0.8;
+    }
+
+    .info-item h4 {
+        font-family: "Outfit", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--fg);
+        margin-bottom: 8px;
+    }
+
+    .info-item p {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        line-height: 1.5;
     }
 </style>
