@@ -7,102 +7,54 @@
     const plans = [
         {
             id: "starter",
-            name: "Starter",
-            credits: 100,
+            reviews: 1,
             price: 49,
-            reviews: "1 full review",
-            savings: null,
-            description: "Perfect for launching your first app",
+            perReview: 49,
         },
         {
             id: "pro",
-            name: "Pro",
-            credits: 350,
+            reviews: 3,
             price: 129,
-            reviews: "3 full reviews",
-            savings: "Save 12%",
-            description: "For developers shipping regularly",
-            popular: true,
-        },
-        {
-            id: "team",
-            name: "Team",
-            credits: 750,
-            price: 249,
-            reviews: "7 full reviews",
-            savings: "Save 27%",
-            description: "For small studios and teams",
+            perReview: 43,
+            best: true,
         },
         {
             id: "agency",
-            name: "Agency",
-            credits: 1500,
+            reviews: 15,
             price: 449,
-            reviews: "15 full reviews",
-            savings: "Save 39%",
-            description: "For agencies managing multiple apps",
+            perReview: 30,
         },
     ];
-
-    function selectPlan(planId: string) {
-        selectedPlan = planId;
-    }
 </script>
 
 <main class="pricing-page">
     <div class="container">
         <header class="pricing-header">
-            <div class="section-label">Pricing</div>
-            <h1>Buy credits, review apps.</h1>
+            <h1>How many apps do you need to review?</h1>
             <p class="header-sub">
-                No subscriptions. No expiration. Just reviews when you need them.
+                The average App Store rejection costs 8 days. A review costs $49.
             </p>
         </header>
 
         <div class="pricing-grid">
             {#each plans as plan}
-                <div class="pricing-card" class:popular={plan.popular}>
-                    {#if plan.popular}
-                        <div class="popular-badge">Recommended</div>
-                    {/if}
-                    {#if plan.savings}
-                        <div class="savings-tag">{plan.savings}</div>
+                <div class="pricing-card" class:best={plan.best}>
+                    {#if plan.best}
+                        <div class="best-badge">Best Value</div>
                     {/if}
 
-                    <div class="plan-header">
-                        <h3 class="plan-name">{plan.name}</h3>
-                        <p class="plan-description">{plan.description}</p>
+                    <div class="review-count">
+                        <span class="count">{plan.reviews}</span>
+                        <span class="count-label">{plan.reviews === 1 ? 'review' : 'reviews'}</span>
                     </div>
 
-                    <div class="plan-price">
-                        <span class="price-amount">${plan.price}</span>
-                        <span class="price-once">one-time</span>
+                    <div class="per-review">
+                        <span class="per-amount">${plan.perReview}</span>
+                        <span class="per-label">per review</span>
                     </div>
 
-                    <div class="plan-value">
-                        <span class="credits-count">{plan.credits}</span>
-                        <span class="credits-label">credits</span>
-                    </div>
-
-                    <div class="plan-details">
-                        <div class="detail-item">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <span>{plan.reviews}</span>
-                        </div>
-                        <div class="detail-item">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <span>Credits never expire</span>
-                        </div>
-                        <div class="detail-item">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M3 8l4 4L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <span>Full compliance report</span>
-                        </div>
+                    <div class="total-price">
+                        ${plan.price} total
                     </div>
 
                     <form
@@ -125,59 +77,96 @@
                         <input type="hidden" name="plan" value={plan.id} />
                         <button
                             type="submit"
-                            class="btn btn-full {plan.popular ? 'btn-primary' : 'btn-secondary'}"
+                            class="btn btn-full {plan.best ? 'btn-primary' : 'btn-secondary'}"
                             disabled={loading && selectedPlan === plan.id}
                         >
-                            {loading && selectedPlan === plan.id
-                                ? "Processing..."
-                                : `Get ${plan.name}`}
+                            {#if loading && selectedPlan === plan.id}
+                                Processing...
+                            {:else}
+                                Review {plan.reviews === 1 ? 'My App' : `${plan.reviews} Apps`}
+                            {/if}
                         </button>
                     </form>
                 </div>
             {/each}
         </div>
 
-        <div class="pricing-info">
-            <h2>How credits work</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                    </div>
-                    <h4>100 credits = 1 review</h4>
-                    <p>Each full app review uses 100 credits. Simple math, no surprises.</p>
-                </div>
-                <div class="info-item">
-                    <div class="info-icon">
+        <div class="pricing-proof">
+            <p class="testimonial">
+                "Caught 3 issues that would've been instant rejections."
+            </p>
+            <div class="guarantees">
+                <span>Credits never expire</span>
+                <span class="dot"></span>
+                <span>Results in minutes</span>
+                <span class="dot"></span>
+                <span>Full refund on unused credits</span>
+            </div>
+        </div>
+
+        <div class="what-you-get">
+            <h2>What's included in every review</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                             <path d="M9 12l2 2 4-4"/>
-                            <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <rect x="3" y="3" width="18" height="18" rx="3"/>
                         </svg>
                     </div>
-                    <h4>Always up to date</h4>
-                    <p>We check against Apple's latest guidelines so you catch issues before Apple does.</p>
+                    <h4>Metadata validation</h4>
+                    <p>App name, subtitle, keywords, and description checked against Apple's requirements</p>
                 </div>
-                <div class="info-item">
-                    <div class="info-icon">
+                <div class="feature">
+                    <div class="feature-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z"/>
-                            <path d="M7 7h10M7 12h10M7 17h6"/>
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <path d="M21 15l-5-5L5 21"/>
                         </svg>
                     </div>
-                    <h4>No expiration</h4>
-                    <p>Buy credits when you need them. They stay in your account until you use them.</p>
+                    <h4>Screenshot analysis</h4>
+                    <p>Size, format, count, and content compliance for all device sizes</p>
                 </div>
-                <div class="info-item">
-                    <div class="info-icon">
+                <div class="feature">
+                    <div class="feature-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                         </svg>
                     </div>
-                    <h4>Dashboard access</h4>
-                    <p>View all your reviews and reports anytime from your dashboard.</p>
+                    <h4>Privacy manifest</h4>
+                    <p>API declarations, reason codes, and tracking domains validated</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                        </svg>
+                    </div>
+                    <h4>Info.plist checks</h4>
+                    <p>Required keys, bundle ID format, version strings, and permissions</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+                            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+                        </svg>
+                    </div>
+                    <h4>URL verification</h4>
+                    <p>Privacy policy and support URLs tested for reachability</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h4>Guideline review</h4>
+                    <p>AI analysis against Apple's latest App Store Review Guidelines</p>
                 </div>
             </div>
         </div>
@@ -197,38 +186,29 @@
 
     .pricing-header h1 {
         font-family: "Outfit", sans-serif;
-        font-size: 2.5rem;
+        font-size: 2.25rem;
         font-weight: 800;
         letter-spacing: -0.02em;
-        margin-top: 12px;
     }
 
     .header-sub {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         color: var(--gray-300);
-        margin-top: 12px;
+        margin-top: 16px;
     }
 
     .pricing-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
-        margin-bottom: 64px;
-        max-width: 1100px;
-        margin-left: auto;
-        margin-right: auto;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        max-width: 800px;
+        margin: 0 auto 48px;
     }
 
-    @media (max-width: 1000px) {
-        .pricing-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-        }
-    }
-
-    @media (max-width: 600px) {
+    @media (max-width: 700px) {
         .pricing-grid {
             grid-template-columns: 1fr;
+            max-width: 320px;
         }
     }
 
@@ -237,9 +217,11 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 16px;
-        padding: 28px 24px;
+        padding: 32px 24px;
         display: flex;
         flex-direction: column;
+        align-items: center;
+        text-align: center;
         transition: all 0.3s ease;
     }
 
@@ -249,133 +231,87 @@
         transform: translateY(-4px);
     }
 
-    .pricing-card.popular {
-        background: rgba(212, 168, 83, 0.04);
-        border-color: rgba(212, 168, 83, 0.25);
-        box-shadow: 0 0 40px rgba(212, 168, 83, 0.08);
+    .pricing-card.best {
+        background: rgba(212, 168, 83, 0.05);
+        border-color: rgba(212, 168, 83, 0.3);
+        box-shadow: 0 0 60px rgba(212, 168, 83, 0.1);
+        transform: scale(1.02);
     }
 
-    .pricing-card.popular:hover {
-        border-color: rgba(212, 168, 83, 0.4);
-        box-shadow: 0 0 50px rgba(212, 168, 83, 0.12);
+    .pricing-card.best:hover {
+        border-color: rgba(212, 168, 83, 0.5);
+        box-shadow: 0 0 80px rgba(212, 168, 83, 0.15);
+        transform: scale(1.02) translateY(-4px);
     }
 
-    .popular-badge {
+    .best-badge {
         position: absolute;
-        top: -10px;
+        top: -12px;
         left: 50%;
         transform: translateX(-50%);
         background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
         color: #0a0a0c;
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         font-weight: 700;
-        padding: 5px 14px;
+        padding: 6px 16px;
         border-radius: 20px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         white-space: nowrap;
     }
 
-    .savings-tag {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: rgba(34, 197, 94, 0.12);
-        color: #22c55e;
-        font-size: 0.7rem;
-        font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 6px;
+    .review-count {
+        margin-bottom: 16px;
+        margin-top: 8px;
     }
 
-    .plan-header {
-        margin-bottom: 20px;
-        padding-top: 8px;
+    .pricing-card.best .review-count {
+        margin-top: 4px;
     }
 
-    .pricing-card.popular .plan-header {
-        padding-top: 4px;
-    }
-
-    .plan-name {
+    .count {
         font-family: "Outfit", sans-serif;
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--fg);
-        margin-bottom: 6px;
-    }
-
-    .plan-description {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-        line-height: 1.4;
-    }
-
-    .plan-price {
-        margin-bottom: 8px;
-    }
-
-    .price-amount {
-        font-family: "Outfit", sans-serif;
-        font-size: 2.25rem;
+        font-size: 4rem;
         font-weight: 800;
+        line-height: 1;
         color: var(--fg);
-        letter-spacing: -0.02em;
+        display: block;
     }
 
-    .pricing-card.popular .price-amount {
+    .pricing-card.best .count {
         background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
-    .price-once {
-        font-size: 0.8rem;
-        color: var(--gray-500);
+    .count-label {
+        font-size: 1rem;
+        color: var(--gray-400);
+        text-transform: lowercase;
+    }
+
+    .per-review {
+        margin-bottom: 8px;
+    }
+
+    .per-amount {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--fg);
+    }
+
+    .per-label {
+        font-size: 0.9rem;
+        color: var(--gray-400);
         margin-left: 4px;
     }
 
-    .plan-value {
-        display: flex;
-        align-items: baseline;
-        gap: 6px;
-        margin-bottom: 20px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .credits-count {
-        font-family: "Outfit", sans-serif;
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--accent);
-    }
-
-    .credits-label {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-    }
-
-    .plan-details {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 24px;
-        flex-grow: 1;
-    }
-
-    .detail-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
+    .total-price {
         font-size: 0.9rem;
-        color: var(--gray-300);
-    }
-
-    .detail-item svg {
-        color: #22c55e;
-        flex-shrink: 0;
+        color: var(--gray-500);
+        margin-bottom: 24px;
     }
 
     .btn-full {
@@ -383,54 +319,91 @@
         justify-content: center;
     }
 
-    /* How credits work section */
-    .pricing-info {
-        max-width: 900px;
-        margin: 0 auto;
+    .pricing-proof {
         text-align: center;
+        margin-bottom: 64px;
     }
 
-    .pricing-info h2 {
+    .testimonial {
+        font-size: 1.1rem;
+        font-style: italic;
+        color: var(--gray-200);
+        margin-bottom: 20px;
+    }
+
+    .guarantees {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 0.85rem;
+        color: var(--gray-400);
+    }
+
+    .guarantees .dot {
+        width: 4px;
+        height: 4px;
+        background: var(--gray-600);
+        border-radius: 50%;
+    }
+
+    @media (max-width: 500px) {
+        .guarantees {
+            flex-direction: column;
+            gap: 8px;
+        }
+        .guarantees .dot {
+            display: none;
+        }
+    }
+
+    /* What's included section */
+    .what-you-get {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .what-you-get h2 {
         font-family: "Outfit", sans-serif;
-        font-size: 1.75rem;
+        font-size: 1.5rem;
         font-weight: 700;
-        letter-spacing: -0.02em;
+        text-align: center;
         margin-bottom: 32px;
     }
 
-    .info-grid {
+    .features-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 24px;
     }
 
     @media (max-width: 800px) {
-        .info-grid {
+        .features-grid {
             grid-template-columns: repeat(2, 1fr);
         }
     }
 
     @media (max-width: 500px) {
-        .info-grid {
+        .features-grid {
             grid-template-columns: 1fr;
         }
     }
 
-    .info-item {
-        text-align: left;
+    .feature {
         padding: 20px;
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.04);
         border-radius: 12px;
     }
 
-    .info-icon {
+    .feature-icon {
         color: var(--accent);
         margin-bottom: 12px;
         opacity: 0.8;
     }
 
-    .info-item h4 {
+    .feature h4 {
         font-family: "Outfit", sans-serif;
         font-size: 1rem;
         font-weight: 600;
@@ -438,7 +411,7 @@
         margin-bottom: 8px;
     }
 
-    .info-item p {
+    .feature p {
         font-size: 0.85rem;
         color: var(--gray-400);
         line-height: 1.5;
