@@ -1,5 +1,4 @@
 <script lang="ts">
-    import AppStoreListingPreview from '$lib/components/AppStoreListingPreview.svelte';
     import LaunchChecklist from '$lib/components/LaunchChecklist.svelte';
     import { LAUNCH_CHECKLIST } from '$lib/engine/knowledge-base/launch-checklist';
     import {
@@ -17,7 +16,7 @@
     let copySuccess = $state(false);
 
     // Tab navigation for premium features
-    type PremiumTab = 'timeline' | 'preview' | 'checklist';
+    type PremiumTab = 'timeline' | 'checklist';
     let activeTab = $state<PremiumTab>('timeline');
 
     // Get review time estimate
@@ -625,16 +624,6 @@
             </button>
             <button
                 class="tab-btn"
-                class:active={activeTab === 'preview'}
-                onclick={() => activeTab = 'preview'}
-            >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
-                </svg>
-                Preview
-            </button>
-            <button
-                class="tab-btn"
                 class:active={activeTab === 'checklist'}
                 onclick={() => activeTab = 'checklist'}
             >
@@ -684,17 +673,6 @@
                             {/each}
                         </div>
                     </div>
-                </section>
-            {:else if activeTab === 'preview'}
-                <section class="preview-section">
-                    <AppStoreListingPreview
-                        appName={submission.app_name}
-                        subtitle={submission.subtitle}
-                        description={submission.description}
-                        category={submission.category}
-                        ageRating={submission.age_rating}
-                        developerName="Your Developer Name"
-                    />
                 </section>
             {:else if activeTab === 'checklist'}
                 <section class="checklist-section">
@@ -1471,8 +1449,7 @@
         text-align: center;
     }
 
-    /* Preview Section */
-    .preview-section,
+    /* Tab Content Sections */
     .checklist-section,
     .quick-tips-section {
         margin-bottom: 2rem;
