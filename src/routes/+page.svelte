@@ -41,7 +41,7 @@
 <main>
     <section class="hero">
         <div class="container hero-content" class:visible>
-            <div class="section-label">IDENTIFIER // PREFLIGHT_V2.1</div>
+            <div class="section-label">App Store Review Simulator</div>
             <h1>
                 Never get rejected for something <span class="highlight"
                     >you could've caught.</span
@@ -92,7 +92,7 @@
 
     <section class="features">
         <div class="container">
-            <div class="section-label">DIAGNOSTIC_CAPABILITIES</div>
+            <div class="section-label">50+ Automated Checks</div>
             <h2>What We Check</h2>
             <div class="feature-grid">
                 <CockpitPanel class="feature-item">
@@ -126,7 +126,7 @@
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
-                <div class="section-label">CREDIT_ACQUISITION</div>
+                <div class="section-label">Pricing</div>
                 <h2>Pre-purchase credits. Use anytime.</h2>
                 <p class="section-sub">
                     No subscriptions. Credits never expire.
@@ -173,7 +173,7 @@
 
     <section class="how-it-works">
         <div class="container">
-            <div class="section-label">OPERATIONAL_FLOW</div>
+            <div class="section-label">3 Simple Steps</div>
             <h2>How It Works</h2>
             <div class="steps">
                 <div class="step">

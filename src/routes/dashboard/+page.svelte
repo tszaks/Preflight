@@ -138,7 +138,7 @@
                             </div>
                             <span class="app-name">{sub.app_name}</span>
                             <div class="card-meta">
-                                <span class="review-type full"> DGN_FULL </span>
+                                <span class="review-type full">Full Review</span>
                                 <span class="date-stamp"
                                     >{formatDate(
                                         sub.created_at,
