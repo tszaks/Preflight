@@ -23,8 +23,8 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession, 
         throw error(400, 'Missing submission_id or review_type');
     }
 
-    const priceId = reviewType === 'full' ? STRIPE_PRICE_FULL : STRIPE_PRICE_QUICK;
-    const amount = reviewType === 'full' ? 4900 : 2900;
+    const priceId = STRIPE_PRICE_FULL;
+    const amount = 4900;
 
     if (!priceId) {
         throw error(500, 'Stripe price not configured');
@@ -43,7 +43,7 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession, 
             ],
             metadata: {
                 submission_id: submissionId,
-                review_type: reviewType,
+                review_type: 'full',
                 user_id: user.id,
             },
             success_url: `${PUBLIC_BASE_URL}/dashboard?payment=success&submission=${submissionId}`,

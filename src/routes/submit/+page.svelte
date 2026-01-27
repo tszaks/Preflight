@@ -271,8 +271,10 @@
 <main class="submit-page">
     <div class="container">
         <header class="submit-header">
-            <div class="section-label">PRE_FLIGHT_INITIALIZATION</div>
-            <h1>Mission Parameters</h1>
+            <div class="section-label">
+                MISSION_PARAMETERS // INITIALIZATION
+            </div>
+            <h1>Pre-Flight Parameters</h1>
             <p class="step-meta">
                 STEP_{step.toString().padStart(2, "0")} // SEQ_CMD_{step}
             </p>
