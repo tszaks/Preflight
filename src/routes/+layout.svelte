@@ -10,8 +10,20 @@
 	onMount(() => {
 		const {
 			data: { subscription },
-		} = data.supabase.auth.onAuthStateChange(() => {
+		} = data.supabase.auth.onAuthStateChange((event, session) => {
+			// Invalidate on any auth state change to refresh data
 			invalidate("supabase:auth");
+
+			// On token refresh, the new tokens are automatically stored in cookies
+			// by the Supabase client, but we still invalidate to sync UI state
+			if (event === "TOKEN_REFRESHED") {
+				console.log("[Auth] Token refreshed, session persisted");
+			}
+
+			// Handle sign out - clear any cached state
+			if (event === "SIGNED_OUT") {
+				console.log("[Auth] User signed out");
+			}
 		});
 
 		function handleScroll() {
