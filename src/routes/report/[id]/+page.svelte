@@ -606,7 +606,7 @@
                                 criticalItems.length > 0,
                             )}"
                         >
-                            <div class="status-label">SYSTEM_CONDITION</div>
+                            <div class="status-label">Status</div>
                             <div class="hud-verdict">
                                 {scoreEmoji(
                                     report.score_overall,
@@ -621,11 +621,11 @@
                                       : 'safe'}"
                             >
                                 {#if criticalItems.length > 0}
-                                    <span class="msg">HAZARD_DETECTED</span>
+                                    <span class="msg">Issues Found</span>
                                 {:else if warningItems.length > 0}
-                                    <span class="msg">CAUTION_ADVISED</span>
+                                    <span class="msg">Needs Attention</span>
                                 {:else}
-                                    <span class="msg">NOMINAL_OPERATIONS</span>
+                                    <span class="msg">All Clear</span>
                                 {/if}
                             </div>
                         </div>
@@ -639,7 +639,7 @@
                                 : 'dim'}"
                         >
                             <div class="readout-header">
-                                <span class="readout-label">C_ERROR</span>
+                                <span class="readout-label">Critical</span>
                                 <StatusLight
                                     status={report.total_critical > 0
                                         ? "critical"
@@ -658,7 +658,7 @@
                                 : 'dim'}"
                         >
                             <div class="readout-header">
-                                <span class="readout-label">W_WARN</span>
+                                <span class="readout-label">Warnings</span>
                                 <StatusLight
                                     status={report.total_warnings > 0
                                         ? "warning"
@@ -676,7 +676,7 @@
                                 : 'dim'}"
                         >
                             <div class="readout-header">
-                                <span class="readout-label">I_INFO</span>
+                                <span class="readout-label">Tips</span>
                                 <StatusLight
                                     status={report.total_info > 0
                                         ? "ready"
@@ -690,11 +690,6 @@
                         </div>
                     </div>
 
-                    <!-- Technical Noise Accents -->
-                    <div class="hud-noise top-left">GRID_REF: 4022.99</div>
-                    <div class="hud-noise top-right">SCAN_DEPTH: 100%</div>
-                    <div class="hud-noise bottom-left">LAT: 37.7749</div>
-                    <div class="hud-noise bottom-right">LNG: -122.4194</div>
                 </div>
             </CockpitPanel>
         </section>
@@ -702,16 +697,16 @@
         <!-- What You Need to Do (simplified action items) -->
         {#if criticalItems.length > 0 || warningItems.length > 0}
             <section class="action-section">
-                <div class="section-label">DIAGNOSTIC_ALERTS</div>
+                <div class="section-label">Issues to Address</div>
 
                 {#if criticalItems.length > 0}
                     <div class="action-group">
                         <div class="group-header critical">
                             <StatusLight status="critical" size="sm" pulse />
                             <div class="header-text">
-                                <h3>CRITICAL_PRIORITY</h3>
+                                <h3>Critical Issues</h3>
                                 <div class="sub-label">
-                                    IMMEDIATE_RESOLUTION_REQUIRED
+                                    These will cause rejection
                                 </div>
                             </div>
                         </div>
@@ -719,14 +714,14 @@
                             <CockpitPanel class="action-item critical-item">
                                 <div class="action-content">
                                     <div class="item-meta">
-                                        CAT: {item.category.toUpperCase()}
+                                        {categoryLabel(item.category)}
                                     </div>
                                     <strong>{item.title}</strong>
                                     <p>{item.description}</p>
                                     {#if item.fix_suggestion}
                                         <div class="fix-tip">
                                             <div class="tip-header">
-                                                REMEDIATION_PROTOCOL
+                                                How to Fix
                                             </div>
                                             <div class="tip-body">
                                                 {item.fix_suggestion}
@@ -744,9 +739,9 @@
                         <div class="group-header warning">
                             <StatusLight status="warning" size="sm" />
                             <div class="header-text">
-                                <h3>ADVISORY_CAUTION</h3>
+                                <h3>Warnings</h3>
                                 <div class="sub-label">
-                                    SYSTEM_WARNING_LOGGED
+                                    May cause issues during review
                                 </div>
                             </div>
                         </div>
@@ -754,14 +749,14 @@
                             <CockpitPanel class="action-item warning-item">
                                 <div class="action-content">
                                     <div class="item-meta">
-                                        CAT: {item.category.toUpperCase()}
+                                        {categoryLabel(item.category)}
                                     </div>
                                     <strong>{item.title}</strong>
                                     <p>{item.description}</p>
                                     {#if item.fix_suggestion}
                                         <div class="fix-tip">
                                             <div class="tip-header">
-                                                REMEDIATION_PROTOCOL
+                                                How to Fix
                                             </div>
                                             <div class="tip-body">
                                                 {item.fix_suggestion}
@@ -778,17 +773,14 @@
 
         <!-- Category Scores -->
         <section class="performance-matrix">
-            <div class="section-label">PERFORMANCE_BREAKDOWN</div>
+            <div class="section-label">Category Scores</div>
             <div class="matrix-grid">
                 {#each ["metadata", "screenshots", "privacy_manifest", "info_plist", "urls", "content_policy"] as cat, i}
                     {@const score = categoryScore(cat)}
                     <CockpitPanel class="matrix-cell">
                         <div class="matrix-header">
-                            <div class="matrix-id">
-                                ID_{i.toString().padStart(2, "0")}
-                            </div>
                             <div class="matrix-label">
-                                {categoryLabel(cat).toUpperCase()}
+                                {categoryLabel(cat)}
                             </div>
                             <StatusLight
                                 status={score === null
@@ -828,19 +820,16 @@
         <!-- Suggestions (non-blocking) -->
         {#if infoItems.length > 0}
             <section class="suggestions-section">
-                <div class="section-label">OPTIMIZATION_ADVISORIES // V2.1</div>
+                <div class="section-label">Suggestions</div>
                 <div class="suggestions-list">
                     {#each infoItems as item, i}
                         <CockpitPanel class="suggestion-card">
                             <div class="suggestion-header">
-                                <div class="suggestion-id">
-                                    ADVISORY_{i.toString().padStart(2, "0")}
-                                </div>
                                 <span class="suggestion-title"
-                                    >{item.title.toUpperCase()}</span
+                                    >{item.title}</span
                                 >
                                 <span class="suggestion-category"
-                                    >CAT_{item.category.toUpperCase()}</span
+                                    >{categoryLabel(item.category)}</span
                                 >
                             </div>
                             <div class="suggestion-body">
@@ -855,7 +844,7 @@
         <!-- All Good State -->
         {#if items.length === 0}
             <section class="success-section">
-                <div class="section-label">SYSTEM_CONDITION_OPTIMAL</div>
+                <div class="section-label">All Clear</div>
                 <div class="success-icon">
                     <p>
                         No issues found. Your app appears ready for App Store
@@ -867,107 +856,102 @@
 
         <!-- What's Next - Simple, encouraging next steps -->
         <section class="whats-next-section">
-            <div class="section-label">REMEDIATION_PROTOCOL // SEQ_01</div>
+            <div class="section-label">Next Steps</div>
             <div class="next-steps">
                 {#if criticalItems.length > 0}
                     <CockpitPanel class="next-step">
                         <div class="step-meta">
-                            <div class="step-id">SEQ_REMEDIATION_01</div>
+                            <div class="step-id">Step 1</div>
                             <StatusLight status="critical" size="sm" pulse />
                         </div>
                         <div class="step-content">
                             <strong
-                                >RESOLVE {criticalItems.length} CRITICAL ERRORS</strong
+                                >Fix {criticalItems.length} critical issue{criticalItems.length > 1 ? 's' : ''}</strong
                             >
                             <p>
-                                Immediate mission hazard. Detection indicates
-                                guaranteed App Store rejection.
+                                These issues will cause Apple to reject your app.
+                                Address them before submitting.
                             </p>
                         </div>
                     </CockpitPanel>
                     <CockpitPanel class="next-step">
                         <div class="step-meta">
-                            <div class="step-id">SEQ_REMEDIATION_02</div>
+                            <div class="step-id">Step 2</div>
                             <StatusLight status="ready" size="sm" />
                         </div>
                         <div class="step-content">
-                            <strong>RE-INITIALIZE DIAGNOSTICS</strong>
+                            <strong>Run another check</strong>
                             <p>
-                                Run mission re-check to confirm all critical
-                                strictures are satisfied.
+                                After making fixes, run Preflight again to confirm
+                                everything passes.
                             </p>
                         </div>
                     </CockpitPanel>
                 {:else if warningItems.length > 0}
                     <CockpitPanel class="next-step">
                         <div class="step-meta">
-                            <div class="step-id">SEQ_REMEDIATION_01</div>
+                            <div class="step-id">Step 1</div>
                             <StatusLight status="warning" size="sm" />
                         </div>
                         <div class="step-content">
                             <strong
-                                >MITIGATE {warningItems.length} SYSTEM WARNINGS</strong
+                                >Review {warningItems.length} warning{warningItems.length > 1 ? 's' : ''}</strong
                             >
                             <p>
-                                Advisory caution. Addressing warnings reduces
-                                deployment risk.
+                                These may cause issues. Fixing them improves your
+                                chances of approval.
                             </p>
                         </div>
                     </CockpitPanel>
                     <CockpitPanel class="next-step">
                         <div class="step-meta">
-                            <div class="step-id">SEQ_REMEDIATION_02</div>
+                            <div class="step-id">Step 2</div>
                             <StatusLight status="ready" size="sm" />
                         </div>
                         <div class="step-content">
-                            <strong>COMMENCE STORE DEPLOYMENT</strong>
+                            <strong>Submit to App Store</strong>
                             <p>
-                                System ready. Proceed to App Store Connect
-                                initialization.
+                                You're ready to submit. Go to App Store Connect
+                                and upload your build.
                             </p>
                         </div>
                     </CockpitPanel>
                 {:else}
                     <CockpitPanel class="next-step">
                         <div class="step-meta">
-                            <div class="step-id">SEQ_REMEDIATION_01</div>
+                            <div class="step-id">Step 1</div>
                             <StatusLight status="ready" size="sm" />
                         </div>
                         <div class="step-content">
-                            <strong>COMMENCE STORE DEPLOYMENT</strong>
+                            <strong>Submit to App Store</strong>
                             <p>
-                                Condition optimal. All systems go for
-                                submission.
+                                Everything looks good! Head to App Store Connect
+                                and submit your app.
                             </p>
                         </div>
                     </CockpitPanel>
                 {/if}
                 <CockpitPanel class="next-step">
                     <div class="step-meta">
-                        <div class="step-id">SEQ_REMEDIATION_WAIT</div>
+                        <div class="step-id">What to expect</div>
                         <StatusLight status="neutral" size="sm" pulse />
                     </div>
                     <div class="step-content">
-                        <strong>MONITOR REVIEW TELEMETRY</strong>
+                        <strong>Wait for Apple's review</strong>
                         <p>
-                            Awaiting Apple processing. Estimated window
-                            available in Timeline log.
+                            Most apps are reviewed within 24-48 hours.
+                            Check the Timeline tab below for an estimate.
                         </p>
                     </div>
                 </CockpitPanel>
-            </div>
-            <div class="flight-footer">
-                <span class="flight-tag">MISSION_STATUS: READY_FOR_FLIGHT</span>
-                <span class="flight-separator">//</span>
-                <span class="flight-tag">CMD_ACKNOWLEDGED</span>
             </div>
         </section>
 
         <!-- Premium Features Section with Tabs -->
         <div class="premium-features">
-            <div class="section-label">LAUNCH_PREPARATION_PROTOCOL</div>
+            <div class="section-label">Launch Preparation</div>
             <div class="premium-header">
-                <span class="premium-badge">PREMIUM_INSIGHTS</span>
+                <span class="premium-badge">Included</span>
                 <p>
                     First-time publisher? We've got you covered with expert
                     guidance.
@@ -1022,9 +1006,6 @@
                     <section class="review-timeline-section">
                         <div class="timeline-content">
                             <div class="timeline-estimate">
-                                <div class="estimate-id">
-                                    T_EST_{reviewTimeEstimate.minHours}_{reviewTimeEstimate.maxHours}
-                                </div>
                                 <span class="estimate-range"
                                     >{reviewTimeEstimate.minHours}<span
                                         class="unit">H</span
@@ -1034,7 +1015,7 @@
                                     ></span
                                 >
                                 <span class="estimate-label"
-                                    >ESTIMATED_REVIEW_WINDOW</span
+                                    >Estimated review time</span
                                 >
                             </div>
                             <div class="timeline-factors">
@@ -1057,7 +1038,7 @@
                                 >
                                     <div class="rec-header">
                                         <div class="rec-id">
-                                            PROTOCOL_07 // RECOMMENDATION
+                                            Today's recommendation
                                         </div>
                                         <StatusLight
                                             status={todayRecommendation.recommendation ===
@@ -1068,14 +1049,14 @@
                                                 : "warning"}
                                             label={todayRecommendation.recommendation ===
                                             "excellent"
-                                                ? "SUBMIT_READY"
-                                                : "PROCEED_CAUTION"}
+                                                ? "Great day"
+                                                : "Okay"}
                                             size="sm"
                                         />
                                     </div>
                                     <div class="rec-body">
                                         <strong
-                                            >MISSION_DEPLOYMENT: {todayRecommendation.recommendation.toUpperCase()}</strong
+                                            >{todayRecommendation.recommendation === "excellent" ? "Great day to submit!" : todayRecommendation.recommendation === "good" ? "Good day to submit" : "Consider waiting"}</strong
                                         >
                                         <p>{todayRecommendation.notes}</p>
                                     </div>
@@ -1086,10 +1067,7 @@
                         <!-- Quick Tips inline with timeline -->
                         <div class="quick-tips-inline">
                             <div class="tips-header">
-                                <div class="tips-id">
-                                    PROTOCOL_08 // FASTER_APPROVAL
-                                </div>
-                                <h4>QUICK_TIPS_FOR_FASTER_APPROVAL</h4>
+                                <h4>Tips for Faster Approval</h4>
                             </div>
                             <div class="quick-tips-grid">
                                 {#each FASTER_APPROVAL_TIPS.slice(0, 4) as tip}
@@ -1097,10 +1075,8 @@
                                         class="quick-tip-card"
                                         variant="elevated"
                                     >
-                                        <div class="tip-impact-id">
-                                            IMP_{tip.impact.toUpperCase()}
-                                        </div>
-                                        <h4>{tip.title.toUpperCase()}</h4>
+                                        <span class="tip-impact {tip.impact}">{tip.impact}</span>
+                                        <h4>{tip.title}</h4>
                                         <p>{tip.description}</p>
                                     </CockpitPanel>
                                 {/each}
@@ -1430,32 +1406,6 @@
         filter: grayscale(1);
     }
 
-    .hud-noise {
-        position: absolute;
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        color: var(--gray-700);
-        opacity: 0.3;
-        pointer-events: none;
-    }
-
-    .hud-noise.top-left {
-        top: 10px;
-        left: 12px;
-    }
-    .hud-noise.top-right {
-        top: 24px;
-        left: 12px; /* Stack under GRID_REF */
-    }
-    .hud-noise.bottom-left {
-        bottom: 24px;
-        left: 12px; /* Stack above LNG */
-    }
-    .hud-noise.bottom-right {
-        bottom: 10px;
-        left: 12px;
-    }
-
     /* --- PERFORMANCE MATRIX --- */
     .performance-matrix {
         margin-bottom: 64px;
@@ -1474,24 +1424,12 @@
         margin-bottom: 16px;
     }
 
-    .matrix-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        background: rgba(255, 255, 255, 0.03);
-        padding: 2px 4px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        text-transform: uppercase;
-    }
-
     .matrix-label {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.65rem;
-        font-weight: 700;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 600;
         flex: 1;
-        letter-spacing: 0.05em;
-        color: var(--gray-400);
+        color: var(--gray-300);
     }
 
     .matrix-cell {
@@ -1597,21 +1535,17 @@
     }
 
     .header-text h3 {
-        font-family: "Instrument Mono", monospace;
-        font-size: 1rem;
-        font-weight: 800;
+        font-family: "Outfit", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
         margin: 0;
-        letter-spacing: -0.01em;
     }
 
     .header-text .sub-label {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 600;
-        color: var(--gray-600);
-        letter-spacing: 0.05em;
+        font-size: 0.8rem;
+        font-weight: 400;
+        color: var(--gray-500);
         margin-top: 2px;
-        text-transform: uppercase;
     }
 
     .group-header.critical h3 {
@@ -2041,32 +1975,18 @@
         margin-bottom: 8px;
     }
 
-    .suggestion-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        opacity: 0.5;
-        letter-spacing: 0.05em;
-    }
-
     .suggestion-title {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.7rem;
-        font-weight: 700;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
         color: var(--gray-100);
-        letter-spacing: 0.02em;
         flex: 1;
     }
 
     .suggestion-category {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        background: rgba(255, 255, 255, 0.03);
-        padding: 1px 4px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--gray-500);
     }
 
     .suggestion-body p {
@@ -2146,11 +2066,9 @@
     }
 
     .estimate-label {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.6rem;
-        font-weight: 800;
+        font-size: 0.85rem;
+        font-weight: 500;
         color: var(--gray-500);
-        letter-spacing: 0.15em;
     }
 
     .timeline-factors {
@@ -2247,21 +2165,18 @@
     }
 
     .step-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        letter-spacing: 0.1em;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gray-500);
     }
 
     .step-content strong {
         display: block;
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.85rem;
-        font-weight: 700;
+        font-family: "Outfit", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
         color: var(--gray-100);
         margin-bottom: 8px;
-        letter-spacing: 0.025em;
     }
 
     .step-content p {
@@ -2269,28 +2184,6 @@
         color: var(--gray-400);
         line-height: 1.5;
         margin: 0;
-    }
-
-    .flight-footer {
-        margin-top: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        opacity: 0.4;
-    }
-
-    .flight-tag {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        letter-spacing: 0.1em;
-    }
-
-    .flight-separator {
-        color: var(--gray-600);
-        font-size: 0.6rem;
     }
 
     .quick-tips-inline {
@@ -2303,22 +2196,12 @@
         margin-bottom: 16px;
     }
 
-    .tips-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        opacity: 0.5;
-        letter-spacing: 0.1em;
-        margin-bottom: 4px;
-    }
-
     .tips-header h4 {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: var(--gray-300);
-        letter-spacing: 0.05em;
+        font-family: "Outfit", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin-bottom: 16px;
     }
 
     /* Quick Tips Grid */
@@ -2337,23 +2220,37 @@
         transform: translateY(-4px);
     }
 
-    .tip-impact-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        opacity: 0.5;
+    .tip-impact {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: capitalize;
+        padding: 2px 8px;
+        border-radius: 4px;
         margin-bottom: 12px;
-        letter-spacing: 0.1em;
+        display: inline-block;
+    }
+
+    .tip-impact.high {
+        background: rgba(212, 168, 83, 0.15);
+        color: var(--accent);
+    }
+
+    .tip-impact.medium {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+    }
+
+    .tip-impact.low {
+        background: rgba(156, 163, 175, 0.15);
+        color: #9ca3af;
     }
 
     .quick-tip-card h4 {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.75rem;
-        font-weight: 700;
+        font-family: "Outfit", sans-serif;
+        font-size: 0.9rem;
+        font-weight: 600;
         color: var(--gray-100);
         margin-bottom: 8px;
-        letter-spacing: 0.02em;
     }
 
     .quick-tip-card p {
