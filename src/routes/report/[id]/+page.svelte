@@ -569,12 +569,25 @@
                     </div>
                     <div class="score-text">
                         <span class="score-label">Overall Score</span>
-                        <span class="score-verdict"
-                            >{scoreEmoji(
-                                report.score_overall,
-                                criticalItems.length > 0,
-                            )}</span
-                        >
+                        <div class="verdict-row">
+                            <span class="score-verdict"
+                                >{scoreEmoji(
+                                    report.score_overall,
+                                    criticalItems.length > 0,
+                                )}</span
+                            >
+                            {#if criticalItems.length > 0}
+                                <span class="risk-badge critical"
+                                    >CRITICAL RISK</span
+                                >
+                            {:else if warningItems.length > 0}
+                                <span class="risk-badge warning"
+                                    >MODERATE RISK</span
+                                >
+                            {:else}
+                                <span class="risk-badge safe">READY</span>
+                            {/if}
+                        </div>
                     </div>
                 </div>
 
@@ -1093,7 +1106,11 @@
 
     .overall-score {
         flex-shrink: 0;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding-right: 48px;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .score-circle {
@@ -1104,37 +1121,107 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
+        box-shadow:
+            0 0 20px var(--score-color),
+            inset 0 0 10px var(--score-color);
+        background: rgba(0, 0, 0, 0.2);
     }
 
     .score-number {
         font-family: "Outfit", sans-serif;
-        font-size: 2.25rem;
+        font-size: 2.5rem;
         font-weight: 800;
-        color: var(--score-color);
+        color: var(--fg);
+    }
+
+    .score-text {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .score-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--gray-500);
+        margin-bottom: 2px;
     }
 
     .score-verdict {
-        display: block;
-        margin-top: 0.5rem;
-        font-size: 0.8rem;
-        color: var(--gray-400);
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--score-color);
     }
 
-    .score-summary {
-        flex: 1;
+    .verdict-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 4px;
     }
 
-    .summary-text {
-        font-size: 1.05rem;
-        color: var(--gray-100);
-        margin-bottom: 1rem;
-        line-height: 1.5;
+    .risk-badge {
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .risk-badge.critical {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fecaca;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .risk-badge.warning {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fef3c7;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .risk-badge.safe {
+        background: rgba(34, 197, 94, 0.2);
+        color: #d1fae5;
+        border: 1px solid rgba(34, 197, 94, 0.3);
     }
 
     .score-stats {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .stat-pill {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .stat-pill.critical {
+        color: #fecaca;
+        background: rgba(239, 68, 68, 0.1);
+    }
+    .stat-pill.warning {
+        color: #fde68a;
+        background: rgba(245, 158, 11, 0.1);
+    }
+    .stat-pill.info {
+        color: #bbf7d0;
+        background: rgba(34, 197, 94, 0.1);
+    }
+    .stat-pill.dim {
+        color: var(--gray-600);
+        opacity: 0.5;
     }
 
     .stat {
@@ -1257,7 +1344,30 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
+    }
+
+    .category-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--fg);
+        display: block;
+        letter-spacing: -0.01em;
+    }
+
+    .category-desc {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        display: block;
+        line-height: 1.4;
+        margin-top: 2px;
+    }
+
+    .category-score-value {
+        font-family: "Instrument Mono", monospace;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--fg);
     }
 
     /* Suggestions */
