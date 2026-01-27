@@ -4,13 +4,9 @@
     import MissionControl from "$lib/components/mission-control/MissionControl.svelte";
     import CockpitPanel from "$lib/components/CockpitPanel.svelte";
     import StatusLight from "$lib/components/StatusLight.svelte";
-    import LaunchChecklist from "$lib/components/LaunchChecklist.svelte";
-    import { LAUNCH_CHECKLIST } from "$lib/engine/knowledge-base/launch-checklist";
     import {
-        REVIEW_TIMES_BY_CATEGORY,
         SUBMISSION_TIMING,
         estimateReviewTime,
-        FASTER_APPROVAL_TIPS,
     } from "$lib/engine/knowledge-base/review-timeline";
 
     let { data } = $props();
@@ -39,10 +35,6 @@
 
     let showExportMenu = $state(false);
     let copySuccess = $state(false);
-
-    // Tab navigation for premium features
-    type PremiumTab = "timeline" | "checklist";
-    let activeTab = $state<PremiumTab>("timeline");
 
     // Get review time estimate
     let categoryId = $derived.by(() => {
@@ -577,14 +569,14 @@
             <div class="status-banner">
                 <div class="banner-content">
                     <strong>No blocking issues</strong>
-                    <p>{warningItems.length} warning{warningItems.length === 1 ? '' : 's'} to review before submission.</p>
+                    <p>{passingCategories}/{totalCategories} categories optimal · {warningItems.length} warning{warningItems.length === 1 ? '' : 's'} to review.</p>
                 </div>
             </div>
         {:else if criticalItems.length === 0 && warningItems.length === 0}
             <div class="status-banner clear">
                 <div class="banner-content">
                     <strong>No issues detected</strong>
-                    <p>This submission passes all automated checks.</p>
+                    <p>{passingCategories}/{totalCategories} categories optimal · Ready for submission.</p>
                 </div>
             </div>
         {/if}
@@ -902,242 +894,54 @@
             </section>
         {/if}
 
-        <!-- What's Next - Simple, encouraging next steps -->
-        <section class="whats-next-section">
-            <div class="section-label">Next Steps</div>
-            <div class="next-steps">
+        <!-- Next Action -->
+        <section class="next-action-section">
+            <div class="section-label">Next</div>
+            <div class="next-action">
                 {#if criticalItems.length > 0}
-                    <CockpitPanel class="next-step">
-                        <div class="step-meta">
-                            <div class="step-id">Step 1</div>
-                            <StatusLight status="critical" size="sm" pulse />
-                        </div>
-                        <div class="step-content">
-                            <strong
-                                >Fix {criticalItems.length} critical issue{criticalItems.length > 1 ? 's' : ''}</strong
-                            >
-                            <p>
-                                These issues will cause Apple to reject your app.
-                                Address them before submitting.
-                            </p>
-                        </div>
-                    </CockpitPanel>
-                    <CockpitPanel class="next-step">
-                        <div class="step-meta">
-                            <div class="step-id">Step 2</div>
-                            <StatusLight status="ready" size="sm" />
-                        </div>
-                        <div class="step-content">
-                            <strong>Run another check</strong>
-                            <p>
-                                After making fixes, run Preflight again to confirm
-                                everything passes.
-                            </p>
-                        </div>
-                    </CockpitPanel>
+                    <StatusLight status="critical" size="sm" pulse />
+                    <span>Fix {criticalItems.length} critical issue{criticalItems.length > 1 ? 's' : ''}, then run another check.</span>
                 {:else if warningItems.length > 0}
-                    <CockpitPanel class="next-step">
-                        <div class="step-meta">
-                            <div class="step-id">Step 1</div>
-                            <StatusLight status="warning" size="sm" />
-                        </div>
-                        <div class="step-content">
-                            <strong
-                                >Review {warningItems.length} warning{warningItems.length > 1 ? 's' : ''}</strong
-                            >
-                            <p>
-                                These may cause issues. Fixing them improves your
-                                chances of approval.
-                            </p>
-                        </div>
-                    </CockpitPanel>
-                    <CockpitPanel class="next-step">
-                        <div class="step-meta">
-                            <div class="step-id">Step 2</div>
-                            <StatusLight status="ready" size="sm" />
-                        </div>
-                        <div class="step-content">
-                            <strong>Submit to App Store</strong>
-                            <p>
-                                You're ready to submit. Go to App Store Connect
-                                and upload your build.
-                            </p>
-                        </div>
-                    </CockpitPanel>
+                    <StatusLight status="ready" size="sm" />
+                    <span>Ready to submit. Review {warningItems.length} warning{warningItems.length > 1 ? 's' : ''} to improve approval chances.</span>
                 {:else}
-                    <CockpitPanel class="next-step">
-                        <div class="step-meta">
-                            <div class="step-id">Step 1</div>
-                            <StatusLight status="ready" size="sm" />
-                        </div>
-                        <div class="step-content">
-                            <strong>Submit to App Store</strong>
-                            <p>
-                                Everything looks good! Head to App Store Connect
-                                and submit your app.
-                            </p>
-                        </div>
-                    </CockpitPanel>
+                    <StatusLight status="ready" size="sm" />
+                    <span>Ready to submit to App Store Connect.</span>
                 {/if}
-                <CockpitPanel class="next-step">
-                    <div class="step-meta">
-                        <div class="step-id">What to expect</div>
-                        <StatusLight status="neutral" size="sm" pulse />
-                    </div>
-                    <div class="step-content">
-                        <strong>Wait for Apple's review</strong>
-                        <p>
-                            Most apps are reviewed within 24-48 hours.
-                            Check the Timeline tab below for an estimate.
-                        </p>
-                    </div>
-                </CockpitPanel>
             </div>
         </section>
 
-        <!-- Premium Features Section with Tabs -->
-        <div class="premium-features">
-            <div class="section-label">Launch Preparation</div>
-            <div class="premium-header">
-                <span class="premium-badge">Included</span>
-                <p>
-                    First-time publisher? We've got you covered with expert
-                    guidance.
-                </p>
-            </div>
-
-            <!-- Tab Navigation -->
-            <nav class="premium-tabs">
-                <button
-                    class="tab-btn"
-                    class:active={activeTab === "timeline"}
-                    onclick={() => (activeTab = "timeline")}
-                >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <circle cx="12" cy="12" r="10" /><polyline
-                            points="12 6 12 12 16 14"
-                        />
-                    </svg>
-                    Timeline
-                </button>
-                <button
-                    class="tab-btn"
-                    class:active={activeTab === "checklist"}
-                    onclick={() => (activeTab = "checklist")}
-                >
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline
-                            points="22 4 12 14.01 9 11.01"
-                        />
-                    </svg>
-                    Checklist
-                </button>
-            </nav>
-
-            <!-- Tab Content -->
-            <div class="tab-content">
-                {#if activeTab === "timeline"}
-                    <section class="review-timeline-section">
-                        <div class="timeline-content">
-                            <div class="timeline-estimate">
-                                <span class="estimate-range"
-                                    >{reviewTimeEstimate.minHours}<span
-                                        class="unit">H</span
-                                    >
-                                    - {reviewTimeEstimate.maxHours}<span
-                                        class="unit">H</span
-                                    ></span
-                                >
-                                <span class="estimate-label"
-                                    >Estimated review time</span
-                                >
-                            </div>
-                            <div class="timeline-factors">
-                                <h4>Factors affecting your review:</h4>
-                                <ul>
-                                    {#each reviewTimeEstimate.factors as factor}
-                                        <li>{factor}</li>
-                                    {/each}
-                                </ul>
-                            </div>
-                            {#if todayRecommendation}
-                                <CockpitPanel
-                                    class="today-recommendation"
-                                    variant={todayRecommendation.recommendation ===
-                                        "excellent" ||
-                                    todayRecommendation.recommendation ===
-                                        "good"
-                                        ? "elevated"
-                                        : "default"}
-                                >
-                                    <div class="rec-header">
-                                        <div class="rec-id">
-                                            Today's recommendation
-                                        </div>
-                                        <StatusLight
-                                            status={todayRecommendation.recommendation ===
-                                                "excellent" ||
-                                            todayRecommendation.recommendation ===
-                                                "good"
-                                                ? "ready"
-                                                : "warning"}
-                                            label={todayRecommendation.recommendation ===
-                                            "excellent"
-                                                ? "Great day"
-                                                : "Okay"}
-                                            size="sm"
-                                        />
-                                    </div>
-                                    <div class="rec-body">
-                                        <strong
-                                            >{todayRecommendation.recommendation === "excellent" ? "Great day to submit!" : todayRecommendation.recommendation === "good" ? "Good day to submit" : "Consider waiting"}</strong
-                                        >
-                                        <p>{todayRecommendation.notes}</p>
-                                    </div>
-                                </CockpitPanel>
-                            {/if}
-                        </div>
-
-                        <!-- Quick Tips inline with timeline -->
-                        <div class="quick-tips-inline">
-                            <div class="tips-header">
-                                <h4>Tips for Faster Approval</h4>
-                            </div>
-                            <div class="quick-tips-grid">
-                                {#each FASTER_APPROVAL_TIPS.slice(0, 4) as tip}
-                                    <CockpitPanel
-                                        class="quick-tip-card"
-                                        variant="elevated"
-                                    >
-                                        <span class="tip-impact {tip.impact}">{tip.impact}</span>
-                                        <h4>{tip.title}</h4>
-                                        <p>{tip.description}</p>
-                                    </CockpitPanel>
+        <!-- Review Timeline -->
+        <section class="timeline-section">
+            <div class="section-label">Review Timeline</div>
+            <CockpitPanel class="timeline-panel">
+                <div class="timeline-content">
+                    <div class="timeline-estimate">
+                        <span class="estimate-range"
+                            >{reviewTimeEstimate.minHours}<span class="unit">H</span>
+                            - {reviewTimeEstimate.maxHours}<span class="unit">H</span></span
+                        >
+                        <span class="estimate-label">Estimated review time</span>
+                        <span class="estimate-caveat">Based on category and common factors</span>
+                    </div>
+                    {#if reviewTimeEstimate.factors.length > 0}
+                        <div class="timeline-factors">
+                            <ul>
+                                {#each reviewTimeEstimate.factors as factor}
+                                    <li>{factor}</li>
                                 {/each}
-                            </div>
+                            </ul>
                         </div>
-                    </section>
-                {:else if activeTab === "checklist"}
-                    <section class="checklist-section">
-                        <LaunchChecklist items={LAUNCH_CHECKLIST} />
-                    </section>
-                {/if}
-            </div>
-        </div>
+                    {/if}
+                    {#if todayRecommendation}
+                        <div class="today-rec">
+                            <span class="rec-day">{todayRecommendation.day}</span>
+                            <span class="rec-note">{todayRecommendation.notes}</span>
+                        </div>
+                    {/if}
+                </div>
+            </CockpitPanel>
+        </section>
 
         <div class="report-footer">
             <div class="footer-actions">
@@ -1899,46 +1703,24 @@
         margin: 0 auto;
     }
 
-    .whats-next-section {
-        margin-bottom: 64px;
+    /* Next Action */
+    .next-action-section {
+        margin-bottom: 48px;
     }
 
-    .next-steps {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 32px;
-    }
-
-    .next-step {
-        display: flex;
-        gap: 16px;
-    }
-
-    .step-number {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--accent);
+    .next-action {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-family: "Instrument Mono", monospace;
-        font-weight: 800;
-        flex-shrink: 0;
+        gap: 12px;
+        padding: 16px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
     }
 
-    .step-content strong {
-        display: block;
-        font-size: 1rem;
+    .next-action span {
+        font-size: 0.9rem;
         color: var(--gray-200);
-        margin-bottom: 4px;
-    }
-
-    .step-content p {
-        font-size: 0.85rem;
-        color: var(--gray-500);
     }
 
     /* Footer */
@@ -1975,94 +1757,6 @@
     .btn-accent:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(212, 168, 83, 0.3);
-    }
-
-    /* Premium Features Section */
-    .premium-features {
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 2px solid rgba(212, 168, 83, 0.2);
-    }
-
-    .premium-header {
-        text-align: center;
-        margin-bottom: 2.5rem;
-    }
-
-    .premium-badge {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: var(--accent);
-        background: rgba(212, 168, 83, 0.05);
-        padding: 4px 10px;
-        border: 1px solid rgba(212, 168, 83, 0.1);
-        border-radius: 20px;
-        letter-spacing: 0.1em;
-        margin-bottom: 16px;
-        display: inline-block;
-    }
-
-    .premium-header p {
-        font-size: 0.95rem;
-        color: var(--gray-400);
-        margin-top: 8px;
-    }
-
-    /* Tab Navigation */
-    .premium-tabs {
-        display: flex;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-    }
-
-    .tab-btn {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1rem;
-        background: transparent;
-        border: none;
-        border-radius: 8px;
-        color: var(--gray-400);
-        font-size: 0.85rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .tab-btn:hover {
-        color: var(--gray-200);
-        background: rgba(255, 255, 255, 0.04);
-    }
-
-    .tab-btn.active {
-        color: var(--fg);
-        background: rgba(212, 168, 83, 0.15);
-        border: 1px solid rgba(212, 168, 83, 0.3);
-    }
-
-    .tab-btn svg {
-        flex-shrink: 0;
-    }
-
-    .tab-count {
-        font-size: 0.7rem;
-        font-weight: 600;
-        background: rgba(212, 168, 83, 0.2);
-        color: var(--accent);
-        padding: 0.15rem 0.4rem;
-        border-radius: 10px;
-        margin-left: 0.25rem;
-    }
-
-    .tab-content {
-        min-height: 400px;
     }
 
     .empty-state {
@@ -2111,34 +1805,8 @@
     }
 
     /* Review Timeline Section */
-    .review-timeline-section {
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .timeline-header {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
-        margin-bottom: 1.25rem;
-    }
-
-    .timeline-icon {
-        font-size: 1.75rem;
-        flex-shrink: 0;
-    }
-
-    .timeline-header h3 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0;
-        color: var(--fg);
-    }
-
-    .timeline-subtitle {
-        font-size: 0.8rem;
-        color: var(--gray-400);
-        margin: 0.25rem 0 0 0;
+    .timeline-section {
+        margin-bottom: 48px;
     }
 
     .timeline-content {
@@ -2151,21 +1819,11 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        margin-bottom: 24px;
-    }
-
-    .estimate-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--accent);
-        opacity: 0.5;
-        letter-spacing: 0.1em;
     }
 
     .estimate-range {
         font-family: "Instrument Mono", monospace;
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: 700;
         color: var(--gray-100);
         letter-spacing: -0.05em;
@@ -2173,7 +1831,7 @@
     }
 
     .estimate-range .unit {
-        font-size: 1rem;
+        font-size: 0.9rem;
         color: var(--gray-600);
         margin-left: 2px;
         font-weight: 600;
@@ -2182,20 +1840,20 @@
     .estimate-label {
         font-size: 0.85rem;
         font-weight: 500;
-        color: var(--gray-500);
+        color: var(--gray-400);
+        margin-top: 4px;
+    }
+
+    .estimate-caveat {
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        font-style: italic;
     }
 
     .timeline-factors {
         background: rgba(255, 255, 255, 0.02);
         border-radius: 8px;
         padding: 1rem;
-    }
-
-    .timeline-factors h4 {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--gray-300);
-        margin: 0 0 0.75rem 0;
     }
 
     .timeline-factors ul {
@@ -2209,194 +1867,28 @@
         margin-bottom: 0.35rem;
     }
 
-    .today-recommendation {
-        padding: 0 !important;
-        margin-top: 16px;
-    }
-
-    .rec-header {
+    .today-rec {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 12px 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .rec-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        letter-spacing: 0.05em;
-    }
-
-    .rec-body {
-        padding: 16px;
-    }
-
-    .rec-body strong {
-        display: block;
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--gray-200);
-        margin-bottom: 4px;
-        letter-spacing: 0.02em;
-    }
-
-    .rec-body p {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-        line-height: 1.5;
-        margin: 0;
-    }
-
-    .whats-next-section {
-        margin-bottom: 64px;
-        padding: 0;
-        background: none;
-        border: none;
-    }
-
-    .next-steps {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-top: 24px;
-    }
-
-    .next-step {
-        padding: 24px !important;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .step-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .step-id {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--gray-500);
-    }
-
-    .step-content strong {
-        display: block;
-        font-family: "Outfit", sans-serif;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--gray-100);
-        margin-bottom: 8px;
-    }
-
-    .step-content p {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-        line-height: 1.5;
-        margin: 0;
-    }
-
-    .quick-tips-inline {
-        margin-top: 32px;
-        padding-top: 24px;
+        gap: 12px;
+        padding-top: 1rem;
         border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .tips-header {
-        margin-bottom: 16px;
-    }
-
-    .tips-header h4 {
-        font-family: "Outfit", sans-serif;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--gray-200);
-        margin-bottom: 16px;
-    }
-
-    /* Quick Tips Grid */
-    .quick-tips-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-    }
-
-    .quick-tip-card {
-        padding: 20px !important;
-        transition: transform 0.3s var(--ease);
-    }
-
-    .quick-tip-card:hover {
-        transform: translateY(-4px);
-    }
-
-    .tip-impact {
-        font-size: 0.65rem;
-        font-weight: 600;
-        text-transform: capitalize;
-        padding: 2px 8px;
-        border-radius: 4px;
-        margin-bottom: 12px;
-        display: inline-block;
-    }
-
-    .tip-impact.high {
-        background: rgba(212, 168, 83, 0.15);
+    .rec-day {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.75rem;
+        font-weight: 700;
         color: var(--accent);
-    }
-
-    .tip-impact.medium {
-        background: rgba(96, 165, 250, 0.15);
-        color: #60a5fa;
-    }
-
-    .tip-impact.low {
-        background: rgba(156, 163, 175, 0.15);
-        color: #9ca3af;
-    }
-
-    .quick-tip-card h4 {
-        font-family: "Outfit", sans-serif;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--gray-100);
-        margin-bottom: 8px;
-    }
-
-    .quick-tip-card p {
-        font-size: 0.8rem;
-        color: var(--gray-400);
-        line-height: 1.5;
-        margin: 0;
-    }
-
-    .impact-badge {
-        font-size: 0.65rem;
-        font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
     }
 
-    .impact-high {
-        background: rgba(212, 168, 83, 0.2);
-        color: #d4a853;
+    .rec-note {
+        font-size: 0.85rem;
+        color: var(--gray-400);
     }
 
-    .impact-medium {
-        background: rgba(59, 130, 246, 0.2);
-        color: #60a5fa;
-    }
-
-    .impact-low {
-        background: rgba(107, 114, 128, 0.2);
-        color: #9ca3af;
-    }
 
     @media (max-width: 600px) {
         .score-section {
