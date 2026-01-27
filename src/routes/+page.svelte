@@ -222,11 +222,6 @@
         text-align: center;
         padding: 100px 24px 80px;
         position: relative;
-        background: radial-gradient(
-            ellipse 80% 50% at 50% -20%,
-            rgba(212, 168, 83, 0.08),
-            transparent
-        );
     }
 
     .hero-content {
@@ -306,11 +301,6 @@
     /* Features */
     .features {
         padding: 80px 0;
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.02) 0%,
-            transparent 100%
-        );
     }
 
     .features h2 {
@@ -483,11 +473,6 @@
     /* How it works */
     .how-it-works {
         padding: 80px 0;
-        background: linear-gradient(
-            180deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.02) 100%
-        );
     }
 
     .how-it-works h2 {
@@ -547,11 +532,6 @@
     .final-cta {
         padding: 80px 0;
         text-align: center;
-        background: radial-gradient(
-            ellipse 60% 40% at 50% 100%,
-            rgba(212, 168, 83, 0.06),
-            transparent
-        );
     }
 
     .final-cta h2 {
