@@ -24,14 +24,15 @@ const CREDIT_AMOUNTS = {
 
 export const actions: Actions = {
     buyCredits: async ({ request, locals: { safeGetSession } }) => {
+        const formData = await request.formData();
+        const plan = formData.get('plan')?.toString() as keyof typeof PRICE_IDS;
+
         const { user } = await safeGetSession();
 
         if (!user) {
-            throw redirect(303, '/auth/login');
+            // Send to signup with return URL to resume checkout
+            throw redirect(303, `/auth/signup?next=/pricing&plan=${plan || 'starter'}`);
         }
-
-        const formData = await request.formData();
-        const plan = formData.get('plan')?.toString() as keyof typeof PRICE_IDS;
 
         if (!plan || !PRICE_IDS[plan]) {
             return fail(400, { message: 'Invalid plan selected' });

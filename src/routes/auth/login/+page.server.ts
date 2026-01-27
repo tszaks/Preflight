@@ -16,6 +16,16 @@ export const actions: Actions = {
             return fail(400, { message: error.message });
         }
 
+        // Redirect to next URL if provided (e.g., from pricing page), otherwise dashboard
+        const next = formData.get('next')?.toString();
+        const plan = formData.get('plan')?.toString();
+
+        if (next) {
+            // Append plan param if coming from pricing flow
+            const redirectUrl = plan ? `${next}?plan=${plan}` : next;
+            throw redirect(303, redirectUrl);
+        }
+
         throw redirect(303, '/dashboard');
     },
 };
