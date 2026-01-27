@@ -13,6 +13,11 @@
             totalPrice: 49,
             savings: null,
             description: "Perfect for launching your first app",
+            features: [
+                "1 full app review",
+                "Complete compliance report",
+                "Use anytime — never expires",
+            ],
         },
         {
             id: "pro",
@@ -23,6 +28,11 @@
             savings: "Save $18",
             description: "For developers shipping regularly",
             featured: true,
+            features: [
+                "3 full app reviews",
+                "Or: 1 app + 2 re-reviews after fixes",
+                "Perfect for iterating before launch",
+            ],
         },
         {
             id: "agency",
@@ -32,6 +42,11 @@
             totalPrice: 449,
             savings: "Save $286",
             description: "For teams managing multiple apps",
+            features: [
+                "15 full app reviews",
+                "Cover your whole app portfolio",
+                "Or: review + re-review cycles",
+            ],
         },
     ];
 </script>
@@ -101,6 +116,17 @@
                             {/if}
                         </div>
 
+                        <ul class="plan-features">
+                            {#each plan.features as feature}
+                                <li>
+                                    <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span>{feature}</span>
+                                </li>
+                            {/each}
+                        </ul>
+
                         <form
                             method="POST"
                             action="?/buyCredits"
@@ -134,36 +160,6 @@
                 </article>
             {/each}
         </div>
-
-        <section class="includes-section">
-            <h3>Every review includes</h3>
-            <div class="includes-grid">
-                <div class="include-item">
-                    <svg viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>Full compliance report</span>
-                </div>
-                <div class="include-item">
-                    <svg viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>Latest Apple guidelines</span>
-                </div>
-                <div class="include-item">
-                    <svg viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>Results in minutes</span>
-                </div>
-                <div class="include-item">
-                    <svg viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>Credits never expire</span>
-                </div>
-            </div>
-        </section>
 
         <section class="testimonial">
             <blockquote>
@@ -510,6 +506,32 @@
         border-radius: 6px;
     }
 
+    /* === Features === */
+    .plan-features {
+        list-style: none;
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .plan-features li {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: var(--gray-300);
+        line-height: 1.4;
+    }
+
+    .check-icon {
+        width: 16px;
+        height: 16px;
+        color: #22c55e;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
     /* === CTA Button === */
     .cta-button {
         display: flex;
@@ -564,45 +586,6 @@
 
     @keyframes spin {
         to { transform: rotate(360deg); }
-    }
-
-    /* === Includes Section === */
-    .includes-section {
-        max-width: 700px;
-        margin: 0 auto 56px;
-        text-align: center;
-    }
-
-    .includes-section h3 {
-        font-family: 'Instrument Mono', monospace;
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: var(--gray-500);
-        margin-bottom: 20px;
-    }
-
-    .includes-grid {
-        display: flex;
-        justify-content: center;
-        gap: 32px;
-        flex-wrap: wrap;
-    }
-
-    .include-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
-        color: var(--gray-300);
-    }
-
-    .include-item svg {
-        width: 18px;
-        height: 18px;
-        color: #22c55e;
-        flex-shrink: 0;
     }
 
     /* === Testimonial === */
