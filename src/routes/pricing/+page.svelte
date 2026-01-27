@@ -1,48 +1,49 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import CockpitPanel from "$lib/components/CockpitPanel.svelte";
 
     let loading = $state(false);
     let selectedPlan = $state<string | null>(null);
 
     const plans = [
         {
-            id: 'starter',
-            name: 'Starter',
+            id: "starter",
+            name: "Starter",
             credits: 100,
             price: 49,
-            apps: '1 app',
-            rereviews: '+ 4 re-reviews',
-            perApp: '$49/app',
+            apps: "1 app",
+            rereviews: "+ 4 re-reviews",
+            perApp: "$49/app",
             popular: false,
         },
         {
-            id: 'pro',
-            name: 'Pro',
+            id: "pro",
+            name: "Pro",
             credits: 350,
             price: 129,
-            apps: '3 apps',
-            rereviews: '+ 8 re-reviews',
-            perApp: '$43/app',
+            apps: "3 apps",
+            rereviews: "+ 8 re-reviews",
+            perApp: "$43/app",
             popular: true,
         },
         {
-            id: 'team',
-            name: 'Team',
+            id: "team",
+            name: "Team",
             credits: 750,
             price: 249,
-            apps: '7 apps',
-            rereviews: '+ 10 re-reviews',
-            perApp: '$35.50/app',
+            apps: "7 apps",
+            rereviews: "+ 10 re-reviews",
+            perApp: "$35.50/app",
             popular: false,
         },
         {
-            id: 'agency',
-            name: 'Agency',
+            id: "agency",
+            name: "Agency",
             credits: 1500,
             price: 449,
-            apps: '15 apps',
-            rereviews: '+ 20 re-reviews',
-            perApp: '$29.93/app',
+            apps: "15 apps",
+            rereviews: "+ 20 re-reviews",
+            perApp: "$29.93/app",
             popular: false,
         },
     ];
@@ -55,77 +56,118 @@
 <main class="pricing-page">
     <div class="container">
         <header class="pricing-header">
-            <h1>Buy Credits</h1>
-            <p class="subtitle">Pre-purchase credits and use them for app reviews and re-reviews</p>
+            <div class="user-id">ACCESS_PROTOCOL // V2.1</div>
+            <h1>Credit Acquisition</h1>
+            <p class="step-meta">CMD_CREDIT_PROVISIONING // SEQ_SYS_INIT</p>
         </header>
 
         <div class="pricing-grid">
             {#each plans as plan}
-                <div class="pricing-card card" class:popular={plan.popular}>
+                <CockpitPanel
+                    class="pricing-card"
+                    variant={plan.popular ? "elevated" : "default"}
+                    active={plan.popular}
+                >
                     {#if plan.popular}
-                        <div class="popular-badge">Most Popular</div>
+                        <div class="popular-badge">MOST POPULAR</div>
                     {/if}
 
-                    <h3 class="plan-name">{plan.name}</h3>
+                    <div class="plan-id">PLAN_{plan.name.toUpperCase()}</div>
                     <div class="plan-credits">
                         <span class="credits-amount">{plan.credits}</span>
-                        <span class="credits-label">credits</span>
+                        <span class="credits-label">CREDITS</span>
                     </div>
                     <div class="plan-price">
                         <span class="price-amount">${plan.price}</span>
-                        <span class="price-per-app">{plan.perApp}</span>
+                        <span class="price-per-app"
+                            >{plan.perApp} PER DIAGNOSTIC</span
+                        >
                     </div>
 
                     <ul class="plan-features">
-                        <li>✓ {plan.apps} full reviews</li>
-                        <li>✓ {plan.rereviews}</li>
-                        <li>✓ Credits never expire</li>
-                        <li>✓ Use anytime</li>
+                        <li>
+                            <span class="feat-marker">>></span>
+                            {plan.credits / 100} FULL DIAGNOSTICS
+                        </li>
+                        <li>
+                            <span class="feat-marker">>></span> MISSION CRITICAL
+                            CHECKS
+                        </li>
+                        <li>
+                            <span class="feat-marker">>></span> NO EXPIRATION
+                        </li>
                     </ul>
 
-                    <form method="POST" action="?/buyCredits" use:enhance={() => {
-                        loading = true;
-                        selectedPlan = plan.id;
-                        return async ({ result }) => {
-                            loading = false;
-                            if (result.type === 'redirect' && result.location) {
-                                window.location.href = result.location;
-                            }
-                        };
-                    }}>
+                    <form
+                        method="POST"
+                        action="?/buyCredits"
+                        use:enhance={() => {
+                            loading = true;
+                            selectedPlan = plan.id;
+                            return async ({ result }) => {
+                                loading = false;
+                                if (
+                                    result.type === "redirect" &&
+                                    result.location
+                                ) {
+                                    window.location.href = result.location;
+                                }
+                            };
+                        }}
+                    >
                         <input type="hidden" name="plan" value={plan.id} />
                         <button
                             type="submit"
-                            class="btn btn-primary btn-block"
+                            class="btn btn-full"
+                            class:btn-primary={!plan.popular}
                             class:btn-accent={plan.popular}
                             disabled={loading && selectedPlan === plan.id}
                         >
-                            {loading && selectedPlan === plan.id ? 'Processing...' : `Buy ${plan.name}`}
+                            {loading && selectedPlan === plan.id
+                                ? "INITIALIZING..."
+                                : `ACQUIRE_PLAN: ${plan.name.toUpperCase()}`}
                         </button>
                     </form>
-                </div>
+                </CockpitPanel>
             {/each}
         </div>
 
         <div class="pricing-faq">
-            <h2>How Credits Work</h2>
+            <div class="section-label">PROTOCOL_PARAMETERS</div>
+            <h2>Operational Logistics</h2>
             <div class="faq-grid">
-                <div class="faq-item">
-                    <h4>Full Review</h4>
-                    <p>100 credits for a complete app analysis</p>
-                </div>
-                <div class="faq-item">
-                    <h4>Re-Review</h4>
-                    <p>Only 25 credits to re-check after fixes</p>
-                </div>
-                <div class="faq-item">
-                    <h4>Never Expire</h4>
-                    <p>Use your credits whenever you need them</p>
-                </div>
-                <div class="faq-item">
-                    <h4>Track Usage</h4>
-                    <p>See your balance and history anytime</p>
-                </div>
+                <CockpitPanel class="faq-item">
+                    <span class="faq-id">LOG_01</span>
+                    <h4>Full Diagnostic</h4>
+                    <p>
+                        Standardized deep-scan consumption rate: 100 credits per
+                        analyze.
+                    </p>
+                </CockpitPanel>
+                <CockpitPanel class="faq-item">
+                    <span class="faq-id">LOG_02</span>
+                    <h4>Data Integrity</h4>
+                    <p>
+                        High-fidelity checks against latest App Store
+                        strictures.
+                    </p>
+                </CockpitPanel>
+                <CockpitPanel class="faq-item">
+                    <span class="faq-id">LOG_03</span>
+                    <h4>Active Readiness</h4>
+                    <p>
+                        Credits remain active in your profile until mission
+                        deployment.
+                    </p>
+                </CockpitPanel>
+                <CockpitPanel class="faq-item">
+                    <span class="faq-id">LOG_04</span>
+                    <h4>Telemetry History</h4>
+                    <p>
+                        Full audit log of all diagnostics available in
+                        dashboard.
+                    </p>
+                </CockpitPanel>
             </div>
         </div>
     </div>
@@ -143,13 +185,30 @@
     }
 
     .pricing-header h1 {
+        font-family: "Outfit", sans-serif;
         font-size: 2.5rem;
-        margin-bottom: 0.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-top: 8px;
     }
 
-    .subtitle {
-        font-size: 1.1rem;
-        color: var(--gray-300);
+    .user-id {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .step-meta {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
+        margin-top: 4px;
+        text-transform: uppercase;
     }
 
     .pricing-grid {
@@ -169,19 +228,13 @@
     }
 
     .pricing-card {
-        padding: 2rem 1.5rem;
+        padding: 32px !important;
         text-align: center;
-        position: relative;
-        transition: transform 0.2s var(--ease);
+        transition: all 0.4s var(--ease);
     }
 
     .pricing-card:hover {
         transform: translateY(-4px);
-    }
-
-    .pricing-card.popular {
-        border-color: var(--accent);
-        background: rgba(212, 168, 83, 0.04);
     }
 
     .popular-badge {
@@ -199,12 +252,14 @@
         letter-spacing: 0.05em;
     }
 
-    .plan-name {
-        font-size: 1rem;
+    .plan-id {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: var(--gray-400);
-        margin-bottom: 1rem;
+        letter-spacing: 0.15em;
+        color: var(--gray-600);
+        margin-bottom: 24px;
     }
 
     .plan-credits {
@@ -212,7 +267,7 @@
     }
 
     .credits-amount {
-        font-family: 'Outfit', sans-serif;
+        font-family: "Outfit", sans-serif;
         font-size: 2.5rem;
         font-weight: 800;
         color: var(--accent);
@@ -229,15 +284,21 @@
     }
 
     .price-amount {
-        font-size: 1.75rem;
+        font-family: "Instrument Mono", monospace;
+        font-size: 1.5rem;
         font-weight: 700;
         display: block;
-        margin-bottom: 0.25rem;
+        margin-bottom: 4px;
+        color: var(--gray-100);
     }
 
     .price-per-app {
-        font-size: 0.85rem;
-        color: var(--gray-500);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .plan-features {
@@ -248,12 +309,22 @@
     }
 
     .plan-features li {
-        padding: 0.5rem 0;
-        color: var(--gray-300);
-        font-size: 0.9rem;
+        padding: 8px 0;
+        color: var(--gray-400);
+        font-size: 0.8rem;
+        font-family: "Instrument Mono", monospace;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
     }
 
-    .btn-block {
+    .feat-marker {
+        color: var(--accent);
+        margin-right: 8px;
+        opacity: 0.5;
+    }
+
+    .btn-full {
         width: 100%;
     }
 
@@ -264,8 +335,12 @@
     }
 
     .pricing-faq h2 {
-        font-size: 1.5rem;
-        margin-bottom: 2rem;
+        font-family: "Outfit", sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-top: 8px;
+        margin-bottom: 3rem;
     }
 
     .faq-grid {
@@ -281,21 +356,32 @@
     }
 
     .faq-item {
-        padding: 1.5rem;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 24px !important;
+        text-align: left;
+    }
+
+    .faq-id {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: var(--accent);
+        opacity: 0.5;
+        display: block;
+        margin-bottom: 8px;
     }
 
     .faq-item h4 {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
+        font-family: "Outfit", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--gray-100);
+        margin-bottom: 8px;
     }
 
     .faq-item p {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: var(--gray-400);
-        line-height: 1.5;
+        line-height: 1.6;
     }
 
     @media (max-width: 600px) {
