@@ -120,6 +120,7 @@
     let hasInAppPurchases = $state(prefill?.has_iap || false);
     let hasSubscriptions = $state(prefill?.has_subscriptions || false);
     let hasAds = $state(prefill?.has_ads || false);
+    let hasThirdPartyLogin = $state(prefill?.has_third_party_login || false);
 
     // App Review Information (Demo credentials)
     let signInRequired = $state(prefill?.sign_in_required || false);
@@ -293,10 +294,11 @@
             createForm.set("review_notes", reviewNotes);
             createForm.set("reviewer_contact", JSON.stringify(reviewerContact));
 
-            // Monetization
+            // Monetization & Login
             createForm.set("has_iap", hasInAppPurchases.toString());
             createForm.set("has_subscriptions", hasSubscriptions.toString());
             createForm.set("has_ads", hasAds.toString());
+            createForm.set("has_third_party_login", hasThirdPartyLogin.toString());
 
             createForm.set("review_type", "full");
 
@@ -420,10 +422,11 @@
             formData.set("review_notes", reviewNotes);
             formData.set("reviewer_contact", JSON.stringify(reviewerContact));
 
-            // Monetization
+            // Monetization & Login
             formData.set("has_iap", hasInAppPurchases.toString());
             formData.set("has_subscriptions", hasSubscriptions.toString());
             formData.set("has_ads", hasAds.toString());
+            formData.set("has_third_party_login", hasThirdPartyLogin.toString());
 
             // Files
             for (const file of screenshots) {
@@ -508,10 +511,11 @@
             formData.set("review_notes", reviewNotes);
             formData.set("reviewer_contact", JSON.stringify(reviewerContact));
 
-            // Monetization
+            // Monetization & Login
             formData.set("has_iap", hasInAppPurchases.toString());
             formData.set("has_subscriptions", hasSubscriptions.toString());
             formData.set("has_ads", hasAds.toString());
+            formData.set("has_third_party_login", hasThirdPartyLogin.toString());
 
             // Files
             for (const file of screenshots) {
@@ -1243,7 +1247,7 @@
                             </div>
 
                             <div class="monetization-section">
-                                <h3>Monetization</h3>
+                                <h3>Monetization & Login</h3>
                                 <div class="checkbox-row">
                                     <label class="checkbox-label">
                                         <input type="checkbox" bind:checked={hasInAppPurchases} />
@@ -1258,6 +1262,17 @@
                                         <span>Contains Advertising</span>
                                     </label>
                                 </div>
+                                <div class="checkbox-row" style="margin-top: 12px;">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" bind:checked={hasThirdPartyLogin} />
+                                        <span>Third-Party Login (Google, Facebook, etc.)</span>
+                                    </label>
+                                </div>
+                                {#if hasThirdPartyLogin}
+                                    <p class="field-hint warning-hint">
+                                        ⚠️ Apps with third-party login must also offer Sign in with Apple (Guideline 4.8)
+                                    </p>
+                                {/if}
                             </div>
                         </div>
                     {/if}
@@ -1772,6 +1787,15 @@
         color: var(--gray-500);
         margin-top: 0.5rem;
         line-height: 1.4;
+    }
+
+    .field-hint.warning-hint {
+        color: var(--accent);
+        background: rgba(212, 168, 83, 0.08);
+        border: 1px solid rgba(212, 168, 83, 0.2);
+        border-radius: 6px;
+        padding: 0.5rem 0.75rem;
+        margin-top: 0.75rem;
     }
 
     /* ═══════════════════════════════════════════════════════════════ */

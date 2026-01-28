@@ -123,6 +123,11 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
                     manifest_content: files.manifestContent,
                     plist_content: files.plistContent,
                     privacy_policy_text: files.privacyPolicyText,
+                    // Form-field based checks (for conditional warnings)
+                    sign_in_required: submission.sign_in_required ?? false,
+                    has_iap: submission.has_iap ?? false,
+                    has_subscriptions: submission.has_subscriptions ?? false,
+                    has_third_party_login: submission.has_third_party_login ?? false,
                 };
 
                 // Run analysis with progress streaming

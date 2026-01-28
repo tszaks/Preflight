@@ -33,6 +33,11 @@ export interface HardRulesInput {
     screenshot_paths: string[];
     manifest_path?: string | null;
     plist_path?: string | null;
+    // Form-field based checks (for conditional warnings)
+    sign_in_required?: boolean;
+    has_iap?: boolean;
+    has_subscriptions?: boolean;
+    has_third_party_login?: boolean;
 }
 
 export interface SoftRulesInput extends HardRulesInput {

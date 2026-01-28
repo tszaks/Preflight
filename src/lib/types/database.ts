@@ -201,21 +201,38 @@ export type Database = {
       submissions: {
         Row: {
           age_rating: string | null
+          age_rating_answers: string | null
           amount_paid: number | null
           app_name: string
           category: string | null
           completed_at: string | null
+          copyright: string | null
           created_at: string
+          credits_used: number | null
+          data_collection: string | null
+          demo_password: string | null
+          demo_username: string | null
           description: string | null
+          has_ads: boolean | null
+          has_iap: boolean | null
+          has_subscriptions: boolean | null
+          has_third_party_login: boolean | null
           id: string
+          is_rereviewing: boolean | null
           keywords: string | null
           manifest_path: string | null
           marketing_url: string | null
+          original_submission_id: string | null
           paid_at: string | null
           plist_path: string | null
           privacy_url: string | null
+          promotional_text: string | null
+          review_notes: string | null
           review_type: Database["public"]["Enums"]["review_type"]
+          reviewer_contact: string | null
           screenshot_paths: string[] | null
+          secondary_category: string | null
+          sign_in_required: boolean | null
           status: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent: string | null
           stripe_session_id: string | null
@@ -223,24 +240,42 @@ export type Database = {
           support_url: string | null
           updated_at: string
           user_id: string
+          version: string | null
         }
         Insert: {
           age_rating?: string | null
+          age_rating_answers?: string | null
           amount_paid?: number | null
           app_name: string
           category?: string | null
           completed_at?: string | null
+          copyright?: string | null
           created_at?: string
+          credits_used?: number | null
+          data_collection?: string | null
+          demo_password?: string | null
+          demo_username?: string | null
           description?: string | null
+          has_ads?: boolean | null
+          has_iap?: boolean | null
+          has_subscriptions?: boolean | null
+          has_third_party_login?: boolean | null
           id?: string
+          is_rereviewing?: boolean | null
           keywords?: string | null
           manifest_path?: string | null
           marketing_url?: string | null
+          original_submission_id?: string | null
           paid_at?: string | null
           plist_path?: string | null
           privacy_url?: string | null
+          promotional_text?: string | null
+          review_notes?: string | null
           review_type?: Database["public"]["Enums"]["review_type"]
+          reviewer_contact?: string | null
           screenshot_paths?: string[] | null
+          secondary_category?: string | null
+          sign_in_required?: boolean | null
           status?: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
@@ -248,24 +283,42 @@ export type Database = {
           support_url?: string | null
           updated_at?: string
           user_id: string
+          version?: string | null
         }
         Update: {
           age_rating?: string | null
+          age_rating_answers?: string | null
           amount_paid?: number | null
           app_name?: string
           category?: string | null
           completed_at?: string | null
+          copyright?: string | null
           created_at?: string
+          credits_used?: number | null
+          data_collection?: string | null
+          demo_password?: string | null
+          demo_username?: string | null
           description?: string | null
+          has_ads?: boolean | null
+          has_iap?: boolean | null
+          has_subscriptions?: boolean | null
+          has_third_party_login?: boolean | null
           id?: string
+          is_rereviewing?: boolean | null
           keywords?: string | null
           manifest_path?: string | null
           marketing_url?: string | null
+          original_submission_id?: string | null
           paid_at?: string | null
           plist_path?: string | null
           privacy_url?: string | null
+          promotional_text?: string | null
+          review_notes?: string | null
           review_type?: Database["public"]["Enums"]["review_type"]
+          reviewer_contact?: string | null
           screenshot_paths?: string[] | null
+          secondary_category?: string | null
+          sign_in_required?: boolean | null
           status?: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
@@ -273,6 +326,7 @@ export type Database = {
           support_url?: string | null
           updated_at?: string
           user_id?: string
+          version?: string | null
         }
         Relationships: []
       }
