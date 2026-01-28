@@ -1367,28 +1367,50 @@
 
                             <div class="monetization-section">
                                 <h3>Monetization & Login</h3>
-                                <div class="checkbox-row">
-                                    <label class="checkbox-label">
+                                <div class="toggle-grid">
+                                    <label class="toggle-card" class:active={hasInAppPurchases}>
                                         <input type="checkbox" bind:checked={hasInAppPurchases} />
-                                        <span>In-App Purchases</span>
+                                        <div class="toggle-card-content">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <rect x="2" y="5" width="20" height="14" rx="2" />
+                                                <path d="M2 10h20" />
+                                            </svg>
+                                            <span>In-App Purchases</span>
+                                        </div>
                                     </label>
-                                    <label class="checkbox-label">
+                                    <label class="toggle-card" class:active={hasSubscriptions}>
                                         <input type="checkbox" bind:checked={hasSubscriptions} />
-                                        <span>Subscriptions</span>
+                                        <div class="toggle-card-content">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9" />
+                                            </svg>
+                                            <span>Subscriptions</span>
+                                        </div>
                                     </label>
-                                    <label class="checkbox-label">
+                                    <label class="toggle-card" class:active={hasAds}>
                                         <input type="checkbox" bind:checked={hasAds} />
-                                        <span>Contains Advertising</span>
+                                        <div class="toggle-card-content">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <path d="M19 4H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" />
+                                                <path d="M9 9h1m5 0h1M9 13h6" />
+                                            </svg>
+                                            <span>Contains Ads</span>
+                                        </div>
                                     </label>
-                                </div>
-                                <div class="checkbox-row" style="margin-top: 12px;">
-                                    <label class="checkbox-label">
+                                    <label class="toggle-card" class:active={hasThirdPartyLogin}>
                                         <input type="checkbox" bind:checked={hasThirdPartyLogin} />
-                                        <span>Third-Party Login (Google, Facebook, etc.)</span>
+                                        <div class="toggle-card-content">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
+                                                <polyline points="10 17 15 12 10 7" />
+                                                <line x1="15" y1="12" x2="3" y2="12" />
+                                            </svg>
+                                            <span>Third-Party Login</span>
+                                        </div>
                                     </label>
                                 </div>
                                 {#if hasThirdPartyLogin}
-                                    <p class="field-hint warning-hint">
+                                    <p class="field-hint warning-hint" style="margin-top: 0.75rem;">
                                         Apps with third-party login must also offer Sign in with Apple (Guideline 4.8)
                                     </p>
                                 {/if}
@@ -2316,14 +2338,61 @@
     .monetization-section h3 {
         font-size: 0.9rem;
         font-weight: 600;
-        color: var(--gray-200);
+        color: var(--gray-100);
         margin: 0 0 1rem 0;
     }
 
-    .checkbox-row {
+    .toggle-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .toggle-card {
         display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .toggle-card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .toggle-card.active {
+        border-color: var(--accent);
+        background: rgba(196, 167, 103, 0.08);
+    }
+
+    .toggle-card input[type="checkbox"] {
+        display: none;
+    }
+
+    .toggle-card-content {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.85rem;
+        color: var(--gray-300);
+    }
+
+    .toggle-card.active .toggle-card-content {
+        color: var(--gray-100);
+    }
+
+    .toggle-card-content svg {
+        opacity: 0.5;
+        flex-shrink: 0;
+    }
+
+    .toggle-card.active .toggle-card-content svg {
+        opacity: 1;
+        color: var(--accent);
     }
 
     .checkbox-label {
@@ -2339,17 +2408,6 @@
         accent-color: var(--accent);
         width: 16px;
         height: 16px;
-    }
-
-    .checkbox-label.prominent {
-        font-size: 1rem;
-        font-weight: 500;
-        color: var(--gray-200);
-    }
-
-    .checkbox-label.prominent input {
-        width: 18px;
-        height: 18px;
     }
 
     .signin-section {
