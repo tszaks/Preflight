@@ -26,7 +26,10 @@ CALIBRATION RULES:
 - Many finance apps on the App Store use a 4+ age rating (Mint, YNAB, Copilot, Robinhood). A 4+ rating for a finance app is standard practice unless the app contains gambling, mature content, or unrestricted web access.
 - Items that are working correctly ("no action needed") should use "pass" severity, not "info". Do not create suggestions just to say everything is fine.
 
-IMPORTANT: Do not hallucinate guidelines. Only reference real Apple App Store Review Guidelines sections. If unsure of the exact section, describe the guideline principle without a section number rather than guessing.`;
+IMPORTANT: Do not hallucinate guidelines. Only reference real Apple App Store Review Guidelines sections. If unsure of the exact section, describe the guideline principle without a section number rather than guessing.
+{{category_context}}
+{{relevant_guidelines}}
+{{calibration_context}}`;
 
 export const DESCRIPTION_ANALYSIS_PROMPT = `Analyze this App Store description for potential rejection risks.
 
@@ -54,11 +57,14 @@ Return JSON array of issues found:
     "title": "short title",
     "description": "detailed explanation",
     "guideline_ref": "Section X.X - Title",
-    "fix_suggestion": "what to do"
+    "fix_suggestion": "what to do",
+    "confidence": 0-100
   }
 ]
 
-If no issues found, return: [{"severity": "pass", "title": "Description analysis passed", "description": "No policy violations or rejection risks detected."}]`;
+confidence: Your certainty this is a real issue (100 = definite, 50 = uncertain, <30 = speculative).
+
+If no issues found, return: [{"severity": "pass", "title": "Description analysis passed", "description": "No policy violations or rejection risks detected.", "confidence": 100}]`;
 
 export const SCREENSHOT_ANALYSIS_PROMPT = `You are an expert App Store reviewer performing a screenshot analysis. Focus on issues that would actually cause Apple to reject the app.
 
@@ -226,12 +232,15 @@ IMPORTANT GUIDELINES:
     "title": "specific issue title",
     "description": "detailed explanation of what was found",
     "guideline_ref": "Section X.X - Title",
-    "fix_suggestion": "specific fix instructions"
+    "fix_suggestion": "specific fix instructions",
+    "confidence": 0-100
   }
 ]
 
+confidence: Your certainty this is a real issue (100 = definite, 50 = uncertain, <30 = speculative).
+
 If NO issues found after thorough analysis, return:
-[{"severity": "pass", "title": "Screenshot {{index}} analysis passed", "description": "Comprehensive analysis found no policy violations. Text extraction completed, UI authenticity verified, content appropriate for stated age rating."}]`;
+[{"severity": "pass", "title": "Screenshot {{index}} analysis passed", "description": "Comprehensive analysis found no policy violations. Text extraction completed, UI authenticity verified, content appropriate for stated age rating.", "confidence": 100}]`;
 
 export const PRIVACY_POLICY_REVIEW_PROMPT = `Cross-check this privacy policy against the app's privacy manifest declarations.
 
@@ -260,11 +269,14 @@ Return JSON array of issues found:
     "title": "short title",
     "description": "detailed explanation",
     "guideline_ref": "Section X.X - Title",
-    "fix_suggestion": "what to do"
+    "fix_suggestion": "what to do",
+    "confidence": 0-100
   }
 ]
 
-If no issues found, return: [{"severity": "pass", "title": "Privacy policy review passed", "description": "Policy adequately covers manifest declarations."}]`;
+confidence: Your certainty this is a real issue (100 = definite, 50 = uncertain, <30 = speculative).
+
+If no issues found, return: [{"severity": "pass", "title": "Privacy policy review passed", "description": "Policy adequately covers manifest declarations.", "confidence": 100}]`;
 
 export const CONTENT_POLICY_PROMPT = `Analyze this app's metadata for content policy compliance.
 
@@ -300,11 +312,14 @@ Return JSON array of issues found:
     "title": "short title",
     "description": "detailed explanation",
     "guideline_ref": "Section X.X - Title",
-    "fix_suggestion": "what to do"
+    "fix_suggestion": "what to do",
+    "confidence": 0-100
   }
 ]
 
-If no issues found, return: [{"severity": "pass", "title": "Content policy check passed", "description": "No content policy violations detected for the stated age rating."}]`;
+confidence: Your certainty this is a real issue (100 = definite, 50 = uncertain, <30 = speculative).
+
+If no issues found, return: [{"severity": "pass", "title": "Content policy check passed", "description": "No content policy violations detected for the stated age rating.", "confidence": 100}]`;
 
 export const METADATA_QUALITY_PROMPT = `Provide ASO (App Store Optimization) suggestions for this app's metadata. These are improvement suggestions, not rejection risks.
 
@@ -392,6 +407,49 @@ Return ONLY valid JSON in this exact format:
   ],
   "positioning_statement": "..."
 }`;
+
+export const VERIFICATION_PROMPT = `You are a senior App Store review judge performing quality assurance on analysis findings.
+
+You will be given a list of findings from a first-pass analysis, along with the original source data that was analyzed.
+
+Your job is to VERIFY each finding:
+1. Is the evidence real? Did the first pass correctly identify a genuine issue?
+2. Is the severity appropriate? Should it be upgraded, downgraded, or kept?
+3. Is this a false positive? Should it be removed entirely?
+4. Is the confidence score reasonable?
+
+VERIFICATION RULES:
+- Remove findings where the evidence is speculative or theoretical
+- Remove findings that flag normal industry practices for the app's category
+- Downgrade severity if the issue is real but unlikely to cause rejection
+- Upgrade confidence if the finding references specific, verifiable evidence
+- Keep findings that are well-evidenced and accurately categorized
+- Colloquial marketing phrases are NOT unsubstantiated claims
+- Past dates are NOT future dates (check against today: {{current_date}})
+- Finance app dollar amounts are expected demo data
+{{category_context}}
+
+ORIGINAL SOURCE DATA:
+{{source_data}}
+
+FINDINGS TO VERIFY:
+{{findings_json}}
+
+Return a JSON array of VERIFIED findings only (remove false positives entirely).
+Each finding should include all original fields plus adjusted confidence and severity:
+[
+  {
+    "severity": "critical" | "warning" | "info" | "pass",
+    "title": "...",
+    "description": "...",
+    "guideline_ref": "...",
+    "fix_suggestion": "...",
+    "confidence": 0-100,
+    "verification_note": "Brief note on why this was kept/adjusted"
+  }
+]
+
+If ALL findings are false positives, return: [{"severity": "pass", "title": "Verification passed", "description": "All initial findings were false positives.", "confidence": 100}]`;
 
 /**
  * Replace template variables in a prompt string
