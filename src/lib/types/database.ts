@@ -203,6 +203,7 @@ export type Database = {
           age_rating: string | null
           age_rating_answers: string | null
           amount_paid: number | null
+          app_icon_path: string | null
           app_name: string
           category: string | null
           completed_at: string | null
@@ -246,6 +247,7 @@ export type Database = {
           age_rating?: string | null
           age_rating_answers?: string | null
           amount_paid?: number | null
+          app_icon_path?: string | null
           app_name: string
           category?: string | null
           completed_at?: string | null
@@ -289,6 +291,7 @@ export type Database = {
           age_rating?: string | null
           age_rating_answers?: string | null
           amount_paid?: number | null
+          app_icon_path?: string | null
           app_name?: string
           category?: string | null
           completed_at?: string | null
