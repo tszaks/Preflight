@@ -768,13 +768,28 @@
 
                 <div class="step-actions">
                     <a href="/dashboard" class="btn btn-secondary">Cancel</a>
-                    <button
-                        class="btn btn-primary"
-                        onclick={() => (step = 2)}
-                        disabled={!step1Valid}
-                    >
-                        Continue
-                    </button>
+                    <div class="action-group">
+                        <button
+                            class="btn btn-outline"
+                            onclick={saveDraft}
+                            disabled={savingDraft || loading}
+                        >
+                            {#if savingDraft}
+                                Saving...
+                            {:else if draftSaved}
+                                Saved
+                            {:else}
+                                Save Draft
+                            {/if}
+                        </button>
+                        <button
+                            class="btn btn-primary"
+                            onclick={() => (step = 2)}
+                            disabled={!step1Valid}
+                        >
+                            Continue
+                        </button>
+                    </div>
                 </div>
             </CockpitPanel>
 
@@ -899,7 +914,22 @@
 
                 <div class="step-actions">
                     <button class="btn btn-secondary" onclick={() => (step = 1)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 3)} disabled={!step2Valid}>Continue</button>
+                    <div class="action-group">
+                        <button
+                            class="btn btn-outline"
+                            onclick={saveDraft}
+                            disabled={savingDraft || loading}
+                        >
+                            {#if savingDraft}
+                                Saving...
+                            {:else if draftSaved}
+                                Saved
+                            {:else}
+                                Save Draft
+                            {/if}
+                        </button>
+                        <button class="btn btn-primary" onclick={() => (step = 3)} disabled={!step2Valid}>Continue</button>
+                    </div>
                 </div>
             </CockpitPanel>
 
@@ -1381,7 +1411,22 @@
 
                 <div class="step-actions">
                     <button class="btn btn-secondary" onclick={() => (step = 2)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 4)} disabled={!step3Valid}>Continue</button>
+                    <div class="action-group">
+                        <button
+                            class="btn btn-outline"
+                            onclick={saveDraft}
+                            disabled={savingDraft || loading}
+                        >
+                            {#if savingDraft}
+                                Saving...
+                            {:else if draftSaved}
+                                Saved
+                            {:else}
+                                Save Draft
+                            {/if}
+                        </button>
+                        <button class="btn btn-primary" onclick={() => (step = 4)} disabled={!step3Valid}>Continue</button>
+                    </div>
                 </div>
             </CockpitPanel>
 
@@ -1479,7 +1524,7 @@
                             {#if savingDraft}
                                 Saving...
                             {:else if draftSaved}
-                                ✓ Draft Saved
+                                Saved
                             {:else}
                                 Save Draft
                             {/if}
