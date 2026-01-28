@@ -12,7 +12,7 @@
     let errorMsg = $state("");
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 1: Basic App Information
+    // STEP 1: Your App (Basic Information)
     // ═══════════════════════════════════════════════════════════════
     let appName = $state("");
     let subtitle = $state("");
@@ -25,16 +25,29 @@
     let copyright = $state("");
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 2: URLs (Apple validates these are reachable)
+    // STEP 2: Your Files
     // ═══════════════════════════════════════════════════════════════
+    let screenshots: File[] = $state([]);
+    let appIcon: File | null = $state(null);
+    let privacyManifest: File | null = $state(null);
+    let infoPlist: File | null = $state(null);
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 3: Settings & Access - Collapsible Sections
+    // ═══════════════════════════════════════════════════════════════
+
+    // Collapse states for accordion sections
+    let urlsExpanded = $state(true);
+    let ageRatingExpanded = $state(false);
+    let privacyExpanded = $state(false);
+    let reviewAccessExpanded = $state(false);
+
+    // URLs (Apple validates these are reachable)
     let privacyUrl = $state("");
     let supportUrl = $state("");
     let marketingUrl = $state("");
 
-    // ═══════════════════════════════════════════════════════════════
-    // STEP 3: Age Rating Questionnaire
-    // Each answer: "none", "infrequent", "frequent"
-    // ═══════════════════════════════════════════════════════════════
+    // Age Rating Questionnaire - Each answer: "none", "infrequent", "frequent"
     let ageRatingAnswers = $state({
         cartoonViolence: "none",
         realisticViolence: "none",
@@ -73,10 +86,7 @@
         return "4+";
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // STEP 4: App Privacy (Data Collection)
-    // Must match Privacy Manifest or Apple rejects
-    // ═══════════════════════════════════════════════════════════════
+    // App Privacy (Data Collection) - Must match Privacy Manifest or Apple rejects
     let dataCollection = $state({
         contactInfo: { collected: false, linked: false, tracking: false },
         healthFitness: { collected: false, linked: false, tracking: false },
@@ -93,17 +103,12 @@
         diagnostics: { collected: false, linked: false, tracking: false },
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // STEP 5: Files & Assets
-    // ═══════════════════════════════════════════════════════════════
-    let screenshots: File[] = $state([]);
-    let appIcon: File | null = $state(null);
-    let privacyManifest: File | null = $state(null);
-    let infoPlist: File | null = $state(null);
+    // In-App Purchases & Monetization
+    let hasInAppPurchases = $state(false);
+    let hasSubscriptions = $state(false);
+    let hasAds = $state(false);
 
-    // ═══════════════════════════════════════════════════════════════
-    // STEP 6: App Review Information (CRITICAL - #1 rejection cause)
-    // ═══════════════════════════════════════════════════════════════
+    // App Review Information (Demo credentials)
     let signInRequired = $state(false);
     let demoUsername = $state("");
     let demoPassword = $state("");
@@ -115,14 +120,7 @@
         email: "",
     });
 
-    // ═══════════════════════════════════════════════════════════════
-    // In-App Purchases & Monetization
-    // ═══════════════════════════════════════════════════════════════
-    let hasInAppPurchases = $state(false);
-    let hasSubscriptions = $state(false);
-    let hasAds = $state(false);
-
-    // Pricing (single tier for now, recheck discount coming later)
+    // Pricing (single tier for now)
     const PRICE = 49;
 
     // Required files validation
@@ -134,7 +132,7 @@
         return missing;
     });
 
-    // Required fields validation by step
+    // Step validation (updated for 4 steps)
     let step1Valid = $derived(
         appName.trim().length > 0 &&
         appName.trim().length <= 30 &&
@@ -142,27 +140,15 @@
         category !== ""
     );
 
-    let step2Valid = $derived(
+    let step2Valid = $derived(missingFiles.length === 0);
+
+    let step3Valid = $derived(
         privacyUrl.trim().length > 0 &&
-        supportUrl.trim().length > 0
+        supportUrl.trim().length > 0 &&
+        (!signInRequired || (demoUsername.trim().length > 0 && demoPassword.trim().length > 0))
     );
 
-    // Step 3 (age rating) is always valid - defaults work
-    let step3Valid = $derived(true);
-
-    // Step 4 (privacy) is always valid - we just need answers
-    let step4Valid = $derived(true);
-
-    let step5Valid = $derived(missingFiles.length === 0);
-
-    // Step 6: If sign-in required, must have demo credentials
-    let step6Valid = $derived(
-        !signInRequired || (demoUsername.trim().length > 0 && demoPassword.trim().length > 0)
-    );
-
-    let canSubmit = $derived(
-        step1Valid && step2Valid && step5Valid && step6Valid
-    );
+    let canSubmit = $derived(step1Valid && step2Valid && step3Valid);
 
     // Character count helpers
     let appNameCount = $derived(appName.length);
@@ -178,6 +164,9 @@
     let scanProgress = $state("");
     let applyingFiles = $state(false);
 
+    // Step labels for the progress indicator
+    const stepLabels = ["Your App", "Your Files", "Settings & Access", "Review & Submit"];
+
     function handleFolderSelect(e: Event) {
         const input = e.target as HTMLInputElement;
         if (!input.files || input.files.length === 0) return;
@@ -186,7 +175,6 @@
         scanning = true;
         scanProgress = `Scanning ${fileCount.toLocaleString()} files...`;
 
-        // Use setTimeout to let the UI update before processing
         setTimeout(() => {
             scanResults = scanProjectFolder(input.files!);
             scanning = false;
@@ -201,7 +189,6 @@
         applyingFiles = true;
         showScanResults = false;
 
-        // Small delay to show loading state, then apply files
         setTimeout(() => {
             if (scanResults?.infoPlist) {
                 infoPlist = scanResults.infoPlist;
@@ -221,10 +208,7 @@
     function handleScreenshots(e: Event) {
         const input = e.target as HTMLInputElement;
         if (input.files) {
-            screenshots = [...screenshots, ...Array.from(input.files)].slice(
-                0,
-                10,
-            );
+            screenshots = [...screenshots, ...Array.from(input.files)].slice(0, 10);
         }
     }
 
@@ -254,7 +238,6 @@
     }
 
     async function submit() {
-        // Validate required files
         if (!canSubmit) {
             errorMsg = `Missing required fields or files`;
             return;
@@ -264,7 +247,6 @@
         errorMsg = "";
 
         try {
-            // Step 1: Create submission record with ALL collected data
             const createForm = new FormData();
 
             // Basic Info
@@ -283,7 +265,7 @@
             createForm.set("support_url", supportUrl);
             createForm.set("marketing_url", marketingUrl);
 
-            // Age Rating (calculated + raw answers for analysis)
+            // Age Rating
             createForm.set("age_rating", calculatedAgeRating);
             createForm.set("age_rating_answers", JSON.stringify(ageRatingAnswers));
 
@@ -327,7 +309,7 @@
 
             const submissionId = createResult.data.submissionId as string;
 
-            // Step 2: Upload files
+            // Upload files
             if (screenshots.length > 0 || privacyManifest || infoPlist || appIcon) {
                 const uploadForm = new FormData();
                 uploadForm.set("submission_id", submissionId);
@@ -351,7 +333,7 @@
                 });
             }
 
-            // Step 3: Redirect to Stripe checkout
+            // Redirect to Stripe checkout
             const checkoutRes = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -383,7 +365,6 @@
     }
 
     async function testSubmit() {
-        // Validate required files
         if (!canSubmit) {
             errorMsg = `Missing required fields or files`;
             return;
@@ -449,7 +430,6 @@
                 body: formData,
             });
 
-            // Handle redirect
             if (response.redirected) {
                 window.location.href = response.url;
                 return;
@@ -479,45 +459,22 @@
             <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
         </header>
 
-        <!-- Progress Steps -->
-        <div class="progress-steps">
-            <button class="progress-step" class:active={step >= 1} class:complete={step > 1} onclick={() => step >= 1 && (step = 1)}>
-                <span class="step-num">1</span>
-                <span class="step-label">App Details</span>
-            </button>
-            <button class="progress-step" class:active={step >= 2} class:complete={step > 2} onclick={() => step >= 2 && (step = 2)}>
-                <span class="step-num">2</span>
-                <span class="step-label">URLs</span>
-            </button>
-            <button class="progress-step" class:active={step >= 3} class:complete={step > 3} onclick={() => step >= 3 && (step = 3)}>
-                <span class="step-num">3</span>
-                <span class="step-label">Age Rating</span>
-            </button>
-            <button class="progress-step" class:active={step >= 4} class:complete={step > 4} onclick={() => step >= 4 && (step = 4)}>
-                <span class="step-num">4</span>
-                <span class="step-label">Privacy</span>
-            </button>
-            <button class="progress-step" class:active={step >= 5} class:complete={step > 5} onclick={() => step >= 5 && (step = 5)}>
-                <span class="step-num">5</span>
-                <span class="step-label">Files</span>
-            </button>
-            <button class="progress-step" class:active={step >= 6} class:complete={step > 6} onclick={() => step >= 6 && (step = 6)}>
-                <span class="step-num">6</span>
-                <span class="step-label">Review Info</span>
-            </button>
-            <button class="progress-step" class:active={step >= 7} onclick={() => step >= 7 && (step = 7)}>
-                <span class="step-num">7</span>
-                <span class="step-label">Submit</span>
-            </button>
+        <!-- Simple Progress Indicator -->
+        <div class="progress-indicator">
+            <span class="progress-text">Step {step} of 4</span>
+            <span class="progress-divider">·</span>
+            <span class="progress-label">{stepLabels[step - 1]}</span>
         </div>
 
         {#if step === 1}
             <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 1: App Details -->
+            <!-- STEP 1: Your App -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
             <CockpitPanel class="step-content">
-                <h2>App Details</h2>
-                <p class="step-desc">Basic information about your app as it appears on the App Store.</p>
+                <div class="step-intro">
+                    <h2>Your App</h2>
+                    <p class="step-reassurance">Let's start with the basics. This is how your app will appear on the App Store.</p>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -700,258 +657,16 @@
                     </button>
                 </div>
             </CockpitPanel>
+
         {:else if step === 2}
             <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 2: URLs -->
+            <!-- STEP 2: Your Files -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
             <CockpitPanel class="step-content">
-                <h2>URLs & Links</h2>
-                <p class="step-desc">Apple verifies these URLs are reachable and appropriate. Broken links = instant rejection.</p>
-
-                <div class="form-group">
-                    <label for="privacyUrl" class="form-label">Privacy Policy URL <span class="required">*</span></label>
-                    <input
-                        type="url"
-                        id="privacyUrl"
-                        class="input"
-                        bind:value={privacyUrl}
-                        placeholder="https://yourapp.com/privacy"
-                        required
-                    />
-                    <p class="field-hint">Required for all apps. Must be accessible without login.</p>
+                <div class="step-intro">
+                    <h2>Your Files</h2>
+                    <p class="step-reassurance">Upload your files and we'll analyze them for common issues.</p>
                 </div>
-
-                <div class="form-group">
-                    <label for="supportUrl" class="form-label">Support URL <span class="required">*</span></label>
-                    <input
-                        type="url"
-                        id="supportUrl"
-                        class="input"
-                        bind:value={supportUrl}
-                        placeholder="https://yourapp.com/support"
-                        required
-                    />
-                    <p class="field-hint">Where users can get help. Must be reachable.</p>
-                </div>
-
-                <div class="form-group">
-                    <label for="marketingUrl" class="form-label">Marketing URL</label>
-                    <input
-                        type="url"
-                        id="marketingUrl"
-                        class="input"
-                        bind:value={marketingUrl}
-                        placeholder="https://yourapp.com (optional)"
-                    />
-                </div>
-
-                <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 1)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 3)} disabled={!step2Valid}>Continue</button>
-                </div>
-            </CockpitPanel>
-
-        {:else if step === 3}
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 3: Age Rating Questionnaire -->
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <CockpitPanel class="step-content">
-                <h2>Age Rating</h2>
-                <p class="step-desc">Answer these questions honestly. Misrepresenting content is a common rejection reason.</p>
-
-                <div class="age-rating-result">
-                    <span class="rating-label">Calculated Rating:</span>
-                    <span class="rating-value">{calculatedAgeRating}</span>
-                </div>
-
-                <div class="age-questions">
-                    <div class="age-question">
-                        <label>Cartoon or Fantasy Violence</label>
-                        <select class="input" bind:value={ageRatingAnswers.cartoonViolence}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Realistic Violence</label>
-                        <select class="input" bind:value={ageRatingAnswers.realisticViolence}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Prolonged Graphic or Sadistic Violence</label>
-                        <select class="input" bind:value={ageRatingAnswers.prolongedViolence}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Sexual Content or Nudity</label>
-                        <select class="input" bind:value={ageRatingAnswers.sexualContentNudity}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Mature/Suggestive Themes</label>
-                        <select class="input" bind:value={ageRatingAnswers.matureSuggestive}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Profanity or Crude Humor</label>
-                        <select class="input" bind:value={ageRatingAnswers.profanityCrudeHumor}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Alcohol, Tobacco, or Drug Use/References</label>
-                        <select class="input" bind:value={ageRatingAnswers.alcoholTobaccoDrugs}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Simulated Gambling</label>
-                        <select class="input" bind:value={ageRatingAnswers.gamblingSimulated}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Horror/Fear Themes</label>
-                        <select class="input" bind:value={ageRatingAnswers.horrorFear}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question">
-                        <label>Medical/Treatment Information</label>
-                        <select class="input" bind:value={ageRatingAnswers.medicalTreatment}>
-                            <option value="none">None</option>
-                            <option value="infrequent">Infrequent/Mild</option>
-                            <option value="frequent">Frequent/Intense</option>
-                        </select>
-                    </div>
-
-                    <div class="age-question checkbox-question">
-                        <label>
-                            <input type="checkbox" bind:checked={ageRatingAnswers.unrestrictedWebAccess} />
-                            <span>Unrestricted Web Access</span>
-                        </label>
-                        <p class="field-hint">App contains a browser or allows access to arbitrary URLs</p>
-                    </div>
-
-                    <div class="age-question checkbox-question">
-                        <label>
-                            <input type="checkbox" bind:checked={ageRatingAnswers.madeForKids} />
-                            <span>Made for Kids</span>
-                        </label>
-                        <p class="field-hint">Primary audience is children under 13 (triggers COPPA requirements)</p>
-                    </div>
-                </div>
-
-                <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 2)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 4)}>Continue</button>
-                </div>
-            </CockpitPanel>
-
-        {:else if step === 4}
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 4: App Privacy / Data Collection -->
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <CockpitPanel class="step-content">
-                <h2>App Privacy</h2>
-                <p class="step-desc">Declare what data your app collects. This must match your Privacy Manifest - inconsistencies cause rejections.</p>
-
-                <div class="privacy-grid">
-                    {#each Object.entries(dataCollection) as [key, value]}
-                        {@const labels: Record<string, string> = {
-                            contactInfo: "Contact Info",
-                            healthFitness: "Health & Fitness",
-                            financialInfo: "Financial Info",
-                            locationData: "Location",
-                            sensitiveInfo: "Sensitive Info",
-                            contacts: "Contacts",
-                            userContent: "User Content",
-                            browsingHistory: "Browsing History",
-                            searchHistory: "Search History",
-                            identifiers: "Identifiers",
-                            purchases: "Purchases",
-                            usageData: "Usage Data",
-                            diagnostics: "Diagnostics"
-                        }}
-                        <div class="privacy-row">
-                            <span class="privacy-label">{labels[key]}</span>
-                            <label class="privacy-checkbox">
-                                <input type="checkbox" bind:checked={dataCollection[key].collected} />
-                                <span>Collected</span>
-                            </label>
-                            <label class="privacy-checkbox" class:disabled={!dataCollection[key].collected}>
-                                <input type="checkbox" bind:checked={dataCollection[key].linked} disabled={!dataCollection[key].collected} />
-                                <span>Linked to User</span>
-                            </label>
-                            <label class="privacy-checkbox" class:disabled={!dataCollection[key].collected}>
-                                <input type="checkbox" bind:checked={dataCollection[key].tracking} disabled={!dataCollection[key].collected} />
-                                <span>Used for Tracking</span>
-                            </label>
-                        </div>
-                    {/each}
-                </div>
-
-                <div class="monetization-section">
-                    <h3>Monetization</h3>
-                    <div class="checkbox-row">
-                        <label class="checkbox-label">
-                            <input type="checkbox" bind:checked={hasInAppPurchases} />
-                            <span>In-App Purchases</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" bind:checked={hasSubscriptions} />
-                            <span>Subscriptions</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" bind:checked={hasAds} />
-                            <span>Contains Advertising</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 3)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 5)}>Continue</button>
-                </div>
-            </CockpitPanel>
-
-        {:else if step === 5}
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 5: Files & Assets -->
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <CockpitPanel class="step-content">
-                <h2>Files & Assets</h2>
-                <p class="step-desc">Upload your screenshots and technical files for analysis.</p>
 
                 <div class="form-group">
                     <label class="form-label">Screenshots <span class="required">*</span> ({screenshots.length}/10)</label>
@@ -1057,8 +772,8 @@
                 {/if}
 
                 <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 4)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 6)} disabled={!step5Valid}>Continue</button>
+                    <button class="btn btn-secondary" onclick={() => (step = 1)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 3)} disabled={!step2Valid}>Continue</button>
                 </div>
             </CockpitPanel>
 
@@ -1137,103 +852,411 @@
                 </div>
             {/if}
 
-        {:else if step === 6}
+        {:else if step === 3}
             <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 6: App Review Information -->
+            <!-- STEP 3: Settings & Access (Collapsible Sections) -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
             <CockpitPanel class="step-content">
-                <h2>App Review Information</h2>
-                <p class="step-desc">This is critical. Missing demo credentials is the #1 cause of rejections for apps with login.</p>
+                <div class="step-intro">
+                    <h2>Settings & Access</h2>
+                    <p class="step-reassurance">A few settings to match what Apple expects. We'll flag anything that looks off.</p>
+                </div>
 
-                <div class="signin-section">
-                    <label class="checkbox-label prominent">
-                        <input type="checkbox" bind:checked={signInRequired} />
-                        <span>Sign-in required to use app</span>
-                    </label>
+                <!-- URLs Section -->
+                <div class="collapsible-section">
+                    <button
+                        class="collapsible-header"
+                        class:expanded={urlsExpanded}
+                        onclick={() => urlsExpanded = !urlsExpanded}
+                    >
+                        <div class="collapsible-title">
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>URLs</span>
+                            <span class="section-hint">Privacy Policy, Support, Marketing</span>
+                        </div>
+                        <div class="section-status" class:complete={privacyUrl && supportUrl}>
+                            {#if privacyUrl && supportUrl}
+                                <span class="status-complete">✓</span>
+                            {:else}
+                                <span class="status-required">Required</span>
+                            {/if}
+                        </div>
+                    </button>
+                    {#if urlsExpanded}
+                        <div class="collapsible-content">
+                            <div class="form-group">
+                                <label for="privacyUrl" class="form-label">Privacy Policy URL <span class="required">*</span></label>
+                                <input
+                                    type="url"
+                                    id="privacyUrl"
+                                    class="input"
+                                    bind:value={privacyUrl}
+                                    placeholder="https://yourapp.com/privacy"
+                                    required
+                                />
+                                <p class="field-hint">Required for all apps. Must be accessible without login.</p>
+                            </div>
 
-                    {#if signInRequired}
-                        <div class="demo-credentials">
-                            <p class="warning-hint">
-                                ⚠️ Missing demo credentials is the #1 rejection reason for apps with login. We'll verify you've provided them - Apple's reviewer will need these to actually test your app.
-                            </p>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="demoUsername" class="form-label">Demo Username <span class="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        id="demoUsername"
-                                        class="input"
-                                        bind:value={demoUsername}
-                                        placeholder="demo@example.com"
-                                        required
-                                    />
+                            <div class="form-group">
+                                <label for="supportUrl" class="form-label">Support URL <span class="required">*</span></label>
+                                <input
+                                    type="url"
+                                    id="supportUrl"
+                                    class="input"
+                                    bind:value={supportUrl}
+                                    placeholder="https://yourapp.com/support"
+                                    required
+                                />
+                                <p class="field-hint">Where users can get help. Must be reachable.</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="marketingUrl" class="form-label">Marketing URL</label>
+                                <input
+                                    type="url"
+                                    id="marketingUrl"
+                                    class="input"
+                                    bind:value={marketingUrl}
+                                    placeholder="https://yourapp.com (optional)"
+                                />
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Age Rating Section -->
+                <div class="collapsible-section">
+                    <button
+                        class="collapsible-header"
+                        class:expanded={ageRatingExpanded}
+                        onclick={() => ageRatingExpanded = !ageRatingExpanded}
+                    >
+                        <div class="collapsible-title">
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>Age Rating</span>
+                            <span class="section-hint">Content questionnaire</span>
+                        </div>
+                        <div class="section-status complete">
+                            <span class="rating-badge">{calculatedAgeRating}</span>
+                        </div>
+                    </button>
+                    {#if ageRatingExpanded}
+                        <div class="collapsible-content">
+                            <div class="age-rating-result">
+                                <span class="rating-label">Calculated Rating:</span>
+                                <span class="rating-value">{calculatedAgeRating}</span>
+                            </div>
+
+                            <div class="age-questions">
+                                <div class="age-question">
+                                    <label>Cartoon or Fantasy Violence</label>
+                                    <select class="input" bind:value={ageRatingAnswers.cartoonViolence}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
                                 </div>
-                                <div class="form-group">
-                                    <label for="demoPassword" class="form-label">Demo Password <span class="required">*</span></label>
-                                    <input
-                                        type="text"
-                                        id="demoPassword"
-                                        class="input"
-                                        bind:value={demoPassword}
-                                        placeholder="DemoPassword123"
-                                        required
-                                    />
+
+                                <div class="age-question">
+                                    <label>Realistic Violence</label>
+                                    <select class="input" bind:value={ageRatingAnswers.realisticViolence}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Prolonged Graphic or Sadistic Violence</label>
+                                    <select class="input" bind:value={ageRatingAnswers.prolongedViolence}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Sexual Content or Nudity</label>
+                                    <select class="input" bind:value={ageRatingAnswers.sexualContentNudity}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Mature/Suggestive Themes</label>
+                                    <select class="input" bind:value={ageRatingAnswers.matureSuggestive}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Profanity or Crude Humor</label>
+                                    <select class="input" bind:value={ageRatingAnswers.profanityCrudeHumor}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Alcohol, Tobacco, or Drug Use/References</label>
+                                    <select class="input" bind:value={ageRatingAnswers.alcoholTobaccoDrugs}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Simulated Gambling</label>
+                                    <select class="input" bind:value={ageRatingAnswers.gamblingSimulated}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Horror/Fear Themes</label>
+                                    <select class="input" bind:value={ageRatingAnswers.horrorFear}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question">
+                                    <label>Medical/Treatment Information</label>
+                                    <select class="input" bind:value={ageRatingAnswers.medicalTreatment}>
+                                        <option value="none">None</option>
+                                        <option value="infrequent">Infrequent/Mild</option>
+                                        <option value="frequent">Frequent/Intense</option>
+                                    </select>
+                                </div>
+
+                                <div class="age-question checkbox-question">
+                                    <label>
+                                        <input type="checkbox" bind:checked={ageRatingAnswers.unrestrictedWebAccess} />
+                                        <span>Unrestricted Web Access</span>
+                                    </label>
+                                    <p class="field-hint">App contains a browser or allows access to arbitrary URLs</p>
+                                </div>
+
+                                <div class="age-question checkbox-question">
+                                    <label>
+                                        <input type="checkbox" bind:checked={ageRatingAnswers.madeForKids} />
+                                        <span>Made for Kids</span>
+                                    </label>
+                                    <p class="field-hint">Primary audience is children under 13 (triggers COPPA requirements)</p>
                                 </div>
                             </div>
                         </div>
                     {/if}
                 </div>
 
-                <div class="form-group">
-                    <label for="reviewNotes" class="form-label">Notes for App Review</label>
-                    <textarea
-                        id="reviewNotes"
-                        class="input textarea"
-                        bind:value={reviewNotes}
-                        rows="4"
-                        placeholder="Any special instructions for the reviewer, like how to test specific features or access certain functionality..."
-                    ></textarea>
-                    <p class="field-hint">Use this to explain anything non-obvious. Helps prevent confusion-based rejections.</p>
+                <!-- Privacy & Data Collection Section -->
+                <div class="collapsible-section">
+                    <button
+                        class="collapsible-header"
+                        class:expanded={privacyExpanded}
+                        onclick={() => privacyExpanded = !privacyExpanded}
+                    >
+                        <div class="collapsible-title">
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>Privacy & Data Collection</span>
+                            <span class="section-hint">App privacy labels, monetization</span>
+                        </div>
+                        <div class="section-status complete">
+                            <span class="status-complete">✓</span>
+                        </div>
+                    </button>
+                    {#if privacyExpanded}
+                        <div class="collapsible-content">
+                            <p class="section-intro">Declare what data your app collects. This must match your Privacy Manifest.</p>
+
+                            <div class="privacy-grid">
+                                {#each Object.entries(dataCollection) as [key, value]}
+                                    {@const labels: Record<string, string> = {
+                                        contactInfo: "Contact Info",
+                                        healthFitness: "Health & Fitness",
+                                        financialInfo: "Financial Info",
+                                        locationData: "Location",
+                                        sensitiveInfo: "Sensitive Info",
+                                        contacts: "Contacts",
+                                        userContent: "User Content",
+                                        browsingHistory: "Browsing History",
+                                        searchHistory: "Search History",
+                                        identifiers: "Identifiers",
+                                        purchases: "Purchases",
+                                        usageData: "Usage Data",
+                                        diagnostics: "Diagnostics"
+                                    }}
+                                    <div class="privacy-row">
+                                        <span class="privacy-label">{labels[key]}</span>
+                                        <label class="privacy-checkbox">
+                                            <input type="checkbox" bind:checked={dataCollection[key].collected} />
+                                            <span>Collected</span>
+                                        </label>
+                                        <label class="privacy-checkbox" class:disabled={!dataCollection[key].collected}>
+                                            <input type="checkbox" bind:checked={dataCollection[key].linked} disabled={!dataCollection[key].collected} />
+                                            <span>Linked to User</span>
+                                        </label>
+                                        <label class="privacy-checkbox" class:disabled={!dataCollection[key].collected}>
+                                            <input type="checkbox" bind:checked={dataCollection[key].tracking} disabled={!dataCollection[key].collected} />
+                                            <span>Used for Tracking</span>
+                                        </label>
+                                    </div>
+                                {/each}
+                            </div>
+
+                            <div class="monetization-section">
+                                <h3>Monetization</h3>
+                                <div class="checkbox-row">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" bind:checked={hasInAppPurchases} />
+                                        <span>In-App Purchases</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" bind:checked={hasSubscriptions} />
+                                        <span>Subscriptions</span>
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" bind:checked={hasAds} />
+                                        <span>Contains Advertising</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
 
-                <div class="contact-section">
-                    <h3>Reviewer Contact Information</h3>
-                    <p class="step-desc">Apple may contact you if they have questions during review.</p>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="contactFirst" class="form-label">First Name</label>
-                            <input type="text" id="contactFirst" class="input" bind:value={reviewerContact.firstName} />
+                <!-- Review Access Section -->
+                <div class="collapsible-section">
+                    <button
+                        class="collapsible-header"
+                        class:expanded={reviewAccessExpanded}
+                        onclick={() => reviewAccessExpanded = !reviewAccessExpanded}
+                    >
+                        <div class="collapsible-title">
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>Review Access</span>
+                            <span class="section-hint">Demo credentials, reviewer notes</span>
                         </div>
-                        <div class="form-group">
-                            <label for="contactLast" class="form-label">Last Name</label>
-                            <input type="text" id="contactLast" class="input" bind:value={reviewerContact.lastName} />
+                        <div class="section-status" class:complete={!signInRequired || (demoUsername && demoPassword)}>
+                            {#if signInRequired && (!demoUsername || !demoPassword)}
+                                <span class="status-required">Credentials needed</span>
+                            {:else}
+                                <span class="status-complete">✓</span>
+                            {/if}
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="contactPhone" class="form-label">Phone</label>
-                            <input type="tel" id="contactPhone" class="input" bind:value={reviewerContact.phone} placeholder="+1 555-123-4567" />
+                    </button>
+                    {#if reviewAccessExpanded}
+                        <div class="collapsible-content">
+                            <div class="signin-section">
+                                <label class="checkbox-label prominent">
+                                    <input type="checkbox" bind:checked={signInRequired} />
+                                    <span>Sign-in required to use app</span>
+                                </label>
+
+                                {#if signInRequired}
+                                    <div class="demo-credentials">
+                                        <p class="warning-hint">
+                                            Missing demo credentials is the #1 rejection reason for apps with login. Apple's reviewer will need these to actually test your app.
+                                        </p>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="demoUsername" class="form-label">Demo Username <span class="required">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    id="demoUsername"
+                                                    class="input"
+                                                    bind:value={demoUsername}
+                                                    placeholder="demo@example.com"
+                                                    required
+                                                />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="demoPassword" class="form-label">Demo Password <span class="required">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    id="demoPassword"
+                                                    class="input"
+                                                    bind:value={demoPassword}
+                                                    placeholder="DemoPassword123"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                {/if}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reviewNotes" class="form-label">Notes for App Review</label>
+                                <textarea
+                                    id="reviewNotes"
+                                    class="input textarea"
+                                    bind:value={reviewNotes}
+                                    rows="3"
+                                    placeholder="Any special instructions for the reviewer..."
+                                ></textarea>
+                                <p class="field-hint">Use this to explain anything non-obvious.</p>
+                            </div>
+
+                            <div class="contact-section">
+                                <h3>Reviewer Contact (Optional)</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="contactFirst" class="form-label">First Name</label>
+                                        <input type="text" id="contactFirst" class="input" bind:value={reviewerContact.firstName} />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contactLast" class="form-label">Last Name</label>
+                                        <input type="text" id="contactLast" class="input" bind:value={reviewerContact.lastName} />
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="contactPhone" class="form-label">Phone</label>
+                                        <input type="tel" id="contactPhone" class="input" bind:value={reviewerContact.phone} placeholder="+1 555-123-4567" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contactEmail" class="form-label">Email</label>
+                                        <input type="email" id="contactEmail" class="input" bind:value={reviewerContact.email} placeholder="you@example.com" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="contactEmail" class="form-label">Email</label>
-                            <input type="email" id="contactEmail" class="input" bind:value={reviewerContact.email} placeholder="you@example.com" />
-                        </div>
-                    </div>
+                    {/if}
                 </div>
 
                 <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 5)}>Back</button>
-                    <button class="btn btn-primary" onclick={() => (step = 7)} disabled={!step6Valid}>Continue</button>
+                    <button class="btn btn-secondary" onclick={() => (step = 2)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 4)} disabled={!step3Valid}>Continue</button>
                 </div>
             </CockpitPanel>
 
-        {:else if step === 7}
+        {:else if step === 4}
             <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- STEP 7: Review & Submit -->
+            <!-- STEP 4: Review & Submit -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
             <div class="step-content">
-                <h2>Review & Submit</h2>
-                <p class="step-desc">Review your submission before analysis.</p>
+                <div class="step-intro">
+                    <h2>Review & Submit</h2>
+                    <p class="step-reassurance">Looking good! Here's a summary before we run the analysis.</p>
+                </div>
 
                 <CockpitPanel class="summary-card">
                     <h3>Summary</h3>
@@ -1303,14 +1326,13 @@
                     <div class="missing-files-warning">
                         <strong>Cannot submit:</strong>
                         {#if !step1Valid}App name, description, and category are required. {/if}
-                        {#if !step2Valid}Privacy Policy URL and Support URL are required. {/if}
-                        {#if !step5Valid}{missingFiles.join(", ")}. {/if}
-                        {#if !step6Valid}Demo credentials are required when sign-in is enabled.{/if}
+                        {#if !step2Valid}{missingFiles.join(", ")}. {/if}
+                        {#if !step3Valid}Privacy Policy URL and Support URL are required. {#if signInRequired && (!demoUsername || !demoPassword)}Demo credentials are required when sign-in is enabled.{/if}{/if}
                     </div>
                 {/if}
 
                 <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 6)}>Back</button>
+                    <button class="btn btn-secondary" onclick={() => (step = 3)}>Back</button>
                     <div class="action-group">
                         <button
                             class="btn btn-accent"
@@ -1340,7 +1362,7 @@
     }
 
     .submit-header {
-        margin-bottom: 2.5rem;
+        margin-bottom: 1.5rem;
     }
 
     .submit-header h1 {
@@ -1352,75 +1374,61 @@
         color: var(--gray-100);
     }
 
-    .step-meta {
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Simple Progress Indicator (replaces 7-step bar) */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+
+    .progress-text {
         font-family: "Instrument Mono", monospace;
-        font-size: 0.65rem;
+        font-size: 0.75rem;
         font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.05em;
+    }
+
+    .progress-divider {
         color: var(--gray-600);
-        letter-spacing: 0.1em;
-        margin-top: 4px;
     }
 
-    .progress-container {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 2px;
-        margin-bottom: 3.5rem;
-        position: relative;
-        overflow: hidden;
+    .progress-label {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--gray-200);
     }
 
-    .progress-fill {
-        height: 100%;
-        background: var(--accent);
-        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        z-index: 1;
-    }
-
-    .progress-grid {
-        position: absolute;
-        inset: 0;
-        background-image: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0.05) 1px,
-                transparent 1px
-            ),
-            linear-gradient(
-                0deg,
-                rgba(255, 255, 255, 0.05) 1px,
-                transparent 1px
-            );
-        background-size: 10px 100%;
-        z-index: 2;
-        pointer-events: none;
-    }
-
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Step Content & Intro */
+    /* ═══════════════════════════════════════════════════════════════ */
     .step-content {
         max-width: 600px;
     }
 
-    .panel-header {
-        margin-bottom: 1.5rem;
+    .step-intro {
+        margin-bottom: 2rem;
     }
 
-    .panel-id {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        display: block;
-        margin-bottom: 4px;
-    }
-
-    .step-content h2 {
+    .step-intro h2 {
         font-size: 1.5rem;
         font-weight: 700;
         letter-spacing: -0.01em;
         color: var(--gray-100);
+        margin-bottom: 0.5rem;
+    }
+
+    .step-reassurance {
+        font-size: 0.95rem;
+        color: var(--gray-400);
+        line-height: 1.5;
     }
 
     .step-desc {
@@ -1430,6 +1438,106 @@
         line-height: 1.5;
     }
 
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Collapsible Sections (Accordion) */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .collapsible-section {
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+
+    .collapsible-header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .collapsible-header:hover {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .collapsible-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .collapsible-title span:first-of-type {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+    }
+
+    .section-hint {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        font-weight: 400;
+    }
+
+    .chevron {
+        color: var(--gray-500);
+        transition: transform 0.2s;
+        flex-shrink: 0;
+    }
+
+    .collapsible-header.expanded .chevron {
+        transform: rotate(90deg);
+    }
+
+    .section-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-complete {
+        color: #22c55e;
+        font-size: 0.9rem;
+    }
+
+    .status-required {
+        font-size: 0.75rem;
+        color: var(--accent);
+        background: rgba(212, 168, 83, 0.15);
+        padding: 0.25rem 0.625rem;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+
+    .rating-badge {
+        font-family: "Outfit", sans-serif;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--accent);
+        background: rgba(212, 168, 83, 0.15);
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+    }
+
+    .collapsible-content {
+        padding: 1.25rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(0, 0, 0, 0.1);
+    }
+
+    .section-intro {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Form Elements */
+    /* ═══════════════════════════════════════════════════════════════ */
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1440,6 +1548,24 @@
         .form-row {
             grid-template-columns: 1fr;
         }
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--gray-300);
+        margin-bottom: 0.5rem;
     }
 
     .textarea {
@@ -1455,6 +1581,32 @@
         padding-right: 40px;
     }
 
+    .char-count {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        margin-left: auto;
+    }
+
+    .char-count.over {
+        color: #ef4444;
+    }
+
+    .required {
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    .field-hint {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        margin-top: 0.5rem;
+        line-height: 1.4;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* File Upload */
+    /* ═══════════════════════════════════════════════════════════════ */
     .file-upload {
         border: 2px dashed rgba(255, 255, 255, 0.1);
         border-radius: 8px;
@@ -1510,169 +1662,9 @@
         color: #ef4444;
     }
 
-    .step-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .action-group {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .btn-accent {
-        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
-        color: var(--bg);
-        font-weight: 600;
-        border: none;
-        padding: 0.875rem 1.75rem;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s var(--ease);
-    }
-
-    .btn-accent:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 8px 20px rgba(212, 168, 83, 0.3);
-    }
-
-    .btn-accent:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .review-options {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .review-option {
-        display: block;
-        cursor: pointer;
-    }
-
-    .review-option input {
-        display: none;
-    }
-
-    .option-content {
-        padding: 1.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        transition: all 0.2s;
-    }
-
-    .review-option.selected .option-content {
-        border-color: var(--accent);
-        background: rgba(212, 168, 83, 0.05);
-    }
-
-    .option-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.25rem;
-    }
-
-    .option-header h3 {
-        font-size: 1rem;
-    }
-
-    .price {
-        font-family: "Outfit", sans-serif;
-        font-size: 1.25rem;
-        font-weight: 700;
-    }
-
-    .summary-card {
-        margin-top: 2rem;
-        padding: 24px !important;
-    }
-
-    .summary-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        background: rgba(255, 255, 255, 0.01);
-    }
-
-    .summary-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 20px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .summary-label {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-    }
-
-    .summary-value {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--gray-200);
-    }
-
-    .summary-value.status-ready {
-        color: #4ade80;
-    }
-    .summary-value.status-warning {
-        color: #fbbf24;
-    }
-
-    .summary-item.total {
-        background: rgba(212, 168, 83, 0.05);
-        border-bottom: none;
-    }
-
-    .summary-item.total .summary-label {
-        color: var(--accent);
-    }
-
-    .summary-item.total .summary-value {
-        font-size: 1.25rem;
-        color: var(--accent);
-    }
-
-    .error-msg {
-        margin-top: 1rem;
-        padding: 0.75rem 1rem;
-        background: rgba(239, 68, 68, 0.08);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        border-radius: 8px;
-        color: #ef4444;
-        font-size: 0.9rem;
-    }
-
-    .missing-files-warning {
-        margin-top: 1rem;
-        padding: 0.75rem 1rem;
-        background: rgba(245, 158, 11, 0.08);
-        border: 1px solid rgba(245, 158, 11, 0.2);
-        border-radius: 8px;
-        color: #f59e0b;
-        font-size: 0.9rem;
-    }
-
-    .missing-files-warning strong {
-        font-weight: 600;
-    }
-
+    /* ═══════════════════════════════════════════════════════════════ */
     /* Config Files Section */
+    /* ═══════════════════════════════════════════════════════════════ */
     .config-files-section {
         margin-top: 2rem;
         padding: 1.25rem;
@@ -1764,26 +1756,388 @@
         color: white;
     }
 
-    /* Tooltip */
-    .tooltip-trigger {
-        display: inline-flex;
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Age Rating */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .age-rating-result {
+        display: flex;
         align-items: center;
-        margin-left: 0.25rem;
-        color: var(--gray-500);
-        cursor: help;
-        vertical-align: middle;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        background: rgba(212, 168, 83, 0.08);
+        border: 1px solid rgba(212, 168, 83, 0.2);
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
     }
 
-    .tooltip-trigger:hover {
+    .rating-label {
+        font-size: 0.9rem;
+        color: var(--gray-300);
+    }
+
+    .rating-value {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
         color: var(--accent);
     }
 
-    .file-item-success {
-        background: rgba(34, 197, 94, 0.1);
-        border: 1px solid rgba(34, 197, 94, 0.2);
+    .age-questions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
+    .age-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+    }
+
+    .age-question label {
+        font-size: 0.9rem;
+        color: var(--gray-300);
+    }
+
+    .age-question select {
+        width: 160px;
+        min-width: 0;
+    }
+
+    .age-question.checkbox-question {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .age-question.checkbox-question label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+    }
+
+    .age-question.checkbox-question label span {
+        color: var(--gray-200);
+    }
+
+    .age-question.checkbox-question .field-hint {
+        margin: 0;
+        padding-left: 1.75rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Privacy Grid */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .privacy-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .privacy-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.01);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .privacy-row:last-child {
+        border-bottom: none;
+    }
+
+    .privacy-row:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .privacy-label {
+        font-size: 0.85rem;
+        color: var(--gray-300);
+    }
+
+    .privacy-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--gray-400);
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .privacy-checkbox.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .privacy-checkbox input {
+        accent-color: var(--accent);
+    }
+
+    @media (max-width: 600px) {
+        .privacy-row {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+        .privacy-label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Monetization & Sign-in */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .monetization-section {
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+    }
+
+    .monetization-section h3 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin: 0 0 1rem 0;
+    }
+
+    .checkbox-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--gray-300);
+        cursor: pointer;
+    }
+
+    .checkbox-label input {
+        accent-color: var(--accent);
+        width: 16px;
+        height: 16px;
+    }
+
+    .checkbox-label.prominent {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--gray-200);
+    }
+
+    .checkbox-label.prominent input {
+        width: 18px;
+        height: 18px;
+    }
+
+    .signin-section {
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .demo-credentials {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .warning-hint {
+        padding: 0.875rem 1rem;
+        background: rgba(251, 191, 36, 0.08);
+        border: 1px solid rgba(251, 191, 36, 0.15);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #fbbf24;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .contact-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .contact-section h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin: 0 0 1rem 0;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Step Actions */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .step-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .action-group {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn-accent {
+        background: linear-gradient(135deg, #d4a853 0%, #c4963d 100%);
+        color: var(--bg);
+        font-weight: 600;
+        border: none;
+        padding: 0.875rem 1.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+    }
+
+    .btn-accent:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(212, 168, 83, 0.3);
+    }
+
+    .btn-accent:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Summary Card */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .summary-card {
+        margin-top: 2rem;
+        padding: 24px !important;
+    }
+
+    .summary-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.01);
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .summary-label {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        color: var(--gray-600);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .summary-value {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--gray-200);
+    }
+
+    .summary-value.status-ready {
+        color: #4ade80;
+    }
+    .summary-value.status-warning {
+        color: #fbbf24;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* What's Included */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .whats-included {
+        margin-top: 1.5rem;
+    }
+
+    .whats-included h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin: 0 0 1rem 0;
+    }
+
+    .whats-included ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .whats-included li {
+        position: relative;
+        padding: 0.5rem 0 0.5rem 1.5rem;
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .whats-included li:last-child {
+        border-bottom: none;
+    }
+
+    .whats-included li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #22c55e;
+        font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Errors & Warnings */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .error-msg {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 8px;
+        color: #ef4444;
+        font-size: 0.9rem;
+    }
+
+    .missing-files-warning {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: rgba(245, 158, 11, 0.08);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 8px;
+        color: #f59e0b;
+        font-size: 0.9rem;
+    }
+
+    .missing-files-warning strong {
+        font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
     /* Modal */
+    /* ═══════════════════════════════════════════════════════════════ */
     .modal-overlay {
         position: fixed;
         inset: 0;
@@ -1905,7 +2259,9 @@
         word-break: break-all;
     }
 
+    /* ═══════════════════════════════════════════════════════════════ */
     /* Loading Overlay */
+    /* ═══════════════════════════════════════════════════════════════ */
     .loading-overlay {
         position: fixed;
         inset: 0;
@@ -1942,429 +2298,5 @@
         to {
             transform: rotate(360deg);
         }
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Progress Steps (7-step horizontal indicator) */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .progress-steps {
-        display: flex;
-        gap: 0;
-        margin-bottom: 2.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.02);
-    }
-
-    .progress-step {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.25rem;
-        padding: 0.875rem 0.5rem;
-        background: transparent;
-        border: none;
-        border-right: 1px solid rgba(255, 255, 255, 0.06);
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .progress-step:last-child {
-        border-right: none;
-    }
-
-    .progress-step:hover:not(.active) {
-        background: rgba(255, 255, 255, 0.03);
-    }
-
-    .progress-step.active {
-        background: rgba(212, 168, 83, 0.1);
-    }
-
-    .progress-step.complete {
-        background: rgba(34, 197, 94, 0.08);
-    }
-
-    .step-num {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.08);
-        color: var(--gray-500);
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.7rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-    }
-
-    .progress-step.active .step-num {
-        background: var(--accent);
-        color: var(--bg);
-    }
-
-    .progress-step.complete .step-num {
-        background: #22c55e;
-        color: var(--bg);
-    }
-
-    .step-label {
-        font-size: 0.65rem;
-        font-weight: 600;
-        color: var(--gray-600);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        transition: color 0.2s;
-    }
-
-    .progress-step.active .step-label {
-        color: var(--accent);
-    }
-
-    .progress-step.complete .step-label {
-        color: #22c55e;
-    }
-
-    @media (max-width: 700px) {
-        .progress-steps {
-            flex-wrap: wrap;
-        }
-        .progress-step {
-            flex: 0 0 25%;
-            border-right: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .progress-step:nth-child(4),
-        .progress-step:nth-child(7) {
-            border-right: none;
-        }
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Character Counts & Field Hints */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .char-count {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.7rem;
-        color: var(--gray-500);
-        margin-left: auto;
-    }
-
-    .char-count.over {
-        color: #ef4444;
-    }
-
-    .required {
-        color: var(--accent);
-        font-weight: 600;
-    }
-
-    .field-hint {
-        font-size: 0.8rem;
-        color: var(--gray-500);
-        margin-top: 0.5rem;
-        line-height: 1.4;
-    }
-
-    .form-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--gray-300);
-        margin-bottom: 0.5rem;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Age Rating Questionnaire */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .age-rating-result {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1.25rem;
-        background: rgba(212, 168, 83, 0.08);
-        border: 1px solid rgba(212, 168, 83, 0.2);
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-    }
-
-    .rating-label {
-        font-size: 0.9rem;
-        color: var(--gray-300);
-    }
-
-    .rating-value {
-        font-family: "Outfit", sans-serif;
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: var(--accent);
-    }
-
-    .age-questions {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .age-question {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1rem;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-    }
-
-    .age-question label {
-        font-size: 0.9rem;
-        color: var(--gray-300);
-    }
-
-    .age-question select {
-        width: 160px;
-        min-width: 0;
-    }
-
-    .age-question.checkbox-question {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-
-    .age-question.checkbox-question label {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        cursor: pointer;
-    }
-
-    .age-question.checkbox-question label span {
-        color: var(--gray-200);
-    }
-
-    .age-question.checkbox-question .field-hint {
-        margin: 0;
-        padding-left: 1.75rem;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Privacy Grid (Data Collection) */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .privacy-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 2rem;
-    }
-
-    .privacy-row {
-        display: grid;
-        grid-template-columns: 1fr auto auto auto;
-        gap: 1rem;
-        align-items: center;
-        padding: 0.75rem 1rem;
-        background: rgba(255, 255, 255, 0.01);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .privacy-row:last-child {
-        border-bottom: none;
-    }
-
-    .privacy-row:nth-child(odd) {
-        background: rgba(255, 255, 255, 0.02);
-    }
-
-    .privacy-label {
-        font-size: 0.85rem;
-        color: var(--gray-300);
-    }
-
-    .privacy-checkbox {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.75rem;
-        color: var(--gray-400);
-        cursor: pointer;
-        white-space: nowrap;
-    }
-
-    .privacy-checkbox.disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
-
-    .privacy-checkbox input {
-        accent-color: var(--accent);
-    }
-
-    @media (max-width: 600px) {
-        .privacy-row {
-            grid-template-columns: 1fr;
-            gap: 0.5rem;
-        }
-        .privacy-label {
-            font-weight: 500;
-            margin-bottom: 0.25rem;
-        }
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Monetization Section */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .monetization-section {
-        padding: 1.25rem;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-    }
-
-    .monetization-section h3 {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--gray-200);
-        margin: 0 0 1rem 0;
-    }
-
-    .checkbox-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1.5rem;
-    }
-
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-        color: var(--gray-300);
-        cursor: pointer;
-    }
-
-    .checkbox-label input {
-        accent-color: var(--accent);
-        width: 16px;
-        height: 16px;
-    }
-
-    .checkbox-label.prominent {
-        font-size: 1rem;
-        font-weight: 500;
-        color: var(--gray-200);
-    }
-
-    .checkbox-label.prominent input {
-        width: 18px;
-        height: 18px;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Sign-in Section & Demo Credentials */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .signin-section {
-        padding: 1.25rem;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-    }
-
-    .demo-credentials {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .warning-hint {
-        padding: 0.875rem 1rem;
-        background: rgba(251, 191, 36, 0.08);
-        border: 1px solid rgba(251, 191, 36, 0.15);
-        border-radius: 6px;
-        font-size: 0.85rem;
-        color: #fbbf24;
-        margin-bottom: 1rem;
-        line-height: 1.5;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Contact Section */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .contact-section {
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .contact-section h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--gray-200);
-        margin: 0 0 0.5rem 0;
-    }
-
-    .contact-section > .step-desc {
-        margin-bottom: 1rem;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* What's Included Card */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .whats-included {
-        margin-top: 1.5rem;
-    }
-
-    .whats-included h3 {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--gray-200);
-        margin: 0 0 1rem 0;
-    }
-
-    .whats-included ul {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
-    .whats-included li {
-        position: relative;
-        padding: 0.5rem 0 0.5rem 1.5rem;
-        font-size: 0.9rem;
-        color: var(--gray-400);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .whats-included li:last-child {
-        border-bottom: none;
-    }
-
-    .whats-included li::before {
-        content: "✓";
-        position: absolute;
-        left: 0;
-        color: #22c55e;
-        font-weight: 600;
-    }
-
-    /* ═══════════════════════════════════════════════════════════════ */
-    /* Form Groups (additions for new fields) */
-    /* ═══════════════════════════════════════════════════════════════ */
-    .form-group {
-        margin-bottom: 1.25rem;
-    }
-
-    .form-group:last-child {
-        margin-bottom: 0;
     }
 </style>
