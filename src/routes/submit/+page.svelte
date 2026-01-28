@@ -17,6 +17,7 @@
     // Track draft ID for updating existing drafts
     let draftId: string | null = $state(data.draftSubmission?.id || null);
     let isEditingDraft = $derived(!!data.draftSubmission);
+    let isResubmit = $derived(!!data.originalSubmission);
 
     let step = $state(1);
     let loading = $state(false);
@@ -346,6 +347,12 @@
                 formData.set("draft_id", draftId);
             }
 
+            // Retest info
+            if (isResubmit && data.originalSubmission?.id) {
+                formData.set("is_rereviewing", "true");
+                formData.set("original_submission_id", data.originalSubmission.id);
+            }
+
             // Already-saved file paths (so server knows what to keep)
             formData.set("saved_screenshot_paths", JSON.stringify(savedScreenshotPaths));
             if (savedManifestPath) formData.set("saved_manifest_path", savedManifestPath);
@@ -546,11 +553,17 @@
                             type="text"
                             id="appName"
                             class="input"
+                            class:locked={isResubmit}
                             bind:value={appName}
                             maxlength="30"
                             required
+                            readonly={isResubmit}
                             placeholder="Your app's name"
+                            title={isResubmit ? 'App name is locked for retests' : ''}
                         />
+                        {#if isResubmit}
+                            <span class="field-hint locked-hint">🔒 App name is locked for retests</span>
+                        {/if}
                     </div>
 
                     <div class="form-group">
@@ -1807,6 +1820,12 @@
     .textarea {
         resize: vertical;
         min-height: 120px;
+    }
+
+    .input.locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--gray-800, #2a2a2a);
     }
 
     select.input {
