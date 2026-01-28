@@ -676,11 +676,17 @@
                     </div>
 
                     {#if screenshots.length > 0}
-                        <div class="file-list">
+                        <div class="screenshot-previews">
                             {#each screenshots as file, i}
-                                <div class="file-item">
-                                    <span>{file.name}</span>
-                                    <button class="remove-btn" onclick={() => removeScreenshot(i)}>×</button>
+                                <div class="screenshot-preview">
+                                    <img src={URL.createObjectURL(file)} alt={file.name} />
+                                    <button class="screenshot-remove" onclick={() => removeScreenshot(i)} title="Remove">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <span class="screenshot-name">{file.name}</span>
                                 </div>
                             {/each}
                         </div>
@@ -1632,21 +1638,92 @@
         color: var(--gray-500);
     }
 
-    .file-list {
+    /* Screenshot Previews - Apple-style horizontal gallery */
+    .screenshot-previews {
         margin-top: 1rem;
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: 12px;
+        overflow-x: auto;
+        padding: 8px 4px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .file-item {
+    .screenshot-previews::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .screenshot-previews::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+
+    .screenshot-previews::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
+    .screenshot-preview {
+        position: relative;
+        flex-shrink: 0;
+        scroll-snap-align: start;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .screenshot-preview img {
+        height: 180px;
+        width: auto;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        object-fit: contain;
+        background: rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .screenshot-preview:hover img {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .screenshot-remove {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.9);
+        border: 2px solid var(--dark);
+        color: white;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        background: rgba(255, 255, 255, 0.05);
-        padding: 6px 12px;
-        border-radius: 6px;
-        font-size: 0.85rem;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .screenshot-preview:hover .screenshot-remove {
+        opacity: 1;
+    }
+
+    .screenshot-remove:hover {
+        transform: scale(1.1);
+        background: #ef4444;
+    }
+
+    .screenshot-name {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
     }
 
     .remove-btn {
