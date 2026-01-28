@@ -69,7 +69,7 @@
                     .includes("subscription") ?? false,
             hasUGC:
                 submission.description?.toLowerCase().includes("user") ?? false,
-            isNewDeveloper: true, // Target audience is first-time publishers
+            isNewDeveloper: false,
             submissionDay: new Date().getDay(),
         }),
     );
