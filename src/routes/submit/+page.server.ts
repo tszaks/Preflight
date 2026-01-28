@@ -414,13 +414,20 @@ export const actions: Actions = {
 
         // Step 4: Deduct credits upfront (service role bypasses RLS)
         const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const { error: creditError } = await serviceSupabase
+        const newBalance = userCredits - creditCost;
+        console.log(`[Credits] Deducting ${creditCost} from user ${userId}: ${userCredits} → ${newBalance}`);
+
+        const { data: updatedProfile, error: creditError } = await serviceSupabase
             .from('profiles')
-            .update({ credits: userCredits - creditCost })
-            .eq('id', userId);
+            .update({ credits: newBalance })
+            .eq('id', userId)
+            .select('credits')
+            .single();
 
         if (creditError) {
-            console.error('Credit deduction failed:', creditError);
+            console.error('[Credits] Deduction FAILED:', creditError);
+        } else {
+            console.log(`[Credits] Deduction confirmed. DB now shows: ${updatedProfile?.credits}`);
         }
 
         // Redirect to progress page

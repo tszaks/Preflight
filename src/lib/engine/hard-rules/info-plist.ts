@@ -1,11 +1,22 @@
 import type { CheckResult } from '../types';
 import {
     REQUIRED_PLIST_KEYS,
+    OPTIONAL_PLIST_KEYS,
     USAGE_DESCRIPTION_KEYS,
     BUNDLE_ID_REGEX,
     VERSION_REGEX,
 } from '../knowledge-base/requirements';
 import { getGuidelineRef } from '../knowledge-base/guidelines';
+
+/**
+ * Detects Xcode build variables in plist values.
+ * Matches: $(VAR), $(VAR:modifier), ${VAR}, $(inherited), and combinations with literal text.
+ * Examples: $(PRODUCT_BUNDLE_IDENTIFIER), $(MARKETING_VERSION), $(CURRENT_PROJECT_VERSION),
+ *           $(PRODUCT_NAME:rfc1034identifier), com.company.$(PRODUCT_NAME)
+ */
+function isXcodeBuildVariable(value: string): boolean {
+    return /\$[\({][A-Za-z_][A-Za-z0-9_]*(:[a-z0-9]+)?[\)}]/.test(value);
+}
 
 /**
  * Validates Info.plist file content.
@@ -48,11 +59,35 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
         }
     }
 
+    // Check optional keys (info-level if missing)
+    for (const key of OPTIONAL_PLIST_KEYS) {
+        if (!plistContent.includes(`<key>${key}</key>`)) {
+            results.push({
+                category: 'info_plist',
+                severity: 'info',
+                title: `Optional key not found: ${key}`,
+                description: `"${key}" is not present. Modern apps often omit this key, but it's needed if your app requires specific device hardware (e.g., ARKit, NFC).`,
+                guideline_ref: getGuidelineRef('2.5'),
+                fix_suggestion: `Only add "${key}" if your app requires specific device capabilities. Most apps don't need it.`,
+            });
+        }
+    }
+
     // Validate CFBundleIdentifier format
     const bundleIdMatch = plistContent.match(/<key>CFBundleIdentifier<\/key>\s*<string>([^<]+)<\/string>/);
     if (bundleIdMatch) {
         const bundleId = bundleIdMatch[1];
-        if (!BUNDLE_ID_REGEX.test(bundleId)) {
+
+        if (isXcodeBuildVariable(bundleId)) {
+            results.push({
+                category: 'info_plist',
+                severity: 'info',
+                title: 'Bundle ID uses Xcode build variable',
+                description: `Bundle ID "${bundleId}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
+                guideline_ref: getGuidelineRef('2.5'),
+                fix_suggestion: 'No action needed. Xcode will substitute the real bundle ID from your build settings when compiling.',
+            });
+        } else if (!BUNDLE_ID_REGEX.test(bundleId)) {
             results.push({
                 category: 'info_plist',
                 severity: 'critical',
@@ -63,8 +98,9 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
             });
         }
 
-        // Check for placeholder bundle IDs
-        if (bundleId.includes('example') || bundleId.includes('test') || bundleId.includes('placeholder')) {
+        // Check for placeholder bundle IDs (skip if build variable)
+        if (!isXcodeBuildVariable(bundleId) &&
+            (bundleId.includes('example') || bundleId.includes('test') || bundleId.includes('placeholder'))) {
             results.push({
                 category: 'info_plist',
                 severity: 'critical',
@@ -80,7 +116,17 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
     const versionMatch = plistContent.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/);
     if (versionMatch) {
         const version = versionMatch[1];
-        if (!VERSION_REGEX.test(version)) {
+
+        if (isXcodeBuildVariable(version)) {
+            results.push({
+                category: 'info_plist',
+                severity: 'info',
+                title: 'Version uses Xcode build variable',
+                description: `Version "${version}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
+                guideline_ref: getGuidelineRef('2.5'),
+                fix_suggestion: 'No action needed. Xcode will substitute the real version from your build settings when compiling.',
+            });
+        } else if (!VERSION_REGEX.test(version)) {
             results.push({
                 category: 'info_plist',
                 severity: 'critical',
@@ -90,6 +136,18 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 fix_suggestion: 'Use semantic versioning: major.minor or major.minor.patch (e.g., 1.0, 2.1.3).',
             });
         }
+    }
+
+    // Also check CFBundleVersion (build number) for build variables
+    const buildMatch = plistContent.match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/);
+    if (buildMatch && isXcodeBuildVariable(buildMatch[1])) {
+        results.push({
+            category: 'info_plist',
+            severity: 'info',
+            title: 'Build number uses Xcode build variable',
+            description: `Build number "${buildMatch[1]}" is an Xcode build variable. This is normal.`,
+            fix_suggestion: 'No action needed.',
+        });
     }
 
     // Check usage descriptions for permissions

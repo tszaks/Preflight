@@ -705,7 +705,7 @@
                                 <span class="readout-label">Tips</span>
                                 <StatusLight
                                     status={report.total_info > 0
-                                        ? "ready"
+                                        ? "info"
                                         : "neutral"}
                                     size="sm"
                                 />
