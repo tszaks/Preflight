@@ -53,6 +53,7 @@ export async function generateReport(
             description: check.description,
             guideline_ref: check.guideline_ref || null,
             fix_suggestion: check.fix_suggestion || null,
+            confidence: check.confidence ?? null,
         }));
 
     if (items.length > 0) {
