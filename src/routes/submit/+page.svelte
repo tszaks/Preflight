@@ -761,7 +761,7 @@
                             id="copyright"
                             class="input"
                             bind:value={copyright}
-                            placeholder="2026 Your Company"
+                            placeholder="2026 Your Name or Company"
                         />
                     </div>
                 </div>
