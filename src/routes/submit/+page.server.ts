@@ -214,11 +214,21 @@ export const actions: Actions = {
                 category: formData.get('category')?.toString() || null,
                 age_rating: formData.get('age_rating')?.toString() || '4+',
                 privacy_url: formData.get('privacy_url')?.toString().trim() || null,
+                support_url: formData.get('support_url')?.toString().trim() || null,
+                marketing_url: formData.get('marketing_url')?.toString().trim() || null,
                 review_type: 'full',
                 status: 'analyzing',
                 credits_used: creditCost,
                 is_rereviewing: isRereviewing,
                 original_submission_id: originalSubmissionId,
+                // Form-field based checks (for conditional warnings)
+                sign_in_required: formData.get('sign_in_required') === 'true',
+                demo_username: formData.get('demo_username')?.toString() || null,
+                demo_password: formData.get('demo_password')?.toString() || null,
+                has_iap: formData.get('has_iap') === 'true',
+                has_subscriptions: formData.get('has_subscriptions') === 'true',
+                has_ads: formData.get('has_ads') === 'true',
+                has_third_party_login: formData.get('has_third_party_login') === 'true',
             })
             .select('id')
             .single();
@@ -336,6 +346,7 @@ export const actions: Actions = {
             has_iap: formData.get('has_iap') === 'true',
             has_subscriptions: formData.get('has_subscriptions') === 'true',
             has_ads: formData.get('has_ads') === 'true',
+            has_third_party_login: formData.get('has_third_party_login') === 'true',
             review_type: 'full',
             status: 'draft',
         };

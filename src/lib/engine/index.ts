@@ -63,6 +63,11 @@ export async function runAnalysis(
             screenshot_paths: input.screenshot_paths,
             manifest_path: input.manifest_path,
             plist_path: input.plist_path,
+            // Form-field based checks (for conditional warnings)
+            sign_in_required: input.sign_in_required,
+            has_iap: input.has_iap,
+            has_subscriptions: input.has_subscriptions,
+            has_third_party_login: input.has_third_party_login,
         };
 
         // Create progress callback for hard rules

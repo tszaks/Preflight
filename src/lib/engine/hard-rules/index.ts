@@ -10,6 +10,7 @@ import { checkScreenshots } from './screenshots';
 import { checkPrivacyManifest } from './privacy-manifest';
 import { checkInfoPlist } from './info-plist';
 import { checkUrls } from './urls';
+import { checkConditionalWarnings } from './conditional-warnings';
 
 export interface HardRulesResult {
     checks: CheckResult[];
@@ -86,17 +87,32 @@ export async function runHardRules(
         data: { checksFound: plistChecks.length },
     }));
 
-    // Check 5: URL Reachability (80-100%) - This is async
+    // Check 5: URL Reachability (80-95%) - This is async
     emit(createProgressEvent('check_start', PROGRESS_MESSAGES[PROGRESS_CHECKS.URLS], 80, {
         check: PROGRESS_CHECKS.URLS,
         phase: 'hard_rules',
     }));
     const urlChecks = await checkUrls(input);
     checks.push(...urlChecks);
-    emit(createProgressEvent('check_complete', `URL validation complete`, 100, {
+    emit(createProgressEvent('check_complete', `URL validation complete`, 95, {
         check: PROGRESS_CHECKS.URLS,
         phase: 'hard_rules',
         data: { checksFound: urlChecks.length },
+    }));
+
+    // Check 6: Conditional Warnings (95-100%) - Form-field based warnings
+    // These check for common rejection reasons based on app characteristics
+    const conditionalChecks = checkConditionalWarnings({
+        sign_in_required: input.sign_in_required,
+        has_iap: input.has_iap,
+        has_subscriptions: input.has_subscriptions,
+        has_third_party_login: input.has_third_party_login,
+    });
+    checks.push(...conditionalChecks);
+    emit(createProgressEvent('check_complete', `Found ${conditionalChecks.length} compliance reminders`, 100, {
+        check: 'conditional_warnings',
+        phase: 'hard_rules',
+        data: { checksFound: conditionalChecks.length },
     }));
 
     return {
