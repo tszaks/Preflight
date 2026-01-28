@@ -230,8 +230,24 @@ export const actions: Actions = {
         // Check if submitting from an existing draft
         const draftId = formData.get('draft_id')?.toString() || null;
 
-        // Credit cost: 100 for full review, 25 for re-review
-        const creditCost = isRereviewing ? 25 : 100;
+        // Anti-gaming: verify app name matches original for retest discount
+        let creditCost = 100;
+        if (isRereviewing && originalSubmissionId) {
+            const { data: originalSub } = await supabase
+                .from('submissions')
+                .select('app_name')
+                .eq('id', originalSubmissionId)
+                .single();
+
+            const newName = (formData.get('app_name')?.toString() || '').trim().toLowerCase();
+            const origName = (originalSub?.app_name || '').trim().toLowerCase();
+
+            if (originalSub && newName === origName) {
+                creditCost = 25; // Same app, retest discount
+            } else {
+                creditCost = 100; // Different app name = new review, full price
+            }
+        }
 
         // Step 1: Check user has enough credits
         const { data: profile } = await supabase
