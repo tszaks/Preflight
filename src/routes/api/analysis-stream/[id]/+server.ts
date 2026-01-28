@@ -1,6 +1,9 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { ANTHROPIC_API_KEY } from '$env/static/private';
+import { ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '$lib/types/database';
 import { runAnalysis, fetchSubmissionFiles } from '$lib/engine';
 import type { ProgressEvent } from '$lib/types/progress';
 import type { SoftRulesInput } from '$lib/engine/types';
@@ -89,6 +92,9 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
         });
     }
 
+    // Use service role client for analysis operations (bypasses RLS for report creation)
+    const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
     // Create SSE stream
     const encoder = new TextEncoder();
 
@@ -101,8 +107,8 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
             };
 
             try {
-                // Fetch submission files
-                const files = await fetchSubmissionFiles(supabase, submission);
+                // Fetch submission files (service role to access storage)
+                const files = await fetchSubmissionFiles(serviceSupabase, submission);
 
                 // Prepare input
                 const input: SoftRulesInput = {
@@ -130,8 +136,8 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
                     has_third_party_login: submission.has_third_party_login ?? false,
                 };
 
-                // Run analysis with progress streaming
-                const result = await runAnalysis(supabase, submissionId, input, {
+                // Run analysis with progress streaming (service role bypasses RLS for report writes)
+                const result = await runAnalysis(serviceSupabase, submissionId, input, {
                     anthropicApiKey: ANTHROPIC_API_KEY,
                     onProgress: sendEvent,
                 });
