@@ -153,6 +153,18 @@ export const actions: Actions = {
             if (!error) plistPath = path;
         }
 
+        // Upload app icon
+        let iconPath: string | null = null;
+        const icon = formData.get('icon') as File | null;
+        if (icon && icon.size > 0) {
+            const ext = icon.name.split('.').pop() || 'png';
+            const path = `${basePath}/app_icon.${ext}`;
+            const { error } = await supabase.storage
+                .from('screenshots')
+                .upload(path, icon, { upsert: true });
+            if (!error) iconPath = path;
+        }
+
         // Update submission with file paths
         await supabase
             .from('submissions')
@@ -160,10 +172,11 @@ export const actions: Actions = {
                 screenshot_paths: screenshotPaths,
                 manifest_path: manifestPath,
                 plist_path: plistPath,
+                app_icon_path: iconPath,
             })
             .eq('id', submissionId);
 
-        return { success: true, screenshotPaths, manifestPath, plistPath };
+        return { success: true, screenshotPaths, manifestPath, plistPath, iconPath };
     },
 
     // Test mode: Skip Stripe, run analysis immediately
@@ -177,6 +190,9 @@ export const actions: Actions = {
         // Check if this is a re-review
         const isRereviewing = formData.get('is_rereviewing') === 'true';
         const originalSubmissionId = formData.get('original_submission_id')?.toString() || null;
+
+        // Check if submitting from an existing draft
+        const draftId = formData.get('draft_id')?.toString() || null;
 
         // Credit cost: 100 for full review, 25 for re-review
         const creditCost = isRereviewing ? 25 : 100;
@@ -197,64 +213,102 @@ export const actions: Actions = {
             });
         }
 
-        // Step 2: Create submission
+        // Step 2: Create or update submission
         const app_name = formData.get('app_name')?.toString().trim();
         if (!app_name) {
             return fail(400, { message: 'App name is required' });
         }
 
-        const { data: submission, error: subError } = await supabase
-            .from('submissions')
-            .insert({
-                user_id: userId,
-                app_name,
-                subtitle: formData.get('subtitle')?.toString().trim() || null,
-                description: formData.get('description')?.toString().trim() || null,
-                keywords: formData.get('keywords')?.toString().trim() || null,
-                category: formData.get('category')?.toString() || null,
-                age_rating: formData.get('age_rating')?.toString() || '4+',
-                privacy_url: formData.get('privacy_url')?.toString().trim() || null,
-                support_url: formData.get('support_url')?.toString().trim() || null,
-                marketing_url: formData.get('marketing_url')?.toString().trim() || null,
-                review_type: 'full',
-                status: 'analyzing',
-                credits_used: creditCost,
-                is_rereviewing: isRereviewing,
-                original_submission_id: originalSubmissionId,
-                // Form-field based checks (for conditional warnings)
-                sign_in_required: formData.get('sign_in_required') === 'true',
-                demo_username: formData.get('demo_username')?.toString() || null,
-                demo_password: formData.get('demo_password')?.toString() || null,
-                has_iap: formData.get('has_iap') === 'true',
-                has_subscriptions: formData.get('has_subscriptions') === 'true',
-                has_ads: formData.get('has_ads') === 'true',
-                has_third_party_login: formData.get('has_third_party_login') === 'true',
-            })
-            .select('id')
-            .single();
+        const submissionFields = {
+            user_id: userId,
+            app_name,
+            subtitle: formData.get('subtitle')?.toString().trim() || null,
+            description: formData.get('description')?.toString().trim() || null,
+            promotional_text: formData.get('promotional_text')?.toString().trim() || null,
+            keywords: formData.get('keywords')?.toString().trim() || null,
+            category: formData.get('category')?.toString() || null,
+            secondary_category: formData.get('secondary_category')?.toString() || null,
+            version: formData.get('version')?.toString() || '1.0',
+            copyright: formData.get('copyright')?.toString().trim() || null,
+            age_rating: formData.get('age_rating')?.toString() || '4+',
+            age_rating_answers: formData.get('age_rating_answers')?.toString() || null,
+            data_collection: formData.get('data_collection')?.toString() || null,
+            privacy_url: formData.get('privacy_url')?.toString().trim() || null,
+            support_url: formData.get('support_url')?.toString().trim() || null,
+            marketing_url: formData.get('marketing_url')?.toString().trim() || null,
+            review_type: 'full' as const,
+            status: 'analyzing' as const,
+            credits_used: creditCost,
+            is_rereviewing: isRereviewing,
+            original_submission_id: originalSubmissionId,
+            sign_in_required: formData.get('sign_in_required') === 'true',
+            demo_username: formData.get('demo_username')?.toString() || null,
+            demo_password: formData.get('demo_password')?.toString() || null,
+            review_notes: formData.get('review_notes')?.toString() || null,
+            reviewer_contact: formData.get('reviewer_contact')?.toString() || null,
+            has_iap: formData.get('has_iap') === 'true',
+            has_subscriptions: formData.get('has_subscriptions') === 'true',
+            has_ads: formData.get('has_ads') === 'true',
+            has_third_party_login: formData.get('has_third_party_login') === 'true',
+        };
 
-        if (subError || !submission) {
-            console.error('Submission creation failed:', subError);
-            return fail(500, { message: 'Failed to create submission' });
+        let submissionId: string;
+
+        if (draftId) {
+            // Update existing draft → analyzing
+            const { error: updateError } = await supabase
+                .from('submissions')
+                .update(submissionFields)
+                .eq('id', draftId)
+                .eq('user_id', userId);
+
+            if (updateError) {
+                console.error('Draft update failed:', updateError);
+                return fail(500, { message: 'Failed to update submission' });
+            }
+            submissionId = draftId;
+        } else {
+            // Create new submission
+            const { data: submission, error: subError } = await supabase
+                .from('submissions')
+                .insert(submissionFields)
+                .select('id')
+                .single();
+
+            if (subError || !submission) {
+                console.error('Submission creation failed:', subError);
+                return fail(500, { message: 'Failed to create submission' });
+            }
+            submissionId = submission.id;
         }
 
-        const submissionId = submission.id;
         const basePath = `${userId}/${submissionId}`;
-        const screenshotPaths: string[] = [];
 
-        // Step 2: Upload files
+        // Merge saved paths with newly uploaded files
+        let savedScreenPaths: string[] = [];
+        try {
+            const saved = formData.get('saved_screenshot_paths')?.toString();
+            if (saved) savedScreenPaths = JSON.parse(saved);
+        } catch { /* ignore parse errors */ }
+
+        const savedManifest = formData.get('saved_manifest_path')?.toString() || null;
+        const savedPlist = formData.get('saved_plist_path')?.toString() || null;
+
+        // Upload new files only
+        const newScreenshotPaths: string[] = [];
         const screenshots = formData.getAll('screenshots') as File[];
         for (let i = 0; i < screenshots.length; i++) {
             const file = screenshots[i];
             if (file.size === 0) continue;
 
             const ext = file.name.split('.').pop() || 'png';
-            const path = `${basePath}/screenshot_${i}.${ext}`;
+            const idx = savedScreenPaths.length + i;
+            const path = `${basePath}/screenshot_${idx}.${ext}`;
             const { error } = await supabase.storage
                 .from('screenshots')
                 .upload(path, file, { upsert: true });
 
-            if (!error) screenshotPaths.push(path);
+            if (!error) newScreenshotPaths.push(path);
         }
 
         let manifestPath: string | null = null;
@@ -277,12 +331,32 @@ export const actions: Actions = {
             if (!error) plistPath = path;
         }
 
+        let iconPath: string | null = null;
+        const icon = formData.get('icon') as File | null;
+        if (icon && icon.size > 0) {
+            const ext = icon.name.split('.').pop() || 'png';
+            const path = `${basePath}/app_icon.${ext}`;
+            const { error } = await supabase.storage
+                .from('screenshots')
+                .upload(path, icon, { upsert: true });
+            if (!error) iconPath = path;
+        }
+
+        const savedIcon = formData.get('saved_icon_path')?.toString() || null;
+
+        // Merge: saved paths + newly uploaded
+        const allScreenshotPaths = [...savedScreenPaths, ...newScreenshotPaths];
+        const finalManifestPath = manifestPath || savedManifest;
+        const finalPlistPath = plistPath || savedPlist;
+        const finalIconPath = iconPath || savedIcon;
+
         await supabase
             .from('submissions')
             .update({
-                screenshot_paths: screenshotPaths,
-                manifest_path: manifestPath,
-                plist_path: plistPath,
+                screenshot_paths: allScreenshotPaths.length > 0 ? allScreenshotPaths : null,
+                manifest_path: finalManifestPath,
+                plist_path: finalPlistPath,
+                app_icon_path: finalIconPath,
             })
             .eq('id', submissionId);
 
@@ -292,7 +366,7 @@ export const actions: Actions = {
             .insert({
                 submission_id: submissionId,
                 status: 'pending',
-                priority: 100, // High priority for test
+                priority: 100,
             })
             .select('id')
             .single();
@@ -302,14 +376,13 @@ export const actions: Actions = {
             return fail(500, { message: 'Failed to create analysis job' });
         }
 
-        // Step 4: Deduct credits upfront (analysis will run on progress page)
+        // Step 4: Deduct credits upfront
         await supabase
             .from('profiles')
             .update({ credits: userCredits - creditCost })
             .eq('id', userId);
 
-        // Redirect to progress page - analysis will stream from there
-        // The SSE endpoint handles running the actual analysis
+        // Redirect to progress page
         throw redirect(303, `/progress/${submissionId}`);
     },
 
@@ -382,22 +455,34 @@ export const actions: Actions = {
             submissionId = submission.id;
         }
 
-        // Upload files if provided
+        // Merge saved paths with newly uploaded files
         const basePath = `${userId}/${submissionId}`;
-        const screenshotPaths: string[] = [];
 
+        // Start with saved paths from client
+        let savedScreenPaths: string[] = [];
+        try {
+            const saved = formData.get('saved_screenshot_paths')?.toString();
+            if (saved) savedScreenPaths = JSON.parse(saved);
+        } catch { /* ignore parse errors */ }
+
+        const savedManifest = formData.get('saved_manifest_path')?.toString() || null;
+        const savedPlist = formData.get('saved_plist_path')?.toString() || null;
+
+        // Upload new screenshots (appended after saved ones)
+        const newScreenshotPaths: string[] = [];
         const screenshots = formData.getAll('screenshots') as File[];
         for (let i = 0; i < screenshots.length; i++) {
             const file = screenshots[i];
             if (file.size === 0) continue;
 
             const ext = file.name.split('.').pop() || 'png';
-            const path = `${basePath}/screenshot_${i}.${ext}`;
+            const idx = savedScreenPaths.length + i;
+            const path = `${basePath}/screenshot_${idx}.${ext}`;
             const { error } = await supabase.storage
                 .from('screenshots')
                 .upload(path, file, { upsert: true });
 
-            if (!error) screenshotPaths.push(path);
+            if (!error) newScreenshotPaths.push(path);
         }
 
         let manifestPath: string | null = null;
@@ -420,18 +505,35 @@ export const actions: Actions = {
             if (!error) plistPath = path;
         }
 
-        // Update submission with file paths (only if files were uploaded)
-        if (screenshotPaths.length > 0 || manifestPath || plistPath) {
-            const updateData: Record<string, unknown> = {};
-            if (screenshotPaths.length > 0) updateData.screenshot_paths = screenshotPaths;
-            if (manifestPath) updateData.manifest_path = manifestPath;
-            if (plistPath) updateData.plist_path = plistPath;
-
-            await supabase
-                .from('submissions')
-                .update(updateData)
-                .eq('id', submissionId);
+        let iconPath: string | null = null;
+        const icon = formData.get('icon') as File | null;
+        if (icon && icon.size > 0) {
+            const ext = icon.name.split('.').pop() || 'png';
+            const path = `${basePath}/app_icon.${ext}`;
+            const { error } = await supabase.storage
+                .from('screenshots')
+                .upload(path, icon, { upsert: true });
+            if (!error) iconPath = path;
         }
+
+        const savedIcon = formData.get('saved_icon_path')?.toString() || null;
+
+        // Merge: saved paths + newly uploaded paths
+        const allScreenshotPaths = [...savedScreenPaths, ...newScreenshotPaths];
+        const finalManifestPath = manifestPath || savedManifest;
+        const finalPlistPath = plistPath || savedPlist;
+        const finalIconPath = iconPath || savedIcon;
+
+        // Always update file paths (to reflect any removals too)
+        await supabase
+            .from('submissions')
+            .update({
+                screenshot_paths: allScreenshotPaths.length > 0 ? allScreenshotPaths : null,
+                manifest_path: finalManifestPath,
+                plist_path: finalPlistPath,
+                app_icon_path: finalIconPath,
+            })
+            .eq('id', submissionId);
 
         return {
             success: true,

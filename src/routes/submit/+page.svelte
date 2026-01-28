@@ -45,6 +45,17 @@
     let privacyManifest: File | null = $state(null);
     let infoPlist: File | null = $state(null);
 
+    // Saved file paths from draft (already uploaded to Supabase Storage)
+    let savedScreenshotPaths: string[] = $state(prefill?.screenshot_paths || []);
+    let savedManifestPath: string | null = $state(prefill?.manifest_path || null);
+    let savedPlistPath: string | null = $state(prefill?.plist_path || null);
+    let savedIconPath: string | null = $state(prefill?.app_icon_path || null);
+
+    // Combined file counts (new uploads + saved)
+    let totalScreenshotCount = $derived(screenshots.length + savedScreenshotPaths.length);
+    let hasManifest = $derived(!!privacyManifest || !!savedManifestPath);
+    let hasPlist = $derived(!!infoPlist || !!savedPlistPath);
+
     // ═══════════════════════════════════════════════════════════════
     // STEP 3: Settings & Access - Collapsible Sections
     // ═══════════════════════════════════════════════════════════════
@@ -61,7 +72,7 @@
     let marketingUrl = $state(prefill?.marketing_url || "");
 
     // Age Rating Questionnaire - Each answer: "none", "infrequent", "frequent"
-    let ageRatingAnswers = $state({
+    const defaultAgeRatingAnswers = {
         cartoonViolence: "none",
         realisticViolence: "none",
         prolongedViolence: "none",
@@ -75,7 +86,11 @@
         gamblingContests: "none",
         unrestrictedWebAccess: false,
         madeForKids: false,
-    });
+    };
+    const savedAgeRatingAnswers = prefill?.age_rating_answers
+        ? (() => { try { return JSON.parse(prefill.age_rating_answers); } catch { return null; } })()
+        : null;
+    let ageRatingAnswers = $state(savedAgeRatingAnswers || defaultAgeRatingAnswers);
 
     // Calculated age rating based on answers
     let calculatedAgeRating = $derived.by(() => {
@@ -100,7 +115,7 @@
     });
 
     // App Privacy (Data Collection) - Must match Privacy Manifest or Apple rejects
-    let dataCollection = $state({
+    const defaultDataCollection = {
         contactInfo: { collected: false, linked: false, tracking: false },
         healthFitness: { collected: false, linked: false, tracking: false },
         financialInfo: { collected: false, linked: false, tracking: false },
@@ -114,7 +129,11 @@
         purchases: { collected: false, linked: false, tracking: false },
         usageData: { collected: false, linked: false, tracking: false },
         diagnostics: { collected: false, linked: false, tracking: false },
-    });
+    };
+    const savedDataCollection = prefill?.data_collection
+        ? (() => { try { return JSON.parse(prefill.data_collection); } catch { return null; } })()
+        : null;
+    let dataCollection = $state(savedDataCollection || defaultDataCollection);
 
     // In-App Purchases & Monetization
     let hasInAppPurchases = $state(prefill?.has_iap || false);
@@ -141,9 +160,9 @@
     // Required files validation
     let missingFiles = $derived.by(() => {
         const missing: string[] = [];
-        if (screenshots.length === 0) missing.push("At least 1 screenshot");
-        if (!privacyManifest) missing.push("Privacy manifest (PrivacyInfo.xcprivacy)");
-        if (!infoPlist) missing.push("Info.plist");
+        if (screenshots.length === 0 && savedScreenshotPaths.length === 0) missing.push("At least 1 screenshot");
+        if (!privacyManifest && !savedManifestPath) missing.push("Privacy manifest (PrivacyInfo.xcprivacy)");
+        if (!infoPlist && !savedPlistPath) missing.push("Info.plist");
         return missing;
     });
 
@@ -220,15 +239,24 @@
         scanResults = null;
     }
 
+    function getFilename(path: string): string {
+        return path.split('/').pop() || path;
+    }
+
     function handleScreenshots(e: Event) {
         const input = e.target as HTMLInputElement;
         if (input.files) {
-            screenshots = [...screenshots, ...Array.from(input.files)].slice(0, 10);
+            const maxNew = 10 - savedScreenshotPaths.length;
+            screenshots = [...screenshots, ...Array.from(input.files)].slice(0, maxNew);
         }
     }
 
     function removeScreenshot(index: number) {
         screenshots = screenshots.filter((_, i) => i !== index);
+    }
+
+    function removeSavedScreenshot(index: number) {
+        savedScreenshotPaths = savedScreenshotPaths.filter((_, i) => i !== index);
     }
 
     function handleManifest(e: Event) {
@@ -392,6 +420,11 @@
         try {
             const formData = new FormData();
 
+            // Pass draft ID if editing existing (server will UPDATE instead of INSERT)
+            if (draftId) {
+                formData.set("draft_id", draftId);
+            }
+
             // Basic Info
             formData.set("app_name", appName);
             formData.set("subtitle", subtitle);
@@ -428,7 +461,13 @@
             formData.set("has_ads", hasAds.toString());
             formData.set("has_third_party_login", hasThirdPartyLogin.toString());
 
-            // Files
+            // Already-saved file paths (so server keeps them)
+            formData.set("saved_screenshot_paths", JSON.stringify(savedScreenshotPaths));
+            if (savedManifestPath) formData.set("saved_manifest_path", savedManifestPath);
+            if (savedPlistPath) formData.set("saved_plist_path", savedPlistPath);
+            if (savedIconPath) formData.set("saved_icon_path", savedIconPath);
+
+            // New files only
             for (const file of screenshots) {
                 formData.append("screenshots", file);
             }
@@ -517,7 +556,13 @@
             formData.set("has_ads", hasAds.toString());
             formData.set("has_third_party_login", hasThirdPartyLogin.toString());
 
-            // Files
+            // Already-saved file paths (so server knows what to keep)
+            formData.set("saved_screenshot_paths", JSON.stringify(savedScreenshotPaths));
+            if (savedManifestPath) formData.set("saved_manifest_path", savedManifestPath);
+            if (savedPlistPath) formData.set("saved_plist_path", savedPlistPath);
+            if (savedIconPath) formData.set("saved_icon_path", savedIconPath);
+
+            // New files only
             for (const file of screenshots) {
                 formData.append("screenshots", file);
             }
@@ -804,14 +849,34 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Screenshots <span class="required">*</span> ({screenshots.length}/10)</label>
-                    <div class="file-upload">
-                        <input type="file" accept="image/*" multiple onchange={handleScreenshots} />
-                        <p>Drop screenshots here or click to browse</p>
-                    </div>
+                    <label class="form-label">Screenshots <span class="required">*</span> ({totalScreenshotCount}/10)</label>
+                    {#if totalScreenshotCount < 10}
+                        <div class="file-upload">
+                            <input type="file" accept="image/*" multiple onchange={handleScreenshots} />
+                            <p>Drop screenshots here or click to browse</p>
+                        </div>
+                    {/if}
 
-                    {#if screenshots.length > 0}
+                    {#if savedScreenshotPaths.length > 0 || screenshots.length > 0}
                         <div class="screenshot-previews">
+                            {#each savedScreenshotPaths as path, i}
+                                <div class="screenshot-preview saved">
+                                    <div class="screenshot-saved-placeholder">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                            <path d="M21 15l-5-5L5 21" />
+                                        </svg>
+                                    </div>
+                                    <button class="screenshot-remove" onclick={() => removeSavedScreenshot(i)} title="Remove">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <span class="screenshot-name">{getFilename(path)}</span>
+                                </div>
+                            {/each}
                             {#each screenshots as file, i}
                                 <div class="screenshot-preview">
                                     <img src={URL.createObjectURL(file)} alt={file.name} />
@@ -858,6 +923,11 @@
                                     <span>{infoPlist.name}</span>
                                     <button class="remove-btn" onclick={() => (infoPlist = null)}>×</button>
                                 </div>
+                            {:else if savedPlistPath}
+                                <div class="config-file-status success">
+                                    <span>{getFilename(savedPlistPath)}</span>
+                                    <button class="remove-btn" onclick={() => (savedPlistPath = null)}>×</button>
+                                </div>
                             {:else}
                                 <label class="config-file-status empty">
                                     <span>Not added</span>
@@ -877,6 +947,11 @@
                                     <span>{privacyManifest.name}</span>
                                     <button class="remove-btn" onclick={() => (privacyManifest = null)}>×</button>
                                 </div>
+                            {:else if savedManifestPath}
+                                <div class="config-file-status success">
+                                    <span>{getFilename(savedManifestPath)}</span>
+                                    <button class="remove-btn" onclick={() => (savedManifestPath = null)}>×</button>
+                                </div>
                             {:else}
                                 <label class="config-file-status empty">
                                     <span>Not added</span>
@@ -894,6 +969,11 @@
                                 <div class="config-file-status success">
                                     <span>{appIcon.name}</span>
                                     <button class="remove-btn" onclick={() => (appIcon = null)}>×</button>
+                                </div>
+                            {:else if savedIconPath}
+                                <div class="config-file-status success">
+                                    <span>{getFilename(savedIconPath)}</span>
+                                    <button class="remove-btn" onclick={() => (savedIconPath = null)}>×</button>
                                 </div>
                             {:else}
                                 <label class="config-file-status empty">
@@ -1457,18 +1537,18 @@
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Screenshots</span>
-                            <span class="summary-value">{screenshots.length} files</span>
+                            <span class="summary-value">{totalScreenshotCount} files</span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Info.plist</span>
-                            <span class="summary-value status-{infoPlist ? 'ready' : 'warning'}">
-                                {infoPlist ? "✓ Attached" : "Missing"}
+                            <span class="summary-value status-{hasPlist ? 'ready' : 'warning'}">
+                                {hasPlist ? "✓ Attached" : "Missing"}
                             </span>
                         </div>
                         <div class="summary-item">
                             <span class="summary-label">Privacy Manifest</span>
-                            <span class="summary-value status-{privacyManifest ? 'ready' : 'warning'}">
-                                {privacyManifest ? "✓ Attached" : "Missing"}
+                            <span class="summary-value status-{hasManifest ? 'ready' : 'warning'}">
+                                {hasManifest ? "✓ Attached" : "Missing"}
                             </span>
                         </div>
                         <div class="summary-item">
@@ -1942,6 +2022,18 @@
     .screenshot-remove:hover {
         transform: scale(1.1);
         background: #ef4444;
+    }
+
+    .screenshot-saved-placeholder {
+        height: 180px;
+        width: 90px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-500);
     }
 
     .screenshot-name {
