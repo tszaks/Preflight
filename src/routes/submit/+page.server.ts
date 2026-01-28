@@ -160,7 +160,9 @@ export const actions: Actions = {
                 .from('screenshots')
                 .upload(path, file, { upsert: true });
 
-            if (!error) {
+            if (error) {
+                console.error('[uploadFiles] Screenshot upload FAILED:', path, error.message, error);
+            } else {
                 screenshotPaths.push(path);
             }
         }
@@ -174,7 +176,11 @@ export const actions: Actions = {
                 .from('manifests')
                 .upload(path, manifest, { upsert: true, contentType: 'application/xml' });
 
-            if (!error) manifestPath = path;
+            if (error) {
+                console.error('[uploadFiles] Manifest upload FAILED:', path, error.message, error);
+            } else {
+                manifestPath = path;
+            }
         }
 
         // Upload Info.plist
@@ -186,7 +192,11 @@ export const actions: Actions = {
                 .from('plists')
                 .upload(path, plist, { upsert: true, contentType: 'application/xml' });
 
-            if (!error) plistPath = path;
+            if (error) {
+                console.error('[uploadFiles] Plist upload FAILED:', path, error.message, error);
+            } else {
+                plistPath = path;
+            }
         }
 
         // Upload app icon
@@ -198,11 +208,15 @@ export const actions: Actions = {
             const { error } = await supabase.storage
                 .from('screenshots')
                 .upload(path, icon, { upsert: true });
-            if (!error) iconPath = path;
+            if (error) {
+                console.error('[uploadFiles] Icon upload FAILED:', path, error.message, error);
+            } else {
+                iconPath = path;
+            }
         }
 
         // Update submission with file paths
-        await supabase
+        const { error: pathUpdateError } = await supabase
             .from('submissions')
             .update({
                 screenshot_paths: screenshotPaths,
@@ -211,6 +225,10 @@ export const actions: Actions = {
                 app_icon_path: iconPath,
             })
             .eq('id', submissionId);
+
+        if (pathUpdateError) {
+            console.error('[uploadFiles] Path update FAILED:', pathUpdateError);
+        }
 
         return { success: true, screenshotPaths, manifestPath, plistPath, iconPath };
     },
@@ -340,8 +358,17 @@ export const actions: Actions = {
         let savedScreenPaths: string[] = [];
         try {
             const saved = formData.get('saved_screenshot_paths')?.toString();
-            if (saved) savedScreenPaths = JSON.parse(saved);
-        } catch { /* ignore parse errors */ }
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.every(p => typeof p === 'string')) {
+                    savedScreenPaths = parsed;
+                } else {
+                    console.warn('[testSubmit] saved_screenshot_paths was valid JSON but not a string array, ignoring');
+                }
+            }
+        } catch (error) {
+            console.warn('[testSubmit] Failed to parse saved_screenshot_paths:', error);
+        }
 
         const savedManifest = formData.get('saved_manifest_path')?.toString() || null;
         const savedPlist = formData.get('saved_plist_path')?.toString() || null;
@@ -360,7 +387,11 @@ export const actions: Actions = {
                 .from('screenshots')
                 .upload(path, file, { upsert: true });
 
-            if (!error) newScreenshotPaths.push(path);
+            if (error) {
+                console.error('[testSubmit] Screenshot upload FAILED:', path, error.message, error);
+            } else {
+                newScreenshotPaths.push(path);
+            }
         }
 
         let manifestPath: string | null = null;
@@ -370,7 +401,11 @@ export const actions: Actions = {
             const { error } = await supabase.storage
                 .from('manifests')
                 .upload(path, manifest, { upsert: true, contentType: 'application/xml' });
-            if (!error) manifestPath = path;
+            if (error) {
+                console.error('[testSubmit] Manifest upload FAILED:', path, error.message, error);
+            } else {
+                manifestPath = path;
+            }
         }
 
         let plistPath: string | null = null;
@@ -380,7 +415,11 @@ export const actions: Actions = {
             const { error } = await supabase.storage
                 .from('plists')
                 .upload(path, plist, { upsert: true, contentType: 'application/xml' });
-            if (!error) plistPath = path;
+            if (error) {
+                console.error('[testSubmit] Plist upload FAILED:', path, error.message, error);
+            } else {
+                plistPath = path;
+            }
         }
 
         let iconPath: string | null = null;
@@ -391,7 +430,11 @@ export const actions: Actions = {
             const { error } = await supabase.storage
                 .from('screenshots')
                 .upload(path, icon, { upsert: true });
-            if (!error) iconPath = path;
+            if (error) {
+                console.error('[testSubmit] Icon upload FAILED:', path, error.message, error);
+            } else {
+                iconPath = path;
+            }
         }
 
         const savedIcon = formData.get('saved_icon_path')?.toString() || null;
@@ -402,7 +445,7 @@ export const actions: Actions = {
         const finalPlistPath = plistPath || savedPlist;
         const finalIconPath = iconPath || savedIcon;
 
-        await supabase
+        const { error: pathUpdateError } = await supabase
             .from('submissions')
             .update({
                 screenshot_paths: allScreenshotPaths.length > 0 ? allScreenshotPaths : null,
@@ -411,6 +454,11 @@ export const actions: Actions = {
                 app_icon_path: finalIconPath,
             })
             .eq('id', submissionId);
+
+        if (pathUpdateError) {
+            console.error('[testSubmit] File path update FAILED:', pathUpdateError);
+            return fail(500, { message: 'Failed to save uploaded file references. Please try again.' });
+        }
 
         // Step 3: Deduct credits FIRST (service role bypasses RLS)
         const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -533,8 +581,17 @@ export const actions: Actions = {
         let savedScreenPaths: string[] = [];
         try {
             const saved = formData.get('saved_screenshot_paths')?.toString();
-            if (saved) savedScreenPaths = JSON.parse(saved);
-        } catch { /* ignore parse errors */ }
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.every(p => typeof p === 'string')) {
+                    savedScreenPaths = parsed;
+                } else {
+                    console.warn('[saveDraft] saved_screenshot_paths was valid JSON but not a string array, ignoring');
+                }
+            }
+        } catch (error) {
+            console.warn('[saveDraft] Failed to parse saved_screenshot_paths:', error);
+        }
 
         const savedManifest = formData.get('saved_manifest_path')?.toString() || null;
         const savedPlist = formData.get('saved_plist_path')?.toString() || null;
