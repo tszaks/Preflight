@@ -1269,7 +1269,7 @@
                                 </div>
                                 {#if hasThirdPartyLogin}
                                     <p class="field-hint warning-hint">
-                                        ⚠️ Apps with third-party login must also offer Sign in with Apple (Guideline 4.8)
+                                        Apps with third-party login must also offer Sign in with Apple (Guideline 4.8)
                                     </p>
                                 {/if}
                             </div>
