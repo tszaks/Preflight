@@ -1,6 +1,6 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
-    import { goto } from "$app/navigation";
+    import { goto, invalidateAll } from "$app/navigation";
     import {
         scanProjectFolder,
         formatPath,
@@ -379,6 +379,7 @@
             }
 
             if (result.type === "redirect") {
+                await invalidateAll(); // Force layout to re-fetch credits
                 goto(result.location);
                 return;
             }

@@ -32,8 +32,12 @@ export const REQUIRED_PLIST_KEYS = [
     'CFBundleName',
     'CFBundleShortVersionString',
     'CFBundleVersion',
-    'UIRequiredDeviceCapabilities',
     'UISupportedInterfaceOrientations',
+] as const;
+
+/** Keys that are recommended but not required — missing generates info, not critical */
+export const OPTIONAL_PLIST_KEYS = [
+    'UIRequiredDeviceCapabilities',
 ] as const;
 
 export const USAGE_DESCRIPTION_KEYS = [

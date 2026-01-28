@@ -210,6 +210,13 @@ export async function runSoftRules(
     };
 }
 
+/** Returns the system prompt with current date filled in */
+function getSystemPrompt(): string {
+    return fillPrompt(SYSTEM_PROMPT, {
+        current_date: new Date().toISOString().split('T')[0], // e.g. "2026-01-28"
+    });
+}
+
 async function callClaude(
     client: Anthropic,
     prompt: string,
@@ -236,7 +243,7 @@ async function callClaude(
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2048,
-        system: SYSTEM_PROMPT,
+        system: getSystemPrompt(),
         messages: [{ role: 'user', content }],
     });
 
@@ -307,6 +314,7 @@ async function analyzeScreenshots(client: Anthropic, input: SoftRulesInput): Pro
             description_preview: descriptionPreview || 'No description provided',
             index: `${i + 1}-${i + batch.length}`,
             total: String(input.screenshots_data.length),
+            current_date: new Date().toISOString().split('T')[0],
         });
 
         const images = batch.map(s => ({
@@ -344,6 +352,7 @@ async function analyzeScreenshotBatch(
         description_preview: descriptionPreview || 'No description provided',
         index: `${startIdx + 1}-${endIdx}`,
         total: String(input.screenshots_data.length),
+        current_date: new Date().toISOString().split('T')[0],
     });
 
     const images = batch.map(s => ({
@@ -383,7 +392,7 @@ async function callClaudeForScreenshots(
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096, // Higher limit for comprehensive screenshot analysis
-        system: SYSTEM_PROMPT,
+        system: getSystemPrompt(),
         messages: [{ role: 'user', content }],
     });
 
@@ -442,6 +451,9 @@ async function analyzeContentPolicy(client: Anthropic, input: SoftRulesInput): P
         category: input.category || '',
         age_rating: input.age_rating || 'Not specified',
         description: (input.description || '').slice(0, 4000),
+        sign_in_required: input.sign_in_required ? 'Yes' : 'No',
+        has_iap: input.has_iap ? 'Yes' : 'No',
+        has_subscriptions: input.has_subscriptions ? 'Yes' : 'No',
     });
 
     const results = await callClaude(client, prompt);

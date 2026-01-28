@@ -7,7 +7,7 @@
      */
 
     interface Props {
-        status: "ready" | "processing" | "warning" | "critical" | "neutral";
+        status: "ready" | "processing" | "warning" | "critical" | "info" | "neutral";
         label?: string;
         pulse?: boolean;
         size?: "sm" | "md" | "lg";
@@ -25,6 +25,7 @@
         processing: "var(--status-processing-fg)", // Blue
         warning: "var(--status-queued-fg)", // Gold/Amber
         critical: "var(--status-failed-fg)", // Red
+        info: "var(--status-processing-fg)", // Blue (same as processing, but no pulse)
         neutral: "var(--gray-500)",
     };
 
