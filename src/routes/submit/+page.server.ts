@@ -1,6 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { WORKER_SECRET, ANTHROPIC_API_KEY } from '$env/static/private';
 
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
     const { user } = await safeGetSession();
@@ -276,38 +275,14 @@ export const actions: Actions = {
             return fail(500, { message: 'Failed to create analysis job' });
         }
 
-        // Step 4: Trigger worker immediately (call worker endpoint)
-        try {
-            const workerResponse = await fetch('/api/worker', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${WORKER_SECRET}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+        // Step 4: Deduct credits upfront (analysis will run on progress page)
+        await supabase
+            .from('profiles')
+            .update({ credits: userCredits - creditCost })
+            .eq('id', userId);
 
-            const workerResult = await workerResponse.json();
-
-            if (workerResult.reportId) {
-                // Analysis completed! Deduct credits from user
-                await supabase
-                    .from('profiles')
-                    .update({ credits: userCredits - creditCost })
-                    .eq('id', userId);
-
-                // Redirect to report
-                throw redirect(303, `/report/${workerResult.reportId}`);
-            } else {
-                // Analysis failed - don't deduct credits
-                return fail(500, {
-                    message: workerResult.error || 'Analysis failed',
-                    submissionId
-                });
-            }
-        } catch (e) {
-            if (e instanceof Response) throw e; // Re-throw redirect
-            console.error('Worker call failed:', e);
-            return fail(500, { message: 'Failed to trigger analysis', submissionId });
-        }
+        // Redirect to progress page - analysis will stream from there
+        // The SSE endpoint handles running the actual analysis
+        throw redirect(303, `/progress/${submissionId}`);
     },
 };

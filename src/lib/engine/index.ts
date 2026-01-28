@@ -1,11 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 import type { HardRulesInput, SoftRulesInput, CheckResult, EngineResult } from './types';
+import type { OnProgressCallback, ProgressEvent } from '$lib/types/progress';
+import {
+    createProgressEvent,
+    PROGRESS_CHECKS,
+    PROGRESS_MESSAGES,
+    PROGRESS_RANGES,
+} from '$lib/types/progress';
 import { runHardRules } from './hard-rules';
 import { runSoftRules } from './soft-rules';
 import { generateReport } from './report/generator';
 
 export type { CheckResult, EngineResult, HardRulesInput, SoftRulesInput };
+export type { OnProgressCallback, ProgressEvent };
 
 /**
  * Main analysis engine orchestrator.
@@ -24,9 +32,11 @@ export async function runAnalysis(
     options: {
         anthropicApiKey: string;
         skipSoftRules?: boolean;
+        onProgress?: OnProgressCallback;
     }
 ): Promise<{ reportId: string; success: boolean; error?: string }> {
     const allChecks: CheckResult[] = [];
+    const emit = options.onProgress || (() => {});
 
     // Update job status
     await updateJobStatus(supabase, submissionId, 'running');
@@ -34,7 +44,11 @@ export async function runAnalysis(
     try {
         console.log('[Analysis] Starting analysis for submission:', submissionId);
 
-        // === Phase 1: Hard Rules ===
+        // === Phase 1: Hard Rules (0-40%) ===
+        emit(createProgressEvent('phase_start', 'Starting compliance checks...', 0, {
+            phase: 'hard_rules',
+        }));
+
         console.log('[Analysis] Running hard rules...');
         const hardInput: HardRulesInput = {
             app_name: input.app_name,
@@ -51,16 +65,24 @@ export async function runAnalysis(
             plist_path: input.plist_path,
         };
 
+        // Create progress callback for hard rules
+        const hardRulesProgress: OnProgressCallback = (event) => {
+            // Map hard rules progress (0-100) to overall progress (0-40)
+            const { start, end } = PROGRESS_RANGES.hard_rules;
+            const mappedProgress = start + (event.progress / 100) * (end - start);
+            emit({ ...event, progress: mappedProgress });
+        };
+
         const hardResult = await runHardRules(hardInput, {
             screenshotData: input.screenshots_data,
             manifestContent: input.manifest_content,
             plistContent: input.plist_content,
+            onProgress: hardRulesProgress,
         });
 
         allChecks.push(...hardResult.checks);
 
         // Add info-level suggestion if no Info.plist was provided
-        // (This is separate from scoring - just a helpful reminder)
         if (!input.plist_content) {
             allChecks.push({
                 category: 'info_plist',
@@ -73,22 +95,47 @@ export async function runAnalysis(
 
         console.log('[Analysis] Hard rules complete. Found', hardResult.checks.length, 'checks');
 
+        emit(createProgressEvent('phase_complete', 'Compliance checks complete', 40, {
+            phase: 'hard_rules',
+            data: { checksFound: hardResult.checks.length },
+        }));
+
         // Mark hard rules done
         await supabase
             .from('analysis_jobs')
             .update({ hard_rules_completed: true })
             .eq('submission_id', submissionId);
 
-        // === Phase 2: Soft Rules ===
+        // === Phase 2: Soft Rules (40-85%) ===
         if (!options.skipSoftRules) {
+            emit(createProgressEvent('phase_start', 'Starting AI analysis...', 40, {
+                phase: 'soft_rules',
+            }));
+
             console.log('[Analysis] Running soft rules (Claude API)...');
             if (!options.anthropicApiKey) {
                 console.error('[Analysis] ANTHROPIC_API_KEY is missing!');
                 throw new Error('ANTHROPIC_API_KEY is not configured');
             }
-            const softResult = await runSoftRules(input, options.anthropicApiKey);
+
+            // Create progress callback for soft rules
+            const softRulesProgress: OnProgressCallback = (event) => {
+                // Map soft rules progress (0-100) to overall progress (40-85)
+                const { start, end } = PROGRESS_RANGES.soft_rules;
+                const mappedProgress = start + (event.progress / 100) * (end - start);
+                emit({ ...event, progress: mappedProgress });
+            };
+
+            const softResult = await runSoftRules(input, options.anthropicApiKey, {
+                onProgress: softRulesProgress,
+            });
             allChecks.push(...softResult.checks);
             console.log('[Analysis] Soft rules complete. Found', softResult.checks.length, 'checks');
+
+            emit(createProgressEvent('phase_complete', 'AI analysis complete', 85, {
+                phase: 'soft_rules',
+                data: { checksFound: softResult.checks.length },
+            }));
 
             // Mark soft rules done
             await supabase
@@ -97,12 +144,30 @@ export async function runAnalysis(
                 .eq('submission_id', submissionId);
         } else {
             console.log('[Analysis] Skipping soft rules');
+            emit(createProgressEvent('phase_complete', 'Skipped AI analysis', 85, {
+                phase: 'soft_rules',
+            }));
         }
 
-        // === Phase 3: Generate Report ===
+        // === Phase 3: Generate Report (85-100%) ===
+        emit(createProgressEvent('phase_start', 'Generating report...', 85, {
+            phase: 'report_generation',
+        }));
+
         console.log('[Analysis] Generating report with', allChecks.length, 'total checks...');
+
+        emit(createProgressEvent('check_start', PROGRESS_MESSAGES[PROGRESS_CHECKS.SCORING], 87, {
+            check: PROGRESS_CHECKS.SCORING,
+            phase: 'report_generation',
+        }));
+
         const reportResult = await generateReport(supabase, submissionId, allChecks);
         console.log('[Analysis] Report generation result:', reportResult);
+
+        emit(createProgressEvent('check_complete', 'Report saved', 95, {
+            check: PROGRESS_CHECKS.SAVING,
+            phase: 'report_generation',
+        }));
 
         if (reportResult.success) {
             // Mark job complete
@@ -114,6 +179,20 @@ export async function runAnalysis(
                     completed_at: new Date().toISOString(),
                 })
                 .eq('submission_id', submissionId);
+
+            // Update submission status to complete
+            await supabase
+                .from('submissions')
+                .update({
+                    status: 'complete',
+                    completed_at: new Date().toISOString(),
+                })
+                .eq('id', submissionId);
+
+            emit(createProgressEvent('complete', 'Analysis complete!', 100, {
+                phase: 'report_generation',
+                data: { reportId: reportResult.reportId },
+            }));
         }
 
         return reportResult;
@@ -121,6 +200,10 @@ export async function runAnalysis(
         console.error('[Analysis] Error caught:', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
         console.error('[Analysis] Error message:', message);
+
+        emit(createProgressEvent('error', `Analysis failed: ${message}`, -1, {
+            data: { error: message },
+        }));
 
         // Mark job failed
         await supabase
