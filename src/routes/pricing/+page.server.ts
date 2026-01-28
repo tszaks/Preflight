@@ -7,11 +7,10 @@ import Stripe from 'stripe';
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-12-15.clover' });
 
 // Credit package price IDs (from Stripe dashboard)
-// TODO: Create new products in Stripe with updated prices ($49/$99/$249)
 const PRICE_IDS: Record<string, string> = {
-    starter: 'price_1StuTwCatxMRYTXTOJusK3zi',  // $49
-    pro: 'price_1StuUXCatxMRYTXTBFlDuYjK',      // $99 - needs new Stripe price
-    agency: 'price_1StuVaCatxMRYTXTkE9Qirqi',   // $249 - needs new Stripe price
+    starter: 'price_1StuTwCatxMRYTXTOJusK3zi',  // $49 - 200 credits
+    pro: 'price_1StuUXCatxMRYTXTBFlDuYjK',      // $99 - 600 credits
+    agency: 'price_1StuVaCatxMRYTXTkE9Qirqi',   // $249 - 2000 credits
 };
 
 // Credit amounts for each plan
