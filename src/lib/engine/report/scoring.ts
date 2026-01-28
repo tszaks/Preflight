@@ -39,9 +39,9 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
 
     const score_overall = Math.round(
         score_metadata * weights.metadata +
-        score_screenshots * weights.screenshots +
-        score_privacy * weights.privacy +
-        score_plist * weights.plist +
+        (score_screenshots ?? 100) * weights.screenshots +
+        (score_privacy ?? 100) * weights.privacy +
+        (score_plist ?? 100) * weights.plist +
         score_urls * weights.urls +
         score_content * weights.content
     );

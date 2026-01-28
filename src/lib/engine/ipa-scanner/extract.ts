@@ -56,7 +56,7 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
 
     // Find embedded frameworks
     const frameworksDir = `${appDir}Frameworks/`;
-    zip.forEach((path) => {
+    zip.forEach((path: string) => {
         if (path.startsWith(frameworksDir) && path.endsWith('.framework/')) {
             const name = path.replace(frameworksDir, '').replace('.framework/', '');
             if (name && !name.includes('/')) {
@@ -72,7 +72,7 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
     }
 
     // Find app icons
-    zip.forEach((path) => {
+    zip.forEach((path: string) => {
         if (path.startsWith(appDir) && path.includes('AppIcon') && path.endsWith('.png')) {
             const name = path.split('/').pop();
             if (name) result.iconFiles.push(name);
@@ -88,7 +88,7 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
  */
 function findAppDirectory(zip: JSZip): string | null {
     let appDir: string | null = null;
-    zip.forEach((path) => {
+    zip.forEach((path: string) => {
         if (!appDir && path.startsWith('Payload/') && path.endsWith('.app/')) {
             // Only match top-level .app directory (no nested slashes between Payload/ and .app/)
             const inner = path.replace('Payload/', '').replace('.app/', '');

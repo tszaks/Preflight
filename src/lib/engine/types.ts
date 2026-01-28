@@ -68,9 +68,9 @@ export interface EngineResult {
 
 export interface ScoreResult {
     score_metadata: number;
-    score_screenshots: number;
-    score_privacy: number;
-    score_plist: number;
+    score_screenshots: number | null;
+    score_privacy: number | null;
+    score_plist: number | null;
     score_urls: number;
     score_content: number;
     score_overall: number;
