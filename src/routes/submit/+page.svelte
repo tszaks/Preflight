@@ -572,7 +572,6 @@
             <h1>Pre-Flight Check</h1>
             {#if isEditingDraft}
                 <div class="draft-badge">
-                    <span class="draft-icon">📝</span>
                     <span>Editing Draft: {appName || "Untitled"}</span>
                 </div>
             {:else}
@@ -1536,10 +1535,6 @@
         font-size: 0.9rem;
         color: var(--accent);
         margin-top: 0.75rem;
-    }
-
-    .draft-icon {
-        font-size: 1rem;
     }
 
     .btn-outline {
