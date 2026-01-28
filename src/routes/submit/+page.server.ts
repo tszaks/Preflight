@@ -412,7 +412,25 @@ export const actions: Actions = {
             })
             .eq('id', submissionId);
 
-        // Step 3: Create analysis job
+        // Step 3: Deduct credits FIRST (service role bypasses RLS)
+        const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const newBalance = userCredits - creditCost;
+        console.log(`[Credits] Deducting ${creditCost} from user ${userId}: ${userCredits} → ${newBalance}`);
+
+        const { data: updatedProfile, error: creditError } = await serviceSupabase
+            .from('profiles')
+            .update({ credits: newBalance })
+            .eq('id', userId)
+            .select('credits')
+            .single();
+
+        if (creditError || !updatedProfile) {
+            console.error('[Credits] Deduction FAILED:', creditError);
+            return fail(500, { message: 'Failed to deduct credits. Your account was not charged. Please try again.' });
+        }
+        console.log(`[Credits] Deduction confirmed. DB now shows: ${updatedProfile.credits}`);
+
+        // Step 4: Create analysis job (only after credits deducted)
         const { data: job, error: jobError } = await supabase
             .from('analysis_jobs')
             .insert({
@@ -425,25 +443,14 @@ export const actions: Actions = {
 
         if (jobError || !job) {
             console.error('Job creation failed:', jobError);
-            return fail(500, { message: 'Failed to create analysis job' });
-        }
-
-        // Step 4: Deduct credits upfront (service role bypasses RLS)
-        const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const newBalance = userCredits - creditCost;
-        console.log(`[Credits] Deducting ${creditCost} from user ${userId}: ${userCredits} → ${newBalance}`);
-
-        const { data: updatedProfile, error: creditError } = await serviceSupabase
-            .from('profiles')
-            .update({ credits: newBalance })
-            .eq('id', userId)
-            .select('credits')
-            .single();
-
-        if (creditError) {
-            console.error('[Credits] Deduction FAILED:', creditError);
-        } else {
-            console.log(`[Credits] Deduction confirmed. DB now shows: ${updatedProfile?.credits}`);
+            // Refund credits since the job wasn't created
+            const { error: refundError } = await serviceSupabase
+                .from('profiles')
+                .update({ credits: userCredits })
+                .eq('id', userId);
+            if (refundError) console.error('[Credits] REFUND FAILED:', refundError);
+            else console.log(`[Credits] Refunded ${creditCost} credits to user ${userId}`);
+            return fail(500, { message: 'Failed to create analysis job. Your credits have been refunded.' });
         }
 
         // Redirect to progress page

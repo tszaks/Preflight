@@ -66,8 +66,8 @@ export async function extractClaims(
 
         const claims: ExtractedClaim[] = JSON.parse(text);
         return Array.isArray(claims) ? claims : [];
-    } catch {
-        console.error('[ClaimExtractor] Failed to extract claims');
+    } catch (error) {
+        console.error('[ClaimExtractor] Failed to extract claims:', error);
         return [];
     }
 }

@@ -51,7 +51,21 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
     }
 
     // Step 1: Extract
-    const extracted = await extractIPA(buffer);
+    let extracted: ExtractedIPA;
+    try {
+        extracted = await extractIPA(buffer);
+    } catch (error) {
+        console.error('IPA extraction failed:', error);
+        checks.push({
+            category: 'info_plist',
+            severity: 'critical',
+            title: 'IPA file could not be read',
+            description: `The IPA file appears to be corrupted or is not a valid iOS application archive. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            fix_suggestion: 'Re-export the IPA from Xcode (Product → Archive → Distribute App) and try uploading again. Ensure the file was not truncated during upload.',
+            confidence: 100,
+        });
+        return { checks, extracted: { bundleName: '', frameworks: [], iconFiles: [], totalSize: buffer.byteLength } };
+    }
 
     // Step 2: Analyze frameworks
     if (extracted.frameworks.length > 0) {

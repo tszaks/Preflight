@@ -55,8 +55,6 @@ export async function runSoftRules(
     const emit = options?.onProgress || (() => {});
     const calibrationCtx = options?.calibrationContext;
 
-    let currentProgress = 0;
-
     // Helper to run a check with progress tracking
     async function runCheckWithProgress<T>(
         checkName: string,
@@ -75,7 +73,6 @@ export async function runSoftRules(
                 check: checkName,
                 phase: 'soft_rules',
             }));
-            currentProgress = progressEnd;
             return result;
         } catch (error) {
             console.error(`Soft rule check failed (${checkName}):`, error);
@@ -84,7 +81,6 @@ export async function runSoftRules(
                 phase: 'soft_rules',
                 data: { error: error instanceof Error ? error.message : 'Unknown error' },
             }));
-            currentProgress = progressEnd;
             return null;
         }
     }
@@ -145,6 +141,18 @@ export async function runSoftRules(
                 allScreenshotResults.push(...batchResults);
             } catch (error) {
                 console.error(`Screenshot batch ${batchIndex + 1} failed:`, error);
+                emit(createProgressEvent('check_complete', `Screenshot batch ${batchIndex + 1} failed`, batchProgress, {
+                    check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+                    phase: 'soft_rules',
+                    data: { error: error instanceof Error ? error.message : 'Unknown error' },
+                }));
+                allScreenshotResults.push({
+                    category: 'screenshots',
+                    severity: 'info',
+                    title: `Screenshots ${startIdx + 1}-${endIdx} could not be analyzed`,
+                    description: `AI analysis failed for this batch of screenshots. The error has been logged. Other screenshots were still analyzed.`,
+                    confidence: 0,
+                });
             }
 
             emit(createProgressEvent('check_complete', `Screenshots ${startIdx + 1}-${endIdx} analyzed`, batchProgress, {
@@ -155,9 +163,6 @@ export async function runSoftRules(
         }
 
         checks.push(...allScreenshotResults);
-        currentProgress = 65;
-    } else {
-        currentProgress = 65;
     }
 
     // 4. Privacy Policy Cross-check (65-80%)
@@ -169,8 +174,6 @@ export async function runSoftRules(
             () => analyzePrivacyPolicy(client, input, calibrationCtx)
         );
         if (result) checks.push(...result);
-    } else {
-        currentProgress = 80;
     }
 
     // 5. Metadata Quality (80-90%)
@@ -182,8 +185,6 @@ export async function runSoftRules(
             () => analyzeMetadataQuality(client, input, calibrationCtx)
         );
         if (result) checks.push(...result);
-    } else {
-        currentProgress = 90;
     }
 
     // 6. ASO Analysis (90-100%) - Structured data, not checks
@@ -233,15 +234,13 @@ function getSystemPrompt(category?: string | null, topics?: CheckTopic[], calibr
     });
 }
 
-async function callClaude(
-    client: Anthropic,
+/** Build multimodal content array from optional images + text prompt */
+function buildContent(
     prompt: string,
-    images?: Array<{ base64: string; mime_type: string }>,
-    systemPromptOverride?: string
-): Promise<CheckResult[]> {
+    images?: Array<{ base64: string; mime_type: string }>
+): Anthropic.MessageCreateParams['messages'][0]['content'] {
     const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
 
-    // Add images if present (Vision)
     if (images) {
         for (const img of images) {
             content.push({
@@ -256,48 +255,68 @@ async function callClaude(
     }
 
     content.push({ type: 'text', text: prompt });
+    return content;
+}
 
+/** Extract text from a Claude response */
+function extractResponseText(response: Anthropic.Message): string {
+    return response.content
+        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+        .map(block => block.text)
+        .join('');
+}
+
+/** Parse a JSON array of check findings from raw Claude text */
+function parseCheckFindings(text: string, defaultCategory: CheckResult['category'] = 'metadata'): CheckResult[] {
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+
+    const parsed = JSON.parse(jsonMatch[0]) as Array<{
+        severity: string;
+        title: string;
+        description: string;
+        guideline_ref?: string;
+        fix_suggestion?: string;
+        confidence?: number;
+    }>;
+
+    return parsed.map(item => ({
+        category: defaultCategory,
+        severity: (['critical', 'warning', 'info', 'pass'].includes(item.severity)
+            ? item.severity
+            : 'info') as CheckResult['severity'],
+        title: item.title,
+        description: item.description,
+        guideline_ref: item.guideline_ref,
+        fix_suggestion: item.fix_suggestion,
+        confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : undefined,
+    }));
+}
+
+async function callClaude(
+    client: Anthropic,
+    prompt: string,
+    images?: Array<{ base64: string; mime_type: string }>,
+    systemPromptOverride?: string
+): Promise<CheckResult[]> {
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2048,
         system: systemPromptOverride || getSystemPrompt(),
-        messages: [{ role: 'user', content }],
+        messages: [{ role: 'user', content: buildContent(prompt, images) }],
     });
 
-    // Extract text response
-    const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-        .map(block => block.text)
-        .join('');
-
-    // Parse JSON from response
     try {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) return [];
-
-        const parsed = JSON.parse(jsonMatch[0]) as Array<{
-            severity: string;
-            title: string;
-            description: string;
-            guideline_ref?: string;
-            fix_suggestion?: string;
-            confidence?: number;
-        }>;
-
-        return parsed.map(item => ({
-            category: 'metadata' as const, // Will be overridden by caller
-            severity: (['critical', 'warning', 'info', 'pass'].includes(item.severity)
-                ? item.severity
-                : 'info') as CheckResult['severity'],
-            title: item.title,
-            description: item.description,
-            guideline_ref: item.guideline_ref,
-            fix_suggestion: item.fix_suggestion,
-            confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : undefined,
-        }));
-    } catch {
-        console.error('Failed to parse Claude response:', text.slice(0, 200));
-        return [];
+        return parseCheckFindings(extractResponseText(response));
+    } catch (error) {
+        console.error('Failed to parse Claude response:', error, extractResponseText(response).slice(0, 200));
+        return [{
+            category: 'metadata',
+            severity: 'info',
+            title: 'AI analysis incomplete',
+            description: 'The AI analysis for this category could not be completed due to a processing error. Results may be partial.',
+            confidence: 0,
+        }];
     }
 }
 
@@ -317,46 +336,9 @@ async function analyzeDescription(client: Anthropic, input: SoftRulesInput, cali
     return verifyFindings(client, categorized, `App description for "${input.app_name}": ${input.description}`, input.category);
 }
 
-async function analyzeScreenshots(client: Anthropic, input: SoftRulesInput): Promise<CheckResult[]> {
-    if (!input.screenshots_data) return [];
-
-    const allResults: CheckResult[] = [];
-
-    // Prepare description preview for metadata cross-reference
-    const descriptionPreview = (input.description || '').slice(0, 500);
-
-    // Analyze screenshots in batches of 3 to avoid token limits
-    const batchSize = 3;
-    for (let i = 0; i < input.screenshots_data.length; i += batchSize) {
-        const batch = input.screenshots_data.slice(i, i + batchSize);
-
-        // Enhanced prompt with full app metadata for cross-referencing
-        const prompt = fillPrompt(SCREENSHOT_ANALYSIS_PROMPT, {
-            app_name: input.app_name,
-            category: input.category || 'Not specified',
-            age_rating: input.age_rating || '4+',
-            description_preview: descriptionPreview || 'No description provided',
-            index: `${i + 1}-${i + batch.length}`,
-            total: String(input.screenshots_data.length),
-            current_date: new Date().toISOString().split('T')[0],
-        });
-
-        const images = batch.map(s => ({
-            base64: s.base64,
-            mime_type: s.mime_type,
-        }));
-
-        // Use a higher token limit for comprehensive screenshot analysis
-        const results = await callClaudeForScreenshots(client, prompt, images);
-        allResults.push(...results.map(r => ({ ...r, category: 'screenshots' as const })));
-    }
-
-    return allResults;
-}
-
 /**
  * Analyze a specific batch of screenshots (for progress tracking).
- * This is called by runSoftRules when streaming progress.
+ * Called by runSoftRules when streaming progress.
  */
 async function analyzeScreenshotBatch(
     client: Anthropic,
@@ -399,8 +381,8 @@ async function analyzeScreenshotBatch(
 }
 
 /**
- * Specialized Claude call for screenshot analysis with higher token limits
- * to accommodate the comprehensive analysis prompt.
+ * Specialized Claude call for screenshot analysis with higher token limits.
+ * Uses shared buildContent/parseCheckFindings helpers.
  */
 async function callClaudeForScreenshots(
     client: Anthropic,
@@ -408,63 +390,24 @@ async function callClaudeForScreenshots(
     images: Array<{ base64: string; mime_type: string }>,
     systemPromptOverride?: string
 ): Promise<CheckResult[]> {
-    const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
-
-    // Add images (Vision)
-    for (const img of images) {
-        content.push({
-            type: 'image',
-            source: {
-                type: 'base64',
-                media_type: img.mime_type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-                data: img.base64,
-            },
-        });
-    }
-
-    content.push({ type: 'text', text: prompt });
-
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096, // Higher limit for comprehensive screenshot analysis
+        max_tokens: 4096,
         system: systemPromptOverride || getSystemPrompt(),
-        messages: [{ role: 'user', content }],
+        messages: [{ role: 'user', content: buildContent(prompt, images) }],
     });
 
-    // Extract text response
-    const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-        .map(block => block.text)
-        .join('');
-
-    // Parse JSON from response
     try {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) return [];
-
-        const parsed = JSON.parse(jsonMatch[0]) as Array<{
-            severity: string;
-            title: string;
-            description: string;
-            guideline_ref?: string;
-            fix_suggestion?: string;
-            confidence?: number;
-        }>;
-
-        return parsed.map(item => ({
-            category: 'screenshots' as const,
-            severity: (['critical', 'warning', 'info', 'pass'].includes(item.severity)
-                ? item.severity
-                : 'info') as CheckResult['severity'],
-            title: item.title,
-            description: item.description,
-            guideline_ref: item.guideline_ref,
-            fix_suggestion: item.fix_suggestion,
-            confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : undefined,
-        }));
-    } catch {
-        console.error('Failed to parse Claude screenshot analysis response:', text.slice(0, 200));
-        return [];
+        return parseCheckFindings(extractResponseText(response), 'screenshots');
+    } catch (error) {
+        console.error('Failed to parse Claude screenshot analysis response:', error, extractResponseText(response).slice(0, 200));
+        return [{
+            category: 'screenshots',
+            severity: 'info',
+            title: 'Screenshot AI analysis incomplete',
+            description: 'The AI analysis for these screenshots could not be completed due to a processing error. Results may be partial.',
+            confidence: 0,
+        }];
     }
 }
 
@@ -510,37 +453,15 @@ async function verifyFindings(
             messages: [{ role: 'user', content: prompt }],
         });
 
-        const text = response.content
-            .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-            .map(block => block.text)
-            .join('');
+        const inferredCategory = actionable[0]?.category || 'metadata' as const;
+        const verifiedResults = parseCheckFindings(extractResponseText(response), inferredCategory)
+            .filter(v => v.severity !== 'pass'); // Remove items the judge demoted to pass
 
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) return findings; // Fallback to unverified
-
-        const verified = JSON.parse(jsonMatch[0]) as Array<{
-            severity: string;
-            title: string;
-            description: string;
-            guideline_ref?: string;
-            fix_suggestion?: string;
-            confidence?: number;
-            verification_note?: string;
-        }>;
-
-        const verifiedResults: CheckResult[] = verified
-            .filter(v => v.severity !== 'pass') // Remove items the judge demoted to pass
-            .map(v => ({
-                category: actionable[0]?.category || 'metadata' as const,
-                severity: (['critical', 'warning', 'info', 'pass'].includes(v.severity)
-                    ? v.severity
-                    : 'info') as CheckResult['severity'],
-                title: v.title,
-                description: v.description,
-                guideline_ref: v.guideline_ref,
-                fix_suggestion: v.fix_suggestion,
-                confidence: typeof v.confidence === 'number' ? Math.max(0, Math.min(100, v.confidence)) : undefined,
-            }));
+        if (verifiedResults.length === 0 && actionable.length > 0) {
+            // parseCheckFindings returned nothing (no JSON match) -- fall back to unverified
+            console.warn('[Verification] Judge returned no parseable JSON, using unverified findings');
+            return findings;
+        }
 
         // Return verified actionable findings + original pass findings
         return [...verifiedResults, ...passes];
@@ -665,13 +586,7 @@ async function runASOAnalysis(
         messages: [{ role: 'user', content: prompt }],
     });
 
-    // Extract text response
-    const text = response.content
-        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-        .map(block => block.text)
-        .join('');
-
-    // Parse JSON from response (handle potential markdown code blocks)
+    const text = extractResponseText(response);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
         throw new Error('No JSON object found in ASO analysis response');
