@@ -1,5 +1,6 @@
 <script lang="ts">
     import { deserialize } from "$app/forms";
+    import { goto } from "$app/navigation";
     import {
         scanProjectFolder,
         formatPath,
@@ -7,22 +8,34 @@
     } from "$lib/utils/project-scanner";
     import CockpitPanel from "$lib/components/CockpitPanel.svelte";
 
+    // Props from server
+    let { data } = $props();
+
+    // Get pre-fill data from draft or original submission
+    const prefill = data.draftSubmission || data.originalSubmission;
+
+    // Track draft ID for updating existing drafts
+    let draftId: string | null = $state(data.draftSubmission?.id || null);
+    let isEditingDraft = $derived(!!data.draftSubmission);
+
     let step = $state(1);
     let loading = $state(false);
+    let savingDraft = $state(false);
+    let draftSaved = $state(false);
     let errorMsg = $state("");
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 1: Your App (Basic Information)
     // ═══════════════════════════════════════════════════════════════
-    let appName = $state("");
-    let subtitle = $state("");
-    let description = $state("");
-    let promotionalText = $state("");  // 170 chars max
-    let keywords = $state("");
-    let category = $state("");
-    let secondaryCategory = $state("");
-    let version = $state("1.0");
-    let copyright = $state("");
+    let appName = $state(prefill?.app_name || "");
+    let subtitle = $state(prefill?.subtitle || "");
+    let description = $state(prefill?.description || "");
+    let promotionalText = $state(prefill?.promotional_text || "");  // 170 chars max
+    let keywords = $state(prefill?.keywords || "");
+    let category = $state(prefill?.category || "");
+    let secondaryCategory = $state(prefill?.secondary_category || "");
+    let version = $state(prefill?.version || "1.0");
+    let copyright = $state(prefill?.copyright || "");
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 2: Your Files
@@ -43,9 +56,9 @@
     let reviewAccessExpanded = $state(false);
 
     // URLs (Apple validates these are reachable)
-    let privacyUrl = $state("");
-    let supportUrl = $state("");
-    let marketingUrl = $state("");
+    let privacyUrl = $state(prefill?.privacy_url || "");
+    let supportUrl = $state(prefill?.support_url || "");
+    let marketingUrl = $state(prefill?.marketing_url || "");
 
     // Age Rating Questionnaire - Each answer: "none", "infrequent", "frequent"
     let ageRatingAnswers = $state({
@@ -104,20 +117,21 @@
     });
 
     // In-App Purchases & Monetization
-    let hasInAppPurchases = $state(false);
-    let hasSubscriptions = $state(false);
-    let hasAds = $state(false);
+    let hasInAppPurchases = $state(prefill?.has_iap || false);
+    let hasSubscriptions = $state(prefill?.has_subscriptions || false);
+    let hasAds = $state(prefill?.has_ads || false);
 
     // App Review Information (Demo credentials)
-    let signInRequired = $state(false);
-    let demoUsername = $state("");
-    let demoPassword = $state("");
-    let reviewNotes = $state("");
+    let signInRequired = $state(prefill?.sign_in_required || false);
+    let demoUsername = $state(prefill?.demo_username || "");
+    let demoPassword = $state(prefill?.demo_password || "");
+    let reviewNotes = $state(prefill?.review_notes || "");
+    const reviewerContactPrefill = prefill?.reviewer_contact ? JSON.parse(prefill.reviewer_contact) : null;
     let reviewerContact = $state({
-        firstName: "",
-        lastName: "",
-        phone: "",
-        email: "",
+        firstName: reviewerContactPrefill?.firstName || "",
+        lastName: reviewerContactPrefill?.lastName || "",
+        phone: reviewerContactPrefill?.phone || "",
+        email: reviewerContactPrefill?.email || "",
     });
 
     // Pricing (single tier for now)
@@ -450,13 +464,116 @@
             loading = false;
         }
     }
+
+    async function saveDraft() {
+        savingDraft = true;
+        draftSaved = false;
+        errorMsg = "";
+
+        try {
+            const formData = new FormData();
+
+            // Include draft ID if editing existing
+            if (draftId) {
+                formData.set("draft_id", draftId);
+            }
+
+            // Basic Info
+            formData.set("app_name", appName);
+            formData.set("subtitle", subtitle);
+            formData.set("description", description);
+            formData.set("promotional_text", promotionalText);
+            formData.set("keywords", keywords);
+            formData.set("category", category);
+            formData.set("secondary_category", secondaryCategory);
+            formData.set("version", version);
+            formData.set("copyright", copyright);
+
+            // URLs
+            formData.set("privacy_url", privacyUrl);
+            formData.set("support_url", supportUrl);
+            formData.set("marketing_url", marketingUrl);
+
+            // Age Rating
+            formData.set("age_rating", calculatedAgeRating);
+            formData.set("age_rating_answers", JSON.stringify(ageRatingAnswers));
+
+            // App Privacy
+            formData.set("data_collection", JSON.stringify(dataCollection));
+
+            // App Review Info
+            formData.set("sign_in_required", signInRequired.toString());
+            formData.set("demo_username", demoUsername);
+            formData.set("demo_password", demoPassword);
+            formData.set("review_notes", reviewNotes);
+            formData.set("reviewer_contact", JSON.stringify(reviewerContact));
+
+            // Monetization
+            formData.set("has_iap", hasInAppPurchases.toString());
+            formData.set("has_subscriptions", hasSubscriptions.toString());
+            formData.set("has_ads", hasAds.toString());
+
+            // Files
+            for (const file of screenshots) {
+                formData.append("screenshots", file);
+            }
+            if (privacyManifest) {
+                formData.set("manifest", privacyManifest);
+            }
+            if (infoPlist) {
+                formData.set("plist", infoPlist);
+            }
+
+            const response = await fetch("/submit?/saveDraft", {
+                method: "POST",
+                body: formData,
+            });
+
+            const result = await response.text();
+            const parsedResult = deserialize(result);
+
+            if (parsedResult.type === "failure") {
+                throw new Error(
+                    (parsedResult.data as { message?: string })?.message ||
+                        "Failed to save draft",
+                );
+            }
+
+            if (parsedResult.type === "success" && parsedResult.data) {
+                const resultData = parsedResult.data as { draftId?: string; message?: string };
+                // Update draftId if this was a new draft
+                if (resultData.draftId) {
+                    draftId = resultData.draftId;
+                    // Update URL to include draft parameter without navigation
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("draft", draftId);
+                    window.history.replaceState({}, "", url.toString());
+                }
+                draftSaved = true;
+                // Clear the saved indicator after 3 seconds
+                setTimeout(() => { draftSaved = false; }, 3000);
+            }
+        } catch (err) {
+            errorMsg =
+                err instanceof Error ? err.message : "Failed to save draft";
+        } finally {
+            savingDraft = false;
+        }
+    }
 </script>
 
 <main class="submit-page">
     <div class="container">
         <header class="submit-header">
             <h1>Pre-Flight Check</h1>
-            <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
+            {#if isEditingDraft}
+                <div class="draft-badge">
+                    <span class="draft-icon">📝</span>
+                    <span>Editing Draft: {appName || "Untitled"}</span>
+                </div>
+            {:else}
+                <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
+            {/if}
         </header>
 
         <!-- Simple Progress Indicator -->
@@ -1341,6 +1458,19 @@
                     <button class="btn btn-secondary" onclick={() => (step = 3)}>Back</button>
                     <div class="action-group">
                         <button
+                            class="btn btn-outline"
+                            onclick={saveDraft}
+                            disabled={savingDraft || loading}
+                        >
+                            {#if savingDraft}
+                                Saving...
+                            {:else if draftSaved}
+                                ✓ Draft Saved
+                            {:else}
+                                Save Draft
+                            {/if}
+                        </button>
+                        <button
                             class="btn btn-accent"
                             onclick={testSubmit}
                             disabled={loading || !canSubmit}
@@ -1378,6 +1508,40 @@
         margin-top: 8px;
         letter-spacing: -0.02em;
         color: var(--gray-100);
+    }
+
+    .draft-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(212, 168, 83, 0.1);
+        border: 1px solid rgba(212, 168, 83, 0.3);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: var(--accent);
+        margin-top: 0.75rem;
+    }
+
+    .draft-icon {
+        font-size: 1rem;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid var(--gray-600);
+        color: var(--gray-300);
+        transition: all 0.2s ease;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+        border-color: var(--gray-400);
+        color: var(--gray-100);
+    }
+
+    .btn-outline:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     /* ═══════════════════════════════════════════════════════════════ */

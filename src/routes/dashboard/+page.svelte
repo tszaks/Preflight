@@ -32,10 +32,21 @@
 
     function isClickable(status: string): boolean {
         return (
+            status === "draft" ||
             status === "complete" ||
             status === "analyzing" ||
             status === "queued"
         );
+    }
+
+    function getSubmissionHref(sub: Submission): string | undefined {
+        if (sub.status === "draft") {
+            return `/submit?draft=${sub.id}`;
+        }
+        if (sub.status === "complete" || sub.status === "analyzing" || sub.status === "queued") {
+            return `/report/${sub.id}`;
+        }
+        return undefined;
     }
 
     function mapStatus(
@@ -125,7 +136,7 @@
             {#each submissions as sub (sub.id)}
                 {@const clickable = isClickable(sub.status)}
                 <a
-                    href={clickable ? `/report/${sub.id}` : undefined}
+                    href={getSubmissionHref(sub)}
                     class="submission-link"
                     class:clickable
                     role={clickable ? "link" : "article"}
