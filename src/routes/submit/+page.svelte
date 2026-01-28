@@ -1352,7 +1352,7 @@
                             onclick={submit}
                             disabled={loading || !canSubmit}
                         >
-                            {loading ? "Processing..." : `Submit ($${PRICE})`}
+                            {loading ? "Analyzing..." : "Start Review (100 Credits)"}
                         </button>
                     </div>
                 </div>

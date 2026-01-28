@@ -1,5 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { CheckResult, SoftRulesInput, ASOAnalysisResult } from '../types';
+import type { OnProgressCallback } from '$lib/types/progress';
+import {
+    createProgressEvent,
+    PROGRESS_CHECKS,
+    PROGRESS_MESSAGES,
+} from '$lib/types/progress';
 import {
     SYSTEM_PROMPT,
     DESCRIPTION_ANALYSIS_PROMPT,
@@ -17,71 +23,183 @@ export interface SoftRulesResult {
     aso_analysis?: ASOAnalysisResult;
 }
 
+interface SoftRulesOptions {
+    onProgress?: OnProgressCallback;
+}
+
 /**
  * Runs all soft (AI-powered) rules against the submission.
  * Uses Claude API for nuanced analysis.
+ *
+ * Progress breakdown (0-100% within soft rules phase):
+ * - Description: 0-15%
+ * - Content Policy: 15-30%
+ * - Screenshots AI: 30-65% (variable based on count)
+ * - Privacy Policy: 65-80%
+ * - Metadata Quality: 80-90%
+ * - ASO Analysis: 90-100%
  */
 export async function runSoftRules(
     input: SoftRulesInput,
-    apiKey: string
+    apiKey: string,
+    options?: SoftRulesOptions
 ): Promise<SoftRulesResult> {
     const client = new Anthropic({ apiKey });
     const checks: CheckResult[] = [];
+    const emit = options?.onProgress || (() => {});
 
-    // Run checks in parallel for speed
-    const tasks: Promise<CheckResult[]>[] = [];
+    let currentProgress = 0;
 
-    // Always run description analysis if description exists
-    if (input.description) {
-        tasks.push(analyzeDescription(client, input));
-    }
+    // Helper to run a check with progress tracking
+    async function runCheckWithProgress<T>(
+        checkName: string,
+        progressStart: number,
+        progressEnd: number,
+        fn: () => Promise<T>
+    ): Promise<T | null> {
+        emit(createProgressEvent('check_start', PROGRESS_MESSAGES[checkName] || `Running ${checkName}...`, progressStart, {
+            check: checkName,
+            phase: 'soft_rules',
+        }));
 
-    // Always run content policy check
-    if (input.description) {
-        tasks.push(analyzeContentPolicy(client, input));
-    }
-
-    // Run screenshot analysis for full reviews (uses Vision)
-    if (input.review_type === 'full' && input.screenshots_data && input.screenshots_data.length > 0) {
-        tasks.push(analyzeScreenshots(client, input));
-    }
-
-    // Run privacy policy cross-check for full reviews
-    if (input.review_type === 'full' && input.privacy_policy_text && input.manifest_content) {
-        tasks.push(analyzePrivacyPolicy(client, input));
-    }
-
-    // Run metadata quality suggestions (always, but info-level only)
-    if (input.description || input.keywords) {
-        tasks.push(analyzeMetadataQuality(client, input));
-    }
-
-    // Wait for all check tasks
-    const results = await Promise.allSettled(tasks);
-
-    for (const result of results) {
-        if (result.status === 'fulfilled') {
-            checks.push(...result.value);
-        } else {
-            // Log error but don't fail the whole analysis
-            console.error('Soft rule check failed:', result.reason);
-            checks.push({
-                category: 'metadata',
-                severity: 'info',
-                title: 'Analysis partially incomplete',
-                description: 'One or more AI-powered checks could not complete. The remaining results are still valid.',
-            });
+        try {
+            const result = await fn();
+            emit(createProgressEvent('check_complete', `${checkName} complete`, progressEnd, {
+                check: checkName,
+                phase: 'soft_rules',
+            }));
+            currentProgress = progressEnd;
+            return result;
+        } catch (error) {
+            console.error(`Soft rule check failed (${checkName}):`, error);
+            emit(createProgressEvent('check_complete', `${checkName} failed (continuing)`, progressEnd, {
+                check: checkName,
+                phase: 'soft_rules',
+                data: { error: error instanceof Error ? error.message : 'Unknown error' },
+            }));
+            currentProgress = progressEnd;
+            return null;
         }
     }
 
-    // Run ASO analysis separately (returns structured data, not checks)
+    // Run checks sequentially to provide meaningful progress feedback
+    // (Parallel execution makes progress harder to track accurately)
+
+    // 1. Description Analysis (0-15%)
+    if (input.description) {
+        const result = await runCheckWithProgress(
+            PROGRESS_CHECKS.DESCRIPTION,
+            0,
+            15,
+            () => analyzeDescription(client, input)
+        );
+        if (result) checks.push(...result);
+    }
+
+    // 2. Content Policy (15-30%)
+    if (input.description) {
+        const result = await runCheckWithProgress(
+            PROGRESS_CHECKS.CONTENT_POLICY,
+            15,
+            30,
+            () => analyzeContentPolicy(client, input)
+        );
+        if (result) checks.push(...result);
+    }
+
+    // 3. Screenshot AI Analysis (30-65%) - Most time-consuming
+    if (input.review_type === 'full' && input.screenshots_data && input.screenshots_data.length > 0) {
+        const totalScreenshots = input.screenshots_data.length;
+        const batchSize = 3;
+        const totalBatches = Math.ceil(totalScreenshots / batchSize);
+        const progressPerBatch = 35 / totalBatches; // 35% total (30-65)
+
+        emit(createProgressEvent('check_start', `AI reviewing ${totalScreenshots} screenshots...`, 30, {
+            check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+            phase: 'soft_rules',
+            data: { totalScreenshots },
+        }));
+
+        const allScreenshotResults: CheckResult[] = [];
+
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            const startIdx = batchIndex * batchSize;
+            const endIdx = Math.min(startIdx + batchSize, totalScreenshots);
+            const batchProgress = 30 + (batchIndex + 1) * progressPerBatch;
+
+            emit(createProgressEvent('check_start', `Analyzing screenshots ${startIdx + 1}-${endIdx} of ${totalScreenshots}...`, 30 + batchIndex * progressPerBatch, {
+                check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+                phase: 'soft_rules',
+                data: { screenshotIndex: startIdx + 1, totalScreenshots },
+            }));
+
+            try {
+                const batchResults = await analyzeScreenshotBatch(client, input, startIdx, endIdx);
+                allScreenshotResults.push(...batchResults);
+            } catch (error) {
+                console.error(`Screenshot batch ${batchIndex + 1} failed:`, error);
+            }
+
+            emit(createProgressEvent('check_complete', `Screenshots ${startIdx + 1}-${endIdx} analyzed`, batchProgress, {
+                check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+                phase: 'soft_rules',
+                data: { screenshotIndex: endIdx, totalScreenshots },
+            }));
+        }
+
+        checks.push(...allScreenshotResults);
+        currentProgress = 65;
+    } else {
+        currentProgress = 65;
+    }
+
+    // 4. Privacy Policy Cross-check (65-80%)
+    if (input.review_type === 'full' && input.privacy_policy_text && input.manifest_content) {
+        const result = await runCheckWithProgress(
+            PROGRESS_CHECKS.PRIVACY_POLICY,
+            65,
+            80,
+            () => analyzePrivacyPolicy(client, input)
+        );
+        if (result) checks.push(...result);
+    } else {
+        currentProgress = 80;
+    }
+
+    // 5. Metadata Quality (80-90%)
+    if (input.description || input.keywords) {
+        const result = await runCheckWithProgress(
+            PROGRESS_CHECKS.METADATA_QUALITY,
+            80,
+            90,
+            () => analyzeMetadataQuality(client, input)
+        );
+        if (result) checks.push(...result);
+    } else {
+        currentProgress = 90;
+    }
+
+    // 6. ASO Analysis (90-100%) - Structured data, not checks
     let aso_analysis: ASOAnalysisResult | undefined;
     if (input.description) {
+        emit(createProgressEvent('check_start', PROGRESS_MESSAGES[PROGRESS_CHECKS.ASO_ANALYSIS], 90, {
+            check: PROGRESS_CHECKS.ASO_ANALYSIS,
+            phase: 'soft_rules',
+        }));
+
         try {
             aso_analysis = await runASOAnalysis(client, input);
+            emit(createProgressEvent('check_complete', 'ASO analysis complete', 100, {
+                check: PROGRESS_CHECKS.ASO_ANALYSIS,
+                phase: 'soft_rules',
+            }));
         } catch (error) {
             console.error('ASO analysis failed:', error);
-            // Don't fail the whole analysis - ASO is a bonus feature
+            emit(createProgressEvent('check_complete', 'ASO analysis failed (continuing)', 100, {
+                check: PROGRESS_CHECKS.ASO_ANALYSIS,
+                phase: 'soft_rules',
+                data: { error: error instanceof Error ? error.message : 'Unknown error' },
+            }));
         }
     }
 
@@ -202,6 +320,39 @@ async function analyzeScreenshots(client: Anthropic, input: SoftRulesInput): Pro
     }
 
     return allResults;
+}
+
+/**
+ * Analyze a specific batch of screenshots (for progress tracking).
+ * This is called by runSoftRules when streaming progress.
+ */
+async function analyzeScreenshotBatch(
+    client: Anthropic,
+    input: SoftRulesInput,
+    startIdx: number,
+    endIdx: number
+): Promise<CheckResult[]> {
+    if (!input.screenshots_data) return [];
+
+    const batch = input.screenshots_data.slice(startIdx, endIdx);
+    const descriptionPreview = (input.description || '').slice(0, 500);
+
+    const prompt = fillPrompt(SCREENSHOT_ANALYSIS_PROMPT, {
+        app_name: input.app_name,
+        category: input.category || 'Not specified',
+        age_rating: input.age_rating || '4+',
+        description_preview: descriptionPreview || 'No description provided',
+        index: `${startIdx + 1}-${endIdx}`,
+        total: String(input.screenshots_data.length),
+    });
+
+    const images = batch.map(s => ({
+        base64: s.base64,
+        mime_type: s.mime_type,
+    }));
+
+    const results = await callClaudeForScreenshots(client, prompt, images);
+    return results.map(r => ({ ...r, category: 'screenshots' as const }));
 }
 
 /**
