@@ -572,6 +572,9 @@
             if (infoPlist) {
                 formData.set("plist", infoPlist);
             }
+            if (appIcon) {
+                formData.set("icon", appIcon);
+            }
 
             const response = await fetch("/submit?/saveDraft", {
                 method: "POST",
