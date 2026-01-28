@@ -14,8 +14,12 @@ import {
     METADATA_QUALITY_PROMPT,
     PRIVACY_POLICY_REVIEW_PROMPT,
     ASO_ANALYSIS_PROMPT,
+    VERIFICATION_PROMPT,
     fillPrompt,
 } from './prompts';
+import { getCategoryContext, formatCategoryContext } from '../knowledge-base/categories/index';
+import { getRelevantSections, type CheckTopic } from '../knowledge-base/guidelines-lookup';
+import { getGuidelinesText } from '../knowledge-base/guidelines-text';
 
 export interface SoftRulesResult {
     checks: CheckResult[];
@@ -25,6 +29,8 @@ export interface SoftRulesResult {
 
 interface SoftRulesOptions {
     onProgress?: OnProgressCallback;
+    /** Pre-formatted calibration context string from historical false-positive rates */
+    calibrationContext?: string;
 }
 
 /**
@@ -47,6 +53,7 @@ export async function runSoftRules(
     const client = new Anthropic({ apiKey });
     const checks: CheckResult[] = [];
     const emit = options?.onProgress || (() => {});
+    const calibrationCtx = options?.calibrationContext;
 
     let currentProgress = 0;
 
@@ -91,7 +98,7 @@ export async function runSoftRules(
             PROGRESS_CHECKS.DESCRIPTION,
             0,
             15,
-            () => analyzeDescription(client, input)
+            () => analyzeDescription(client, input, calibrationCtx)
         );
         if (result) checks.push(...result);
     }
@@ -102,7 +109,7 @@ export async function runSoftRules(
             PROGRESS_CHECKS.CONTENT_POLICY,
             15,
             30,
-            () => analyzeContentPolicy(client, input)
+            () => analyzeContentPolicy(client, input, calibrationCtx)
         );
         if (result) checks.push(...result);
     }
@@ -134,7 +141,7 @@ export async function runSoftRules(
             }));
 
             try {
-                const batchResults = await analyzeScreenshotBatch(client, input, startIdx, endIdx);
+                const batchResults = await analyzeScreenshotBatch(client, input, startIdx, endIdx, calibrationCtx);
                 allScreenshotResults.push(...batchResults);
             } catch (error) {
                 console.error(`Screenshot batch ${batchIndex + 1} failed:`, error);
@@ -159,7 +166,7 @@ export async function runSoftRules(
             PROGRESS_CHECKS.PRIVACY_POLICY,
             65,
             80,
-            () => analyzePrivacyPolicy(client, input)
+            () => analyzePrivacyPolicy(client, input, calibrationCtx)
         );
         if (result) checks.push(...result);
     } else {
@@ -172,7 +179,7 @@ export async function runSoftRules(
             PROGRESS_CHECKS.METADATA_QUALITY,
             80,
             90,
-            () => analyzeMetadataQuality(client, input)
+            () => analyzeMetadataQuality(client, input, calibrationCtx)
         );
         if (result) checks.push(...result);
     } else {
@@ -210,17 +217,27 @@ export async function runSoftRules(
     };
 }
 
-/** Returns the system prompt with current date filled in */
-function getSystemPrompt(): string {
+/** Returns the system prompt with current date + category/guidelines context */
+function getSystemPrompt(category?: string | null, topics?: CheckTopic[], calibrationCtx?: string): string {
+    const catContext = getCategoryContext(category);
+    const categoryText = catContext ? formatCategoryContext(catContext) : '';
+
+    const sections = topics ? topics.flatMap(t => getRelevantSections(t)) : [];
+    const guidelinesText = sections.length > 0 ? getGuidelinesText([...new Set(sections)]) : '';
+
     return fillPrompt(SYSTEM_PROMPT, {
-        current_date: new Date().toISOString().split('T')[0], // e.g. "2026-01-28"
+        current_date: new Date().toISOString().split('T')[0],
+        category_context: categoryText,
+        relevant_guidelines: guidelinesText,
+        calibration_context: calibrationCtx || '',
     });
 }
 
 async function callClaude(
     client: Anthropic,
     prompt: string,
-    images?: Array<{ base64: string; mime_type: string }>
+    images?: Array<{ base64: string; mime_type: string }>,
+    systemPromptOverride?: string
 ): Promise<CheckResult[]> {
     const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
 
@@ -243,7 +260,7 @@ async function callClaude(
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2048,
-        system: getSystemPrompt(),
+        system: systemPromptOverride || getSystemPrompt(),
         messages: [{ role: 'user', content }],
     });
 
@@ -264,6 +281,7 @@ async function callClaude(
             description: string;
             guideline_ref?: string;
             fix_suggestion?: string;
+            confidence?: number;
         }>;
 
         return parsed.map(item => ({
@@ -275,6 +293,7 @@ async function callClaude(
             description: item.description,
             guideline_ref: item.guideline_ref,
             fix_suggestion: item.fix_suggestion,
+            confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : undefined,
         }));
     } catch {
         console.error('Failed to parse Claude response:', text.slice(0, 200));
@@ -282,15 +301,20 @@ async function callClaude(
     }
 }
 
-async function analyzeDescription(client: Anthropic, input: SoftRulesInput): Promise<CheckResult[]> {
+async function analyzeDescription(client: Anthropic, input: SoftRulesInput, calibrationCtx?: string): Promise<CheckResult[]> {
+    const systemPrompt = getSystemPrompt(input.category, ['description'], calibrationCtx);
+
     const prompt = fillPrompt(DESCRIPTION_ANALYSIS_PROMPT, {
         app_name: input.app_name,
         category: input.category || '',
         description: input.description || '',
     });
 
-    const results = await callClaude(client, prompt);
-    return results.map(r => ({ ...r, category: 'description' as const }));
+    const results = await callClaude(client, prompt, undefined, systemPrompt);
+    const categorized = results.map(r => ({ ...r, category: 'description' as const }));
+
+    // Multi-pass verification
+    return verifyFindings(client, categorized, `App description for "${input.app_name}": ${input.description}`, input.category);
 }
 
 async function analyzeScreenshots(client: Anthropic, input: SoftRulesInput): Promise<CheckResult[]> {
@@ -338,10 +362,12 @@ async function analyzeScreenshotBatch(
     client: Anthropic,
     input: SoftRulesInput,
     startIdx: number,
-    endIdx: number
+    endIdx: number,
+    calibrationCtx?: string
 ): Promise<CheckResult[]> {
     if (!input.screenshots_data) return [];
 
+    const systemPrompt = getSystemPrompt(input.category, ['screenshots'], calibrationCtx);
     const batch = input.screenshots_data.slice(startIdx, endIdx);
     const descriptionPreview = (input.description || '').slice(0, 500);
 
@@ -360,8 +386,16 @@ async function analyzeScreenshotBatch(
         mime_type: s.mime_type,
     }));
 
-    const results = await callClaudeForScreenshots(client, prompt, images);
-    return results.map(r => ({ ...r, category: 'screenshots' as const }));
+    const results = await callClaudeForScreenshots(client, prompt, images, systemPrompt);
+    const categorized = results.map(r => ({ ...r, category: 'screenshots' as const }));
+
+    // Multi-pass verification (text-only — can't re-send images to judge)
+    return verifyFindings(
+        client,
+        categorized,
+        `Screenshots ${startIdx + 1}-${endIdx} of "${input.app_name}" (${input.category || 'uncategorized'}). Description: ${descriptionPreview}`,
+        input.category
+    );
 }
 
 /**
@@ -371,7 +405,8 @@ async function analyzeScreenshotBatch(
 async function callClaudeForScreenshots(
     client: Anthropic,
     prompt: string,
-    images: Array<{ base64: string; mime_type: string }>
+    images: Array<{ base64: string; mime_type: string }>,
+    systemPromptOverride?: string
 ): Promise<CheckResult[]> {
     const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
 
@@ -392,7 +427,7 @@ async function callClaudeForScreenshots(
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096, // Higher limit for comprehensive screenshot analysis
-        system: getSystemPrompt(),
+        system: systemPromptOverride || getSystemPrompt(),
         messages: [{ role: 'user', content }],
     });
 
@@ -413,6 +448,7 @@ async function callClaudeForScreenshots(
             description: string;
             guideline_ref?: string;
             fix_suggestion?: string;
+            confidence?: number;
         }>;
 
         return parsed.map(item => ({
@@ -424,6 +460,7 @@ async function callClaudeForScreenshots(
             description: item.description,
             guideline_ref: item.guideline_ref,
             fix_suggestion: item.fix_suggestion,
+            confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : undefined,
         }));
     } catch {
         console.error('Failed to parse Claude screenshot analysis response:', text.slice(0, 200));
@@ -431,7 +468,91 @@ async function callClaudeForScreenshots(
     }
 }
 
-async function analyzePrivacyPolicy(client: Anthropic, input: SoftRulesInput): Promise<CheckResult[]> {
+/**
+ * Multi-pass verification: sends first-pass findings through a "judge" Claude call
+ * to filter false positives and adjust severity/confidence.
+ * Only verifies non-pass findings to save API cost.
+ */
+async function verifyFindings(
+    client: Anthropic,
+    findings: CheckResult[],
+    sourceDescription: string,
+    category?: string | null
+): Promise<CheckResult[]> {
+    // Skip verification if no actionable findings
+    const actionable = findings.filter(f => f.severity !== 'pass');
+    const passes = findings.filter(f => f.severity === 'pass');
+
+    if (actionable.length === 0) return findings;
+
+    try {
+        const catContext = getCategoryContext(category);
+        const categoryText = catContext ? formatCategoryContext(catContext) : '';
+
+        const prompt = fillPrompt(VERIFICATION_PROMPT, {
+            current_date: new Date().toISOString().split('T')[0],
+            category_context: categoryText,
+            source_data: sourceDescription.slice(0, 4000),
+            findings_json: JSON.stringify(actionable.map(f => ({
+                severity: f.severity,
+                title: f.title,
+                description: f.description,
+                guideline_ref: f.guideline_ref,
+                fix_suggestion: f.fix_suggestion,
+                confidence: f.confidence,
+            })), null, 2),
+        });
+
+        const response = await client.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 2048,
+            system: 'You are a senior App Store review judge. Return only valid JSON arrays.',
+            messages: [{ role: 'user', content: prompt }],
+        });
+
+        const text = response.content
+            .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+            .map(block => block.text)
+            .join('');
+
+        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) return findings; // Fallback to unverified
+
+        const verified = JSON.parse(jsonMatch[0]) as Array<{
+            severity: string;
+            title: string;
+            description: string;
+            guideline_ref?: string;
+            fix_suggestion?: string;
+            confidence?: number;
+            verification_note?: string;
+        }>;
+
+        const verifiedResults: CheckResult[] = verified
+            .filter(v => v.severity !== 'pass') // Remove items the judge demoted to pass
+            .map(v => ({
+                category: actionable[0]?.category || 'metadata' as const,
+                severity: (['critical', 'warning', 'info', 'pass'].includes(v.severity)
+                    ? v.severity
+                    : 'info') as CheckResult['severity'],
+                title: v.title,
+                description: v.description,
+                guideline_ref: v.guideline_ref,
+                fix_suggestion: v.fix_suggestion,
+                confidence: typeof v.confidence === 'number' ? Math.max(0, Math.min(100, v.confidence)) : undefined,
+            }));
+
+        // Return verified actionable findings + original pass findings
+        return [...verifiedResults, ...passes];
+    } catch (error) {
+        console.error('[Verification] Judge pass failed, using unverified findings:', error);
+        return findings; // Fallback to unverified on error
+    }
+}
+
+async function analyzePrivacyPolicy(client: Anthropic, input: SoftRulesInput, calibrationCtx?: string): Promise<CheckResult[]> {
+    const systemPrompt = getSystemPrompt(input.category, ['privacy', 'privacy_manifest'], calibrationCtx);
+
     // Create a summary of manifest declarations for the prompt
     const manifestSummary = summarizeManifest(input.manifest_content || '');
 
@@ -441,11 +562,21 @@ async function analyzePrivacyPolicy(client: Anthropic, input: SoftRulesInput): P
         manifest_summary: manifestSummary,
     });
 
-    const results = await callClaude(client, prompt);
-    return results.map(r => ({ ...r, category: 'privacy_manifest' as const }));
+    const results = await callClaude(client, prompt, undefined, systemPrompt);
+    const categorized = results.map(r => ({ ...r, category: 'privacy_manifest' as const }));
+
+    // Multi-pass verification
+    return verifyFindings(
+        client,
+        categorized,
+        `Privacy policy cross-check for "${input.app_name}". Manifest: ${manifestSummary}`,
+        input.category
+    );
 }
 
-async function analyzeContentPolicy(client: Anthropic, input: SoftRulesInput): Promise<CheckResult[]> {
+async function analyzeContentPolicy(client: Anthropic, input: SoftRulesInput, calibrationCtx?: string): Promise<CheckResult[]> {
+    const systemPrompt = getSystemPrompt(input.category, ['content_policy'], calibrationCtx);
+
     const prompt = fillPrompt(CONTENT_POLICY_PROMPT, {
         app_name: input.app_name,
         category: input.category || '',
@@ -456,11 +587,21 @@ async function analyzeContentPolicy(client: Anthropic, input: SoftRulesInput): P
         has_subscriptions: input.has_subscriptions ? 'Yes' : 'No',
     });
 
-    const results = await callClaude(client, prompt);
-    return results.map(r => ({ ...r, category: 'content_policy' as const }));
+    const results = await callClaude(client, prompt, undefined, systemPrompt);
+    const categorized = results.map(r => ({ ...r, category: 'content_policy' as const }));
+
+    // Multi-pass verification
+    return verifyFindings(
+        client,
+        categorized,
+        `Content policy for "${input.app_name}" (${input.category || 'uncategorized'}, age: ${input.age_rating || '4+'})`,
+        input.category
+    );
 }
 
-async function analyzeMetadataQuality(client: Anthropic, input: SoftRulesInput): Promise<CheckResult[]> {
+async function analyzeMetadataQuality(client: Anthropic, input: SoftRulesInput, calibrationCtx?: string): Promise<CheckResult[]> {
+    const systemPrompt = getSystemPrompt(input.category, ['metadata'], calibrationCtx);
+
     const prompt = fillPrompt(METADATA_QUALITY_PROMPT, {
         app_name: input.app_name,
         subtitle: input.subtitle || '',
@@ -469,8 +610,8 @@ async function analyzeMetadataQuality(client: Anthropic, input: SoftRulesInput):
         description_preview: (input.description || '').slice(0, 500),
     });
 
-    const results = await callClaude(client, prompt);
-    // Force all metadata quality results to info severity
+    const results = await callClaude(client, prompt, undefined, systemPrompt);
+    // Force all metadata quality results to info severity (no verification needed — these are suggestions)
     return results.map(r => ({
         ...r,
         category: 'metadata_quality' as const,
