@@ -2558,8 +2558,8 @@
     }
 
     .modal {
-        background: var(--bg-dark);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--bg-elevated);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 12px;
         width: 100%;
         max-width: 420px;
@@ -2571,7 +2571,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 1.25rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .modal-header h3 {
@@ -2602,7 +2602,7 @@
         justify-content: flex-end;
         gap: 0.75rem;
         padding: 1.25rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     /* Scan Results */
@@ -2620,11 +2620,13 @@
     }
 
     .scan-result-item.success {
-        background: rgba(34, 197, 94, 0.08);
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.2);
     }
 
     .scan-result-item.warning {
-        background: rgba(251, 191, 36, 0.08);
+        background: rgba(251, 191, 36, 0.12);
+        border: 1px solid rgba(251, 191, 36, 0.2);
     }
 
     .result-icon {
@@ -2662,7 +2664,7 @@
 
     .result-path {
         font-size: 0.8rem;
-        color: var(--gray-500);
+        color: var(--gray-300);
         word-break: break-all;
     }
 
