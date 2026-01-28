@@ -909,6 +909,18 @@
                     <span>Ready to submit to App Store Connect.</span>
                 {/if}
             </div>
+            {#if criticalItems.length > 0 || warningItems.length > 0}
+                <a
+                    href="/submit?resubmit={submission.id}"
+                    class="retest-button"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    Retest (100 Credits)
+                </a>
+            {/if}
         </section>
 
         <!-- Review Timeline -->
@@ -1721,6 +1733,31 @@
     .next-action span {
         font-size: 0.9rem;
         color: var(--gray-200);
+    }
+
+    .retest-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding: 10px 20px;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 8px;
+        color: #f59e0b;
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .retest-button:hover {
+        background: rgba(245, 158, 11, 0.2);
+        border-color: rgba(245, 158, 11, 0.5);
     }
 
     /* Footer */
