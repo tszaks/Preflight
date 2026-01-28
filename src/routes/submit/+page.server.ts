@@ -469,8 +469,10 @@ export const actions: Actions = {
         const savedPlist = formData.get('saved_plist_path')?.toString() || null;
 
         // Upload new screenshots (appended after saved ones)
+        console.log('[saveDraft] userId:', userId, 'submissionId:', submissionId, 'basePath:', basePath);
         const newScreenshotPaths: string[] = [];
         const screenshots = formData.getAll('screenshots') as File[];
+        console.log('[saveDraft] Screenshots to upload:', screenshots.length, 'sizes:', screenshots.map(f => f.size));
         for (let i = 0; i < screenshots.length; i++) {
             const file = screenshots[i];
             if (file.size === 0) continue;
@@ -482,38 +484,57 @@ export const actions: Actions = {
                 .from('screenshots')
                 .upload(path, file, { upsert: true });
 
-            if (!error) newScreenshotPaths.push(path);
+            if (error) {
+                console.error('[saveDraft] Screenshot upload FAILED:', path, error.message, error);
+            } else {
+                newScreenshotPaths.push(path);
+            }
         }
 
         let manifestPath: string | null = null;
         const manifest = formData.get('manifest') as File | null;
+        console.log('[saveDraft] Manifest file:', manifest?.name, 'size:', manifest?.size);
         if (manifest && manifest.size > 0) {
             const path = `${basePath}/PrivacyInfo.xcprivacy`;
             const { error } = await supabase.storage
                 .from('manifests')
                 .upload(path, manifest, { upsert: true });
-            if (!error) manifestPath = path;
+            if (error) {
+                console.error('[saveDraft] Manifest upload FAILED:', error.message, error);
+            } else {
+                manifestPath = path;
+            }
         }
 
         let plistPath: string | null = null;
         const plist = formData.get('plist') as File | null;
+        console.log('[saveDraft] Plist file:', plist?.name, 'size:', plist?.size);
         if (plist && plist.size > 0) {
             const path = `${basePath}/Info.plist`;
             const { error } = await supabase.storage
                 .from('plists')
                 .upload(path, plist, { upsert: true });
-            if (!error) plistPath = path;
+            if (error) {
+                console.error('[saveDraft] Plist upload FAILED:', error.message, error);
+            } else {
+                plistPath = path;
+            }
         }
 
         let iconPath: string | null = null;
         const icon = formData.get('icon') as File | null;
+        console.log('[saveDraft] Icon file:', icon?.name, 'size:', icon?.size);
         if (icon && icon.size > 0) {
             const ext = icon.name.split('.').pop() || 'png';
             const path = `${basePath}/app_icon.${ext}`;
             const { error } = await supabase.storage
                 .from('screenshots')
                 .upload(path, icon, { upsert: true });
-            if (!error) iconPath = path;
+            if (error) {
+                console.error('[saveDraft] Icon upload FAILED:', error.message, error);
+            } else {
+                iconPath = path;
+            }
         }
 
         const savedIcon = formData.get('saved_icon_path')?.toString() || null;
@@ -524,8 +545,15 @@ export const actions: Actions = {
         const finalPlistPath = plistPath || savedPlist;
         const finalIconPath = iconPath || savedIcon;
 
+        console.log('[saveDraft] Final paths:', {
+            screenshots: allScreenshotPaths.length,
+            manifest: finalManifestPath,
+            plist: finalPlistPath,
+            icon: finalIconPath,
+        });
+
         // Always update file paths (to reflect any removals too)
-        await supabase
+        const { error: pathUpdateError } = await supabase
             .from('submissions')
             .update({
                 screenshot_paths: allScreenshotPaths.length > 0 ? allScreenshotPaths : null,
@@ -534,6 +562,10 @@ export const actions: Actions = {
                 app_icon_path: finalIconPath,
             })
             .eq('id', submissionId);
+
+        if (pathUpdateError) {
+            console.error('[saveDraft] Path update FAILED:', pathUpdateError);
+        }
 
         return {
             success: true,
