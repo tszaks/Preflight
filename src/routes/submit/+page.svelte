@@ -23,6 +23,7 @@
     let savingDraft = $state(false);
     let draftSaved = $state(false);
     let errorMsg = $state("");
+    let showCreditModal = $state(false);
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 1: Your App (Basic Information)
@@ -157,8 +158,8 @@
         email: reviewerContactPrefill?.email || "",
     });
 
-    // Pricing (single tier for now)
-    const PRICE = 49;
+    // Credit cost for a full review
+    const CREDIT_COST = 100;
 
     // Required files validation
     let missingFiles = $derived.by(() => {
@@ -289,131 +290,10 @@
             return;
         }
 
-        loading = true;
-        errorMsg = "";
-
-        try {
-            const createForm = new FormData();
-
-            // Basic Info
-            createForm.set("app_name", appName);
-            createForm.set("subtitle", subtitle);
-            createForm.set("description", description);
-            createForm.set("promotional_text", promotionalText);
-            createForm.set("keywords", keywords);
-            createForm.set("category", category);
-            createForm.set("secondary_category", secondaryCategory);
-            createForm.set("version", version);
-            createForm.set("copyright", copyright);
-
-            // URLs
-            createForm.set("privacy_url", privacyUrl);
-            createForm.set("support_url", supportUrl);
-            createForm.set("marketing_url", marketingUrl);
-
-            // Age Rating
-            createForm.set("age_rating", calculatedAgeRating);
-            createForm.set("age_rating_answers", JSON.stringify(ageRatingAnswers));
-
-            // App Privacy / Data Collection
-            createForm.set("data_collection", JSON.stringify(dataCollection));
-
-            // App Review Info
-            createForm.set("sign_in_required", signInRequired.toString());
-            createForm.set("demo_username", demoUsername);
-            createForm.set("demo_password", demoPassword);
-            createForm.set("review_notes", reviewNotes);
-            createForm.set("reviewer_contact", JSON.stringify(reviewerContact));
-
-            // Monetization & Login
-            createForm.set("has_iap", hasInAppPurchases.toString());
-            createForm.set("has_subscriptions", hasSubscriptions.toString());
-            createForm.set("has_ads", hasAds.toString());
-            createForm.set("has_third_party_login", hasThirdPartyLogin.toString());
-
-            createForm.set("review_type", "full");
-
-            const createRes = await fetch("/submit?/createSubmission", {
-                method: "POST",
-                body: createForm,
-            });
-
-            const createResult = deserialize(await createRes.text());
-
-            if (createResult.type === "failure") {
-                throw new Error(
-                    (createResult.data as { message?: string })?.message ||
-                        "Failed to create submission",
-                );
-            }
-
-            if (
-                createResult.type !== "success" ||
-                !createResult.data?.submissionId
-            ) {
-                throw new Error("Failed to create submission");
-            }
-
-            const submissionId = createResult.data.submissionId as string;
-
-            // Upload files
-            if (screenshots.length > 0 || privacyManifest || infoPlist || appIcon) {
-                const uploadForm = new FormData();
-                uploadForm.set("submission_id", submissionId);
-
-                for (const file of screenshots) {
-                    uploadForm.append("screenshots", file);
-                }
-                if (privacyManifest) {
-                    uploadForm.set("manifest", privacyManifest);
-                }
-                if (infoPlist) {
-                    uploadForm.set("plist", infoPlist);
-                }
-                if (appIcon) {
-                    uploadForm.set("icon", appIcon);
-                }
-
-                await fetch("/submit?/uploadFiles", {
-                    method: "POST",
-                    body: uploadForm,
-                });
-            }
-
-            // Redirect to Stripe checkout
-            const checkoutRes = await fetch("/api/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    submission_id: submissionId,
-                    review_type: "full",
-                }),
-            });
-
-            const checkoutData = await checkoutRes.json();
-
-            if (!checkoutRes.ok) {
-                throw new Error(
-                    checkoutData.message ||
-                        `Checkout failed: ${checkoutRes.status}`,
-                );
-            }
-
-            if (checkoutData.url) {
-                window.location.href = checkoutData.url;
-            } else {
-                throw new Error("No checkout URL returned");
-            }
-        } catch (err) {
-            errorMsg =
-                err instanceof Error ? err.message : "Something went wrong";
-            loading = false;
-        }
-    }
-
-    async function testSubmit() {
-        if (!canSubmit) {
-            errorMsg = `Missing required fields or files`;
+        // Client-side credit check (server also validates)
+        const userCredits = data.credits ?? 0;
+        if (userCredits < CREDIT_COST) {
+            showCreditModal = true;
             return;
         }
 
@@ -422,11 +302,6 @@
 
         try {
             const formData = new FormData();
-
-            // Pass draft ID if editing existing (server will UPDATE instead of INSERT)
-            if (draftId) {
-                formData.set("draft_id", draftId);
-            }
 
             // Basic Info
             formData.set("app_name", appName);
@@ -448,7 +323,7 @@
             formData.set("age_rating", calculatedAgeRating);
             formData.set("age_rating_answers", JSON.stringify(ageRatingAnswers));
 
-            // App Privacy
+            // App Privacy / Data Collection
             formData.set("data_collection", JSON.stringify(dataCollection));
 
             // App Review Info
@@ -464,45 +339,51 @@
             formData.set("has_ads", hasAds.toString());
             formData.set("has_third_party_login", hasThirdPartyLogin.toString());
 
-            // Already-saved file paths (so server keeps them)
+            formData.set("review_type", "full");
+
+            // Draft info
+            if (draftId) {
+                formData.set("draft_id", draftId);
+            }
+
+            // Already-saved file paths (so server knows what to keep)
             formData.set("saved_screenshot_paths", JSON.stringify(savedScreenshotPaths));
             if (savedManifestPath) formData.set("saved_manifest_path", savedManifestPath);
             if (savedPlistPath) formData.set("saved_plist_path", savedPlistPath);
             if (savedIconPath) formData.set("saved_icon_path", savedIconPath);
 
-            // New files only
+            // New files
             for (const file of screenshots) {
                 formData.append("screenshots", file);
             }
-            if (privacyManifest) {
-                formData.set("manifest", privacyManifest);
-            }
-            if (infoPlist) {
-                formData.set("plist", infoPlist);
-            }
-            if (appIcon) {
-                formData.set("icon", appIcon);
-            }
+            if (privacyManifest) formData.set("manifest", privacyManifest);
+            if (infoPlist) formData.set("plist", infoPlist);
+            if (appIcon) formData.set("icon", appIcon);
 
             const response = await fetch("/submit?/testSubmit", {
                 method: "POST",
                 body: formData,
             });
 
-            if (response.redirected) {
-                window.location.href = response.url;
+            const result = deserialize(await response.text());
+
+            if (result.type === "failure") {
+                const resultData = result.data as { message?: string; credits?: number };
+                // Server confirmed insufficient credits
+                if (result.status === 402) {
+                    showCreditModal = true;
+                    loading = false;
+                    return;
+                }
+                throw new Error(resultData?.message || "Failed to start review");
+            }
+
+            if (result.type === "redirect") {
+                goto(result.location);
                 return;
             }
 
-            const result = await response.text();
-            const parsedResult = deserialize(result);
-
-            if (parsedResult.type === "failure") {
-                throw new Error(
-                    (parsedResult.data as { message?: string })?.message ||
-                        "Test submission failed",
-                );
-            }
+            throw new Error("Unexpected response from server");
         } catch (err) {
             errorMsg =
                 err instanceof Error ? err.message : "Something went wrong";
@@ -1649,13 +1530,6 @@
                             {/if}
                         </button>
                         <button
-                            class="btn btn-accent"
-                            onclick={testSubmit}
-                            disabled={loading || !canSubmit}
-                        >
-                            {loading ? "Analyzing..." : "Test Mode (Free)"}
-                        </button>
-                        <button
                             class="btn btn-primary"
                             onclick={submit}
                             disabled={loading || !canSubmit}
@@ -1668,6 +1542,23 @@
         {/if}
     </div>
 </main>
+
+<!-- Credit Modal -->
+{#if showCreditModal}
+    <div class="modal-overlay" onclick={() => (showCreditModal = false)} role="presentation">
+        <div class="credit-modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="credit-modal-title">
+            <div class="credit-modal-icon">🚀</div>
+            <h3 id="credit-modal-title">Ready to launch your review?</h3>
+            <p class="credit-modal-body">
+                This review costs <strong>{CREDIT_COST} credits</strong>.<br />
+                You currently have <strong>{data.credits ?? 0} credits</strong>.
+            </p>
+            <p class="credit-modal-nudge">Pick up a credit pack to get started:</p>
+            <a href="/pricing" class="btn btn-gold">Get Credits</a>
+            <button class="credit-modal-dismiss" onclick={() => (showCreditModal = false)}>Maybe Later</button>
+        </div>
+    </div>
+{/if}
 
 <style>
     .submit-page {
@@ -2771,6 +2662,117 @@
     @keyframes spin {
         to {
             transform: rotate(360deg);
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Credit Modal                                                   */
+    /* ═══════════════════════════════════════════════════════════════ */
+    :global(.modal-overlay) {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.2s ease;
+    }
+
+    :global(.credit-modal) {
+        background: var(--gray-900, #111);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        animation: slideUp 0.25s ease;
+    }
+
+    .credit-modal-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    :global(.credit-modal h3) {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--gray-100);
+        margin-bottom: 0.75rem;
+    }
+
+    .credit-modal-body {
+        font-size: 1rem;
+        color: var(--gray-300);
+        line-height: 1.6;
+        margin-bottom: 0.5rem;
+    }
+
+    .credit-modal-body strong {
+        color: var(--gray-100);
+    }
+
+    .credit-modal-nudge {
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        margin-bottom: 1.5rem;
+    }
+
+    :global(.btn-gold) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 0.85rem 1.5rem;
+        background: linear-gradient(135deg, #d4a853, #c4a767);
+        color: #1a1a1a;
+        font-family: "Outfit", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    :global(.btn-gold:hover) {
+        background: linear-gradient(135deg, #e0b85e, #d4b474);
+        transform: translateY(-1px);
+    }
+
+    .credit-modal-dismiss {
+        display: block;
+        margin: 1rem auto 0;
+        background: none;
+        border: none;
+        color: var(--gray-500);
+        font-size: 0.9rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: color 0.2s ease;
+    }
+
+    .credit-modal-dismiss:hover {
+        color: var(--gray-300);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 </style>
