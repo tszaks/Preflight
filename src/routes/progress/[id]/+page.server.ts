@@ -49,6 +49,15 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
         .eq('submission_id', submissionId)
         .single();
 
+    // Generate signed URL for the app icon if one was uploaded
+    let appIconUrl: string | null = null;
+    if (submission.app_icon_path) {
+        const { data: signedData } = await supabase.storage
+            .from('screenshots')
+            .createSignedUrl(submission.app_icon_path, 3600);
+        appIconUrl = signedData?.signedUrl || null;
+    }
+
     return {
         submission: {
             id: submission.id,
@@ -58,6 +67,7 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
             has_manifest: !!submission.manifest_path,
             has_plist: !!submission.plist_path,
             has_privacy_url: !!submission.privacy_url,
+            app_icon_url: appIconUrl,
         },
         job: job ? {
             status: job.status,

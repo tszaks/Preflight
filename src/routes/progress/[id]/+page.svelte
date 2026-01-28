@@ -51,6 +51,11 @@
     function addLog(message: string, type: 'info' | 'success' | 'error' = 'info') {
         const time = new Date().toLocaleTimeString('en-US', { hour12: false });
         logEntries = [...logEntries.slice(-50), { time, message, type }]; // Keep last 50 entries
+        // Auto-scroll log to bottom
+        requestAnimationFrame(() => {
+            const el = document.getElementById('log-container');
+            if (el) el.scrollTop = el.scrollHeight;
+        });
     }
 
     function updateCheckStatus(checkId: string, status: CheckStatus['status'], issuesFound?: number) {
@@ -156,9 +161,13 @@
     <div class="progress-container">
         <!-- Header -->
         <header class="progress-header">
-            <div class="app-icon">
-                {data.submission.app_name.charAt(0).toUpperCase()}
-            </div>
+            {#if data.submission.app_icon_url}
+                <img class="app-icon app-icon-img" src={data.submission.app_icon_url} alt="{data.submission.app_name} icon" />
+            {:else}
+                <div class="app-icon app-icon-fallback">
+                    {data.submission.app_name.charAt(0).toUpperCase()}
+                </div>
+            {/if}
             <div class="app-info">
                 <h1>{data.submission.app_name}</h1>
                 <span class="review-type">{data.submission.review_type === 'full' ? 'Full Review' : 'Quick Review'}</span>
@@ -172,11 +181,14 @@
                     class="progress-bar"
                     class:complete={isComplete}
                     class:error={hasError}
+                    class:active={!isComplete && !hasError}
                     style="width: {Math.max(0, progress)}%"
                 ></div>
             </div>
             <div class="progress-info">
-                <span class="progress-message">{currentMessage}</span>
+                <span class="progress-message">
+                    {currentMessage}{#if !isComplete && !hasError}<span class="animated-dots"></span>{/if}
+                </span>
                 <span class="progress-percent">{Math.floor(progress)}%</span>
             </div>
         </div>
@@ -264,13 +276,18 @@
         <!-- Log Stream -->
         <section class="log-stream">
             <h2>Live Log</h2>
-            <div class="log-container">
+            <div class="log-container" id="log-container">
                 {#each logEntries as entry}
                     <div class="log-entry" class:success={entry.type === 'success'} class:error={entry.type === 'error'}>
                         <span class="log-time">[{entry.time}]</span>
                         <span class="log-message">{entry.message}</span>
                     </div>
                 {/each}
+                {#if !isComplete && !hasError}
+                    <div class="log-cursor-line">
+                        <span class="log-cursor">▊</span>
+                    </div>
+                {/if}
             </div>
         </section>
 
@@ -318,11 +335,19 @@
     }
 
     .app-icon {
-        width: 64px;
-        height: 64px;
+        width: 72px;
+        height: 72px;
+        border-radius: 16px;
+        flex-shrink: 0;
+    }
+
+    .app-icon-img {
+        object-fit: cover;
+    }
+
+    .app-icon-fallback {
         background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
         color: #000;
-        border-radius: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -364,13 +389,19 @@
         border-radius: 4px;
     }
 
+    .progress-bar.active {
+        animation: barPulse 2s ease-in-out infinite;
+    }
+
     .progress-bar.complete {
         background: #00ff88;
+        animation: none;
     }
 
     .progress-bar.error {
         background: #ff4444;
         box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        animation: none;
     }
 
     .progress-info {
@@ -515,10 +546,10 @@
 
     /* Log Stream */
     .log-stream {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
-        padding: 20px;
+        padding: 24px;
         margin-bottom: 32px;
     }
 
@@ -532,11 +563,32 @@
     }
 
     .log-container {
-        max-height: 200px;
+        min-height: 300px;
+        max-height: 50vh;
         overflow-y: auto;
         font-family: 'Instrument Mono', monospace;
-        font-size: 0.75rem;
-        line-height: 1.6;
+        font-size: 0.8rem;
+        line-height: 1.8;
+        padding-right: 8px;
+    }
+
+    /* Custom scrollbar for the log */
+    .log-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .log-container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 3px;
+    }
+
+    .log-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 3px;
+    }
+
+    .log-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.25);
     }
 
     .log-entry {
@@ -624,5 +676,45 @@
             opacity: 1;
             transform: translateY(0);
         }
+    }
+
+    /* Persistent motion: progress bar breathing glow */
+    @keyframes barPulse {
+        0%, 100% {
+            box-shadow: 0 0 12px var(--accent-glow, rgba(0, 255, 136, 0.4));
+        }
+        50% {
+            box-shadow: 0 0 28px var(--accent-glow, rgba(0, 255, 136, 0.7));
+        }
+    }
+
+    /* Persistent motion: animated dots after status message */
+    .animated-dots::after {
+        content: '';
+        animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+        0%  { content: ''; }
+        25% { content: '.'; }
+        50% { content: '..'; }
+        75% { content: '...'; }
+    }
+
+    /* Persistent motion: blinking terminal cursor */
+    .log-cursor-line {
+        padding: 4px 0;
+    }
+
+    .log-cursor {
+        color: var(--accent, #00ff88);
+        animation: blink 1s step-end infinite;
+        font-family: 'Instrument Mono', monospace;
+        font-size: 0.8rem;
+    }
+
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
     }
 </style>
