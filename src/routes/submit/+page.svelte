@@ -615,6 +615,13 @@
             savingDraft = false;
         }
     }
+
+    // Continue to next step + auto-save in background
+    function continueToStep(nextStep: number) {
+        step = nextStep;
+        // Fire-and-forget save — don't block the UI
+        saveDraft();
+    }
 </script>
 
 <main class="submit-page">
@@ -835,7 +842,7 @@
                         </button>
                         <button
                             class="btn btn-primary"
-                            onclick={() => (step = 2)}
+                            onclick={() => continueToStep(2)}
                             disabled={!step1Valid}
                         >
                             Continue
@@ -1018,7 +1025,7 @@
                                 Save Draft
                             {/if}
                         </button>
-                        <button class="btn btn-primary" onclick={() => (step = 3)} disabled={!step2Valid}>Continue</button>
+                        <button class="btn btn-primary" onclick={() => continueToStep(3)} disabled={!step2Valid}>Continue</button>
                     </div>
                 </div>
             </CockpitPanel>
@@ -1537,7 +1544,7 @@
                                 Save Draft
                             {/if}
                         </button>
-                        <button class="btn btn-primary" onclick={() => (step = 4)} disabled={!step3Valid}>Continue</button>
+                        <button class="btn btn-primary" onclick={() => continueToStep(4)} disabled={!step3Valid}>Continue</button>
                     </div>
                 </div>
             </CockpitPanel>
