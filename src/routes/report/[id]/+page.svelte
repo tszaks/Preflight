@@ -426,6 +426,42 @@
         setTimeout(() => (copiedFixId = null), 2000);
     }
 
+    // Confidence badge display
+    function confidenceBadge(confidence: number | null | undefined): { label: string; class: string } | null {
+        if (confidence == null) return null;
+        if (confidence >= 80) return { label: 'High', class: 'confidence-high' };
+        if (confidence >= 50) return { label: 'Medium', class: 'confidence-medium' };
+        return { label: 'Low', class: 'confidence-low' };
+    }
+
+    // User feedback state
+    let feedbackState: Record<string, 'helpful' | 'false_positive'> = $state({});
+    let feedbackLoading: Record<string, boolean> = $state({});
+
+    async function submitFeedback(itemId: string, feedback: 'helpful' | 'false_positive') {
+        // Toggle off if already set to same value
+        if (feedbackState[itemId] === feedback) {
+            feedbackState[itemId] = undefined as any;
+            return;
+        }
+
+        feedbackLoading[itemId] = true;
+        try {
+            const res = await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_id: itemId, feedback }),
+            });
+            if (res.ok) {
+                feedbackState[itemId] = feedback;
+            }
+        } catch (e) {
+            console.error('Failed to submit feedback:', e);
+        } finally {
+            feedbackLoading[itemId] = false;
+        }
+    }
+
     function downloadMarkdown() {
         const markdown = generateMarkdownExport();
         const blob = new Blob([markdown], { type: "text/markdown" });
@@ -739,8 +775,12 @@
                         {#each criticalItems as item}
                             <CockpitPanel class="action-item critical-item">
                                 <div class="action-content">
-                                    <div class="item-meta">
-                                        {categoryLabel(item.category)}
+                                    <div class="item-meta-row">
+                                        <span class="item-meta">{categoryLabel(item.category)}</span>
+                                        {#if confidenceBadge(item.confidence)}
+                                            {@const badge = confidenceBadge(item.confidence)}
+                                            <span class="confidence-badge {badge?.class}">{badge?.label}</span>
+                                        {/if}
                                     </div>
                                     <strong>{item.title}</strong>
                                     <p>{item.description}</p>
@@ -761,6 +801,23 @@
                                             </div>
                                         </div>
                                     {/if}
+                                    <div class="feedback-row">
+                                        <span class="feedback-label">Was this helpful?</span>
+                                        <button
+                                            class="feedback-btn"
+                                            class:active={feedbackState[item.id] === 'helpful'}
+                                            disabled={feedbackLoading[item.id]}
+                                            onclick={() => submitFeedback(item.id, 'helpful')}
+                                            title="This finding is helpful"
+                                        >&#x1F44D;</button>
+                                        <button
+                                            class="feedback-btn"
+                                            class:active={feedbackState[item.id] === 'false_positive'}
+                                            disabled={feedbackLoading[item.id]}
+                                            onclick={() => submitFeedback(item.id, 'false_positive')}
+                                            title="This is a false positive"
+                                        >&#x1F44E;</button>
+                                    </div>
                                 </div>
                             </CockpitPanel>
                         {/each}
@@ -781,8 +838,12 @@
                         {#each warningItems as item}
                             <CockpitPanel class="action-item warning-item">
                                 <div class="action-content">
-                                    <div class="item-meta">
-                                        {categoryLabel(item.category)}
+                                    <div class="item-meta-row">
+                                        <span class="item-meta">{categoryLabel(item.category)}</span>
+                                        {#if confidenceBadge(item.confidence)}
+                                            {@const badge = confidenceBadge(item.confidence)}
+                                            <span class="confidence-badge {badge?.class}">{badge?.label}</span>
+                                        {/if}
                                     </div>
                                     <strong>{item.title}</strong>
                                     <p>{item.description}</p>
@@ -803,6 +864,23 @@
                                             </div>
                                         </div>
                                     {/if}
+                                    <div class="feedback-row">
+                                        <span class="feedback-label">Was this helpful?</span>
+                                        <button
+                                            class="feedback-btn"
+                                            class:active={feedbackState[item.id] === 'helpful'}
+                                            disabled={feedbackLoading[item.id]}
+                                            onclick={() => submitFeedback(item.id, 'helpful')}
+                                            title="This finding is helpful"
+                                        >&#x1F44D;</button>
+                                        <button
+                                            class="feedback-btn"
+                                            class:active={feedbackState[item.id] === 'false_positive'}
+                                            disabled={feedbackLoading[item.id]}
+                                            onclick={() => submitFeedback(item.id, 'false_positive')}
+                                            title="This is a false positive"
+                                        >&#x1F44E;</button>
+                                    </div>
                                 </div>
                             </CockpitPanel>
                         {/each}
@@ -868,6 +946,10 @@
                                 <span class="suggestion-title"
                                     >{item.title}</span
                                 >
+                                {#if confidenceBadge(item.confidence)}
+                                    {@const badge = confidenceBadge(item.confidence)}
+                                    <span class="confidence-badge {badge?.class}">{badge?.label}</span>
+                                {/if}
                                 <span class="suggestion-category"
                                     >{categoryLabel(item.category)}</span
                                 >
@@ -1926,6 +2008,91 @@
         color: var(--gray-400);
     }
 
+
+    /* Confidence Badges */
+    .item-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .confidence-badge {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 3px;
+    }
+
+    .confidence-high {
+        color: hsl(145, 80%, 50%);
+        background: hsla(145, 80%, 50%, 0.1);
+        border: 1px solid hsla(145, 80%, 50%, 0.2);
+    }
+
+    .confidence-medium {
+        color: hsl(38, 95%, 60%);
+        background: hsla(38, 95%, 60%, 0.1);
+        border: 1px solid hsla(38, 95%, 60%, 0.2);
+    }
+
+    .confidence-low {
+        color: var(--gray-500);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Feedback Buttons */
+    .feedback-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .feedback-label {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.6rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-right: 4px;
+    }
+
+    .feedback-btn {
+        font-size: 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: all 0.15s ease;
+        line-height: 1;
+    }
+
+    .feedback-btn:hover:not(:disabled) {
+        opacity: 0.9;
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .feedback-btn.active {
+        opacity: 1;
+        background: rgba(212, 168, 83, 0.12);
+        border-color: rgba(212, 168, 83, 0.3);
+    }
+
+    .feedback-btn:disabled {
+        cursor: wait;
+        opacity: 0.3;
+    }
 
     @media (max-width: 600px) {
         .score-section {
