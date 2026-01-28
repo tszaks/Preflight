@@ -1747,7 +1747,7 @@
     /* Collapsible Sections (Accordion) */
     /* ═══════════════════════════════════════════════════════════════ */
     .collapsible-section {
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 10px;
         margin-bottom: 1rem;
         overflow: hidden;
@@ -1759,14 +1759,14 @@
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.25rem;
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(255, 255, 255, 0.03);
         border: none;
         cursor: pointer;
         transition: background 0.2s;
     }
 
     .collapsible-header:hover {
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.06);
     }
 
     .collapsible-title {
@@ -1778,17 +1778,17 @@
     .collapsible-title span:first-of-type {
         font-size: 1rem;
         font-weight: 600;
-        color: var(--gray-200);
+        color: var(--gray-100);
     }
 
     .section-hint {
         font-size: 0.8rem;
-        color: var(--gray-500);
+        color: var(--gray-300);
         font-weight: 400;
     }
 
     .chevron {
-        color: var(--gray-500);
+        color: var(--gray-300);
         transition: transform 0.2s;
         flex-shrink: 0;
     }
