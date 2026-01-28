@@ -18,6 +18,9 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
     let draftSubmission = null;
     let originalSubmission = null;
 
+    // Map of storage path → signed URL for displaying saved files
+    let fileUrls: Record<string, string> = {};
+
     if (draftId) {
         // Editing an existing draft - we'll update this submission
         const { data } = await supabase
@@ -29,6 +32,34 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
             .single();
 
         draftSubmission = data;
+
+        // Generate signed URLs for saved files so the client can display thumbnails
+        if (draftSubmission) {
+            const pathsToSign: { bucket: string; path: string }[] = [];
+
+            if (draftSubmission.screenshot_paths?.length) {
+                for (const p of draftSubmission.screenshot_paths) {
+                    pathsToSign.push({ bucket: 'screenshots', path: p });
+                }
+            }
+            if (draftSubmission.app_icon_path) {
+                pathsToSign.push({ bucket: 'screenshots', path: draftSubmission.app_icon_path });
+            }
+
+            // Generate all signed URLs in parallel
+            const results = await Promise.all(
+                pathsToSign.map(async ({ bucket, path }) => {
+                    const { data } = await supabase.storage
+                        .from(bucket)
+                        .createSignedUrl(path, 3600); // 1 hour expiry
+                    return { path, url: data?.signedUrl || null };
+                })
+            );
+
+            for (const { path, url } of results) {
+                if (url) fileUrls[path] = url;
+            }
+        }
     } else if (resubmitId) {
         // Creating a new submission based on an old one
         const { data } = await supabase
@@ -45,6 +76,7 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
         user: user || { id: 'test-user' },
         draftSubmission,
         originalSubmission,
+        fileUrls,
     };
 };
 
@@ -136,7 +168,7 @@ export const actions: Actions = {
             const path = `${basePath}/PrivacyInfo.xcprivacy`;
             const { error } = await supabase.storage
                 .from('manifests')
-                .upload(path, manifest, { upsert: true });
+                .upload(path, manifest, { upsert: true, contentType: 'application/xml' });
 
             if (!error) manifestPath = path;
         }
@@ -148,7 +180,7 @@ export const actions: Actions = {
             const path = `${basePath}/Info.plist`;
             const { error } = await supabase.storage
                 .from('plists')
-                .upload(path, plist, { upsert: true });
+                .upload(path, plist, { upsert: true, contentType: 'application/xml' });
 
             if (!error) plistPath = path;
         }
@@ -317,7 +349,7 @@ export const actions: Actions = {
             const path = `${basePath}/PrivacyInfo.xcprivacy`;
             const { error } = await supabase.storage
                 .from('manifests')
-                .upload(path, manifest, { upsert: true });
+                .upload(path, manifest, { upsert: true, contentType: 'application/xml' });
             if (!error) manifestPath = path;
         }
 
@@ -327,7 +359,7 @@ export const actions: Actions = {
             const path = `${basePath}/Info.plist`;
             const { error } = await supabase.storage
                 .from('plists')
-                .upload(path, plist, { upsert: true });
+                .upload(path, plist, { upsert: true, contentType: 'application/xml' });
             if (!error) plistPath = path;
         }
 
@@ -498,7 +530,7 @@ export const actions: Actions = {
             const path = `${basePath}/PrivacyInfo.xcprivacy`;
             const { error } = await supabase.storage
                 .from('manifests')
-                .upload(path, manifest, { upsert: true });
+                .upload(path, manifest, { upsert: true, contentType: 'application/xml' });
             if (error) {
                 console.error('[saveDraft] Manifest upload FAILED:', error.message, error);
             } else {
@@ -513,7 +545,7 @@ export const actions: Actions = {
             const path = `${basePath}/Info.plist`;
             const { error } = await supabase.storage
                 .from('plists')
-                .upload(path, plist, { upsert: true });
+                .upload(path, plist, { upsert: true, contentType: 'application/xml' });
             if (error) {
                 console.error('[saveDraft] Plist upload FAILED:', error.message, error);
             } else {

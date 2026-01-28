@@ -51,6 +51,9 @@
     let savedPlistPath: string | null = $state(prefill?.plist_path || null);
     let savedIconPath: string | null = $state(prefill?.app_icon_path || null);
 
+    // Signed URLs for displaying saved file thumbnails (path → URL map)
+    const fileUrls: Record<string, string> = data.fileUrls || {};
+
     // Combined file counts (new uploads + saved)
     let totalScreenshotCount = $derived(screenshots.length + savedScreenshotPaths.length);
     let hasManifest = $derived(!!privacyManifest || !!savedManifestPath);
@@ -864,13 +867,17 @@
                         <div class="screenshot-previews">
                             {#each savedScreenshotPaths as path, i}
                                 <div class="screenshot-preview saved">
-                                    <div class="screenshot-saved-placeholder">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                                            <circle cx="8.5" cy="8.5" r="1.5" />
-                                            <path d="M21 15l-5-5L5 21" />
-                                        </svg>
-                                    </div>
+                                    {#if fileUrls[path]}
+                                        <img src={fileUrls[path]} alt={getFilename(path)} />
+                                    {:else}
+                                        <div class="screenshot-saved-placeholder">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <path d="M21 15l-5-5L5 21" />
+                                            </svg>
+                                        </div>
+                                    {/if}
                                     <button class="screenshot-remove" onclick={() => removeSavedScreenshot(i)} title="Remove">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <line x1="18" y1="6" x2="6" y2="18"></line>
