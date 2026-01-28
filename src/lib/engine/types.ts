@@ -18,6 +18,8 @@ export interface CheckResult {
     description: string;
     guideline_ref?: string;
     fix_suggestion?: string;
+    /** AI confidence in this finding (0-100). Hard rules default to 100. */
+    confidence?: number;
 }
 
 export interface HardRulesInput {
