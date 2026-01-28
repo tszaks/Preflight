@@ -11,18 +11,116 @@
     let loading = $state(false);
     let errorMsg = $state("");
 
-    // Form data
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 1: Basic App Information
+    // ═══════════════════════════════════════════════════════════════
     let appName = $state("");
     let subtitle = $state("");
     let description = $state("");
+    let promotionalText = $state("");  // 170 chars max
     let keywords = $state("");
     let category = $state("");
-    let ageRating = $state("4+");
-    let privacyUrl = $state("");
+    let secondaryCategory = $state("");
+    let version = $state("1.0");
+    let copyright = $state("");
 
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 2: URLs (Apple validates these are reachable)
+    // ═══════════════════════════════════════════════════════════════
+    let privacyUrl = $state("");
+    let supportUrl = $state("");
+    let marketingUrl = $state("");
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 3: Age Rating Questionnaire
+    // Each answer: "none", "infrequent", "frequent"
+    // ═══════════════════════════════════════════════════════════════
+    let ageRatingAnswers = $state({
+        cartoonViolence: "none",
+        realisticViolence: "none",
+        prolongedViolence: "none",
+        sexualContentNudity: "none",
+        matureSuggestive: "none",
+        profanityCrudeHumor: "none",
+        alcoholTobaccoDrugs: "none",
+        gamblingSimulated: "none",
+        horrorFear: "none",
+        medicalTreatment: "none",
+        gamblingContests: "none",
+        unrestrictedWebAccess: false,
+        madeForKids: false,
+    });
+
+    // Calculated age rating based on answers
+    let calculatedAgeRating = $derived.by(() => {
+        const a = ageRatingAnswers;
+        // 17+ triggers
+        if (a.prolongedViolence === "frequent" ||
+            a.sexualContentNudity === "frequent" ||
+            a.gamblingSimulated === "frequent") return "17+";
+        // 12+ triggers
+        if (a.realisticViolence !== "none" ||
+            a.sexualContentNudity !== "none" ||
+            a.matureSuggestive === "frequent" ||
+            a.alcoholTobaccoDrugs === "frequent" ||
+            a.gamblingSimulated !== "none") return "12+";
+        // 9+ triggers
+        if (a.cartoonViolence === "frequent" ||
+            a.matureSuggestive !== "none" ||
+            a.profanityCrudeHumor === "frequent" ||
+            a.horrorFear === "frequent") return "9+";
+        // Default 4+
+        return "4+";
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 4: App Privacy (Data Collection)
+    // Must match Privacy Manifest or Apple rejects
+    // ═══════════════════════════════════════════════════════════════
+    let dataCollection = $state({
+        contactInfo: { collected: false, linked: false, tracking: false },
+        healthFitness: { collected: false, linked: false, tracking: false },
+        financialInfo: { collected: false, linked: false, tracking: false },
+        locationData: { collected: false, linked: false, tracking: false },
+        sensitiveInfo: { collected: false, linked: false, tracking: false },
+        contacts: { collected: false, linked: false, tracking: false },
+        userContent: { collected: false, linked: false, tracking: false },
+        browsingHistory: { collected: false, linked: false, tracking: false },
+        searchHistory: { collected: false, linked: false, tracking: false },
+        identifiers: { collected: false, linked: false, tracking: false },
+        purchases: { collected: false, linked: false, tracking: false },
+        usageData: { collected: false, linked: false, tracking: false },
+        diagnostics: { collected: false, linked: false, tracking: false },
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 5: Files & Assets
+    // ═══════════════════════════════════════════════════════════════
     let screenshots: File[] = $state([]);
+    let appIcon: File | null = $state(null);
     let privacyManifest: File | null = $state(null);
     let infoPlist: File | null = $state(null);
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 6: App Review Information (CRITICAL - #1 rejection cause)
+    // ═══════════════════════════════════════════════════════════════
+    let signInRequired = $state(false);
+    let demoUsername = $state("");
+    let demoPassword = $state("");
+    let reviewNotes = $state("");
+    let reviewerContact = $state({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        email: "",
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // In-App Purchases & Monetization
+    // ═══════════════════════════════════════════════════════════════
+    let hasInAppPurchases = $state(false);
+    let hasSubscriptions = $state(false);
+    let hasAds = $state(false);
 
     // Pricing (single tier for now, recheck discount coming later)
     const PRICE = 49;
@@ -31,12 +129,47 @@
     let missingFiles = $derived.by(() => {
         const missing: string[] = [];
         if (screenshots.length === 0) missing.push("At least 1 screenshot");
-        if (!privacyManifest)
-            missing.push("Privacy manifest (PrivacyInfo.xcprivacy)");
+        if (!privacyManifest) missing.push("Privacy manifest (PrivacyInfo.xcprivacy)");
         if (!infoPlist) missing.push("Info.plist");
         return missing;
     });
-    let canSubmit = $derived(missingFiles.length === 0);
+
+    // Required fields validation by step
+    let step1Valid = $derived(
+        appName.trim().length > 0 &&
+        appName.trim().length <= 30 &&
+        description.trim().length > 0 &&
+        category !== ""
+    );
+
+    let step2Valid = $derived(
+        privacyUrl.trim().length > 0 &&
+        supportUrl.trim().length > 0
+    );
+
+    // Step 3 (age rating) is always valid - defaults work
+    let step3Valid = $derived(true);
+
+    // Step 4 (privacy) is always valid - we just need answers
+    let step4Valid = $derived(true);
+
+    let step5Valid = $derived(missingFiles.length === 0);
+
+    // Step 6: If sign-in required, must have demo credentials
+    let step6Valid = $derived(
+        !signInRequired || (demoUsername.trim().length > 0 && demoPassword.trim().length > 0)
+    );
+
+    let canSubmit = $derived(
+        step1Valid && step2Valid && step5Valid && step6Valid
+    );
+
+    // Character count helpers
+    let appNameCount = $derived(appName.length);
+    let subtitleCount = $derived(subtitle.length);
+    let promotionalTextCount = $derived(promotionalText.length);
+    let keywordsCount = $derived(keywords.length);
+    let descriptionCount = $derived(description.length);
 
     // Project scanner state
     let scanResults: ScanResults | null = $state(null);
@@ -113,10 +246,17 @@
         }
     }
 
+    function handleIcon(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (input.files?.[0]) {
+            appIcon = input.files[0];
+        }
+    }
+
     async function submit() {
         // Validate required files
         if (!canSubmit) {
-            errorMsg = `Missing required files: ${missingFiles.join(", ")}`;
+            errorMsg = `Missing required fields or files`;
             return;
         }
 
@@ -124,15 +264,44 @@
         errorMsg = "";
 
         try {
-            // Step 1: Create submission record
+            // Step 1: Create submission record with ALL collected data
             const createForm = new FormData();
+
+            // Basic Info
             createForm.set("app_name", appName);
-            if (subtitle) createForm.set("subtitle", subtitle);
-            if (description) createForm.set("description", description);
-            if (keywords) createForm.set("keywords", keywords);
-            if (category) createForm.set("category", category);
-            createForm.set("age_rating", ageRating);
-            if (privacyUrl) createForm.set("privacy_url", privacyUrl);
+            createForm.set("subtitle", subtitle);
+            createForm.set("description", description);
+            createForm.set("promotional_text", promotionalText);
+            createForm.set("keywords", keywords);
+            createForm.set("category", category);
+            createForm.set("secondary_category", secondaryCategory);
+            createForm.set("version", version);
+            createForm.set("copyright", copyright);
+
+            // URLs
+            createForm.set("privacy_url", privacyUrl);
+            createForm.set("support_url", supportUrl);
+            createForm.set("marketing_url", marketingUrl);
+
+            // Age Rating (calculated + raw answers for analysis)
+            createForm.set("age_rating", calculatedAgeRating);
+            createForm.set("age_rating_answers", JSON.stringify(ageRatingAnswers));
+
+            // App Privacy / Data Collection
+            createForm.set("data_collection", JSON.stringify(dataCollection));
+
+            // App Review Info
+            createForm.set("sign_in_required", signInRequired.toString());
+            createForm.set("demo_username", demoUsername);
+            createForm.set("demo_password", demoPassword);
+            createForm.set("review_notes", reviewNotes);
+            createForm.set("reviewer_contact", JSON.stringify(reviewerContact));
+
+            // Monetization
+            createForm.set("has_iap", hasInAppPurchases.toString());
+            createForm.set("has_subscriptions", hasSubscriptions.toString());
+            createForm.set("has_ads", hasAds.toString());
+
             createForm.set("review_type", "full");
 
             const createRes = await fetch("/submit?/createSubmission", {
@@ -159,7 +328,7 @@
             const submissionId = createResult.data.submissionId as string;
 
             // Step 2: Upload files
-            if (screenshots.length > 0 || privacyManifest || infoPlist) {
+            if (screenshots.length > 0 || privacyManifest || infoPlist || appIcon) {
                 const uploadForm = new FormData();
                 uploadForm.set("submission_id", submissionId);
 
@@ -171,6 +340,9 @@
                 }
                 if (infoPlist) {
                     uploadForm.set("plist", infoPlist);
+                }
+                if (appIcon) {
+                    uploadForm.set("icon", appIcon);
                 }
 
                 await fetch("/submit?/uploadFiles", {
@@ -213,7 +385,7 @@
     async function testSubmit() {
         // Validate required files
         if (!canSubmit) {
-            errorMsg = `Missing required files: ${missingFiles.join(", ")}`;
+            errorMsg = `Missing required fields or files`;
             return;
         }
 
@@ -222,14 +394,43 @@
 
         try {
             const formData = new FormData();
-            formData.set("app_name", appName);
-            if (subtitle) formData.set("subtitle", subtitle);
-            if (description) formData.set("description", description);
-            if (keywords) formData.set("keywords", keywords);
-            if (category) formData.set("category", category);
-            formData.set("age_rating", ageRating);
-            if (privacyUrl) formData.set("privacy_url", privacyUrl);
 
+            // Basic Info
+            formData.set("app_name", appName);
+            formData.set("subtitle", subtitle);
+            formData.set("description", description);
+            formData.set("promotional_text", promotionalText);
+            formData.set("keywords", keywords);
+            formData.set("category", category);
+            formData.set("secondary_category", secondaryCategory);
+            formData.set("version", version);
+            formData.set("copyright", copyright);
+
+            // URLs
+            formData.set("privacy_url", privacyUrl);
+            formData.set("support_url", supportUrl);
+            formData.set("marketing_url", marketingUrl);
+
+            // Age Rating
+            formData.set("age_rating", calculatedAgeRating);
+            formData.set("age_rating_answers", JSON.stringify(ageRatingAnswers));
+
+            // App Privacy
+            formData.set("data_collection", JSON.stringify(dataCollection));
+
+            // App Review Info
+            formData.set("sign_in_required", signInRequired.toString());
+            formData.set("demo_username", demoUsername);
+            formData.set("demo_password", demoPassword);
+            formData.set("review_notes", reviewNotes);
+            formData.set("reviewer_contact", JSON.stringify(reviewerContact));
+
+            // Monetization
+            formData.set("has_iap", hasInAppPurchases.toString());
+            formData.set("has_subscriptions", hasSubscriptions.toString());
+            formData.set("has_ads", hasAds.toString());
+
+            // Files
             for (const file of screenshots) {
                 formData.append("screenshots", file);
             }
@@ -238,6 +439,9 @@
             }
             if (infoPlist) {
                 formData.set("plist", infoPlist);
+            }
+            if (appIcon) {
+                formData.set("icon", appIcon);
             }
 
             const response = await fetch("/submit?/testSubmit", {
@@ -271,135 +475,218 @@
 <main class="submit-page">
     <div class="container">
         <header class="submit-header">
-            <div class="section-label">
-                MISSION_PARAMETERS // INITIALIZATION
-            </div>
-            <h1>Pre-Flight Parameters</h1>
-            <p class="step-meta">
-                STEP_{step.toString().padStart(2, "0")} // SEQ_CMD_{step}
-            </p>
+            <h1>Pre-Flight Check</h1>
+            <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
         </header>
 
-        <!-- Progress bar -->
-        <div class="progress-container">
-            <div class="progress-fill" style="width: {(step / 3) * 100}%"></div>
-            <div class="progress-grid"></div>
+        <!-- Progress Steps -->
+        <div class="progress-steps">
+            <button class="progress-step" class:active={step >= 1} class:complete={step > 1} onclick={() => step >= 1 && (step = 1)}>
+                <span class="step-num">1</span>
+                <span class="step-label">App Details</span>
+            </button>
+            <button class="progress-step" class:active={step >= 2} class:complete={step > 2} onclick={() => step >= 2 && (step = 2)}>
+                <span class="step-num">2</span>
+                <span class="step-label">URLs</span>
+            </button>
+            <button class="progress-step" class:active={step >= 3} class:complete={step > 3} onclick={() => step >= 3 && (step = 3)}>
+                <span class="step-num">3</span>
+                <span class="step-label">Age Rating</span>
+            </button>
+            <button class="progress-step" class:active={step >= 4} class:complete={step > 4} onclick={() => step >= 4 && (step = 4)}>
+                <span class="step-num">4</span>
+                <span class="step-label">Privacy</span>
+            </button>
+            <button class="progress-step" class:active={step >= 5} class:complete={step > 5} onclick={() => step >= 5 && (step = 5)}>
+                <span class="step-num">5</span>
+                <span class="step-label">Files</span>
+            </button>
+            <button class="progress-step" class:active={step >= 6} class:complete={step > 6} onclick={() => step >= 6 && (step = 6)}>
+                <span class="step-num">6</span>
+                <span class="step-label">Review Info</span>
+            </button>
+            <button class="progress-step" class:active={step >= 7} onclick={() => step >= 7 && (step = 7)}>
+                <span class="step-num">7</span>
+                <span class="step-label">Submit</span>
+            </button>
         </div>
 
         {#if step === 1}
-            <!-- Step 1: Metadata -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 1: App Details -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
             <CockpitPanel class="step-content">
-                <div class="panel-header">
-                    <span class="panel-id">CFG_METADATA</span>
-                    <h2>App Metadata</h2>
-                </div>
-                <p class="step-desc">
-                    Enter the information from your App Store listing
-                </p>
+                <h2>App Details</h2>
+                <p class="step-desc">Basic information about your app as it appears on the App Store.</p>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="appName" class="form-label"
-                            >APP_IDENTIFIER *</label
-                        >
+                        <label for="appName" class="form-label">
+                            App Name <span class="required">*</span>
+                            <span class="char-count" class:over={appNameCount > 30}>{appNameCount}/30</span>
+                        </label>
                         <input
                             type="text"
                             id="appName"
                             class="input"
                             bind:value={appName}
+                            maxlength="30"
                             required
-                            placeholder="Enter application name..."
+                            placeholder="Your app's name"
                         />
                     </div>
 
                     <div class="form-group">
-                        <label for="subtitle" class="form-label"
-                            >APP_SUBTITLE</label
-                        >
+                        <label for="subtitle" class="form-label">
+                            Subtitle
+                            <span class="char-count" class:over={subtitleCount > 30}>{subtitleCount}/30</span>
+                        </label>
                         <input
                             type="text"
                             id="subtitle"
                             class="input"
                             bind:value={subtitle}
-                            placeholder="Enter subtitle (optional)..."
+                            maxlength="30"
+                            placeholder="Brief tagline"
                         />
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="description" class="form-label"
-                        >Description *</label
-                    >
+                    <label for="promotionalText" class="form-label">
+                        Promotional Text
+                        <span class="char-count" class:over={promotionalTextCount > 170}>{promotionalTextCount}/170</span>
+                    </label>
+                    <textarea
+                        id="promotionalText"
+                        class="input textarea"
+                        bind:value={promotionalText}
+                        maxlength="170"
+                        rows="2"
+                        placeholder="Short promotional message (can be updated without new app version)"
+                    ></textarea>
+                    <p class="field-hint">This appears above your description and can be changed anytime.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="description" class="form-label">
+                        Description <span class="required">*</span>
+                        <span class="char-count" class:over={descriptionCount > 4000}>{descriptionCount}/4000</span>
+                    </label>
                     <textarea
                         id="description"
                         class="input textarea"
                         bind:value={description}
-                        rows="5"
+                        maxlength="4000"
+                        rows="6"
                         required
+                        placeholder="Describe your app's features and functionality..."
                     ></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="keywords" class="form-label">Keywords</label>
+                    <label for="keywords" class="form-label">
+                        Keywords
+                        <span class="char-count" class:over={keywordsCount > 100}>{keywordsCount}/100</span>
+                    </label>
                     <input
                         type="text"
                         id="keywords"
                         class="input"
                         bind:value={keywords}
-                        placeholder="Comma separated"
+                        maxlength="100"
+                        placeholder="budget,finance,tracker,money (comma separated)"
                     />
+                    <p class="field-hint">Separate with commas. Don't repeat your app name or category.</p>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="category" class="form-label">Category</label
-                        >
-                        <select
-                            id="category"
-                            class="input"
-                            bind:value={category}
-                        >
+                        <label for="category" class="form-label">Primary Category <span class="required">*</span></label>
+                        <select id="category" class="input" bind:value={category}>
                             <option value="">Select category</option>
-                            <option value="games">Games</option>
-                            <option value="productivity">Productivity</option>
-                            <option value="utilities">Utilities</option>
-                            <option value="lifestyle">Lifestyle</option>
-                            <option value="health">Health & Fitness</option>
-                            <option value="finance">Finance</option>
+                            <option value="books">Books</option>
+                            <option value="business">Business</option>
+                            <option value="developer-tools">Developer Tools</option>
                             <option value="education">Education</option>
-                            <option value="social">Social Networking</option>
                             <option value="entertainment">Entertainment</option>
-                            <option value="other">Other</option>
+                            <option value="finance">Finance</option>
+                            <option value="food-drink">Food & Drink</option>
+                            <option value="games">Games</option>
+                            <option value="graphics-design">Graphics & Design</option>
+                            <option value="health-fitness">Health & Fitness</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="magazines-newspapers">Magazines & Newspapers</option>
+                            <option value="medical">Medical</option>
+                            <option value="music">Music</option>
+                            <option value="navigation">Navigation</option>
+                            <option value="news">News</option>
+                            <option value="photo-video">Photo & Video</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="reference">Reference</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="social-networking">Social Networking</option>
+                            <option value="sports">Sports</option>
+                            <option value="travel">Travel</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="weather">Weather</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="ageRating" class="form-label"
-                            >Age Rating</label
-                        >
-                        <select
-                            id="ageRating"
-                            class="input"
-                            bind:value={ageRating}
-                        >
-                            <option value="4+">4+</option>
-                            <option value="9+">9+</option>
-                            <option value="12+">12+</option>
-                            <option value="17+">17+</option>
+                        <label for="secondaryCategory" class="form-label">Secondary Category</label>
+                        <select id="secondaryCategory" class="input" bind:value={secondaryCategory}>
+                            <option value="">None</option>
+                            <option value="books">Books</option>
+                            <option value="business">Business</option>
+                            <option value="developer-tools">Developer Tools</option>
+                            <option value="education">Education</option>
+                            <option value="entertainment">Entertainment</option>
+                            <option value="finance">Finance</option>
+                            <option value="food-drink">Food & Drink</option>
+                            <option value="games">Games</option>
+                            <option value="graphics-design">Graphics & Design</option>
+                            <option value="health-fitness">Health & Fitness</option>
+                            <option value="lifestyle">Lifestyle</option>
+                            <option value="magazines-newspapers">Magazines & Newspapers</option>
+                            <option value="medical">Medical</option>
+                            <option value="music">Music</option>
+                            <option value="navigation">Navigation</option>
+                            <option value="news">News</option>
+                            <option value="photo-video">Photo & Video</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="reference">Reference</option>
+                            <option value="shopping">Shopping</option>
+                            <option value="social-networking">Social Networking</option>
+                            <option value="sports">Sports</option>
+                            <option value="travel">Travel</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="weather">Weather</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="privacyUrl" class="form-label"
-                        >Privacy Policy URL</label
-                    >
-                    <input
-                        type="url"
-                        id="privacyUrl"
-                        class="input"
-                        bind:value={privacyUrl}
-                    />
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="version" class="form-label">Version</label>
+                        <input
+                            type="text"
+                            id="version"
+                            class="input"
+                            bind:value={version}
+                            placeholder="1.0"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="copyright" class="form-label">Copyright</label>
+                        <input
+                            type="text"
+                            id="copyright"
+                            class="input"
+                            bind:value={copyright}
+                            placeholder="2026 Your Company"
+                        />
+                    </div>
                 </div>
 
                 <div class="step-actions">
@@ -407,27 +694,269 @@
                     <button
                         class="btn btn-primary"
                         onclick={() => (step = 2)}
-                        disabled={!appName || !description}
+                        disabled={!step1Valid}
                     >
                         Continue
                     </button>
                 </div>
             </CockpitPanel>
         {:else if step === 2}
-            <!-- Step 2: Files -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 2: URLs -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
             <CockpitPanel class="step-content">
-                <h2>Screenshots & Files</h2>
-                <p class="text-muted mb-4">Upload your App Store assets</p>
+                <h2>URLs & Links</h2>
+                <p class="step-desc">Apple verifies these URLs are reachable and appropriate. Broken links = instant rejection.</p>
 
                 <div class="form-group">
-                    <label class="form-label">VISUAL_ASSETS (UP_TO_10)</label>
+                    <label for="privacyUrl" class="form-label">Privacy Policy URL <span class="required">*</span></label>
+                    <input
+                        type="url"
+                        id="privacyUrl"
+                        class="input"
+                        bind:value={privacyUrl}
+                        placeholder="https://yourapp.com/privacy"
+                        required
+                    />
+                    <p class="field-hint">Required for all apps. Must be accessible without login.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="supportUrl" class="form-label">Support URL <span class="required">*</span></label>
+                    <input
+                        type="url"
+                        id="supportUrl"
+                        class="input"
+                        bind:value={supportUrl}
+                        placeholder="https://yourapp.com/support"
+                        required
+                    />
+                    <p class="field-hint">Where users can get help. Must be reachable.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="marketingUrl" class="form-label">Marketing URL</label>
+                    <input
+                        type="url"
+                        id="marketingUrl"
+                        class="input"
+                        bind:value={marketingUrl}
+                        placeholder="https://yourapp.com (optional)"
+                    />
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick={() => (step = 1)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 3)} disabled={!step2Valid}>Continue</button>
+                </div>
+            </CockpitPanel>
+
+        {:else if step === 3}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 3: Age Rating Questionnaire -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <CockpitPanel class="step-content">
+                <h2>Age Rating</h2>
+                <p class="step-desc">Answer these questions honestly. Misrepresenting content is a common rejection reason.</p>
+
+                <div class="age-rating-result">
+                    <span class="rating-label">Calculated Rating:</span>
+                    <span class="rating-value">{calculatedAgeRating}</span>
+                </div>
+
+                <div class="age-questions">
+                    <div class="age-question">
+                        <label>Cartoon or Fantasy Violence</label>
+                        <select class="input" bind:value={ageRatingAnswers.cartoonViolence}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Realistic Violence</label>
+                        <select class="input" bind:value={ageRatingAnswers.realisticViolence}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Prolonged Graphic or Sadistic Violence</label>
+                        <select class="input" bind:value={ageRatingAnswers.prolongedViolence}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Sexual Content or Nudity</label>
+                        <select class="input" bind:value={ageRatingAnswers.sexualContentNudity}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Mature/Suggestive Themes</label>
+                        <select class="input" bind:value={ageRatingAnswers.matureSuggestive}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Profanity or Crude Humor</label>
+                        <select class="input" bind:value={ageRatingAnswers.profanityCrudeHumor}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Alcohol, Tobacco, or Drug Use/References</label>
+                        <select class="input" bind:value={ageRatingAnswers.alcoholTobaccoDrugs}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Simulated Gambling</label>
+                        <select class="input" bind:value={ageRatingAnswers.gamblingSimulated}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Horror/Fear Themes</label>
+                        <select class="input" bind:value={ageRatingAnswers.horrorFear}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question">
+                        <label>Medical/Treatment Information</label>
+                        <select class="input" bind:value={ageRatingAnswers.medicalTreatment}>
+                            <option value="none">None</option>
+                            <option value="infrequent">Infrequent/Mild</option>
+                            <option value="frequent">Frequent/Intense</option>
+                        </select>
+                    </div>
+
+                    <div class="age-question checkbox-question">
+                        <label>
+                            <input type="checkbox" bind:checked={ageRatingAnswers.unrestrictedWebAccess} />
+                            <span>Unrestricted Web Access</span>
+                        </label>
+                        <p class="field-hint">App contains a browser or allows access to arbitrary URLs</p>
+                    </div>
+
+                    <div class="age-question checkbox-question">
+                        <label>
+                            <input type="checkbox" bind:checked={ageRatingAnswers.madeForKids} />
+                            <span>Made for Kids</span>
+                        </label>
+                        <p class="field-hint">Primary audience is children under 13 (triggers COPPA requirements)</p>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick={() => (step = 2)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 4)}>Continue</button>
+                </div>
+            </CockpitPanel>
+
+        {:else if step === 4}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 4: App Privacy / Data Collection -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <CockpitPanel class="step-content">
+                <h2>App Privacy</h2>
+                <p class="step-desc">Declare what data your app collects. This must match your Privacy Manifest - inconsistencies cause rejections.</p>
+
+                <div class="privacy-grid">
+                    {#each Object.entries(dataCollection) as [key, value]}
+                        {@const labels: Record<string, string> = {
+                            contactInfo: "Contact Info",
+                            healthFitness: "Health & Fitness",
+                            financialInfo: "Financial Info",
+                            locationData: "Location",
+                            sensitiveInfo: "Sensitive Info",
+                            contacts: "Contacts",
+                            userContent: "User Content",
+                            browsingHistory: "Browsing History",
+                            searchHistory: "Search History",
+                            identifiers: "Identifiers",
+                            purchases: "Purchases",
+                            usageData: "Usage Data",
+                            diagnostics: "Diagnostics"
+                        }}
+                        <div class="privacy-row">
+                            <span class="privacy-label">{labels[key]}</span>
+                            <label class="privacy-checkbox">
+                                <input type="checkbox" bind:checked={dataCollection[key].collected} />
+                                <span>Collected</span>
+                            </label>
+                            <label class="privacy-checkbox" class:disabled={!dataCollection[key].collected}>
+                                <input type="checkbox" bind:checked={dataCollection[key].linked} disabled={!dataCollection[key].collected} />
+                                <span>Linked to User</span>
+                            </label>
+                            <label class="privacy-checkbox" class:disabled={!dataCollection[key].collected}>
+                                <input type="checkbox" bind:checked={dataCollection[key].tracking} disabled={!dataCollection[key].collected} />
+                                <span>Used for Tracking</span>
+                            </label>
+                        </div>
+                    {/each}
+                </div>
+
+                <div class="monetization-section">
+                    <h3>Monetization</h3>
+                    <div class="checkbox-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:checked={hasInAppPurchases} />
+                            <span>In-App Purchases</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:checked={hasSubscriptions} />
+                            <span>Subscriptions</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:checked={hasAds} />
+                            <span>Contains Advertising</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick={() => (step = 3)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 5)}>Continue</button>
+                </div>
+            </CockpitPanel>
+
+        {:else if step === 5}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 5: Files & Assets -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <CockpitPanel class="step-content">
+                <h2>Files & Assets</h2>
+                <p class="step-desc">Upload your screenshots and technical files for analysis.</p>
+
+                <div class="form-group">
+                    <label class="form-label">Screenshots <span class="required">*</span> ({screenshots.length}/10)</label>
                     <div class="file-upload">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onchange={handleScreenshots}
-                        />
+                        <input type="file" accept="image/*" multiple onchange={handleScreenshots} />
                         <p>Drop screenshots here or click to browse</p>
                     </div>
 
@@ -436,35 +965,21 @@
                             {#each screenshots as file, i}
                                 <div class="file-item">
                                     <span>{file.name}</span>
-                                    <button
-                                        class="remove-btn"
-                                        onclick={() => removeScreenshot(i)}
-                                        >×</button
-                                    >
+                                    <button class="remove-btn" onclick={() => removeScreenshot(i)}>×</button>
                                 </div>
                             {/each}
                         </div>
                     {/if}
                 </div>
 
-                <!-- Config Files Section -->
                 <div class="config-files-section">
                     <div class="config-header">
                         <div>
-                            <h3>TECHNICAL_CONFIG</h3>
-                            <p class="step-desc">
-                                Info.plist and Privacy Manifest
-                            </p>
+                            <h3>Technical Files</h3>
+                            <p class="step-desc">Info.plist and Privacy Manifest</p>
                         </div>
                         <label class="btn btn-secondary btn-sm">
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 7V5a2 2 0 0 1 2-2h2" />
                                 <path d="M17 3h2a2 2 0 0 1 2 2v2" />
                                 <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
@@ -472,120 +987,81 @@
                                 <circle cx="12" cy="12" r="3" />
                             </svg>
                             {scanning ? "Scanning..." : "Scan Project"}
-                            <input
-                                type="file"
-                                webkitdirectory
-                                onchange={handleFolderSelect}
-                                disabled={scanning}
-                                style="display: none;"
-                            />
+                            <input type="file" webkitdirectory onchange={handleFolderSelect} disabled={scanning} style="display: none;" />
                         </label>
                     </div>
 
                     <div class="config-files-list">
-                        <!-- Info.plist -->
                         <div class="config-file-row">
                             <div class="config-file-info">
                                 <strong>Info.plist</strong>
-                                <span
-                                    class="tooltip-trigger"
-                                    title="Your app's configuration file containing bundle ID, permissions, and settings."
-                                >
-                                    <svg
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M12 16v-4" />
-                                        <path d="M12 8h.01" />
-                                    </svg>
-                                </span>
+                                <span class="required">*</span>
                             </div>
                             {#if infoPlist}
                                 <div class="config-file-status success">
                                     <span>{infoPlist.name}</span>
-                                    <button
-                                        class="remove-btn"
-                                        onclick={() => (infoPlist = null)}
-                                        >×</button
-                                    >
+                                    <button class="remove-btn" onclick={() => (infoPlist = null)}>×</button>
                                 </div>
                             {:else}
                                 <label class="config-file-status empty">
                                     <span>Not added</span>
                                     <span class="upload-link">upload</span>
-                                    <input
-                                        type="file"
-                                        accept=".plist,.xml"
-                                        onchange={handlePlist}
-                                        style="display: none;"
-                                    />
+                                    <input type="file" accept=".plist,.xml" onchange={handlePlist} style="display: none;" />
                                 </label>
                             {/if}
                         </div>
 
-                        <!-- Privacy Manifest -->
                         <div class="config-file-row">
                             <div class="config-file-info">
                                 <strong>Privacy Manifest</strong>
-                                <span
-                                    class="tooltip-trigger"
-                                    title="Required for iOS 17+. Declares which privacy-sensitive APIs your app uses."
-                                >
-                                    <svg
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path d="M12 16v-4" />
-                                        <path d="M12 8h.01" />
-                                    </svg>
-                                </span>
+                                <span class="required">*</span>
                             </div>
                             {#if privacyManifest}
                                 <div class="config-file-status success">
                                     <span>{privacyManifest.name}</span>
-                                    <button
-                                        class="remove-btn"
-                                        onclick={() => (privacyManifest = null)}
-                                        >×</button
-                                    >
+                                    <button class="remove-btn" onclick={() => (privacyManifest = null)}>×</button>
                                 </div>
                             {:else}
                                 <label class="config-file-status empty">
                                     <span>Not added</span>
                                     <span class="upload-link">upload</span>
-                                    <input
-                                        type="file"
-                                        accept=".xcprivacy,.plist,.xml"
-                                        onchange={handleManifest}
-                                        style="display: none;"
-                                    />
+                                    <input type="file" accept=".xcprivacy,.plist,.xml" onchange={handleManifest} style="display: none;" />
+                                </label>
+                            {/if}
+                        </div>
+
+                        <div class="config-file-row">
+                            <div class="config-file-info">
+                                <strong>App Icon</strong>
+                            </div>
+                            {#if appIcon}
+                                <div class="config-file-status success">
+                                    <span>{appIcon.name}</span>
+                                    <button class="remove-btn" onclick={() => (appIcon = null)}>×</button>
+                                </div>
+                            {:else}
+                                <label class="config-file-status empty">
+                                    <span>Not added</span>
+                                    <span class="upload-link">upload</span>
+                                    <input type="file" accept="image/*" onchange={handleIcon} style="display: none;" />
                                 </label>
                             {/if}
                         </div>
                     </div>
                 </div>
 
+                {#if missingFiles.length > 0}
+                    <div class="missing-files-warning">
+                        <strong>Missing required files:</strong> {missingFiles.join(", ")}
+                    </div>
+                {/if}
+
                 <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 1)}
-                        >Back</button
-                    >
-                    <button class="btn btn-primary" onclick={() => (step = 3)}
-                        >Continue</button
-                    >
+                    <button class="btn btn-secondary" onclick={() => (step = 4)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 6)} disabled={!step5Valid}>Continue</button>
                 </div>
             </CockpitPanel>
 
-            <!-- Scanning/Applying Overlay -->
             {#if scanning || applyingFiles}
                 <div class="loading-overlay">
                     <div class="loading-content">
@@ -601,7 +1077,6 @@
                 </div>
             {/if}
 
-            <!-- Scan Results Modal -->
             {#if showScanResults && scanResults}
                 <div class="modal-overlay" onclick={closeScanResults}>
                     <div class="modal" onclick={(e) => e.stopPropagation()}>
@@ -613,23 +1088,15 @@
                                     No config files found
                                 {/if}
                             </h3>
-                            <button
-                                class="modal-close"
-                                onclick={closeScanResults}>×</button
-                            >
+                            <button class="modal-close" onclick={closeScanResults}>×</button>
                         </div>
-
                         <div class="modal-body">
                             {#if scanResults.infoPlist}
                                 <div class="scan-result-item success">
                                     <div class="result-icon">✓</div>
                                     <div class="result-content">
                                         <strong>Info.plist</strong>
-                                        <span class="result-path"
-                                            >{formatPath(
-                                                scanResults.infoPlistPath || "",
-                                            )}</span
-                                        >
+                                        <span class="result-path">{formatPath(scanResults.infoPlistPath || "")}</span>
                                     </div>
                                 </div>
                             {:else}
@@ -637,9 +1104,7 @@
                                     <div class="result-icon">!</div>
                                     <div class="result-content">
                                         <strong>Info.plist</strong>
-                                        <span class="result-path"
-                                            >Not found - upload manually</span
-                                        >
+                                        <span class="result-path">Not found - upload manually</span>
                                     </div>
                                 </div>
                             {/if}
@@ -649,12 +1114,7 @@
                                     <div class="result-icon">✓</div>
                                     <div class="result-content">
                                         <strong>Privacy Manifest</strong>
-                                        <span class="result-path"
-                                            >{formatPath(
-                                                scanResults.privacyManifestPath ||
-                                                    "",
-                                            )}</span
-                                        >
+                                        <span class="result-path">{formatPath(scanResults.privacyManifestPath || "")}</span>
                                     </div>
                                 </div>
                             {:else}
@@ -662,92 +1122,176 @@
                                     <div class="result-icon">!</div>
                                     <div class="result-content">
                                         <strong>Privacy Manifest</strong>
-                                        <span class="result-path"
-                                            >Not found - may not be required for
-                                            your app</span
-                                        >
+                                        <span class="result-path">Not found - may not be required for your app</span>
                                     </div>
                                 </div>
                             {/if}
                         </div>
-
                         <div class="modal-footer">
-                            <button
-                                class="btn btn-secondary"
-                                onclick={closeScanResults}>Cancel</button
-                            >
+                            <button class="btn btn-secondary" onclick={closeScanResults}>Cancel</button>
                             {#if scanResults.infoPlist || scanResults.privacyManifest}
-                                <button
-                                    class="btn btn-primary"
-                                    onclick={applyScanResults}
-                                    >Use These Files</button
-                                >
+                                <button class="btn btn-primary" onclick={applyScanResults}>Use These Files</button>
                             {/if}
                         </div>
                     </div>
                 </div>
             {/if}
-        {:else if step === 3}
-            <!-- Step 3: Confirm & checkout -->
-            <div class="step-content">
-                <div class="panel-header">
-                    <span class="panel-id">CFG_VERIFICATION</span>
-                    <h2>Final Pre-Flight Check</h2>
+
+        {:else if step === 6}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 6: App Review Information -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <CockpitPanel class="step-content">
+                <h2>App Review Information</h2>
+                <p class="step-desc">This is critical. Missing demo credentials is the #1 cause of rejections for apps with login.</p>
+
+                <div class="signin-section">
+                    <label class="checkbox-label prominent">
+                        <input type="checkbox" bind:checked={signInRequired} />
+                        <span>Sign-in required to use app</span>
+                    </label>
+
+                    {#if signInRequired}
+                        <div class="demo-credentials">
+                            <p class="warning-hint">
+                                ⚠️ Missing demo credentials is the #1 rejection reason for apps with login. We'll verify you've provided them - Apple's reviewer will need these to actually test your app.
+                            </p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="demoUsername" class="form-label">Demo Username <span class="required">*</span></label>
+                                    <input
+                                        type="text"
+                                        id="demoUsername"
+                                        class="input"
+                                        bind:value={demoUsername}
+                                        placeholder="demo@example.com"
+                                        required
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="demoPassword" class="form-label">Demo Password <span class="required">*</span></label>
+                                    <input
+                                        type="text"
+                                        id="demoPassword"
+                                        class="input"
+                                        bind:value={demoPassword}
+                                        placeholder="DemoPassword123"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    {/if}
                 </div>
-                <p class="step-desc">
-                    Review your submission parameters for deployment
-                </p>
+
+                <div class="form-group">
+                    <label for="reviewNotes" class="form-label">Notes for App Review</label>
+                    <textarea
+                        id="reviewNotes"
+                        class="input textarea"
+                        bind:value={reviewNotes}
+                        rows="4"
+                        placeholder="Any special instructions for the reviewer, like how to test specific features or access certain functionality..."
+                    ></textarea>
+                    <p class="field-hint">Use this to explain anything non-obvious. Helps prevent confusion-based rejections.</p>
+                </div>
+
+                <div class="contact-section">
+                    <h3>Reviewer Contact Information</h3>
+                    <p class="step-desc">Apple may contact you if they have questions during review.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contactFirst" class="form-label">First Name</label>
+                            <input type="text" id="contactFirst" class="input" bind:value={reviewerContact.firstName} />
+                        </div>
+                        <div class="form-group">
+                            <label for="contactLast" class="form-label">Last Name</label>
+                            <input type="text" id="contactLast" class="input" bind:value={reviewerContact.lastName} />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="contactPhone" class="form-label">Phone</label>
+                            <input type="tel" id="contactPhone" class="input" bind:value={reviewerContact.phone} placeholder="+1 555-123-4567" />
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail" class="form-label">Email</label>
+                            <input type="email" id="contactEmail" class="input" bind:value={reviewerContact.email} placeholder="you@example.com" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" onclick={() => (step = 5)}>Back</button>
+                    <button class="btn btn-primary" onclick={() => (step = 7)} disabled={!step6Valid}>Continue</button>
+                </div>
+            </CockpitPanel>
+
+        {:else if step === 7}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STEP 7: Review & Submit -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <div class="step-content">
+                <h2>Review & Submit</h2>
+                <p class="step-desc">Review your submission before analysis.</p>
 
                 <CockpitPanel class="summary-card">
-                    <div class="section-label">READOUT_SUMMARY</div>
+                    <h3>Summary</h3>
                     <div class="summary-grid">
                         <div class="summary-item">
-                            <span class="summary-label">APP_IDENTIFIER</span>
+                            <span class="summary-label">App Name</span>
                             <span class="summary-value">{appName}</span>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-label">ASSET_COUNT</span>
-                            <span class="summary-value"
-                                >{screenshots.length} FILES</span
-                            >
+                            <span class="summary-label">Category</span>
+                            <span class="summary-value">{category || "Not set"}</span>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-label">PRIVACY_MANIFEST</span>
-                            <span
-                                class="summary-value status-{privacyManifest
-                                    ? 'ready'
-                                    : 'warning'}"
-                            >
-                                {privacyManifest ? "ATTACHED" : "MISSING"}
+                            <span class="summary-label">Age Rating</span>
+                            <span class="summary-value">{calculatedAgeRating}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Screenshots</span>
+                            <span class="summary-value">{screenshots.length} files</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Info.plist</span>
+                            <span class="summary-value status-{infoPlist ? 'ready' : 'warning'}">
+                                {infoPlist ? "✓ Attached" : "Missing"}
                             </span>
                         </div>
                         <div class="summary-item">
-                            <span class="summary-label">INFO_PLIST</span>
-                            <span
-                                class="summary-value status-{infoPlist
-                                    ? 'ready'
-                                    : 'warning'}"
-                            >
-                                {infoPlist ? "ATTACHED" : "MISSING"}
+                            <span class="summary-label">Privacy Manifest</span>
+                            <span class="summary-value status-{privacyManifest ? 'ready' : 'warning'}">
+                                {privacyManifest ? "✓ Attached" : "Missing"}
                             </span>
                         </div>
-                        <div class="summary-item total">
-                            <span class="summary-label">TOTAL_FEE</span>
-                            <span class="summary-value">${PRICE}.00</span>
+                        <div class="summary-item">
+                            <span class="summary-label">Sign-in Required</span>
+                            <span class="summary-value">{signInRequired ? "Yes" : "No"}</span>
                         </div>
+                        {#if signInRequired}
+                            <div class="summary-item">
+                                <span class="summary-label">Demo Account</span>
+                                <span class="summary-value status-{demoUsername && demoPassword ? 'ready' : 'warning'}">
+                                    {demoUsername && demoPassword ? "✓ Provided" : "Missing!"}
+                                </span>
+                            </div>
+                        {/if}
                     </div>
                 </CockpitPanel>
 
                 <CockpitPanel class="whats-included">
-                    <h3>What's Included</h3>
+                    <h3>What We'll Analyze</h3>
                     <ul>
-                        <li>
-                            Full metadata analysis (name, description, keywords)
-                        </li>
-                        <li>Screenshot review for guideline compliance</li>
-                        <li>Privacy manifest deep analysis</li>
-                        <li>Info.plist validation</li>
-                        <li>Actionable fix recommendations</li>
+                        <li>Metadata validation (name, subtitle, keywords, description)</li>
+                        <li>URL reachability (privacy policy, support URL)</li>
+                        <li>Age rating consistency</li>
+                        <li>Privacy manifest vs data collection declarations</li>
+                        <li>Screenshot guidelines compliance</li>
+                        <li>Info.plist required keys and format</li>
+                        <li>Demo account validity (if sign-in required)</li>
+                        <li>Category-specific requirements</li>
                     </ul>
                 </CockpitPanel>
 
@@ -757,31 +1301,30 @@
 
                 {#if !canSubmit}
                     <div class="missing-files-warning">
-                        <strong>Missing required files:</strong>
-                        {missingFiles.join(", ")}
+                        <strong>Cannot submit:</strong>
+                        {#if !step1Valid}App name, description, and category are required. {/if}
+                        {#if !step2Valid}Privacy Policy URL and Support URL are required. {/if}
+                        {#if !step5Valid}{missingFiles.join(", ")}. {/if}
+                        {#if !step6Valid}Demo credentials are required when sign-in is enabled.{/if}
                     </div>
                 {/if}
 
                 <div class="step-actions">
-                    <button class="btn btn-secondary" onclick={() => (step = 2)}
-                        >Back</button
-                    >
+                    <button class="btn btn-secondary" onclick={() => (step = 6)}>Back</button>
                     <div class="action-group">
                         <button
                             class="btn btn-accent"
                             onclick={testSubmit}
                             disabled={loading || !canSubmit}
                         >
-                            {loading
-                                ? "Analyzing..."
-                                : "Test Mode (Skip Payment)"}
+                            {loading ? "Analyzing..." : "Test Mode (Free)"}
                         </button>
                         <button
                             class="btn btn-primary"
                             onclick={submit}
                             disabled={loading || !canSubmit}
                         >
-                            {loading ? "Processing..." : "Continue to Payment"}
+                            {loading ? "Processing..." : `Submit ($${PRICE})`}
                         </button>
                     </div>
                 </div>
@@ -1399,5 +1942,429 @@
         to {
             transform: rotate(360deg);
         }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Progress Steps (7-step horizontal indicator) */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .progress-steps {
+        display: flex;
+        gap: 0;
+        margin-bottom: 2.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .progress-step {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.875rem 0.5rem;
+        background: transparent;
+        border: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .progress-step:last-child {
+        border-right: none;
+    }
+
+    .progress-step:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .progress-step.active {
+        background: rgba(212, 168, 83, 0.1);
+    }
+
+    .progress-step.complete {
+        background: rgba(34, 197, 94, 0.08);
+    }
+
+    .step-num {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--gray-500);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .progress-step.active .step-num {
+        background: var(--accent);
+        color: var(--bg);
+    }
+
+    .progress-step.complete .step-num {
+        background: #22c55e;
+        color: var(--bg);
+    }
+
+    .step-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: color 0.2s;
+    }
+
+    .progress-step.active .step-label {
+        color: var(--accent);
+    }
+
+    .progress-step.complete .step-label {
+        color: #22c55e;
+    }
+
+    @media (max-width: 700px) {
+        .progress-steps {
+            flex-wrap: wrap;
+        }
+        .progress-step {
+            flex: 0 0 25%;
+            border-right: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .progress-step:nth-child(4),
+        .progress-step:nth-child(7) {
+            border-right: none;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Character Counts & Field Hints */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .char-count {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        margin-left: auto;
+    }
+
+    .char-count.over {
+        color: #ef4444;
+    }
+
+    .required {
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    .field-hint {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        margin-top: 0.5rem;
+        line-height: 1.4;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--gray-300);
+        margin-bottom: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Age Rating Questionnaire */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .age-rating-result {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        background: rgba(212, 168, 83, 0.08);
+        border: 1px solid rgba(212, 168, 83, 0.2);
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .rating-label {
+        font-size: 0.9rem;
+        color: var(--gray-300);
+    }
+
+    .rating-value {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--accent);
+    }
+
+    .age-questions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .age-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+    }
+
+    .age-question label {
+        font-size: 0.9rem;
+        color: var(--gray-300);
+    }
+
+    .age-question select {
+        width: 160px;
+        min-width: 0;
+    }
+
+    .age-question.checkbox-question {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .age-question.checkbox-question label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+    }
+
+    .age-question.checkbox-question label span {
+        color: var(--gray-200);
+    }
+
+    .age-question.checkbox-question .field-hint {
+        margin: 0;
+        padding-left: 1.75rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Privacy Grid (Data Collection) */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .privacy-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .privacy-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.01);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .privacy-row:last-child {
+        border-bottom: none;
+    }
+
+    .privacy-row:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .privacy-label {
+        font-size: 0.85rem;
+        color: var(--gray-300);
+    }
+
+    .privacy-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        color: var(--gray-400);
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .privacy-checkbox.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .privacy-checkbox input {
+        accent-color: var(--accent);
+    }
+
+    @media (max-width: 600px) {
+        .privacy-row {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+        .privacy-label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Monetization Section */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .monetization-section {
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+    }
+
+    .monetization-section h3 {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin: 0 0 1rem 0;
+    }
+
+    .checkbox-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--gray-300);
+        cursor: pointer;
+    }
+
+    .checkbox-label input {
+        accent-color: var(--accent);
+        width: 16px;
+        height: 16px;
+    }
+
+    .checkbox-label.prominent {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--gray-200);
+    }
+
+    .checkbox-label.prominent input {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Sign-in Section & Demo Credentials */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .signin-section {
+        padding: 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .demo-credentials {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .warning-hint {
+        padding: 0.875rem 1rem;
+        background: rgba(251, 191, 36, 0.08);
+        border: 1px solid rgba(251, 191, 36, 0.15);
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: #fbbf24;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Contact Section */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .contact-section {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .contact-section h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .contact-section > .step-desc {
+        margin-bottom: 1rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* What's Included Card */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .whats-included {
+        margin-top: 1.5rem;
+    }
+
+    .whats-included h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-200);
+        margin: 0 0 1rem 0;
+    }
+
+    .whats-included ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .whats-included li {
+        position: relative;
+        padding: 0.5rem 0 0.5rem 1.5rem;
+        font-size: 0.9rem;
+        color: var(--gray-400);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .whats-included li:last-child {
+        border-bottom: none;
+    }
+
+    .whats-included li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #22c55e;
+        font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* Form Groups (additions for new fields) */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
     }
 </style>
