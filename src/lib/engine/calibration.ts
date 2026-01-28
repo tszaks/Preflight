@@ -6,6 +6,8 @@ export interface CalibrationData {
     false_positive_rates: Record<string, number>;
     /** Total feedback count per category */
     feedback_counts: Record<string, number>;
+    /** Whether calibration data was successfully loaded from the database */
+    loaded: boolean;
 }
 
 /**
@@ -19,16 +21,25 @@ export async function getCalibrationData(
     const result: CalibrationData = {
         false_positive_rates: {},
         feedback_counts: {},
+        loaded: false,
     };
 
     try {
         // Query feedback aggregates grouped by category
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('report_items')
             .select('category, user_feedback')
             .not('user_feedback', 'is', null);
 
-        if (!data || data.length === 0) return result;
+        if (error) {
+            console.error('[Calibration] Database query failed:', error);
+            return result; // loaded: false signals DB failure
+        }
+
+        if (!data || data.length === 0) {
+            result.loaded = true; // DB succeeded, just no data yet
+            return result;
+        }
 
         // Aggregate by category
         const categoryStats: Record<string, { total: number; false_positives: number }> = {};
@@ -50,6 +61,7 @@ export async function getCalibrationData(
                 : 0;
             result.feedback_counts[cat] = stats.total;
         }
+        result.loaded = true;
     } catch (error) {
         console.error('[Calibration] Failed to fetch calibration data:', error);
     }

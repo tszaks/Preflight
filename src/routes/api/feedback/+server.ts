@@ -30,8 +30,12 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession, 
         throw error(404, 'Report item not found');
     }
 
-    // Type assertion for nested join
+    // Type assertion for nested join — validate shape before auth check
     const ownerUserId = (item as any).reports?.submissions?.user_id;
+    if (!ownerUserId) {
+        console.error('[Feedback] Could not resolve owner from report_items join. Item ID:', item_id);
+        throw error(500, 'Unable to verify ownership — report data may be incomplete');
+    }
     if (ownerUserId !== user.id) {
         throw error(403, 'Access denied');
     }

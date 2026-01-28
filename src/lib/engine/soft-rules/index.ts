@@ -163,6 +163,12 @@ export async function runSoftRules(
         }
 
         checks.push(...allScreenshotResults);
+    } else {
+        // Emit progress event so UI doesn't appear frozen between 30% and 65%
+        emit(createProgressEvent('check_complete', 'Screenshot analysis skipped', 65, {
+            check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+            phase: 'soft_rules',
+        }));
     }
 
     // 4. Privacy Policy Cross-check (65-80%)
