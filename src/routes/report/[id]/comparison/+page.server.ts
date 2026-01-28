@@ -15,6 +15,9 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
     }
 
     const submission = (currentReport as any).submissions;
+    if (!submission) {
+        throw error(500, 'Report data is incomplete — submission data not found');
+    }
     if (submission.user_id !== user.id) {
         throw error(403, 'Access denied');
     }
@@ -49,6 +52,13 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
             .order('severity', { ascending: true }),
     ]);
 
+    if (currentItemsResult.error) {
+        console.error('Failed to load current report items:', currentItemsResult.error);
+    }
+    if (originalItemsResult.error) {
+        console.error('Failed to load original report items:', originalItemsResult.error);
+    }
+
     const currentItems = currentItemsResult.data || [];
     const originalItems = originalItemsResult.data || [];
 
@@ -61,24 +71,26 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
     };
 };
 
+const REPORT_WITH_SUBMISSION_SELECT = `
+    *,
+    submissions!inner(
+        id,
+        app_name,
+        category,
+        review_type,
+        created_at,
+        completed_at,
+        user_id,
+        is_rereviewing,
+        original_submission_id
+    )
+`;
+
 async function findReport(supabase: any, id: string) {
     // Try report ID first
     const { data: byReportId } = await supabase
         .from('reports')
-        .select(`
-            *,
-            submissions!inner(
-                id,
-                app_name,
-                category,
-                review_type,
-                created_at,
-                completed_at,
-                user_id,
-                is_rereviewing,
-                original_submission_id
-            )
-        `)
+        .select(REPORT_WITH_SUBMISSION_SELECT)
         .eq('id', id)
         .single();
 
@@ -87,20 +99,7 @@ async function findReport(supabase: any, id: string) {
     // Try submission ID
     const { data: bySubmissionId } = await supabase
         .from('reports')
-        .select(`
-            *,
-            submissions!inner(
-                id,
-                app_name,
-                category,
-                review_type,
-                created_at,
-                completed_at,
-                user_id,
-                is_rereviewing,
-                original_submission_id
-            )
-        `)
+        .select(REPORT_WITH_SUBMISSION_SELECT)
         .eq('submission_id', id)
         .single();
 

@@ -1,19 +1,12 @@
 <script lang="ts">
-    import { diffReports, formatDiffSummary, type ReportDiff } from '$lib/engine/report/diff';
+    import { diffReports, type ReportDiff } from '$lib/engine/report/diff';
     import type { CheckResult, ScoreResult } from '$lib/engine/types';
 
     let { data } = $props();
 
-    // Convert DB report items to CheckResult format for the diff engine
     function toCheckResults(items: any[]): CheckResult[] {
-        return items.map(item => ({
-            category: item.category,
-            severity: item.severity,
-            title: item.title,
-            description: item.description,
-            guideline_ref: item.guideline_ref,
-            fix_suggestion: item.fix_suggestion,
-            confidence: item.confidence,
+        return items.map(({ category, severity, title, description, guideline_ref, fix_suggestion, confidence }): CheckResult => ({
+            category, severity, title, description, guideline_ref, fix_suggestion, confidence,
         }));
     }
 

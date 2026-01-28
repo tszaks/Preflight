@@ -56,6 +56,7 @@ export async function generateReport(
             confidence: check.confidence ?? null,
         }));
 
+    let itemsInsertFailed = false;
     if (items.length > 0) {
         const { error: itemsError } = await supabase
             .from('report_items')
@@ -63,18 +64,30 @@ export async function generateReport(
 
         if (itemsError) {
             console.error('Failed to insert report items:', itemsError);
-            // Report was created, items partially failed
+            itemsInsertFailed = true;
         }
     }
 
     // Update submission status
-    await supabase
+    const { error: statusError } = await supabase
         .from('submissions')
         .update({
             status: 'complete',
             completed_at: new Date().toISOString(),
         })
         .eq('id', submissionId);
+
+    if (statusError) {
+        console.error('Failed to update submission status:', statusError);
+    }
+
+    if (itemsInsertFailed) {
+        return {
+            reportId: report.id,
+            success: false,
+            error: 'Report created but findings could not be saved. The report may be incomplete.',
+        };
+    }
 
     return {
         reportId: report.id,

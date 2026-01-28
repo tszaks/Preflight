@@ -54,8 +54,8 @@ export async function verifyClaims(
                     confidence: 40,
                 });
             }
-        } catch {
-            // Skip claims we can't verify — don't penalize for network errors
+        } catch (error) {
+            console.error(`[WebChecker] Failed to verify claim "${claim.text}":`, error);
             verifications.push({ claim, status: 'skipped' });
         }
     }
