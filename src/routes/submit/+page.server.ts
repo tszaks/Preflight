@@ -1,5 +1,9 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
+import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '$lib/types/database';
 
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
     const { user } = await safeGetSession();
@@ -408,11 +412,16 @@ export const actions: Actions = {
             return fail(500, { message: 'Failed to create analysis job' });
         }
 
-        // Step 4: Deduct credits upfront
-        await supabase
+        // Step 4: Deduct credits upfront (service role bypasses RLS)
+        const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { error: creditError } = await serviceSupabase
             .from('profiles')
             .update({ credits: userCredits - creditCost })
             .eq('id', userId);
+
+        if (creditError) {
+            console.error('Credit deduction failed:', creditError);
+        }
 
         // Redirect to progress page
         throw redirect(303, `/progress/${submissionId}`);
