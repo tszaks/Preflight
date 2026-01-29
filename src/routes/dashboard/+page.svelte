@@ -86,7 +86,7 @@
             <div class="empty-glow"></div>
 
             <!-- Technical readout label -->
-            <div class="readout-label">SYS STATUS</div>
+            <div class="readout-label"><span class="status-dot"></span> SYS STATUS</div>
 
             <!-- Radar scope -->
             <div class="radar-scope">
@@ -307,6 +307,9 @@
     }
 
     .readout-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         font-family: 'Instrument Mono', monospace;
         font-size: 0.5rem;
         font-weight: 700;
@@ -317,6 +320,20 @@
         border: 1px solid rgba(255, 255, 255, 0.05);
         padding: 4px 12px;
         margin-bottom: 32px;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 6px #22c55e, 0 0 12px rgba(34, 197, 94, 0.4);
+        animation: dot-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes dot-pulse {
+        0%, 100% { opacity: 1; box-shadow: 0 0 6px #22c55e, 0 0 12px rgba(34, 197, 94, 0.4); }
+        50% { opacity: 0.5; box-shadow: 0 0 3px #22c55e, 0 0 6px rgba(34, 197, 94, 0.2); }
     }
 
     /* Radar Scope */
