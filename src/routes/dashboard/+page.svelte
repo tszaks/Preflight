@@ -110,9 +110,9 @@
                         <!-- Fuselage (thick, rounded nose, longer) -->
                         <path d="M0,-32 Q-5,-30 -5,-24 L-5,22 Q-4,30 0,32 Q4,30 5,22 L5,-24 Q5,-30 0,-32 Z" opacity="1" />
                         <!-- Left wing (straight) -->
-                        <polygon points="-5,-6 -30,3 -28,8 -5,1" opacity="1" />
+                        <polygon points="-5,-6 -30,3 -30,7 -5,1" opacity="1" />
                         <!-- Right wing (straight) -->
-                        <polygon points="5,-6 30,3 28,8 5,1" opacity="1" />
+                        <polygon points="5,-6 30,3 30,7 5,1" opacity="1" />
                         <!-- Left engine -->
                         <ellipse cx="-17" cy="2" rx="3.5" ry="7" opacity="0.9" />
                         <!-- Right engine -->
