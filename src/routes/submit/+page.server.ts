@@ -74,6 +74,33 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
             .single();
 
         originalSubmission = data;
+
+        // Generate signed URLs for saved files so the client can display thumbnails
+        if (originalSubmission) {
+            const pathsToSign: { bucket: string; path: string }[] = [];
+
+            if (originalSubmission.screenshot_paths?.length) {
+                for (const p of originalSubmission.screenshot_paths) {
+                    pathsToSign.push({ bucket: 'screenshots', path: p });
+                }
+            }
+            if (originalSubmission.app_icon_path) {
+                pathsToSign.push({ bucket: 'screenshots', path: originalSubmission.app_icon_path });
+            }
+
+            const results = await Promise.all(
+                pathsToSign.map(async ({ bucket, path }) => {
+                    const { data } = await supabase.storage
+                        .from(bucket)
+                        .createSignedUrl(path, 3600);
+                    return { path, url: data?.signedUrl || null };
+                })
+            );
+
+            for (const { path, url } of results) {
+                if (url) fileUrls[path] = url;
+            }
+        }
     }
 
     return {

@@ -553,17 +553,11 @@
                             type="text"
                             id="appName"
                             class="input"
-                            class:locked={isResubmit}
                             bind:value={appName}
                             maxlength="30"
                             required
-                            readonly={isResubmit}
                             placeholder="Your app's name"
-                            title={isResubmit ? 'App name is locked for retests' : ''}
                         />
-                        {#if isResubmit}
-                            <span class="field-hint locked-hint">🔒 App name is locked for retests</span>
-                        {/if}
                     </div>
 
                     <div class="form-group">
@@ -1820,12 +1814,6 @@
     .textarea {
         resize: vertical;
         min-height: 120px;
-    }
-
-    .input.locked {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background: var(--gray-800, #2a2a2a);
     }
 
     select.input {
