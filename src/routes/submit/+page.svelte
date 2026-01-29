@@ -616,7 +616,20 @@
 
                 <!-- Technical Files (compact) -->
                 <div class="rereview-file-section">
-                    <label class="form-label">Technical Files</label>
+                    <div class="rereview-tech-header">
+                        <label class="form-label">Technical Files</label>
+                        <label class="btn btn-secondary btn-sm">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                                <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                                <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                                <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            {scanning ? "Scanning..." : "Scan Project"}
+                            <input type="file" webkitdirectory onchange={handleFolderSelect} disabled={scanning} style="display: none;" />
+                        </label>
+                    </div>
                     <div class="rereview-tech-files">
                         <div class="tech-file-row">
                             <span class="tech-file-label">Info.plist</span>
@@ -1121,81 +1134,6 @@
                     </div>
                 </div>
             </CockpitPanel>
-
-            {#if scanning || applyingFiles}
-                <div class="loading-overlay">
-                    <div class="loading-content">
-                        <div class="loading-spinner"></div>
-                        <p class="loading-text">
-                            {#if scanning}
-                                {scanProgress || "Scanning project..."}
-                            {:else}
-                                Applying files...
-                            {/if}
-                        </p>
-                    </div>
-                </div>
-            {/if}
-
-            {#if showScanResults && scanResults}
-                <div class="modal-overlay" onclick={closeScanResults}>
-                    <div class="modal" onclick={(e) => e.stopPropagation()}>
-                        <div class="modal-header">
-                            <h3>
-                                {#if scanResults.infoPlist || scanResults.privacyManifest}
-                                    Found files in {scanResults.projectName}/
-                                {:else}
-                                    No config files found
-                                {/if}
-                            </h3>
-                            <button class="modal-close" onclick={closeScanResults}>×</button>
-                        </div>
-                        <div class="modal-body">
-                            {#if scanResults.infoPlist}
-                                <div class="scan-result-item success">
-                                    <div class="result-icon">✓</div>
-                                    <div class="result-content">
-                                        <strong>Info.plist</strong>
-                                        <span class="result-path">{formatPath(scanResults.infoPlistPath || "")}</span>
-                                    </div>
-                                </div>
-                            {:else}
-                                <div class="scan-result-item warning">
-                                    <div class="result-icon">!</div>
-                                    <div class="result-content">
-                                        <strong>Info.plist</strong>
-                                        <span class="result-path">Not found - upload manually</span>
-                                    </div>
-                                </div>
-                            {/if}
-
-                            {#if scanResults.privacyManifest}
-                                <div class="scan-result-item success">
-                                    <div class="result-icon">✓</div>
-                                    <div class="result-content">
-                                        <strong>Privacy Manifest</strong>
-                                        <span class="result-path">{formatPath(scanResults.privacyManifestPath || "")}</span>
-                                    </div>
-                                </div>
-                            {:else}
-                                <div class="scan-result-item warning">
-                                    <div class="result-icon">!</div>
-                                    <div class="result-content">
-                                        <strong>Privacy Manifest</strong>
-                                        <span class="result-path">Not found - may not be required for your app</span>
-                                    </div>
-                                </div>
-                            {/if}
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick={closeScanResults}>Cancel</button>
-                            {#if scanResults.infoPlist || scanResults.privacyManifest}
-                                <button class="btn btn-primary" onclick={applyScanResults}>Use These Files</button>
-                            {/if}
-                        </div>
-                    </div>
-                </div>
-            {/if}
 
         {:else if step === 3}
             <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -1754,6 +1692,83 @@
         {/if}
     </div>
 </main>
+
+<!-- Scanning Overlay (shared by both flows) -->
+{#if scanning || applyingFiles}
+    <div class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">
+                {#if scanning}
+                    {scanProgress || "Scanning project..."}
+                {:else}
+                    Applying files...
+                {/if}
+            </p>
+        </div>
+    </div>
+{/if}
+
+<!-- Scan Results Modal (shared by both flows) -->
+{#if showScanResults && scanResults}
+    <div class="modal-overlay" onclick={closeScanResults} role="presentation">
+        <div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div class="modal-header">
+                <h3>
+                    {#if scanResults.infoPlist || scanResults.privacyManifest}
+                        Found files in {scanResults.projectName}/
+                    {:else}
+                        No config files found
+                    {/if}
+                </h3>
+                <button class="modal-close" onclick={closeScanResults}>×</button>
+            </div>
+            <div class="modal-body">
+                {#if scanResults.infoPlist}
+                    <div class="scan-result-item success">
+                        <div class="result-icon">✓</div>
+                        <div class="result-content">
+                            <strong>Info.plist</strong>
+                            <span class="result-path">{formatPath(scanResults.infoPlistPath || "")}</span>
+                        </div>
+                    </div>
+                {:else}
+                    <div class="scan-result-item warning">
+                        <div class="result-icon">!</div>
+                        <div class="result-content">
+                            <strong>Info.plist</strong>
+                            <span class="result-path">Not found - upload manually</span>
+                        </div>
+                    </div>
+                {/if}
+
+                {#if scanResults.privacyManifest}
+                    <div class="scan-result-item success">
+                        <div class="result-icon">✓</div>
+                        <div class="result-content">
+                            <strong>Privacy Manifest</strong>
+                            <span class="result-path">{formatPath(scanResults.privacyManifestPath || "")}</span>
+                        </div>
+                    </div>
+                {:else}
+                    <div class="scan-result-item warning">
+                        <div class="result-icon">!</div>
+                        <div class="result-content">
+                            <strong>Privacy Manifest</strong>
+                            <span class="result-path">Not found - may not be required for your app</span>
+                        </div>
+                    </div>
+                {/if}
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick={closeScanResults}>Cancel</button>
+                {#if scanResults.infoPlist || scanResults.privacyManifest}
+                    <button class="btn btn-primary" onclick={applyScanResults}>Use These Files</button>
+                {/if}
+            </div>
+        </div>
+    </div>
+{/if}
 
 <!-- Credit Modal -->
 {#if showCreditModal}
@@ -3028,6 +3043,17 @@
     }
 
     .rereview-file-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .rereview-tech-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .rereview-tech-header .form-label {
         margin-bottom: 0;
     }
 
