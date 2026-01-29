@@ -113,7 +113,7 @@ export async function runAnalysis(
 
         // === Phase 2: Soft Rules (40-85%) ===
         if (!options.skipSoftRules) {
-            emit(createProgressEvent('phase_start', 'Starting AI analysis...', 40, {
+            emit(createProgressEvent('phase_start', 'Starting PreFlight analysis...', 40, {
                 phase: 'soft_rules',
             }));
 
@@ -137,7 +137,7 @@ export async function runAnalysis(
             allChecks.push(...softResult.checks);
             console.log('[Analysis] Soft rules complete. Found', softResult.checks.length, 'checks');
 
-            emit(createProgressEvent('phase_complete', 'AI analysis complete', 85, {
+            emit(createProgressEvent('phase_complete', 'PreFlight analysis complete', 85, {
                 phase: 'soft_rules',
                 data: { checksFound: softResult.checks.length },
             }));
@@ -149,7 +149,7 @@ export async function runAnalysis(
                 .eq('submission_id', submissionId);
         } else {
             console.log('[Analysis] Skipping soft rules');
-            emit(createProgressEvent('phase_complete', 'Skipped AI analysis', 85, {
+            emit(createProgressEvent('phase_complete', 'Skipped PreFlight analysis', 85, {
                 phase: 'soft_rules',
             }));
         }

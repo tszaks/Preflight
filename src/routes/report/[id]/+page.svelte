@@ -58,7 +58,7 @@
     let reviewTimeEstimate = $derived(
         estimateReviewTime({
             categoryId,
-            isNewApp: true, // Assume new apps for first-time publishers
+            isNewApp: false, // Don't assume — we can't know if this is a new app or update
             hasIAP:
                 submission.description
                     ?.toLowerCase()
