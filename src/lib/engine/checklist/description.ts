@@ -17,6 +17,20 @@ import {
  * - Placeholder content
  * - AI mentions without privacy disclosure
  */
+/**
+ * Extracts a short snippet of surrounding text around a regex match.
+ * Helps users see exactly what triggered a detection flag.
+ */
+function getMatchContext(text: string, match: RegExpMatchArray | null, maxContext = 20): string {
+    if (!match || match.index === undefined) return text.slice(0, 60);
+    const start = Math.max(0, match.index - maxContext);
+    const end = Math.min(text.length, match.index + match[0].length + maxContext);
+    let snippet = text.slice(start, end);
+    if (start > 0) snippet = '...' + snippet;
+    if (end < text.length) snippet = snippet + '...';
+    return snippet;
+}
+
 export function checkDescription(input: HardRulesInput): CheckResult[] {
     const checks: CheckResult[] = [];
     const triggered = new Set<string>();
@@ -38,7 +52,7 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
                     category: rule.category,
                     severity: rule.severity,
                     title: rule.title,
-                    description: `Found "${match?.[0]}" in app name/subtitle. ${rule.description}`,
+                    description: `Found "${match?.[0]}" in your app name/subtitle: "${getMatchContext(nameSubtitle, match)}". ${rule.description}`,
                     guideline_ref: rule.guideline_ref,
                     fix_suggestion: rule.fix_suggestion,
                     confidence: 100,
@@ -59,7 +73,7 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
                         category: rule.category,
                         severity: rule.severity,
                         title: rule.title,
-                        description: `Found "${match?.[0]}" in description. ${rule.description}`,
+                        description: `Found "${match?.[0]}" in your description: "${getMatchContext(description, match)}". ${rule.description}`,
                         guideline_ref: rule.guideline_ref,
                         fix_suggestion: rule.fix_suggestion,
                         confidence: 100,
@@ -80,7 +94,7 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
                         category: rule.category,
                         severity: rule.severity,
                         title: rule.title,
-                        description: `Found "${match?.[0]}" in description. ${rule.description}`,
+                        description: `Found "${match?.[0]}" in your description: "${getMatchContext(description, match)}". ${rule.description}`,
                         guideline_ref: rule.guideline_ref,
                         fix_suggestion: rule.fix_suggestion,
                         confidence: 100,

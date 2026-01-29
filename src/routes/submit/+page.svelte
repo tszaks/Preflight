@@ -1473,8 +1473,17 @@
                                         usageData: "Usage Data",
                                         diagnostics: "Diagnostics"
                                     }}
+                                    {@const sublabels: Record<string, string> = {
+                                        usageData: "Third-party analytics (Firebase, Mixpanel, etc.) \u2014 not native system logging",
+                                        diagnostics: "Crash reporting services (Crashlytics, Sentry) \u2014 not native system logs"
+                                    }}
                                     <div class="privacy-row">
-                                        <span class="privacy-label">{labels[key]}</span>
+                                        <span class="privacy-label">
+                                            {labels[key]}
+                                            {#if sublabels[key]}
+                                                <span class="privacy-sublabel">{sublabels[key]}</span>
+                                            {/if}
+                                        </span>
                                         <label class="privacy-checkbox">
                                             <input type="checkbox" bind:checked={dataCollection[key].collected} />
                                             <span>Collected</span>
@@ -2794,6 +2803,16 @@
     .privacy-label {
         font-size: 0.85rem;
         color: var(--gray-300);
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .privacy-sublabel {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        font-weight: 400;
+        line-height: 1.3;
     }
 
     .privacy-checkbox {
