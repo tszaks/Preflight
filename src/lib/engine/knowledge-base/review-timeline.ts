@@ -790,7 +790,7 @@ export function estimateReviewTime(params: {
     if (params.isNewApp) {
         minHours *= 1.5;
         maxHours *= 1.5;
-        factors.push('New app submission (+50%)');
+        factors.push('First submission for this app (+50%)');
     }
 
     if (params.isNewDeveloper) {
