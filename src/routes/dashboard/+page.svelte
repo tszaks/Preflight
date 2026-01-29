@@ -118,9 +118,9 @@
                         <!-- Right engine -->
                         <ellipse cx="17" cy="2" rx="3.5" ry="7" opacity="0.9" />
                         <!-- Left tail stabilizer (at very back) -->
-                        <polygon points="-2,18 -16,30 -16,34 -2,27" opacity="1" />
+                        <polygon points="-2,20 -16,27 -16,31 -2,27" opacity="1" />
                         <!-- Right tail stabilizer -->
-                        <polygon points="2,18 16,30 16,34 2,27" opacity="1" />
+                        <polygon points="2,20 16,27 16,31 2,27" opacity="1" />
                     </g>
                 </svg>
 
