@@ -430,15 +430,6 @@
         setTimeout(() => (copiedFixId = null), 2000);
     }
 
-    // Confidence badge display — severity-aware so colors match context
-    function confidenceBadge(confidence: number | null | undefined, severity?: string): { label: string; class: string } | null {
-        if (confidence == null) return null;
-        const level = confidence >= 80 ? 'High' : confidence >= 50 ? 'Medium' : 'Low';
-        const cls = severity === 'critical' ? 'confidence-on-critical'
-            : severity === 'warning' ? 'confidence-on-warning'
-            : 'confidence-neutral';
-        return { label: level, class: cls };
-    }
 
     // User feedback state
     let feedbackState: Record<string, 'helpful' | 'false_positive'> = $state({});
@@ -800,9 +791,8 @@
                                 <div class="action-content">
                                     <div class="item-meta-row">
                                         <span class="item-meta">{categoryLabel(item.category)}</span>
-                                        {#if confidenceBadge(item.confidence, item.severity)}
-                                            {@const badge = confidenceBadge(item.confidence, item.severity)}
-                                            <span class="confidence-badge {badge?.class}">{badge?.label}</span>
+                                        {#if item.guideline_ref}
+                                            <span class="guideline-ref">{item.guideline_ref}</span>
                                         {/if}
                                     </div>
                                     <strong>{item.title}</strong>
@@ -863,9 +853,8 @@
                                 <div class="action-content">
                                     <div class="item-meta-row">
                                         <span class="item-meta">{categoryLabel(item.category)}</span>
-                                        {#if confidenceBadge(item.confidence, item.severity)}
-                                            {@const badge = confidenceBadge(item.confidence, item.severity)}
-                                            <span class="confidence-badge {badge?.class}">{badge?.label}</span>
+                                        {#if item.guideline_ref}
+                                            <span class="guideline-ref">{item.guideline_ref}</span>
                                         {/if}
                                     </div>
                                     <strong>{item.title}</strong>
@@ -961,9 +950,8 @@
                                 <span class="suggestion-title"
                                     >{item.title}</span
                                 >
-                                {#if confidenceBadge(item.confidence, item.severity)}
-                                    {@const badge = confidenceBadge(item.confidence, item.severity)}
-                                    <span class="confidence-badge {badge?.class}">{badge?.label}</span>
+                                {#if item.guideline_ref}
+                                    <span class="guideline-ref">{item.guideline_ref}</span>
                                 {/if}
                                 <span class="suggestion-category"
                                     >{categoryLabel(item.category)}</span
@@ -2076,7 +2064,7 @@
     }
 
 
-    /* Confidence Badges */
+    /* Guideline References */
     .item-meta-row {
         display: flex;
         align-items: center;
@@ -2084,7 +2072,7 @@
         margin-bottom: 8px;
     }
 
-    .confidence-badge {
+    .guideline-ref {
         font-family: "Instrument Mono", monospace;
         font-size: 0.6rem;
         font-weight: 700;
@@ -2092,24 +2080,9 @@
         text-transform: uppercase;
         padding: 2px 8px;
         border-radius: 3px;
-    }
-
-    .confidence-on-critical {
-        color: hsl(0, 85%, 65%);
-        background: hsla(0, 85%, 65%, 0.1);
-        border: 1px solid hsla(0, 85%, 65%, 0.2);
-    }
-
-    .confidence-on-warning {
-        color: hsl(38, 95%, 60%);
-        background: hsla(38, 95%, 60%, 0.1);
-        border: 1px solid hsla(38, 95%, 60%, 0.2);
-    }
-
-    .confidence-neutral {
-        color: var(--gray-400);
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--accent);
+        background: rgba(var(--accent-rgb, 99, 179, 237), 0.08);
+        border: 1px solid rgba(var(--accent-rgb, 99, 179, 237), 0.15);
     }
 
     /* Feedback Buttons */
