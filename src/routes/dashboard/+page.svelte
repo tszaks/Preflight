@@ -105,22 +105,22 @@
                     <circle class="pulse-ring ring-2" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
                     <circle class="pulse-ring ring-3" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
 
-                    <!-- Center blip (steady glow) -->
-                    <circle cx="100" cy="100" r="4" fill="var(--accent)" opacity="0.5" class="center-blip" />
-                    <circle cx="100" cy="100" r="7" fill="none" stroke="var(--accent)" stroke-width="0.5" opacity="0.2" />
-
-                    <!-- Aircraft icon at center (top-down view) -->
-                    <g transform="translate(100, 100)" fill="var(--accent)" opacity="0.65">
-                        <!-- Fuselage -->
-                        <ellipse cx="0" cy="0" rx="2.5" ry="16" />
-                        <!-- Nose cone -->
-                        <path d="M-2,-16 Q0,-22 2,-16 Z" />
-                        <!-- Main wings (swept back) -->
-                        <path d="M0,-2 L-20,6 L-20,8 L-1,3 Z" />
-                        <path d="M0,-2 L20,6 L20,8 L1,3 Z" />
-                        <!-- Tail wings -->
-                        <path d="M0,11 L-9,16 L-9,17 L0,13 Z" />
-                        <path d="M0,11 L9,16 L9,17 L0,13 Z" />
+                    <!-- Airliner — straight wings, thick body, rounded nose -->
+                    <g transform="translate(100, 100)" fill="var(--accent)">
+                        <!-- Fuselage (thick, rounded nose, longer) -->
+                        <path d="M0,-32 Q-5,-30 -5,-24 L-5,22 Q-4,30 0,32 Q4,30 5,22 L5,-24 Q5,-30 0,-32 Z" opacity="1" />
+                        <!-- Left wing (straight) -->
+                        <polygon points="-5,-6 -30,3 -28,8 -5,1" opacity="1" />
+                        <!-- Right wing (straight) -->
+                        <polygon points="5,-6 30,3 28,8 5,1" opacity="1" />
+                        <!-- Left engine -->
+                        <ellipse cx="-17" cy="5" rx="3.5" ry="7" opacity="0.9" />
+                        <!-- Right engine -->
+                        <ellipse cx="17" cy="5" rx="3.5" ry="7" opacity="0.9" />
+                        <!-- Left tail stabilizer (at very back) -->
+                        <polygon points="-2,21 -16,27 -14,31 -2,27" opacity="1" />
+                        <!-- Right tail stabilizer -->
+                        <polygon points="2,21 16,27 14,31 2,27" opacity="1" />
                     </g>
                 </svg>
 
@@ -142,11 +142,11 @@
             </div>
 
             <!-- Heading -->
-            <h2>Ready for Departure</h2>
+            <h2>No Submissions Yet</h2>
             <p>
-                Your runway is clear. Upload your first iOS submission and Preflight
-                will scan it against Apple's review guidelines -- catching rejection
-                risks before you hit Send.
+                Upload your first iOS submission and Preflight
+                will scan it against Apple's review guidelines — catching rejection
+                risks before Apple rejects you.
             </p>
 
             <!-- Checklist preview -->
@@ -322,8 +322,8 @@
     /* Radar Scope */
     .radar-scope {
         position: relative;
-        width: 180px;
-        height: 180px;
+        width: 225px;
+        height: 225px;
         margin-bottom: 28px;
         border-radius: 50%;
         overflow: hidden;
@@ -350,12 +350,12 @@
 
     @keyframes radar-pulse {
         0% {
-            r: 8;
-            opacity: 0.5;
-            stroke-width: 1.5;
+            r: 5;
+            opacity: 0.7;
+            stroke-width: 2.5;
         }
         100% {
-            r: 90;
+            r: 95;
             opacity: 0;
             stroke-width: 0.3;
         }
@@ -496,8 +496,8 @@
         }
 
         .radar-scope {
-            width: 140px;
-            height: 140px;
+            width: 175px;
+            height: 175px;
         }
 
         .status-row {
