@@ -34,7 +34,10 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
                 manifest_path,
                 plist_path,
                 screenshot_paths,
-                app_icon_path
+                app_icon_path,
+                is_new_app,
+                has_iap,
+                has_subscriptions
             )
         `)
         .eq('id', params.id)
@@ -65,7 +68,10 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
                     user_id,
                     manifest_path,
                     plist_path,
-                    screenshot_paths
+                    screenshot_paths,
+                    is_new_app,
+                    has_iap,
+                    has_subscriptions
                 )
             `)
             .eq('submission_id', params.id)

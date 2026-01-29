@@ -112,6 +112,8 @@ export async function runHardRules(
         has_iap: input.has_iap,
         has_subscriptions: input.has_subscriptions,
         has_third_party_login: input.has_third_party_login,
+        has_account_deletion: input.has_account_deletion,
+        has_restore_purchases: input.has_restore_purchases,
     });
     checks.push(...conditionalChecks);
     emit(createProgressEvent('check_complete', `Found ${conditionalChecks.length} compliance reminders`, 100, {

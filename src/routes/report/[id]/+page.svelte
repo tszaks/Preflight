@@ -58,15 +58,9 @@
     let reviewTimeEstimate = $derived(
         estimateReviewTime({
             categoryId,
-            isNewApp: false, // Don't assume — we can't know if this is a new app or update
-            hasIAP:
-                submission.description
-                    ?.toLowerCase()
-                    .includes("in-app purchase") ?? false,
-            hasSubscription:
-                submission.description
-                    ?.toLowerCase()
-                    .includes("subscription") ?? false,
+            isNewApp: submission.is_new_app ?? false,
+            hasIAP: submission.has_iap ?? (submission.description?.toLowerCase().includes("in-app purchase") ?? false),
+            hasSubscription: submission.has_subscriptions ?? (submission.description?.toLowerCase().includes("subscription") ?? false),
             hasUGC:
                 submission.description?.toLowerCase().includes("user") ?? false,
             isNewDeveloper: false,

@@ -68,6 +68,13 @@ export async function runAnalysis(
             has_iap: input.has_iap,
             has_subscriptions: input.has_subscriptions,
             has_third_party_login: input.has_third_party_login,
+            // Explicit feature confirmations
+            has_account_deletion: input.has_account_deletion,
+            has_restore_purchases: input.has_restore_purchases,
+            is_new_app: input.is_new_app,
+            // Screenshot index hints (for cross-referencing)
+            settings_screenshot_index: input.settings_screenshot_index,
+            paywall_screenshot_index: input.paywall_screenshot_index,
             // Privacy data collection (for mismatch detection)
             data_collection: input.data_collection,
         };
