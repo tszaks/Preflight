@@ -106,7 +106,7 @@
                     <circle class="pulse-ring ring-3" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
 
                     <!-- Airliner — straight wings, thick body, rounded nose -->
-                    <g transform="translate(100, 100)" fill="var(--accent)">
+                    <g transform="translate(100, 100) scale(1.15)" fill="var(--accent)">
                         <!-- Fuselage (thick, rounded nose, longer) -->
                         <path d="M0,-32 Q-5,-30 -5,-24 L-5,22 Q-4,30 0,32 Q4,30 5,22 L5,-24 Q5,-30 0,-32 Z" opacity="1" />
                         <!-- Left wing (straight) -->
@@ -132,12 +132,12 @@
             <div class="status-row">
                 <div class="status-item">
                     <span class="status-dot idle"></span>
-                    <span class="status-text">NO SUBMISSIONS</span>
+                    <span class="status-text">SYSTEMS ONLINE</span>
                 </div>
                 <div class="status-divider"></div>
                 <div class="status-item">
                     <span class="status-dot standby"></span>
-                    <span class="status-text">AWAITING INPUT</span>
+                    <span class="status-text">READY TO SCAN</span>
                 </div>
             </div>
 
@@ -285,7 +285,7 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 48px 32px 56px;
+        padding: 36px 32px 44px;
         position: relative;
     }
 
@@ -319,7 +319,7 @@
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.05);
         padding: 4px 12px;
-        margin-bottom: 32px;
+        margin-bottom: 20px;
     }
 
     .status-dot {
@@ -341,7 +341,7 @@
         position: relative;
         width: 225px;
         height: 225px;
-        margin-bottom: 28px;
+        margin-bottom: 20px;
         border-radius: 50%;
         overflow: hidden;
         background: radial-gradient(
@@ -407,7 +407,7 @@
         display: flex;
         align-items: center;
         gap: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 16px;
     }
 
     .status-item {
@@ -468,7 +468,7 @@
         color: var(--gray-300);
         line-height: 1.7;
         max-width: 400px;
-        margin-bottom: 28px;
+        margin-bottom: 20px;
     }
 
     /* Preflight Checklist */
@@ -476,7 +476,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px 24px;
-        margin-bottom: 32px;
+        margin-bottom: 24px;
         padding: 16px 20px;
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.04);
