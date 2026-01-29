@@ -114,9 +114,9 @@
                         <!-- Right wing (straight) -->
                         <polygon points="5,-6 30,3 28,8 5,1" opacity="1" />
                         <!-- Left engine -->
-                        <ellipse cx="-17" cy="5" rx="3.5" ry="7" opacity="0.9" />
+                        <ellipse cx="-17" cy="2" rx="3.5" ry="7" opacity="0.9" />
                         <!-- Right engine -->
-                        <ellipse cx="17" cy="5" rx="3.5" ry="7" opacity="0.9" />
+                        <ellipse cx="17" cy="2" rx="3.5" ry="7" opacity="0.9" />
                         <!-- Left tail stabilizer (at very back) -->
                         <polygon points="-2,21 -16,27 -14,31 -2,27" opacity="1" />
                         <!-- Right tail stabilizer -->
