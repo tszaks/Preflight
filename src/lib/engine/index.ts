@@ -289,23 +289,27 @@ export async function fetchSubmissionFiles(
 
     // Fetch manifest content
     if (submission.manifest_path) {
-        const { data } = await supabase.storage
+        const { data, error } = await supabase.storage
             .from('manifests')
             .download(submission.manifest_path);
 
         if (data) {
             result.manifestContent = await data.text();
+        } else if (error) {
+            console.warn(`[Storage] Failed to download manifest (${submission.manifest_path}):`, error.message);
         }
     }
 
     // Fetch plist content
     if (submission.plist_path) {
-        const { data } = await supabase.storage
+        const { data, error } = await supabase.storage
             .from('plists')
             .download(submission.plist_path);
 
         if (data) {
             result.plistContent = await data.text();
+        } else if (error) {
+            console.warn(`[Storage] Failed to download plist (${submission.plist_path}):`, error.message);
         }
     }
 
@@ -314,7 +318,7 @@ export async function fetchSubmissionFiles(
         const screenshots: SoftRulesInput['screenshots_data'] = [];
 
         for (const path of submission.screenshot_paths) {
-            const { data } = await supabase.storage
+            const { data, error } = await supabase.storage
                 .from('screenshots')
                 .download(path);
 
@@ -329,6 +333,8 @@ export async function fetchSubmissionFiles(
                     mime_type,
                     size_bytes: buffer.byteLength,
                 });
+            } else if (error) {
+                console.warn(`[Storage] Failed to download screenshot (${path}):`, error.message);
             }
         }
 
@@ -358,8 +364,8 @@ export async function fetchSubmissionFiles(
                     .trim()
                     .slice(0, 15000); // Limit size
             }
-        } catch {
-            // Privacy policy fetch failed - URL check will catch this
+        } catch (fetchError) {
+            console.warn(`[Storage] Privacy policy fetch failed (${submission.privacy_url}):`, fetchError instanceof Error ? fetchError.message : fetchError);
         }
     }
 

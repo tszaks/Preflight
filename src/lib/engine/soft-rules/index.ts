@@ -286,7 +286,10 @@ function extractResponseText(response: Anthropic.Message): string {
 /** Parse a JSON array of check findings from raw Claude text */
 function parseCheckFindings(text: string, defaultCategory: CheckResult['category'] = 'metadata'): CheckResult[] {
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) return [];
+    if (!jsonMatch) {
+        console.warn(`[SoftRules] No JSON array found in ${defaultCategory} response (first 200 chars): ${text.slice(0, 200)}`);
+        return [];
+    }
 
     const parsed = JSON.parse(jsonMatch[0]) as Array<{
         severity: string;
