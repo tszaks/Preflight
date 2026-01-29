@@ -89,6 +89,20 @@ export interface ScreenshotData {
     size_bytes: number;
 }
 
+/**
+ * Evidence extracted from screenshot AI analysis.
+ * Used to cross-reference conditional warnings — if the AI sees a feature
+ * in a screenshot, we can resolve the corresponding warning.
+ */
+export interface ScreenshotEvidence {
+    account_deletion_seen: boolean;
+    restore_purchases_seen: boolean;
+    subscription_terms_seen: boolean;
+    sign_in_with_apple_seen: boolean;
+    /** Maps evidence key to screenshot indices (0-based) where the feature was observed */
+    evidence_locations: Record<string, number[]>;
+}
+
 export interface EngineResult {
     checks: CheckResult[];
     hard_rules_completed: boolean;
