@@ -13,6 +13,9 @@ import type { CheckResult, ScoreResult, CheckCategory } from '../types';
  * - Categories with NO data (only "not provided" checks) return null
  *
  * Overall score is a weighted average of category scores.
+ * Null categories are EXCLUDED and their weight is redistributed
+ * proportionally among categories that have data.
+ * Critical issues apply an additional -15 penalty each to the overall.
  */
 export function calculateScores(checks: CheckResult[]): ScoreResult {
     const categoryChecks = groupByCategory(checks);
@@ -27,24 +30,38 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
         ...(categoryChecks.description || []),
     ]);
 
-    // Weighted overall (privacy and metadata matter most for rejections)
-    const weights = {
-        metadata: 0.25,
-        screenshots: 0.15,
-        privacy: 0.25,
-        plist: 0.15,
-        urls: 0.10,
-        content: 0.10,
-    };
+    // Weighted overall — only include categories that have actual data.
+    // Null categories (files not provided) are excluded and their weight
+    // is redistributed proportionally, like a GPA that ignores untaken classes.
+    const categoryWeights: { score: number | null; weight: number }[] = [
+        { score: score_metadata, weight: 0.25 },
+        { score: score_screenshots, weight: 0.15 },
+        { score: score_privacy, weight: 0.25 },
+        { score: score_plist, weight: 0.15 },
+        { score: score_urls, weight: 0.10 },
+        { score: score_content, weight: 0.10 },
+    ];
 
-    const score_overall = Math.round(
-        score_metadata * weights.metadata +
-        (score_screenshots ?? 100) * weights.screenshots +
-        (score_privacy ?? 100) * weights.privacy +
-        (score_plist ?? 100) * weights.plist +
-        score_urls * weights.urls +
-        score_content * weights.content
-    );
+    const active = categoryWeights.filter(w => w.score !== null);
+    const totalWeight = active.reduce((sum, w) => sum + w.weight, 0);
+
+    let score_overall: number;
+    if (totalWeight === 0) {
+        score_overall = 0;
+    } else {
+        const weighted = active.reduce(
+            (sum, w) => sum + (w.score! * (w.weight / totalWeight)),
+            0
+        );
+        score_overall = Math.round(weighted);
+    }
+
+    // Critical issues should tank the overall score — not just their category.
+    // Each critical applies an additional -15 penalty to the overall.
+    const criticalCount = checks.filter(c => c.severity === 'critical').length;
+    if (criticalCount > 0) {
+        score_overall = Math.max(0, score_overall - (criticalCount * 15));
+    }
 
     return {
         score_metadata,
