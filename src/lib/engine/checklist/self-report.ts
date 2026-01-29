@@ -29,17 +29,19 @@ export function evaluateSelfReports(input: HardRulesInput): CheckResult[] {
         }
     }
 
-    // Add informational tips (always shown)
+    // Add informational tips (filtered by relevance to this submission)
     for (const rule of INFORMATIONAL_RULES) {
-        checks.push({
-            category: rule.category,
-            severity: 'info',
-            title: rule.title,
-            description: rule.description,
-            guideline_ref: rule.guideline_ref,
-            fix_suggestion: rule.fix_suggestion,
-            confidence: 100,
-        });
+        if (shouldShowInformationalRule(rule.id, input)) {
+            checks.push({
+                category: rule.category,
+                severity: 'info',
+                title: rule.title,
+                description: rule.description,
+                guideline_ref: rule.guideline_ref,
+                fix_suggestion: rule.fix_suggestion,
+                confidence: 100,
+            });
+        }
     }
 
     return checks;
@@ -152,6 +154,31 @@ function evaluateRule(rule: SelfReportRule, input: HardRulesInput): CheckResult 
         guideline_ref: rule.guideline_ref,
         confidence: 100,
     };
+}
+
+/**
+ * Determines whether an informational rule is relevant to this submission.
+ * Universal tips always show; context-specific tips only show when the
+ * submission's description or category signals relevance.
+ */
+function shouldShowInformationalRule(ruleId: string, input: HardRulesInput): boolean {
+    const desc = (input.description || '').toLowerCase();
+    const category = (input.category || '').toLowerCase();
+
+    switch (ruleId) {
+        case 'info_no_feature_switch':
+        case 'info_original_value':
+            return true; // Universal risk — always relevant
+
+        case 'info_value_beyond_ads':
+            return /\b(ads?|advertising|ad[- ]supported)\b/.test(desc) || category === 'games';
+
+        case 'info_b2b_distribution':
+            return /\b(enterprise|business|b2b|corporate|internal)\b/.test(desc) || category === 'business';
+
+        default:
+            return true; // Unknown rules default to showing
+    }
 }
 
 /**

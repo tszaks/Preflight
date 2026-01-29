@@ -99,7 +99,7 @@ export function checkPrivacyPolicy(
                     category: rule.category,
                     severity: rule.severity,
                     title: rule.title,
-                    description: `Your privacy manifest declares collection of: ${fieldNames}. These data types are not clearly mentioned in your privacy policy.`,
+                    description: `Your submission indicates your app collects: ${fieldNames}. These data types are not clearly mentioned in your privacy policy. Your privacy policy should disclose all data your app collects.`,
                     guideline_ref: rule.guideline_ref,
                     fix_suggestion: rule.fix_suggestion,
                     confidence: 100,

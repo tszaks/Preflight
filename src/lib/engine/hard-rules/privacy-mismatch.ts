@@ -129,7 +129,7 @@ export function checkPrivacyMismatch(
             description:
                 `Your form indicates these data types are collected but they are not declared ` +
                 `in your privacy manifest: ${missingTypes.join(', ')}. ` +
-                'Apple requires all collected data types to be declared in PrivacyInfo.xcprivacy.',
+                'If any of these were selected in error, re-submit with corrected answers. Otherwise, add them to NSPrivacyCollectedDataTypes in PrivacyInfo.xcprivacy.',
             guideline_ref: getGuidelineRef('5.1.1'),
             fix_suggestion:
                 `Add the following to NSPrivacyCollectedDataTypes in your manifest: ${missingTypes.join(', ')}.`,
