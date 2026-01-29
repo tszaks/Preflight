@@ -31,6 +31,27 @@ function getMatchContext(text: string, match: RegExpMatchArray | null, maxContex
     return snippet;
 }
 
+/**
+ * Checks if a forbidden-label match in the description is actually
+ * benign contextual usage (e.g., "Beta user" testimonial attribution).
+ * Returns true if the match should be SKIPPED (not flagged).
+ */
+function isFalsePositiveLabel(text: string, match: RegExpMatchArray | null): boolean {
+    if (!match || match.index === undefined) return false;
+    const matchedWord = match[0].toLowerCase();
+
+    // Only apply context filtering for "beta" — other labels (demo, test version, etc.)
+    // are almost always genuine app-status indicators
+    if (matchedWord !== 'beta') return false;
+
+    // Check text after the match for person-role words
+    const afterMatch = text.slice(match.index + match[0].length, match.index + match[0].length + 20).toLowerCase();
+    const personRoles = /^\s+(user|tester|participant|member|reviewer|feedback)/;
+    if (personRoles.test(afterMatch)) return true;
+
+    return false;
+}
+
 export function checkDescription(input: HardRulesInput): CheckResult[] {
     const checks: CheckResult[] = [];
     const triggered = new Set<string>();
@@ -65,10 +86,11 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
     if (description) {
         for (const { pattern, ruleId } of FORBIDDEN_DESCRIPTION_PATTERNS) {
             if (pattern.test(description) && !triggered.has(ruleId)) {
+                const match = description.match(pattern);
+                if (isFalsePositiveLabel(description, match)) continue;
                 triggered.add(ruleId);
                 const rule = DESCRIPTION_RULES.find(r => r.id === ruleId);
                 if (rule) {
-                    const match = description.match(pattern);
                     checks.push({
                         category: rule.category,
                         severity: rule.severity,
@@ -86,10 +108,11 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
         // (e.g., placeholder "lorem ipsum" in description)
         for (const { pattern, ruleId } of FORBIDDEN_NAME_PATTERNS) {
             if (ruleId === 'desc_forbidden_labels' && pattern.test(description) && !triggered.has(ruleId)) {
+                const match = description.match(pattern);
+                if (isFalsePositiveLabel(description, match)) continue;
                 triggered.add(ruleId);
                 const rule = DESCRIPTION_RULES.find(r => r.id === ruleId);
                 if (rule) {
-                    const match = description.match(pattern);
                     checks.push({
                         category: rule.category,
                         severity: rule.severity,
