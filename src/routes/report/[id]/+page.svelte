@@ -4,11 +4,6 @@
     import MissionControl from "$lib/components/mission-control/MissionControl.svelte";
     import CockpitPanel from "$lib/components/CockpitPanel.svelte";
     import StatusLight from "$lib/components/StatusLight.svelte";
-    import {
-        SUBMISSION_TIMING,
-        estimateReviewTime,
-    } from "$lib/engine/knowledge-base/review-timeline";
-
     let { data } = $props();
 
     // Use derived state to track submission updates
@@ -35,41 +30,6 @@
 
     let showExportMenu = $state(false);
     let copySuccess = $state(false);
-
-    // Get review time estimate
-    let categoryId = $derived.by(() => {
-        const categoryMap: Record<string, number> = {
-            Finance: 6015,
-            Games: 6014,
-            "Health & Fitness": 6013,
-            "Social Networking": 6005,
-            Entertainment: 6016,
-            Medical: 6020,
-            "Photo & Video": 6008,
-            Productivity: 6007,
-            Education: 6017,
-            Business: 6000,
-            Utilities: 6002,
-            Travel: 6003,
-        };
-        return categoryMap[submission.category || ""] || 6002; // Default to Utilities
-    });
-
-    let reviewTimeEstimate = $derived(
-        estimateReviewTime({
-            categoryId,
-            isNewApp: submission.is_new_app ?? false,
-            hasIAP: submission.has_iap ?? false,
-            hasSubscription: submission.has_subscriptions ?? false,
-            hasUGC: false,
-            isNewDeveloper: false,
-            submissionDay: new Date().getDay(),
-        }),
-    );
-
-    let todayRecommendation = $derived(
-        SUBMISSION_TIMING.find((d) => d.dayIndex === new Date().getDay()),
-    );
 
     // Group items by category
     const grouped = $derived.by(() => {
@@ -1008,42 +968,6 @@
             {/if}
         </section>
 
-        <!-- Review Timeline -->
-        <section class="timeline-section">
-            <div class="section-label">Review Timeline</div>
-            <CockpitPanel class="timeline-panel">
-                <div class="timeline-content">
-                    <div class="timeline-estimate">
-                        <span class="estimate-range"
-                            >{reviewTimeEstimate.minHours}<span class="unit">H</span>
-                            - {reviewTimeEstimate.maxHours}<span class="unit">H</span></span
-                        >
-                        <span class="estimate-label">Estimated review time</span>
-                        <span class="estimate-caveat">Based on category and common factors</span>
-                    </div>
-                    {#if reviewTimeEstimate.factors.length > 0}
-                        <div class="timeline-factors">
-                            <ul>
-                                {#each reviewTimeEstimate.factors as factor}
-                                    <li>{factor}</li>
-                                {/each}
-                            </ul>
-                        </div>
-                    {/if}
-                    {#if todayRecommendation}
-                        <div class="today-rec">
-                            <span class="rec-day">{todayRecommendation.day}</span>
-                            <span class="rec-note">{todayRecommendation.notes}</span>
-                        </div>
-                    {/if}
-                    <p class="timeline-disclaimer">
-                        Estimates based on community-reported data. Preflight is not affiliated with Apple.
-                        Actual review times vary and are not guaranteed.
-                    </p>
-                </div>
-            </CockpitPanel>
-        </section>
-
         <div class="report-footer">
             <div class="footer-actions">
                 <a href="/submit" class="btn btn-secondary">New Review</a>
@@ -1903,12 +1827,6 @@
         color: var(--gray-500);
     }
 
-    .timeline-disclaimer {
-        font-size: 0.7rem;
-        color: var(--gray-500);
-        margin-top: 1rem;
-        line-height: 1.4;
-    }
 
     .legal-disclaimer {
         font-size: 0.7rem;
@@ -1977,92 +1895,6 @@
         line-height: 1.5;
         margin: 0;
     }
-
-    /* Review Timeline Section */
-    .timeline-section {
-        margin-bottom: 48px;
-    }
-
-    .timeline-content {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    .timeline-estimate {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .estimate-range {
-        font-family: "Instrument Mono", monospace;
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--gray-100);
-        letter-spacing: -0.05em;
-        line-height: 1;
-    }
-
-    .estimate-range .unit {
-        font-size: 0.9rem;
-        color: var(--gray-600);
-        margin-left: 2px;
-        font-weight: 600;
-    }
-
-    .estimate-label {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--gray-400);
-        margin-top: 4px;
-    }
-
-    .estimate-caveat {
-        font-size: 0.75rem;
-        color: var(--gray-600);
-        font-style: italic;
-    }
-
-    .timeline-factors {
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 8px;
-        padding: 1rem;
-    }
-
-    .timeline-factors ul {
-        margin: 0;
-        padding-left: 1.25rem;
-    }
-
-    .timeline-factors li {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-        margin-bottom: 0.35rem;
-    }
-
-    .today-rec {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .rec-day {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.75rem;
-        font-weight: 700;
-        color: var(--accent);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .rec-note {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-    }
-
 
     /* Guideline References */
     .item-meta-row {
@@ -2160,11 +1992,6 @@
 
         .quick-tips-grid {
             grid-template-columns: 1fr;
-        }
-
-        .timeline-estimate {
-            flex-direction: column;
-            gap: 0.25rem;
         }
     }
 </style>
