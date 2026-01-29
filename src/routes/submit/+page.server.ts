@@ -1,8 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
-import { PUBLIC_SUPABASE_URL } from '$env/static/public';
-import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 
 export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
@@ -334,7 +331,7 @@ export const actions: Actions = {
             support_url: formData.get('support_url')?.toString().trim() || null,
             marketing_url: formData.get('marketing_url')?.toString().trim() || null,
             review_type: 'full' as const,
-            status: 'analyzing' as const,
+            status: 'draft' as const,
             credits_used: creditCost,
             is_rereviewing: isRereviewing,
             original_submission_id: originalSubmissionId,
@@ -504,12 +501,23 @@ export const actions: Actions = {
             return fail(500, { message: 'Failed to save uploaded file references. Please try again.' });
         }
 
-        // Step 3: Deduct credits FIRST (service role bypasses RLS)
-        const serviceSupabase = createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        // Step 3: Transition submission from draft → analyzing
+        // (must happen after file path update, since RLS only allows updating drafts)
+        const { error: statusError } = await supabase
+            .from('submissions')
+            .update({ status: 'analyzing' })
+            .eq('id', submissionId);
+
+        if (statusError) {
+            console.error('[testSubmit] Status transition FAILED:', statusError);
+            return fail(500, { message: 'Failed to start analysis. Please try again.' });
+        }
+
+        // Step 4: Deduct credits (using user's authenticated client — RLS allows auth.uid() = id)
         const newBalance = userCredits - creditCost;
         console.log(`[Credits] Deducting ${creditCost} from user ${userId}: ${userCredits} → ${newBalance}`);
 
-        const { data: updatedProfile, error: creditError } = await serviceSupabase
+        const { data: updatedProfile, error: creditError } = await supabase
             .from('profiles')
             .update({ credits: newBalance })
             .eq('id', userId)
@@ -522,7 +530,7 @@ export const actions: Actions = {
         }
         console.log(`[Credits] Deduction confirmed. DB now shows: ${updatedProfile.credits}`);
 
-        // Step 4: Create analysis job (only after credits deducted)
+        // Step 5: Create analysis job (only after credits deducted)
         const { data: job, error: jobError } = await supabase
             .from('analysis_jobs')
             .insert({
@@ -536,7 +544,7 @@ export const actions: Actions = {
         if (jobError || !job) {
             console.error('Job creation failed:', jobError);
             // Refund credits since the job wasn't created
-            const { error: refundError } = await serviceSupabase
+            const { error: refundError } = await supabase
                 .from('profiles')
                 .update({ credits: userCredits })
                 .eq('id', userId);

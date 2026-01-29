@@ -5,7 +5,7 @@
  * streaming analysis progress to the client.
  */
 
-export type ProgressPhase = 'hard_rules' | 'soft_rules' | 'report_generation';
+export type ProgressPhase = 'hard_rules' | 'soft_rules' | 'cross_reference' | 'report_generation';
 
 export type ProgressEventType =
     | 'phase_start'
@@ -28,6 +28,8 @@ export interface ProgressEvent {
         reportId?: string;
         error?: string;
         checksFound?: number;
+        resolved?: number;
+        evidence?: unknown;
     };
 }
 
