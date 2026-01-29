@@ -40,6 +40,13 @@ export interface HardRulesInput {
     has_iap?: boolean;
     has_subscriptions?: boolean;
     has_third_party_login?: boolean;
+    // Explicit feature confirmations (null = not asked, true = confirmed exists, false = confirmed missing)
+    has_account_deletion?: boolean | null;
+    has_restore_purchases?: boolean | null;
+    is_new_app?: boolean | null;
+    // Screenshot index hints (for cross-referencing)
+    settings_screenshot_index?: number | null;
+    paywall_screenshot_index?: number | null;
     // Privacy data collection declarations from form
     data_collection?: DataCollectionDeclaration;
 }

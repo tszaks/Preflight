@@ -77,6 +77,13 @@ export const POST: RequestHandler = async ({ request }) => {
         data_collection: submission.data_collection
             ? (() => { try { return JSON.parse(submission.data_collection); } catch { return undefined; } })()
             : undefined,
+        // Explicit feature confirmations (Phase 3: Smarter Form Questions)
+        has_account_deletion: submission.has_account_deletion ?? undefined,
+        has_restore_purchases: submission.has_restore_purchases ?? undefined,
+        is_new_app: submission.is_new_app ?? undefined,
+        // Screenshot index hints
+        settings_screenshot_index: submission.settings_screenshot_index ?? undefined,
+        paywall_screenshot_index: submission.paywall_screenshot_index ?? undefined,
     };
 
     // Run analysis

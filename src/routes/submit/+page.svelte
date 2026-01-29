@@ -146,6 +146,13 @@
     let hasAds = $state(prefill?.has_ads || false);
     let hasThirdPartyLogin = $state(prefill?.has_third_party_login || false);
 
+    // Explicit feature confirmations (Phase 3: Smarter Form Questions)
+    let hasAccountDeletion = $state(prefill?.has_account_deletion ?? true);
+    let hasRestorePurchases = $state(prefill?.has_restore_purchases ?? true);
+    let isNewApp = $state(prefill?.is_new_app ?? true);
+    let settingsScreenshotIndex: number | null = $state(prefill?.settings_screenshot_index ?? null);
+    let paywallScreenshotIndex: number | null = $state(prefill?.paywall_screenshot_index ?? null);
+
     // App Review Information (Demo credentials)
     let signInRequired = $state(prefill?.sign_in_required || false);
     let demoUsername = $state(prefill?.demo_username || "");
@@ -342,6 +349,23 @@
             formData.set("has_ads", hasAds.toString());
             formData.set("has_third_party_login", hasThirdPartyLogin.toString());
 
+            // Explicit feature confirmations (only sent when relevant questions were shown)
+            if (signInRequired) {
+                formData.set("has_account_deletion", hasAccountDeletion.toString());
+            }
+            if (hasInAppPurchases || hasSubscriptions) {
+                formData.set("has_restore_purchases", hasRestorePurchases.toString());
+            }
+            formData.set("is_new_app", isNewApp.toString());
+
+            // Screenshot index hints (only sent when user selected one)
+            if (settingsScreenshotIndex !== null) {
+                formData.set("settings_screenshot_index", settingsScreenshotIndex.toString());
+            }
+            if (paywallScreenshotIndex !== null) {
+                formData.set("paywall_screenshot_index", paywallScreenshotIndex.toString());
+            }
+
             formData.set("review_type", "full");
 
             // Draft info
@@ -452,6 +476,21 @@
             formData.set("has_subscriptions", hasSubscriptions.toString());
             formData.set("has_ads", hasAds.toString());
             formData.set("has_third_party_login", hasThirdPartyLogin.toString());
+
+            // Explicit feature confirmations
+            if (signInRequired) {
+                formData.set("has_account_deletion", hasAccountDeletion.toString());
+            }
+            if (hasInAppPurchases || hasSubscriptions) {
+                formData.set("has_restore_purchases", hasRestorePurchases.toString());
+            }
+            formData.set("is_new_app", isNewApp.toString());
+            if (settingsScreenshotIndex !== null) {
+                formData.set("settings_screenshot_index", settingsScreenshotIndex.toString());
+            }
+            if (paywallScreenshotIndex !== null) {
+                formData.set("paywall_screenshot_index", paywallScreenshotIndex.toString());
+            }
 
             // Already-saved file paths (so server knows what to keep)
             formData.set("saved_screenshot_paths", JSON.stringify(savedScreenshotPaths));
@@ -1448,6 +1487,69 @@
                                         Apps with third-party login must also offer Sign in with Apple (Guideline 4.8)
                                     </p>
                                 {/if}
+                            </div>
+
+                            <!-- Conditional Feature Questions -->
+                            {#if signInRequired}
+                                <div class="conditional-question">
+                                    <label class="checkbox-label prominent">
+                                        <input type="checkbox" bind:checked={hasAccountDeletion} />
+                                        <span>My app has an account deletion option</span>
+                                    </label>
+                                    <p class="field-hint">
+                                        Apple requires all apps with sign-in to let users delete their account (Guideline 5.1.1).
+                                        {#if !hasAccountDeletion}
+                                            <strong class="warning-hint">This will be flagged as a critical issue.</strong>
+                                        {/if}
+                                    </p>
+                                    {#if hasAccountDeletion && totalScreenshotCount > 1}
+                                        <div class="screenshot-hint">
+                                            <label class="form-label">Which screenshot shows your settings/account screen? <span class="optional">(optional)</span></label>
+                                            <select class="input select-small" bind:value={settingsScreenshotIndex}>
+                                                <option value={null}>Not shown in screenshots</option>
+                                                {#each Array(totalScreenshotCount) as _, i}
+                                                    <option value={i}>Screenshot {i + 1}</option>
+                                                {/each}
+                                            </select>
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/if}
+
+                            {#if hasInAppPurchases || hasSubscriptions}
+                                <div class="conditional-question">
+                                    <label class="checkbox-label prominent">
+                                        <input type="checkbox" bind:checked={hasRestorePurchases} />
+                                        <span>My app has a "Restore Purchases" button</span>
+                                    </label>
+                                    <p class="field-hint">
+                                        Apple requires all apps with IAP/subscriptions to include this (Guideline 3.1.1).
+                                        {#if !hasRestorePurchases}
+                                            <strong class="warning-hint">This will be flagged as a critical issue.</strong>
+                                        {/if}
+                                    </p>
+                                    {#if hasRestorePurchases && totalScreenshotCount > 1}
+                                        <div class="screenshot-hint">
+                                            <label class="form-label">Which screenshot shows your paywall/subscription screen? <span class="optional">(optional)</span></label>
+                                            <select class="input select-small" bind:value={paywallScreenshotIndex}>
+                                                <option value={null}>Not shown in screenshots</option>
+                                                {#each Array(totalScreenshotCount) as _, i}
+                                                    <option value={i}>Screenshot {i + 1}</option>
+                                                {/each}
+                                            </select>
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/if}
+
+                            <div class="conditional-question">
+                                <label class="checkbox-label prominent">
+                                    <input type="checkbox" bind:checked={isNewApp} />
+                                    <span>This is a brand new app (first submission)</span>
+                                </label>
+                                <p class="field-hint">
+                                    New apps receive a more thorough initial review. Uncheck if this is an update.
+                                </p>
                             </div>
                         </div>
                     {/if}
@@ -2515,6 +2617,37 @@
     .toggle-card.active .toggle-card-content svg {
         opacity: 1;
         color: var(--accent);
+    }
+
+    .conditional-question {
+        padding: 1rem 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        margin-top: 1rem;
+    }
+
+    .conditional-question .field-hint {
+        margin-top: 0.375rem;
+        margin-bottom: 0;
+    }
+
+    .screenshot-hint {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .select-small {
+        max-width: 240px;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .optional {
+        font-weight: 400;
+        color: var(--gray-500);
+        font-size: 0.8rem;
     }
 
     .checkbox-label {

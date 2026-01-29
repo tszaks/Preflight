@@ -228,11 +228,14 @@ export type Database = {
           demo_password: string | null
           demo_username: string | null
           description: string | null
+          has_account_deletion: boolean | null
           has_ads: boolean | null
           has_iap: boolean | null
+          has_restore_purchases: boolean | null
           has_subscriptions: boolean | null
           has_third_party_login: boolean | null
           id: string
+          is_new_app: boolean | null
           is_rereviewing: boolean | null
           keywords: string | null
           manifest_path: string | null
@@ -245,8 +248,10 @@ export type Database = {
           review_notes: string | null
           review_type: Database["public"]["Enums"]["review_type"]
           reviewer_contact: string | null
+          paywall_screenshot_index: number | null
           screenshot_paths: string[] | null
           secondary_category: string | null
+          settings_screenshot_index: number | null
           sign_in_required: boolean | null
           status: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent: string | null
@@ -272,17 +277,21 @@ export type Database = {
           demo_password?: string | null
           demo_username?: string | null
           description?: string | null
+          has_account_deletion?: boolean | null
           has_ads?: boolean | null
           has_iap?: boolean | null
+          has_restore_purchases?: boolean | null
           has_subscriptions?: boolean | null
           has_third_party_login?: boolean | null
           id?: string
+          is_new_app?: boolean | null
           is_rereviewing?: boolean | null
           keywords?: string | null
           manifest_path?: string | null
           marketing_url?: string | null
           original_submission_id?: string | null
           paid_at?: string | null
+          paywall_screenshot_index?: number | null
           plist_path?: string | null
           privacy_url?: string | null
           promotional_text?: string | null
@@ -291,6 +300,7 @@ export type Database = {
           reviewer_contact?: string | null
           screenshot_paths?: string[] | null
           secondary_category?: string | null
+          settings_screenshot_index?: number | null
           sign_in_required?: boolean | null
           status?: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent?: string | null
@@ -316,17 +326,21 @@ export type Database = {
           demo_password?: string | null
           demo_username?: string | null
           description?: string | null
+          has_account_deletion?: boolean | null
           has_ads?: boolean | null
           has_iap?: boolean | null
+          has_restore_purchases?: boolean | null
           has_subscriptions?: boolean | null
           has_third_party_login?: boolean | null
           id?: string
+          is_new_app?: boolean | null
           is_rereviewing?: boolean | null
           keywords?: string | null
           manifest_path?: string | null
           marketing_url?: string | null
           original_submission_id?: string | null
           paid_at?: string | null
+          paywall_screenshot_index?: number | null
           plist_path?: string | null
           privacy_url?: string | null
           promotional_text?: string | null
@@ -335,6 +349,7 @@ export type Database = {
           reviewer_contact?: string | null
           screenshot_paths?: string[] | null
           secondary_category?: string | null
+          settings_screenshot_index?: number | null
           sign_in_required?: boolean | null
           status?: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent?: string | null

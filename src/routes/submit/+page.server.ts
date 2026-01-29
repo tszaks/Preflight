@@ -347,6 +347,23 @@ export const actions: Actions = {
             has_subscriptions: formData.get('has_subscriptions') === 'true',
             has_ads: formData.get('has_ads') === 'true',
             has_third_party_login: formData.get('has_third_party_login') === 'true',
+            // Explicit feature confirmations (null if not applicable)
+            has_account_deletion: formData.has('has_account_deletion')
+                ? formData.get('has_account_deletion') === 'true'
+                : null,
+            has_restore_purchases: formData.has('has_restore_purchases')
+                ? formData.get('has_restore_purchases') === 'true'
+                : null,
+            is_new_app: formData.has('is_new_app')
+                ? formData.get('is_new_app') === 'true'
+                : null,
+            // Screenshot index hints
+            settings_screenshot_index: formData.get('settings_screenshot_index')
+                ? parseInt(formData.get('settings_screenshot_index')!.toString(), 10)
+                : null,
+            paywall_screenshot_index: formData.get('paywall_screenshot_index')
+                ? parseInt(formData.get('paywall_screenshot_index')!.toString(), 10)
+                : null,
         };
 
         let submissionId: string;
@@ -566,6 +583,23 @@ export const actions: Actions = {
             has_subscriptions: formData.get('has_subscriptions') === 'true',
             has_ads: formData.get('has_ads') === 'true',
             has_third_party_login: formData.get('has_third_party_login') === 'true',
+            // Explicit feature confirmations
+            has_account_deletion: formData.has('has_account_deletion')
+                ? formData.get('has_account_deletion') === 'true'
+                : null,
+            has_restore_purchases: formData.has('has_restore_purchases')
+                ? formData.get('has_restore_purchases') === 'true'
+                : null,
+            is_new_app: formData.has('is_new_app')
+                ? formData.get('is_new_app') === 'true'
+                : null,
+            // Screenshot index hints
+            settings_screenshot_index: formData.get('settings_screenshot_index')
+                ? parseInt(formData.get('settings_screenshot_index')!.toString(), 10)
+                : null,
+            paywall_screenshot_index: formData.get('paywall_screenshot_index')
+                ? parseInt(formData.get('paywall_screenshot_index')!.toString(), 10)
+                : null,
             review_type: 'full',
             status: 'draft',
         };
