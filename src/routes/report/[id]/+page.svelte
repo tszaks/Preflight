@@ -701,13 +701,13 @@
                             <div
                                 class="hud-alert-msg {criticalItems.length > 0
                                     ? 'critical'
-                                    : warningItems.length > 0 && (report.score_overall ?? 0) < 80
+                                    : warningItems.length > 0
                                       ? 'warning'
                                       : 'safe'}"
                             >
                                 {#if criticalItems.length > 0}
                                     <span class="msg">Issues Found</span>
-                                {:else if warningItems.length > 0 && (report.score_overall ?? 0) < 80}
+                                {:else if warningItems.length > 0}
                                     <span class="msg">Needs Attention</span>
                                 {:else}
                                     <span class="msg">All Clear</span>
