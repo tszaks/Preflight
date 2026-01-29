@@ -150,7 +150,7 @@ export async function runSoftRules(
                     category: 'screenshots',
                     severity: 'info',
                     title: `Screenshots ${startIdx + 1}-${endIdx} could not be analyzed`,
-                    description: `AI analysis failed for this batch of screenshots. The error has been logged. Other screenshots were still analyzed.`,
+                    description: `Analysis failed for this batch of screenshots. The error has been logged. Other screenshots were still analyzed.`,
                     confidence: 0,
                 });
             }
@@ -319,8 +319,8 @@ async function callClaude(
         return [{
             category: 'metadata',
             severity: 'info',
-            title: 'AI analysis incomplete',
-            description: 'The AI analysis for this category could not be completed due to a processing error. Results may be partial.',
+            title: 'Analysis incomplete',
+            description: 'The analysis for this category could not be completed due to a processing error. Results may be partial.',
             confidence: 0,
         }];
     }
@@ -410,8 +410,8 @@ async function callClaudeForScreenshots(
         return [{
             category: 'screenshots',
             severity: 'info',
-            title: 'Screenshot AI analysis incomplete',
-            description: 'The AI analysis for these screenshots could not be completed due to a processing error. Results may be partial.',
+            title: 'Screenshot analysis incomplete',
+            description: 'The analysis for these screenshots could not be completed due to a processing error. Results may be partial.',
             confidence: 0,
         }];
     }

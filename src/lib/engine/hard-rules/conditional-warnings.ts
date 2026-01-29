@@ -28,18 +28,20 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
     // === 1. Account Deletion Requirement ===
     // Apple Guideline 5.1.1: Apps that support account creation must also offer account deletion
     // This became mandatory June 30, 2022
+    // NOTE: We can't verify if the feature exists — only remind. Use "info" not "critical".
     if (input.sign_in_required) {
         results.push({
             category: 'content_policy',
-            severity: 'critical',
-            title: 'Account deletion feature required',
+            severity: 'info',
+            title: 'Verify account deletion feature is implemented',
             description:
                 'Your app requires sign-in, which means Apple requires you to provide a way for users ' +
                 'to delete their account from within the app. This has been a mandatory requirement since ' +
-                'June 30, 2022, and is a common rejection reason.',
+                'June 30, 2022. PreFlight cannot verify this from your submission files — please confirm ' +
+                'this feature exists in your app before submitting.',
             guideline_ref: '5.1.1',
             fix_suggestion:
-                'Add an "Delete Account" option in your app\'s settings or account section. ' +
+                'Ensure your app has a "Delete Account" option in settings or account section. ' +
                 'The deletion must be easy to find (not buried in menus) and must delete the account ' +
                 'within 7 days. If you need to retain data for legal reasons, clearly explain this to users.',
         });
@@ -61,18 +63,20 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
     // === 2. Restore Purchases Requirement ===
     // Apple Guideline 3.1.1: Apps with IAP must include a "Restore Purchases" button
     // Users who reinstall or switch devices need to recover their purchases
+    // NOTE: We can't verify if the feature exists — only remind. Use "info" not "critical".
     if (input.has_iap || input.has_subscriptions) {
         results.push({
             category: 'content_policy',
-            severity: 'critical',
-            title: '"Restore Purchases" button required',
+            severity: 'info',
+            title: 'Verify "Restore Purchases" button is implemented',
             description:
                 'Your app has in-app purchases or subscriptions. Apple requires a clearly visible ' +
                 '"Restore Purchases" button that allows users to restore previously purchased content ' +
-                'when they reinstall the app or switch devices. Missing this is a common rejection reason.',
+                'when they reinstall the app or switch devices. PreFlight cannot verify this from your ' +
+                'submission files — please confirm this feature exists in your app before submitting.',
             guideline_ref: '3.1.1',
             fix_suggestion:
-                'Add a "Restore Purchases" button in your app\'s settings, subscription screen, ' +
+                'Ensure your app has a "Restore Purchases" button in settings, subscription screen, ' +
                 'or paywall. It should call StoreKit\'s restoreCompletedTransactions() method. ' +
                 'Make sure it\'s visible without requiring a purchase first.',
         });

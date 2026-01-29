@@ -146,7 +146,7 @@
     function getPhaseLabel(phase: string | null): string {
         switch (phase) {
             case 'hard_rules': return 'COMPLIANCE CHECKS';
-            case 'soft_rules': return 'AI ANALYSIS';
+            case 'soft_rules': return 'PREFLIGHT ANALYSIS';
             case 'report_generation': return 'REPORT GENERATION';
             default: return 'INITIALIZING';
         }
@@ -228,7 +228,7 @@
 
             <!-- Soft Rules -->
             <section class="checklist-section">
-                <h2>AI Analysis</h2>
+                <h2>PreFlight Analysis</h2>
                 <ul class="checklist">
                     {#each softRulesChecks as check}
                         <li class="check-item" class:running={check.status === 'running'} class:complete={check.status === 'complete'}>
