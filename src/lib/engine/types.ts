@@ -71,6 +71,47 @@ export interface DataCollectionDeclaration {
     diagnostics?: boolean;
 }
 
+/**
+ * Parses raw data_collection JSON from the database into a flat DataCollectionDeclaration.
+ * Handles both formats:
+ * - Nested (from form): { contactInfo: { collected: true, linked: false, tracking: false }, ... }
+ * - Flat (expected):     { contactInfo: true, ... }
+ * Also normalizes field name: form uses "locationData", engine uses "location".
+ */
+export function parseDataCollection(raw: string | null | undefined): DataCollectionDeclaration | undefined {
+    if (!raw) return undefined;
+    try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return undefined;
+
+        const result: DataCollectionDeclaration = {};
+        const VALID_KEYS: (keyof DataCollectionDeclaration)[] = [
+            'contactInfo', 'healthFitness', 'financialInfo', 'location',
+            'sensitiveInfo', 'contacts', 'userContent', 'browsingHistory',
+            'searchHistory', 'identifiers', 'purchases', 'usageData', 'diagnostics',
+        ];
+
+        for (const key of VALID_KEYS) {
+            // Check both the canonical key and the form alias "locationData" → "location"
+            const formKey = key === 'location' ? 'locationData' : key;
+            const value = parsed[key] ?? parsed[formKey];
+
+            if (value === true || value === false) {
+                // Flat format: already a boolean
+                result[key] = value;
+            } else if (value && typeof value === 'object' && 'collected' in value) {
+                // Nested format: extract the collected boolean
+                result[key] = value.collected === true;
+            }
+        }
+
+        return result;
+    } catch {
+        console.warn('[DataCollection] Failed to parse data_collection JSON:', raw.slice(0, 200));
+        return undefined;
+    }
+}
+
 export interface SoftRulesInput extends HardRulesInput {
     review_type: ReviewType;
     // File contents (fetched from storage)

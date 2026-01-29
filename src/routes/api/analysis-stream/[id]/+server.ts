@@ -7,6 +7,7 @@ import type { Database } from '$lib/types/database';
 import { runAnalysis, fetchSubmissionFiles } from '$lib/engine';
 import type { ProgressEvent } from '$lib/types/progress';
 import type { SoftRulesInput } from '$lib/engine/types';
+import { parseDataCollection } from '$lib/engine/types';
 
 /**
  * Server-Sent Events (SSE) endpoint for streaming analysis progress.
@@ -135,9 +136,7 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
                     has_subscriptions: submission.has_subscriptions ?? false,
                     has_third_party_login: submission.has_third_party_login ?? false,
                     // Privacy data collection (for mismatch detection)
-                    data_collection: submission.data_collection
-                        ? (() => { try { return JSON.parse(submission.data_collection); } catch { return undefined; } })()
-                        : undefined,
+                    data_collection: parseDataCollection(submission.data_collection),
                     // Explicit feature confirmations (Phase 3: Smarter Form Questions)
                     has_account_deletion: submission.has_account_deletion ?? undefined,
                     has_restore_purchases: submission.has_restore_purchases ?? undefined,

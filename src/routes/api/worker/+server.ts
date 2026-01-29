@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 import { runAnalysis, fetchSubmissionFiles } from '$lib/engine';
 import type { SoftRulesInput } from '$lib/engine';
+import { parseDataCollection } from '$lib/engine/types';
 
 /**
  * Worker endpoint that processes analysis jobs.
@@ -74,9 +75,7 @@ export const POST: RequestHandler = async ({ request }) => {
         has_subscriptions: submission.has_subscriptions ?? false,
         has_third_party_login: submission.has_third_party_login ?? false,
         // Privacy data collection (for mismatch detection)
-        data_collection: submission.data_collection
-            ? (() => { try { return JSON.parse(submission.data_collection); } catch { return undefined; } })()
-            : undefined,
+        data_collection: parseDataCollection(submission.data_collection),
         // Explicit feature confirmations (Phase 3: Smarter Form Questions)
         has_account_deletion: submission.has_account_deletion ?? undefined,
         has_restore_purchases: submission.has_restore_purchases ?? undefined,
