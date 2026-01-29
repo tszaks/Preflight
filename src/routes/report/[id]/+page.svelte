@@ -606,14 +606,15 @@
         {/if}
 
         <!-- Progress Summary Banner -->
-        {@const passingCategories = [
-            report.score_metadata,
-            report.score_screenshots,
-            report.score_privacy,
-            report.score_plist,
-            report.score_urls,
-            report.score_content
-        ].filter(s => s !== null && s >= 80).length}
+        {@const scoredCategories = [
+            { cat: 'metadata', score: report.score_metadata },
+            { cat: 'screenshots', score: report.score_screenshots },
+            { cat: 'privacy_manifest', score: report.score_privacy },
+            { cat: 'info_plist', score: report.score_plist },
+            { cat: 'urls', score: report.score_urls },
+            { cat: 'content_policy', score: report.score_content }
+        ]}
+        {@const passingCategories = scoredCategories.filter(c => categoryStatus(c.cat, c.score) === 'Optimal').length}
         {@const totalCategories = 6}
 
         {#if criticalItems.length > 0}
