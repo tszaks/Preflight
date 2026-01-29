@@ -1,9 +1,10 @@
+import { error as svelteError } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase } }) => {
     const { user } = await safeGetSession();
     if (!user) {
-        return { status: 401, error: 'Not authenticated' };
+        throw svelteError(401, 'Not authenticated');
     }
 
     // Fetch all report items with feedback
@@ -13,6 +14,7 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession, supabase 
         .not('user_feedback', 'is', null);
 
     if (error || !items) {
+        console.error('[Admin/Feedback] Supabase query error:', error?.message);
         return { feedbackData: [], error: error?.message };
     }
 

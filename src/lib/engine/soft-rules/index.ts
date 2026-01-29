@@ -392,7 +392,7 @@ async function analyzeScreenshotBatch(
         mime_type: s.mime_type,
     }));
 
-    const { checks: rawChecks, evidence } = await callClaudeForScreenshots(client, prompt, images, systemPrompt, startIdx);
+    const { checks: rawChecks, evidence } = await callClaudeForScreenshots(client, prompt, images, systemPrompt, startIdx, endIdx);
     const categorized = rawChecks.map(r => ({ ...r, category: 'screenshots' as const }));
 
     // Multi-pass verification (text-only — can't re-send images to judge)
@@ -416,7 +416,8 @@ async function callClaudeForScreenshots(
     prompt: string,
     images: Array<{ base64: string; mime_type: string }>,
     systemPromptOverride?: string,
-    batchStartIdx: number = 0
+    batchStartIdx: number = 0,
+    batchEndIdx?: number
 ): Promise<{ checks: CheckResult[]; evidence?: ScreenshotEvidence }> {
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
@@ -427,7 +428,8 @@ async function callClaudeForScreenshots(
 
     try {
         const text = extractResponseText(response);
-        return parseScreenshotResponse(text, batchStartIdx);
+        const actualBatchSize = batchEndIdx ? batchEndIdx - batchStartIdx : images.length;
+        return parseScreenshotResponse(text, batchStartIdx, actualBatchSize);
     } catch (error) {
         console.error('Failed to parse Claude screenshot analysis response:', error, extractResponseText(response).slice(0, 200));
         return {
@@ -449,10 +451,12 @@ async function callClaudeForScreenshots(
  */
 function parseScreenshotResponse(
     text: string,
-    batchStartIdx: number
+    batchStartIdx: number,
+    batchSize: number = 3
 ): { checks: CheckResult[]; evidence?: ScreenshotEvidence } {
     // Try new object format first: { "issues": [...], "evidence": {...} }
-    const objectMatch = text.match(/\{[\s\S]*"issues"\s*:\s*\[[\s\S]*\][\s\S]*"evidence"\s*:\s*\{[\s\S]*\}[\s\S]*\}/);
+    // Use lazy quantifiers to avoid overcapturing past the closing brace
+    const objectMatch = text.match(/\{[\s\S]*?"issues"\s*:\s*\[[\s\S]*?\][\s\S]*?"evidence"\s*:\s*\{[\s\S]*?\}[\s\S]*?\}/);
     if (objectMatch) {
         try {
             const parsed = JSON.parse(objectMatch[0]) as {
@@ -489,7 +493,7 @@ function parseScreenshotResponse(
                 const ev = parsed.evidence;
                 // Build evidence_locations: map each seen feature to the batch screenshot indices
                 const batchIndices = Array.from(
-                    { length: 3 },
+                    { length: batchSize },
                     (_, i) => batchStartIdx + i
                 );
                 const locations: Record<string, number[]> = {};
@@ -509,8 +513,8 @@ function parseScreenshotResponse(
             }
 
             return { checks, evidence };
-        } catch {
-            // Fall through to legacy format
+        } catch (parseError) {
+            console.warn('[Screenshots] New format JSON parse failed, falling back to legacy format:', parseError);
         }
     }
 

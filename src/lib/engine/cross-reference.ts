@@ -32,20 +32,22 @@ export const EMPTY_EVIDENCE: ScreenshotEvidence = {
  */
 const EVIDENCE_TO_WARNING_TITLES: Record<keyof Omit<ScreenshotEvidence, 'evidence_locations'>, string[]> = {
     account_deletion_seen: [
-        'Account Deletion Required',
-        'Account deletion may be required',
+        // Matches: "Account deletion feature confirmed", "Account deletion feature is missing",
+        //          "Verify account deletion feature is implemented"
+        'account deletion',
     ],
     restore_purchases_seen: [
-        'Restore Purchases Required',
-        'Restore purchases may be required',
+        // Matches: "Restore Purchases feature confirmed", '"Restore Purchases" button is missing',
+        //          'Verify "Restore Purchases" button is implemented'
+        'restore purchases',
     ],
     subscription_terms_seen: [
-        'Subscription Terms Disclosure',
-        'Subscription terms disclosure needed',
+        // Matches: "Subscription terms must be clearly displayed"
+        'subscription terms',
     ],
     sign_in_with_apple_seen: [
-        'Sign in with Apple Required',
-        'Sign in with Apple may be required',
+        // Matches: "Sign in with Apple required"
+        'sign in with apple',
     ],
 };
 
