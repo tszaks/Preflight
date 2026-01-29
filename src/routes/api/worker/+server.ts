@@ -83,6 +83,22 @@ export const POST: RequestHandler = async ({ request }) => {
         // Screenshot index hints
         settings_screenshot_index: submission.settings_screenshot_index ?? undefined,
         paywall_screenshot_index: submission.paywall_screenshot_index ?? undefined,
+        // Self-report: Content & Features
+        has_ugc: submission.has_ugc ?? undefined,
+        has_ugc_moderation: submission.has_ugc_moderation ?? undefined,
+        makes_health_claims: submission.makes_health_claims ?? undefined,
+        has_health_disclaimers: submission.has_health_disclaimers ?? undefined,
+        generates_ai_content: submission.generates_ai_content ?? undefined,
+        has_ai_content_filtering: submission.has_ai_content_filtering ?? undefined,
+        // Self-report: Monetization
+        subscription_terms_on_paywall: submission.subscription_terms_on_paywall ?? undefined,
+        sells_digital_outside_iap: submission.sells_digital_outside_iap ?? undefined,
+        subscriptions_without_login: submission.subscriptions_without_login ?? undefined,
+        // Self-report: Technical
+        screenshots_match_ui: submission.screenshots_match_ui ?? undefined,
+        tested_ipv6: submission.tested_ipv6 ?? undefined,
+        contextual_permissions: submission.contextual_permissions ?? undefined,
+        has_alternate_icons: submission.has_alternate_icons ?? undefined,
     };
 
     // Run analysis
@@ -92,8 +108,7 @@ export const POST: RequestHandler = async ({ request }) => {
     console.log('[Worker] Has manifest content:', !!files.manifestContent);
 
     const result = await runAnalysis(supabase, submission.id, input, {
-        anthropicApiKey: ANTHROPIC_API_KEY,
-        skipSoftRules: submission.review_type === 'quick' && !files.manifestContent,
+        skipChecklistRules: submission.review_type === 'quick' && !files.manifestContent,
     });
 
     console.log('[Worker] Analysis result:', result);

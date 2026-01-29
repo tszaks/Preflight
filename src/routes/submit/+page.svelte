@@ -153,6 +153,29 @@
     let settingsScreenshotIndex: number | null = $state(prefill?.settings_screenshot_index ?? null);
     let paywallScreenshotIndex: number | null = $state(prefill?.paywall_screenshot_index ?? null);
 
+    // ═══════════════════════════════════════════════════════════════
+    // Self-Report Checklist (Deterministic Engine v2)
+    // ═══════════════════════════════════════════════════════════════
+    // Content & Features
+    let hasUgc = $state(prefill?.has_ugc ?? null);
+    let hasUgcModeration = $state(prefill?.has_ugc_moderation ?? null);
+    let makesHealthClaims = $state(prefill?.makes_health_claims ?? null);
+    let hasHealthDisclaimers = $state(prefill?.has_health_disclaimers ?? null);
+    let generatesAiContent = $state(prefill?.generates_ai_content ?? null);
+    let hasAiContentFiltering = $state(prefill?.has_ai_content_filtering ?? null);
+    // Monetization
+    let subscriptionTermsOnPaywall = $state(prefill?.subscription_terms_on_paywall ?? null);
+    let sellsDigitalOutsideIap = $state(prefill?.sells_digital_outside_iap ?? null);
+    let subscriptionsWithoutLogin = $state(prefill?.subscriptions_without_login ?? null);
+    // Technical
+    let screenshotsMatchUi = $state(prefill?.screenshots_match_ui ?? null);
+    let testedIpv6 = $state(prefill?.tested_ipv6 ?? null);
+    let contextualPermissions = $state(prefill?.contextual_permissions ?? null);
+    let hasAlternateIcons = $state(prefill?.has_alternate_icons ?? null);
+
+    // Collapse state for self-report checklist
+    let checklistExpanded = $state(false);
+
     // App Review Information (Demo credentials)
     let signInRequired = $state(prefill?.sign_in_required || false);
     let demoUsername = $state(prefill?.demo_username || "");
@@ -366,6 +389,21 @@
                 formData.set("paywall_screenshot_index", paywallScreenshotIndex.toString());
             }
 
+            // Self-report checklist (only send answered questions)
+            if (hasUgc !== null) formData.set("has_ugc", hasUgc.toString());
+            if (hasUgcModeration !== null) formData.set("has_ugc_moderation", hasUgcModeration.toString());
+            if (makesHealthClaims !== null) formData.set("makes_health_claims", makesHealthClaims.toString());
+            if (hasHealthDisclaimers !== null) formData.set("has_health_disclaimers", hasHealthDisclaimers.toString());
+            if (generatesAiContent !== null) formData.set("generates_ai_content", generatesAiContent.toString());
+            if (hasAiContentFiltering !== null) formData.set("has_ai_content_filtering", hasAiContentFiltering.toString());
+            if (subscriptionTermsOnPaywall !== null) formData.set("subscription_terms_on_paywall", subscriptionTermsOnPaywall.toString());
+            if (sellsDigitalOutsideIap !== null) formData.set("sells_digital_outside_iap", sellsDigitalOutsideIap.toString());
+            if (subscriptionsWithoutLogin !== null) formData.set("subscriptions_without_login", subscriptionsWithoutLogin.toString());
+            if (screenshotsMatchUi !== null) formData.set("screenshots_match_ui", screenshotsMatchUi.toString());
+            if (testedIpv6 !== null) formData.set("tested_ipv6", testedIpv6.toString());
+            if (contextualPermissions !== null) formData.set("contextual_permissions", contextualPermissions.toString());
+            if (hasAlternateIcons !== null) formData.set("has_alternate_icons", hasAlternateIcons.toString());
+
             formData.set("review_type", "full");
 
             // Draft info
@@ -491,6 +529,21 @@
             if (paywallScreenshotIndex !== null) {
                 formData.set("paywall_screenshot_index", paywallScreenshotIndex.toString());
             }
+
+            // Self-report checklist (only send answered questions)
+            if (hasUgc !== null) formData.set("has_ugc", hasUgc.toString());
+            if (hasUgcModeration !== null) formData.set("has_ugc_moderation", hasUgcModeration.toString());
+            if (makesHealthClaims !== null) formData.set("makes_health_claims", makesHealthClaims.toString());
+            if (hasHealthDisclaimers !== null) formData.set("has_health_disclaimers", hasHealthDisclaimers.toString());
+            if (generatesAiContent !== null) formData.set("generates_ai_content", generatesAiContent.toString());
+            if (hasAiContentFiltering !== null) formData.set("has_ai_content_filtering", hasAiContentFiltering.toString());
+            if (subscriptionTermsOnPaywall !== null) formData.set("subscription_terms_on_paywall", subscriptionTermsOnPaywall.toString());
+            if (sellsDigitalOutsideIap !== null) formData.set("sells_digital_outside_iap", sellsDigitalOutsideIap.toString());
+            if (subscriptionsWithoutLogin !== null) formData.set("subscriptions_without_login", subscriptionsWithoutLogin.toString());
+            if (screenshotsMatchUi !== null) formData.set("screenshots_match_ui", screenshotsMatchUi.toString());
+            if (testedIpv6 !== null) formData.set("tested_ipv6", testedIpv6.toString());
+            if (contextualPermissions !== null) formData.set("contextual_permissions", contextualPermissions.toString());
+            if (hasAlternateIcons !== null) formData.set("has_alternate_icons", hasAlternateIcons.toString());
 
             // Already-saved file paths (so server knows what to keep)
             formData.set("saved_screenshot_paths", JSON.stringify(savedScreenshotPaths));
@@ -1550,6 +1603,230 @@
                                 <p class="field-hint">
                                     New apps receive a more thorough initial review. Uncheck if this is an update.
                                 </p>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Compliance Checklist Section (Self-Report) -->
+                <div class="collapsible-section">
+                    <button
+                        class="collapsible-header"
+                        class:expanded={checklistExpanded}
+                        onclick={() => checklistExpanded = !checklistExpanded}
+                    >
+                        <div class="collapsible-title">
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                            <span>Compliance Checklist</span>
+                            <span class="section-hint">Content, monetization, technical checks</span>
+                        </div>
+                        <div class="section-status complete">
+                            <span class="status-complete">Optional</span>
+                        </div>
+                    </button>
+                    {#if checklistExpanded}
+                        <div class="collapsible-content">
+                            <p class="section-intro">Answer these to get more accurate results. Unanswered questions will appear as reminders in your report.</p>
+
+                            <!-- Content & Features -->
+                            <div class="checklist-group">
+                                <h4 class="checklist-group-title">Content & Features</h4>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Does your app have user-generated content?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={hasUgc === true}>
+                                            <input type="radio" name="has_ugc" checked={hasUgc === true} onchange={() => hasUgc = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={hasUgc === false}>
+                                            <input type="radio" name="has_ugc" checked={hasUgc === false} onchange={() => hasUgc = false} /> No
+                                        </label>
+                                    </div>
+                                    {#if hasUgc === true}
+                                        <div class="checklist-followup">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" checked={hasUgcModeration === true} onchange={() => hasUgcModeration = hasUgcModeration === true ? false : true} />
+                                                <span>We have reporting, blocking, and content filtering</span>
+                                            </label>
+                                            <p class="field-hint">Required by Guideline 1.2 for UGC apps.</p>
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Does your app make health or medical claims?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={makesHealthClaims === true}>
+                                            <input type="radio" name="makes_health_claims" checked={makesHealthClaims === true} onchange={() => makesHealthClaims = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={makesHealthClaims === false}>
+                                            <input type="radio" name="makes_health_claims" checked={makesHealthClaims === false} onchange={() => makesHealthClaims = false} /> No
+                                        </label>
+                                    </div>
+                                    {#if makesHealthClaims === true}
+                                        <div class="checklist-followup">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" checked={hasHealthDisclaimers === true} onchange={() => hasHealthDisclaimers = hasHealthDisclaimers === true ? false : true} />
+                                                <span>We display appropriate medical disclaimers</span>
+                                            </label>
+                                            <p class="field-hint">Required by Guideline 1.4.1 for health apps.</p>
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Does your app generate AI content?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={generatesAiContent === true}>
+                                            <input type="radio" name="generates_ai_content" checked={generatesAiContent === true} onchange={() => generatesAiContent = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={generatesAiContent === false}>
+                                            <input type="radio" name="generates_ai_content" checked={generatesAiContent === false} onchange={() => generatesAiContent = false} /> No
+                                        </label>
+                                    </div>
+                                    {#if generatesAiContent === true}
+                                        <div class="checklist-followup">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" checked={hasAiContentFiltering === true} onchange={() => hasAiContentFiltering = hasAiContentFiltering === true ? false : true} />
+                                                <span>We have AI content filtering and moderation</span>
+                                            </label>
+                                            <p class="field-hint">Required by Guideline 1.4.1 for AI-powered apps.</p>
+                                        </div>
+                                    {/if}
+                                </div>
+                            </div>
+
+                            <!-- Monetization -->
+                            {#if hasSubscriptions}
+                                <div class="checklist-group">
+                                    <h4 class="checklist-group-title">Monetization</h4>
+
+                                    <div class="checklist-item">
+                                        <label class="checklist-question">
+                                            Are subscription terms displayed on your paywall?
+                                        </label>
+                                        <p class="field-hint">Price, duration, renewal terms, and cancellation instructions.</p>
+                                        <div class="checklist-options">
+                                            <label class="radio-option" class:active={subscriptionTermsOnPaywall === true}>
+                                                <input type="radio" name="sub_terms" checked={subscriptionTermsOnPaywall === true} onchange={() => subscriptionTermsOnPaywall = true} /> Yes
+                                            </label>
+                                            <label class="radio-option" class:active={subscriptionTermsOnPaywall === false}>
+                                                <input type="radio" name="sub_terms" checked={subscriptionTermsOnPaywall === false} onchange={() => subscriptionTermsOnPaywall = false} /> No
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="checklist-item">
+                                        <label class="checklist-question">
+                                            Do you sell digital goods outside Apple's In-App Purchase?
+                                        </label>
+                                        <div class="checklist-options">
+                                            <label class="radio-option" class:active={sellsDigitalOutsideIap === true}>
+                                                <input type="radio" name="sells_outside" checked={sellsDigitalOutsideIap === true} onchange={() => sellsDigitalOutsideIap = true} /> Yes
+                                            </label>
+                                            <label class="radio-option" class:active={sellsDigitalOutsideIap === false}>
+                                                <input type="radio" name="sells_outside" checked={sellsDigitalOutsideIap === false} onchange={() => sellsDigitalOutsideIap = false} /> No
+                                            </label>
+                                        </div>
+                                        {#if sellsDigitalOutsideIap === true}
+                                            <p class="field-hint warning-hint">This will be flagged - Apple requires digital goods to use IAP (Guideline 3.1.1).</p>
+                                        {/if}
+                                    </div>
+
+                                    {#if signInRequired}
+                                        <div class="checklist-item">
+                                            <label class="checklist-question">
+                                                Can users access subscriptions without logging in?
+                                            </label>
+                                            <div class="checklist-options">
+                                                <label class="radio-option" class:active={subscriptionsWithoutLogin === true}>
+                                                    <input type="radio" name="subs_no_login" checked={subscriptionsWithoutLogin === true} onchange={() => subscriptionsWithoutLogin = true} /> Yes
+                                                </label>
+                                                <label class="radio-option" class:active={subscriptionsWithoutLogin === false}>
+                                                    <input type="radio" name="subs_no_login" checked={subscriptionsWithoutLogin === false} onchange={() => subscriptionsWithoutLogin = false} /> No
+                                                </label>
+                                            </div>
+                                            {#if subscriptionsWithoutLogin === false}
+                                                <p class="field-hint warning-hint">Subscriptions behind login walls can cause review issues (Guideline 3.1.2).</p>
+                                            {/if}
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/if}
+
+                            <!-- Technical -->
+                            <div class="checklist-group">
+                                <h4 class="checklist-group-title">Technical</h4>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Do your screenshots accurately show the current app UI?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={screenshotsMatchUi === true}>
+                                            <input type="radio" name="screenshots_match" checked={screenshotsMatchUi === true} onchange={() => screenshotsMatchUi = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={screenshotsMatchUi === false}>
+                                            <input type="radio" name="screenshots_match" checked={screenshotsMatchUi === false} onchange={() => screenshotsMatchUi = false} /> No
+                                        </label>
+                                    </div>
+                                    {#if screenshotsMatchUi === false}
+                                        <p class="field-hint warning-hint">Misleading screenshots are a top rejection reason (Guideline 2.3.1).</p>
+                                    {/if}
+                                </div>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Have you tested on an IPv6-only network?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={testedIpv6 === true}>
+                                            <input type="radio" name="tested_ipv6" checked={testedIpv6 === true} onchange={() => testedIpv6 = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={testedIpv6 === false}>
+                                            <input type="radio" name="tested_ipv6" checked={testedIpv6 === false} onchange={() => testedIpv6 = false} /> No
+                                        </label>
+                                    </div>
+                                    <p class="field-hint">Apple tests on IPv6. Hard-coded IPv4 addresses will cause rejection.</p>
+                                </div>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Are permissions (camera, location, etc.) requested at a contextual time?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={contextualPermissions === true}>
+                                            <input type="radio" name="contextual_perms" checked={contextualPermissions === true} onchange={() => contextualPermissions = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={contextualPermissions === false}>
+                                            <input type="radio" name="contextual_perms" checked={contextualPermissions === false} onchange={() => contextualPermissions = false} /> No
+                                        </label>
+                                    </div>
+                                    <p class="field-hint">Requesting all permissions at launch causes rejection (Guideline 5.1.1).</p>
+                                </div>
+
+                                <div class="checklist-item">
+                                    <label class="checklist-question">
+                                        Does your app include alternate app icons (inside the app)?
+                                    </label>
+                                    <div class="checklist-options">
+                                        <label class="radio-option" class:active={hasAlternateIcons === true}>
+                                            <input type="radio" name="alt_icons" checked={hasAlternateIcons === true} onchange={() => hasAlternateIcons = true} /> Yes
+                                        </label>
+                                        <label class="radio-option" class:active={hasAlternateIcons === false}>
+                                            <input type="radio" name="alt_icons" checked={hasAlternateIcons === false} onchange={() => hasAlternateIcons = false} /> No
+                                        </label>
+                                    </div>
+                                    <p class="field-hint">Alternate icons must use the system API, not a custom settings page.</p>
+                                </div>
                             </div>
                         </div>
                     {/if}
@@ -2617,6 +2894,83 @@
     .toggle-card.active .toggle-card-content svg {
         opacity: 1;
         color: var(--accent);
+    }
+
+    /* ── Compliance Checklist (Self-Report) ── */
+    .checklist-group {
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .checklist-group:last-child {
+        border-bottom: none;
+    }
+
+    .checklist-group-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gray-400);
+        margin-bottom: 0.75rem;
+    }
+
+    .checklist-item {
+        padding: 0.75rem 0;
+    }
+
+    .checklist-item + .checklist-item {
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .checklist-question {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--gray-200);
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .checklist-options {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        transition: all 0.15s;
+    }
+
+    .radio-option:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .radio-option.active {
+        border-color: var(--accent);
+        color: var(--gray-100);
+        background: rgba(var(--accent-rgb, 99, 102, 241), 0.1);
+    }
+
+    .radio-option input {
+        accent-color: var(--accent);
+        width: 14px;
+        height: 14px;
+    }
+
+    .checklist-followup {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
     }
 
     .conditional-question {

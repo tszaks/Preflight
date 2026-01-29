@@ -221,6 +221,7 @@ export type Database = {
           app_name: string
           category: string | null
           completed_at: string | null
+          contextual_permissions: boolean | null
           copyright: string | null
           created_at: string
           credits_used: number | null
@@ -228,36 +229,48 @@ export type Database = {
           demo_password: string | null
           demo_username: string | null
           description: string | null
+          generates_ai_content: boolean | null
           has_account_deletion: boolean | null
           has_ads: boolean | null
+          has_ai_content_filtering: boolean | null
+          has_alternate_icons: boolean | null
+          has_health_disclaimers: boolean | null
           has_iap: boolean | null
           has_restore_purchases: boolean | null
           has_subscriptions: boolean | null
           has_third_party_login: boolean | null
+          has_ugc: boolean | null
+          has_ugc_moderation: boolean | null
           id: string
           is_new_app: boolean | null
           is_rereviewing: boolean | null
           keywords: string | null
+          makes_health_claims: boolean | null
           manifest_path: string | null
           marketing_url: string | null
           original_submission_id: string | null
           paid_at: string | null
+          paywall_screenshot_index: number | null
           plist_path: string | null
           privacy_url: string | null
           promotional_text: string | null
           review_notes: string | null
           review_type: Database["public"]["Enums"]["review_type"]
           reviewer_contact: string | null
-          paywall_screenshot_index: number | null
           screenshot_paths: string[] | null
+          screenshots_match_ui: boolean | null
           secondary_category: string | null
+          sells_digital_outside_iap: boolean | null
           settings_screenshot_index: number | null
           sign_in_required: boolean | null
           status: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent: string | null
           stripe_session_id: string | null
+          subscription_terms_on_paywall: boolean | null
+          subscriptions_without_login: boolean | null
           subtitle: string | null
           support_url: string | null
+          tested_ipv6: boolean | null
           updated_at: string
           user_id: string
           version: string | null
@@ -270,6 +283,7 @@ export type Database = {
           app_name: string
           category?: string | null
           completed_at?: string | null
+          contextual_permissions?: boolean | null
           copyright?: string | null
           created_at?: string
           credits_used?: number | null
@@ -277,16 +291,23 @@ export type Database = {
           demo_password?: string | null
           demo_username?: string | null
           description?: string | null
+          generates_ai_content?: boolean | null
           has_account_deletion?: boolean | null
           has_ads?: boolean | null
+          has_ai_content_filtering?: boolean | null
+          has_alternate_icons?: boolean | null
+          has_health_disclaimers?: boolean | null
           has_iap?: boolean | null
           has_restore_purchases?: boolean | null
           has_subscriptions?: boolean | null
           has_third_party_login?: boolean | null
+          has_ugc?: boolean | null
+          has_ugc_moderation?: boolean | null
           id?: string
           is_new_app?: boolean | null
           is_rereviewing?: boolean | null
           keywords?: string | null
+          makes_health_claims?: boolean | null
           manifest_path?: string | null
           marketing_url?: string | null
           original_submission_id?: string | null
@@ -299,14 +320,19 @@ export type Database = {
           review_type?: Database["public"]["Enums"]["review_type"]
           reviewer_contact?: string | null
           screenshot_paths?: string[] | null
+          screenshots_match_ui?: boolean | null
           secondary_category?: string | null
+          sells_digital_outside_iap?: boolean | null
           settings_screenshot_index?: number | null
           sign_in_required?: boolean | null
           status?: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
+          subscription_terms_on_paywall?: boolean | null
+          subscriptions_without_login?: boolean | null
           subtitle?: string | null
           support_url?: string | null
+          tested_ipv6?: boolean | null
           updated_at?: string
           user_id: string
           version?: string | null
@@ -319,6 +345,7 @@ export type Database = {
           app_name?: string
           category?: string | null
           completed_at?: string | null
+          contextual_permissions?: boolean | null
           copyright?: string | null
           created_at?: string
           credits_used?: number | null
@@ -326,16 +353,23 @@ export type Database = {
           demo_password?: string | null
           demo_username?: string | null
           description?: string | null
+          generates_ai_content?: boolean | null
           has_account_deletion?: boolean | null
           has_ads?: boolean | null
+          has_ai_content_filtering?: boolean | null
+          has_alternate_icons?: boolean | null
+          has_health_disclaimers?: boolean | null
           has_iap?: boolean | null
           has_restore_purchases?: boolean | null
           has_subscriptions?: boolean | null
           has_third_party_login?: boolean | null
+          has_ugc?: boolean | null
+          has_ugc_moderation?: boolean | null
           id?: string
           is_new_app?: boolean | null
           is_rereviewing?: boolean | null
           keywords?: string | null
+          makes_health_claims?: boolean | null
           manifest_path?: string | null
           marketing_url?: string | null
           original_submission_id?: string | null
@@ -348,14 +382,19 @@ export type Database = {
           review_type?: Database["public"]["Enums"]["review_type"]
           reviewer_contact?: string | null
           screenshot_paths?: string[] | null
+          screenshots_match_ui?: boolean | null
           secondary_category?: string | null
+          sells_digital_outside_iap?: boolean | null
           settings_screenshot_index?: number | null
           sign_in_required?: boolean | null
           status?: Database["public"]["Enums"]["submission_status"]
           stripe_payment_intent?: string | null
           stripe_session_id?: string | null
+          subscription_terms_on_paywall?: boolean | null
+          subscriptions_without_login?: boolean | null
           subtitle?: string | null
           support_url?: string | null
+          tested_ipv6?: boolean | null
           updated_at?: string
           user_id?: string
           version?: string | null

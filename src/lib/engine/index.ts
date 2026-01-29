@@ -9,8 +9,7 @@ import {
     PROGRESS_RANGES,
 } from '$lib/types/progress';
 import { runHardRules } from './hard-rules';
-import { runSoftRules } from './soft-rules';
-import { crossReferenceChecks } from './cross-reference';
+import { runChecklistRules } from './checklist';
 import { generateReport } from './report/generator';
 
 export type { CheckResult, EngineResult, HardRulesInput, SoftRulesInput };
@@ -21,7 +20,7 @@ export type { OnProgressCallback, ProgressEvent };
  *
  * Pipeline:
  * 1. Run hard rules (deterministic, instant)
- * 2. Run soft rules (Claude API, async) - only for paid submissions
+ * 2. Run checklist rules (deterministic, no AI)
  * 3. Generate report (scoring + DB save)
  *
  * This function is called by the analysis worker/edge function.
@@ -31,8 +30,8 @@ export async function runAnalysis(
     submissionId: string,
     input: SoftRulesInput,
     options: {
-        anthropicApiKey: string;
-        skipSoftRules?: boolean;
+        anthropicApiKey?: string;
+        skipChecklistRules?: boolean;
         onProgress?: OnProgressCallback;
     }
 ): Promise<{ reportId: string; success: boolean; error?: string }> {
@@ -78,6 +77,22 @@ export async function runAnalysis(
             paywall_screenshot_index: input.paywall_screenshot_index,
             // Privacy data collection (for mismatch detection)
             data_collection: input.data_collection,
+            // Self-report: Content & Features
+            has_ugc: input.has_ugc,
+            has_ugc_moderation: input.has_ugc_moderation,
+            makes_health_claims: input.makes_health_claims,
+            has_health_disclaimers: input.has_health_disclaimers,
+            generates_ai_content: input.generates_ai_content,
+            has_ai_content_filtering: input.has_ai_content_filtering,
+            // Self-report: Monetization
+            subscription_terms_on_paywall: input.subscription_terms_on_paywall,
+            sells_digital_outside_iap: input.sells_digital_outside_iap,
+            subscriptions_without_login: input.subscriptions_without_login,
+            // Self-report: Technical
+            screenshots_match_ui: input.screenshots_match_ui,
+            tested_ipv6: input.tested_ipv6,
+            contextual_permissions: input.contextual_permissions,
+            has_alternate_icons: input.has_alternate_icons,
         };
 
         // Create progress callback for hard rules
@@ -122,73 +137,42 @@ export async function runAnalysis(
             .update({ hard_rules_completed: true })
             .eq('submission_id', submissionId);
 
-        // === Phase 2: Soft Rules (40-85%) ===
-        if (!options.skipSoftRules) {
-            emit(createProgressEvent('phase_start', 'Starting PreFlight analysis...', 40, {
-                phase: 'soft_rules',
+        // === Phase 2: Checklist Rules (40-85%) ===
+        if (!options.skipChecklistRules) {
+            emit(createProgressEvent('phase_start', 'Starting checklist analysis...', 40, {
+                phase: 'checklist',
             }));
 
-            console.log('[Analysis] Running soft rules (Claude API)...');
-            if (!options.anthropicApiKey) {
-                console.error('[Analysis] ANTHROPIC_API_KEY is missing!');
-                throw new Error('ANTHROPIC_API_KEY is not configured');
-            }
+            console.log('[Analysis] Running checklist rules (deterministic)...');
 
-            // Create progress callback for soft rules
-            const softRulesProgress: OnProgressCallback = (event) => {
-                // Map soft rules progress (0-100) to overall progress (40-85)
+            // Create progress callback for checklist rules
+            const checklistProgress: OnProgressCallback = (event) => {
+                // Map checklist progress (0-100) to overall progress (40-85)
                 const { start, end } = PROGRESS_RANGES.soft_rules;
                 const mappedProgress = start + (event.progress / 100) * (end - start);
                 emit({ ...event, progress: mappedProgress });
             };
 
-            const softResult = await runSoftRules(input, options.anthropicApiKey, {
-                onProgress: softRulesProgress,
+            const checklistResult = await runChecklistRules(input, {
+                onProgress: checklistProgress,
             });
-            allChecks.push(...softResult.checks);
-            console.log('[Analysis] Soft rules complete. Found', softResult.checks.length, 'checks');
+            allChecks.push(...checklistResult.checks);
+            console.log('[Analysis] Checklist rules complete. Found', checklistResult.checks.length, 'checks');
 
-            emit(createProgressEvent('phase_complete', 'PreFlight analysis complete', 83, {
-                phase: 'soft_rules',
-                data: { checksFound: softResult.checks.length },
+            emit(createProgressEvent('phase_complete', 'Checklist analysis complete', 85, {
+                phase: 'checklist',
+                data: { checksFound: checklistResult.checks.length },
             }));
 
-            // === Phase 2.5: Cross-Reference (83-85%) ===
-            // Resolve conditional warnings using evidence from screenshot analysis
-            if (softResult.evidence) {
-                emit(createProgressEvent('check_start', 'Cross-referencing screenshots with compliance checks...', 83, {
-                    check: 'cross_reference',
-                    phase: 'cross_reference',
-                }));
-
-                const beforeCount = allChecks.filter(c => c.severity !== 'pass').length;
-                const crossReferencedChecks = crossReferenceChecks(allChecks, softResult.evidence);
-
-                // Replace allChecks with cross-referenced version (splice+push is atomic)
-                allChecks.splice(0, allChecks.length, ...crossReferencedChecks);
-
-                const afterCount = allChecks.filter(c => c.severity !== 'pass').length;
-                const resolved = beforeCount - afterCount;
-
-                console.log(`[Analysis] Cross-reference complete. Resolved ${resolved} warnings via screenshot evidence.`);
-                emit(createProgressEvent('check_complete', resolved > 0
-                    ? `Cross-reference resolved ${resolved} warning${resolved !== 1 ? 's' : ''} via screenshot evidence`
-                    : 'Cross-reference complete (no warnings resolved)', 85, {
-                    check: 'cross_reference',
-                    phase: 'cross_reference',
-                    data: { resolved, evidence: softResult.evidence },
-                }));
-            }
-
-            // Mark soft rules done
+            // Mark checklist rules done
             await supabase
                 .from('analysis_jobs')
                 .update({ soft_rules_completed: true })
                 .eq('submission_id', submissionId);
         } else {
-            console.log('[Analysis] Skipping soft rules');
-            emit(createProgressEvent('phase_complete', 'Skipped PreFlight analysis', 85, {
-                phase: 'soft_rules',
+            console.log('[Analysis] Skipping checklist rules');
+            emit(createProgressEvent('phase_complete', 'Skipped checklist analysis', 85, {
+                phase: 'checklist',
             }));
         }
 
