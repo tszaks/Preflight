@@ -14,6 +14,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
             severity: 'critical',
             title: 'No screenshots provided',
             description: 'At least 1 screenshot is required for App Store submission.',
+            confidence: 100,
             guideline_ref: getGuidelineRef('2.3.7'),
             fix_suggestion: 'Upload between 1 and 10 screenshots showing your app\'s key features.',
         });
@@ -26,6 +27,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
             severity: 'critical',
             title: 'Too many screenshots',
             description: `${paths.length} screenshots uploaded. Maximum is ${SCREENSHOT_LIMITS.max_count}.`,
+            confidence: 100,
             guideline_ref: getGuidelineRef('2.3.7'),
             fix_suggestion: `Remove ${paths.length - SCREENSHOT_LIMITS.max_count} screenshots. Keep the most impactful ones.`,
         });
@@ -44,6 +46,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
                     severity: 'critical',
                     title: `Screenshot ${i + 1} exceeds size limit`,
                     description: `Screenshot is ${sizeMB}MB. Maximum is 5MB.`,
+                    confidence: 100,
                     guideline_ref: getGuidelineRef('2.3.7'),
                     fix_suggestion: 'Compress the image or reduce its resolution to stay under 5MB.',
                 });
@@ -56,6 +59,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
                     severity: 'critical',
                     title: `Screenshot ${i + 1} invalid format`,
                     description: `Format "${screenshot.mime_type}" is not accepted. Use JPEG or PNG.`,
+                    confidence: 100,
                     guideline_ref: getGuidelineRef('2.3.7'),
                     fix_suggestion: 'Convert the image to JPEG or PNG format.',
                 });
@@ -73,6 +77,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
                         severity: 'critical',
                         title: `Screenshot ${i + 1} invalid dimensions`,
                         description: `Dimensions ${screenshot.width}x${screenshot.height} don't match any required App Store size.`,
+                        confidence: 100,
                         guideline_ref: getGuidelineRef('2.3.7'),
                         fix_suggestion: `Use one of the standard sizes: 1290x2796 (6.7"), 1179x2556 (6.1"), 2048x2732 (12.9" iPad).`,
                     });
@@ -88,6 +93,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
             severity: 'pass',
             title: 'Screenshot checks passed',
             description: `${paths.length} screenshot(s) provided with valid formats and dimensions.`,
+            confidence: 100,
         });
     }
 

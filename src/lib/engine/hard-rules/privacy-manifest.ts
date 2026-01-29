@@ -17,6 +17,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             description: 'A PrivacyInfo.xcprivacy file was not uploaded. If your app uses required-reason APIs, this will cause rejection.',
             guideline_ref: getGuidelineRef('5.1'),
             fix_suggestion: 'If your app uses any required-reason APIs (file timestamps, disk space, user defaults, etc.), add a PrivacyInfo.xcprivacy file.',
+            confidence: 100,
         });
         return results;
     }
@@ -30,6 +31,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             description: 'The file does not appear to be valid XML plist format.',
             guideline_ref: getGuidelineRef('5.1'),
             fix_suggestion: 'Ensure the file is a valid XML property list. Use Xcode to validate the format.',
+            confidence: 100,
         });
         return results;
     }
@@ -42,6 +44,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             description: 'The privacy manifest is missing the <plist> root element.',
             guideline_ref: getGuidelineRef('5.1'),
             fix_suggestion: 'Wrap your manifest content in <plist version="1.0"> tags.',
+            confidence: 100,
         });
         return results;
     }
@@ -56,6 +59,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             description: 'The manifest doesn\'t declare whether the app tracks users. This key should be present.',
             guideline_ref: getGuidelineRef('5.1.2'),
             fix_suggestion: 'Add NSPrivacyTracking key set to true/false to declare your tracking status.',
+            confidence: 100,
         });
     }
 
@@ -70,6 +74,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             description: 'NSPrivacyTracking is true but NSPrivacyTrackingDomains is missing.',
             guideline_ref: getGuidelineRef('5.1.2'),
             fix_suggestion: 'Add NSPrivacyTrackingDomains array listing all domains used for tracking.',
+            confidence: 100,
         });
     }
 
@@ -82,6 +87,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             title: 'No API type declarations',
             description: 'No NSPrivacyAccessedAPITypes declared. This is fine if your app doesn\'t use required-reason APIs.',
             guideline_ref: getGuidelineRef('5.1'),
+            confidence: 100,
         });
     } else {
         // Validate each declared API type has reason codes
@@ -99,6 +105,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
                         description: `API type "${apiType}" is declared but no valid reason code was found.`,
                         guideline_ref: getGuidelineRef('5.1'),
                         fix_suggestion: `Add a valid reason code. Options: ${validReasons.join(', ')}`,
+                        confidence: 100,
                     });
                 }
             }
@@ -114,6 +121,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             description: 'NSPrivacyCollectedDataTypes is not present. Add this if your app collects user data.',
             guideline_ref: getGuidelineRef('5.1.1'),
             fix_suggestion: 'If your app collects any user data, declare it in NSPrivacyCollectedDataTypes.',
+            confidence: 100,
         });
     }
 
@@ -124,6 +132,7 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             severity: 'pass',
             title: 'Privacy manifest checks passed',
             description: 'Privacy manifest has valid structure, API declarations, and reason codes.',
+            confidence: 100,
         });
     }
 

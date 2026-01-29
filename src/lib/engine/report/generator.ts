@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 import type { CheckResult } from '../types';
+import { capSeverityByConfidence } from '../types';
 import { calculateScores, countBySeverity } from './scoring';
 
 /**
@@ -12,8 +13,11 @@ export async function generateReport(
     submissionId: string,
     checks: CheckResult[]
 ): Promise<{ reportId: string; success: boolean; error?: string }> {
+    // Cap severity based on confidence (low-confidence checks can't be critical)
+    const cappedChecks = checks.map(capSeverityByConfidence);
+
     // Deduplicate similar issues (hard rules + soft rules can flag same thing)
-    const deduplicatedChecks = deduplicateChecks(checks);
+    const deduplicatedChecks = deduplicateChecks(cappedChecks);
 
     // Calculate scores
     const scores = calculateScores(deduplicatedChecks);

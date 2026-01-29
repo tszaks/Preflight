@@ -18,8 +18,8 @@ export interface CheckResult {
     description: string;
     guideline_ref?: string;
     fix_suggestion?: string;
-    /** AI confidence in this finding (0-100). Hard rules default to 100. */
-    confidence?: number;
+    /** Confidence in this finding (0-100). Hard rules = 100. AI rules vary. */
+    confidence: number;
 }
 
 export interface HardRulesInput {
@@ -110,3 +110,36 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 2732, height: 2048, device: '12.9" iPad Pro (landscape)' },
     { width: 2388, height: 1668, device: '11" iPad Pro (landscape)' },
 ];
+
+// === Confidence-Severity Capping ===
+
+/**
+ * Returns the maximum severity allowed for a given confidence level.
+ * - confidence < 50  → 'info'     (basically guessing)
+ * - 50-79            → 'warning'  (reasonably sure)
+ * - 80+              → 'critical' (strong evidence)
+ */
+export function getMaxSeverity(confidence: number): SeverityLevel {
+    if (confidence >= 80) return 'critical';
+    if (confidence >= 50) return 'warning';
+    return 'info';
+}
+
+const SEVERITY_RANK: Record<string, number> = {
+    pass: 0,
+    info: 1,
+    warning: 2,
+    critical: 3,
+};
+
+/**
+ * Caps a check's severity based on its confidence level.
+ * A check can never be more severe than its confidence allows.
+ */
+export function capSeverityByConfidence(check: CheckResult): CheckResult {
+    const maxSev = getMaxSeverity(check.confidence);
+    if (SEVERITY_RANK[check.severity] > SEVERITY_RANK[maxSev]) {
+        return { ...check, severity: maxSev };
+    }
+    return check;
+}

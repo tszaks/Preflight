@@ -24,6 +24,7 @@ export function checkMetadata(input: HardRulesInput): CheckResult[] {
             description: 'An app description is required for App Store submission.',
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Add a description between 100-4000 characters that accurately describes your app\'s features.',
+            confidence: 100,
         });
     }
 
@@ -43,6 +44,7 @@ export function checkMetadata(input: HardRulesInput): CheckResult[] {
             description: `"${input.category}" is not a standard App Store category.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: `Use one of the standard categories: ${APP_CATEGORIES.slice(0, 5).join(', ')}...`,
+            confidence: 100,
         });
     }
 
@@ -53,6 +55,7 @@ export function checkMetadata(input: HardRulesInput): CheckResult[] {
             severity: 'pass',
             title: 'Metadata checks passed',
             description: 'App name, subtitle, description, and keywords meet App Store requirements.',
+            confidence: 100,
         });
     }
 
@@ -70,6 +73,7 @@ function checkAppName(name: string): CheckResult[] {
             description: `App name is ${name.length} characters. Maximum is ${METADATA_LIMITS.app_name.max}.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: `Shorten your app name to ${METADATA_LIMITS.app_name.max} characters or fewer.`,
+            confidence: 100,
         });
     }
 
@@ -81,6 +85,7 @@ function checkAppName(name: string): CheckResult[] {
             description: `App name is ${name.length} characters. Minimum is ${METADATA_LIMITS.app_name.min}.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Provide a meaningful app name with at least 2 characters.',
+            confidence: 100,
         });
     }
 
@@ -93,6 +98,7 @@ function checkAppName(name: string): CheckResult[] {
             description: 'App name contains pricing information which is not allowed.',
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Remove all pricing references (Free, $X, Sale, etc.) from the app name.',
+            confidence: 100,
         });
     }
 
@@ -105,6 +111,7 @@ function checkAppName(name: string): CheckResult[] {
             description: 'App name references a platform (iOS, iPhone, etc.) which Apple rejects.',
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Remove platform names from your app title. Apple already shows supported platforms.',
+            confidence: 100,
         });
     }
 
@@ -118,6 +125,7 @@ function checkAppName(name: string): CheckResult[] {
                 description: `App name appears to contain placeholder text: "${name}".`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Replace placeholder text with your final app name.',
+                confidence: 100,
             });
             break;
         }
@@ -137,6 +145,7 @@ function checkSubtitle(subtitle: string, appName: string): CheckResult[] {
             description: `Subtitle is ${subtitle.length} characters. Maximum is ${METADATA_LIMITS.subtitle.max}.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: `Shorten your subtitle to ${METADATA_LIMITS.subtitle.max} characters or fewer.`,
+            confidence: 100,
         });
     }
 
@@ -149,6 +158,7 @@ function checkSubtitle(subtitle: string, appName: string): CheckResult[] {
             description: 'Your subtitle is identical to your app name, wasting valuable metadata space.',
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Use the subtitle to add context about what your app does, not repeat the name.',
+            confidence: 100,
         });
     }
 
@@ -161,6 +171,7 @@ function checkSubtitle(subtitle: string, appName: string): CheckResult[] {
             description: 'Subtitle contains pricing information which is not allowed.',
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Remove pricing references from your subtitle.',
+            confidence: 100,
         });
     }
 
@@ -178,6 +189,7 @@ function checkDescription(description: string): CheckResult[] {
             description: `Description is ${description.length} characters. Maximum is ${METADATA_LIMITS.description.max}.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: `Trim your description to ${METADATA_LIMITS.description.max} characters.`,
+            confidence: 100,
         });
     }
 
@@ -189,6 +201,7 @@ function checkDescription(description: string): CheckResult[] {
             description: `Description is only ${description.length} characters. Minimum recommended is ${METADATA_LIMITS.description.min}.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Expand your description to better explain your app\'s features and value proposition.',
+            confidence: 100,
         });
     }
 
@@ -202,6 +215,7 @@ function checkDescription(description: string): CheckResult[] {
                 description: 'Description appears to contain placeholder or test text.',
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Replace all placeholder text with final marketing copy.',
+                confidence: 100,
             });
             break;
         }
@@ -221,6 +235,7 @@ function checkKeywords(keywords: string): CheckResult[] {
             description: `Keywords field is ${keywords.length} characters. Maximum is ${METADATA_LIMITS.keywords.max}.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: `Trim keywords to ${METADATA_LIMITS.keywords.max} characters. Remove less relevant terms.`,
+            confidence: 100,
         });
     }
 
@@ -243,6 +258,7 @@ function checkKeywords(keywords: string): CheckResult[] {
             description: `Found duplicate keywords: ${duplicates.join(', ')}. Duplicates waste character space.`,
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Remove duplicate keywords and use the space for additional relevant terms.',
+            confidence: 100,
         });
     }
 
