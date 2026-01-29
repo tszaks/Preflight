@@ -44,6 +44,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 'Ensure your app has a "Delete Account" option in settings or account section. ' +
                 'The deletion must be easy to find (not buried in menus) and must delete the account ' +
                 'within 7 days. If you need to retain data for legal reasons, clearly explain this to users.',
+            confidence: 30,
         });
 
         results.push({
@@ -57,6 +58,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
             fix_suggestion:
                 'Test your demo credentials before submission. Ensure the account is not expired, ' +
                 'has premium features unlocked if applicable, and contains sample data to review.',
+            confidence: 100,
         });
     }
 
@@ -79,6 +81,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 'Ensure your app has a "Restore Purchases" button in settings, subscription screen, ' +
                 'or paywall. It should call StoreKit\'s restoreCompletedTransactions() method. ' +
                 'Make sure it\'s visible without requiring a purchase first.',
+            confidence: 30,
         });
     }
 
@@ -98,6 +101,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 '(2) Subscription duration, (3) "Payment will be charged to your Apple ID account", ' +
                 '(4) "Subscription automatically renews unless canceled at least 24 hours before the end of the current period", ' +
                 '(5) Link to Terms of Service and Privacy Policy.',
+            confidence: 50,
         });
     }
 
@@ -118,6 +122,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 'Add Sign in with Apple button alongside your other social login options. ' +
                 'It must be the same size and prominence as other login buttons. ' +
                 'Use Apple\'s official Sign in with Apple button assets and follow their HIG.',
+            confidence: 40,
         });
     }
 

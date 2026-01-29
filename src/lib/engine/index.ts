@@ -95,6 +95,7 @@ export async function runAnalysis(
                 title: 'No Info.plist provided',
                 description: 'Info.plist was not uploaded. Some compliance checks cannot be performed.',
                 fix_suggestion: 'Upload your Info.plist for a more comprehensive review.',
+                confidence: 100,
             });
         }
 

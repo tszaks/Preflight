@@ -21,6 +21,7 @@ export async function checkUrls(input: HardRulesInput): Promise<CheckResult[]> {
             description: 'A privacy policy URL is required for all App Store submissions.',
             guideline_ref: getGuidelineRef('5.1.1'),
             fix_suggestion: 'Add a privacy policy URL that describes how your app handles user data.',
+            confidence: 100,
         });
     }
 
@@ -53,6 +54,7 @@ export async function checkUrls(input: HardRulesInput): Promise<CheckResult[]> {
             severity: 'pass',
             title: 'URL checks passed',
             description: 'All provided URLs are valid HTTPS and properly formatted.',
+            confidence: 100,
         });
     }
 
@@ -72,6 +74,7 @@ function validateUrl(url: string, label: string, _required: boolean): CheckResul
                 description: `"${url}" uses HTTP. Apple requires HTTPS for all URLs.`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Update to use HTTPS. Ensure your server has a valid SSL certificate.',
+                confidence: 100,
             });
         } else {
             results.push({
@@ -81,6 +84,7 @@ function validateUrl(url: string, label: string, _required: boolean): CheckResul
                 description: `"${url}" is not a properly formatted URL.`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Provide a full URL starting with https://',
+                confidence: 100,
             });
         }
     }
@@ -95,6 +99,7 @@ function validateUrl(url: string, label: string, _required: boolean): CheckResul
                 description: `"${url}" matches a known placeholder pattern.`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Replace with a real, live URL hosting actual content.',
+                confidence: 100,
             });
             break;
         }
@@ -135,6 +140,7 @@ async function checkReachability(url: string, label: string): Promise<CheckResul
                 description: `"${url}" returned HTTP ${response.status}. Apple requires all URLs to be accessible.`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: `Fix the URL to return HTTP 200. Current status: ${response.status} ${response.statusText}.`,
+                confidence: 100,
             });
         }
     } catch (error) {
@@ -148,6 +154,7 @@ async function checkReachability(url: string, label: string): Promise<CheckResul
                 description: `"${url}" did not respond within ${URL_REQUIREMENTS.timeout_ms / 1000} seconds.`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Ensure the URL is accessible and responds quickly. Check server availability.',
+                confidence: 100,
             });
         } else {
             results.push({
@@ -157,6 +164,7 @@ async function checkReachability(url: string, label: string): Promise<CheckResul
                 description: `"${url}" could not be reached: ${message}`,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Verify the URL is correct and the server is running with valid DNS/SSL.',
+                confidence: 100,
             });
         }
     }

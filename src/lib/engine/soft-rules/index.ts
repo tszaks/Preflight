@@ -295,7 +295,7 @@ function parseCheckFindings(text: string, defaultCategory: CheckResult['category
         description: item.description,
         guideline_ref: item.guideline_ref,
         fix_suggestion: item.fix_suggestion,
-        confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : undefined,
+        confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : 50,
     }));
 }
 

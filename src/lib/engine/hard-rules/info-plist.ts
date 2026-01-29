@@ -39,6 +39,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
             severity: 'critical',
             title: 'Invalid Info.plist format',
             description: 'The file does not appear to be a valid XML property list.',
+            confidence: 100,
             guideline_ref: getGuidelineRef('2.1'),
             fix_suggestion: 'Ensure the file is a valid XML plist. Use Xcode to regenerate if needed.',
         });
@@ -53,6 +54,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'critical',
                 title: `Missing required key: ${key}`,
                 description: `The required key "${key}" is not present in Info.plist.`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
                 fix_suggestion: `Add the "${key}" key with an appropriate value to your Info.plist.`,
             });
@@ -67,6 +69,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'info',
                 title: `Optional key not found: ${key}`,
                 description: `"${key}" is not present. Modern apps often omit this key, but it's needed if your app requires specific device hardware (e.g., ARKit, NFC).`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
                 fix_suggestion: `Only add "${key}" if your app requires specific device capabilities. Most apps don't need it.`,
             });
@@ -84,6 +87,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'info',
                 title: 'Bundle ID uses Xcode build variable',
                 description: `Bundle ID "${bundleId}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
                 fix_suggestion: 'No action needed. Xcode will substitute the real bundle ID from your build settings when compiling.',
             });
@@ -93,6 +97,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'critical',
                 title: 'Invalid bundle identifier format',
                 description: `Bundle ID "${bundleId}" doesn't match the required reverse-domain format.`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
                 fix_suggestion: 'Use reverse-domain notation: com.company.appname (alphanumeric, dots, hyphens only).',
             });
@@ -106,6 +111,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'critical',
                 title: 'Placeholder bundle identifier',
                 description: `Bundle ID "${bundleId}" appears to be a placeholder.`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Replace with your actual registered bundle identifier from Apple Developer portal.',
             });
@@ -123,6 +129,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'info',
                 title: 'Version uses Xcode build variable',
                 description: `Version "${version}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
                 fix_suggestion: 'No action needed. Xcode will substitute the real version from your build settings when compiling.',
             });
@@ -132,6 +139,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 severity: 'critical',
                 title: 'Invalid version format',
                 description: `Version "${version}" doesn't match the required format (X.Y or X.Y.Z).`,
+                confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
                 fix_suggestion: 'Use semantic versioning: major.minor or major.minor.patch (e.g., 1.0, 2.1.3).',
             });
@@ -146,6 +154,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
             severity: 'info',
             title: 'Build number uses Xcode build variable',
             description: `Build number "${buildMatch[1]}" is an Xcode build variable. This is normal.`,
+            confidence: 100,
             fix_suggestion: 'No action needed.',
         });
     }
@@ -169,6 +178,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                     severity: 'critical',
                     title: `Empty usage description: ${key.replace('NS', '').replace('UsageDescription', '')}`,
                     description: `Permission "${key}" has an empty usage description string.`,
+                    confidence: 100,
                     guideline_ref: getGuidelineRef('5.1.1'),
                     fix_suggestion: 'Provide a clear, specific explanation of why your app needs this permission.',
                 });
@@ -178,6 +188,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                     severity: 'warning',
                     title: `Vague usage description: ${key.replace('NS', '').replace('UsageDescription', '')}`,
                     description: `Usage description "${desc}" is too short to be meaningful.`,
+                    confidence: 100,
                     guideline_ref: getGuidelineRef('5.1.1'),
                     fix_suggestion: 'Explain the specific feature that requires this permission. E.g., "Take photos for your profile picture".',
                 });
@@ -192,6 +203,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
             severity: 'info',
             title: 'Background modes declared',
             description: 'App declares background modes. Ensure each declared mode is actively used.',
+            confidence: 100,
             guideline_ref: getGuidelineRef('2.5'),
             fix_suggestion: 'Only declare background modes your app actually uses. Unused modes cause rejections.',
         });
@@ -204,6 +216,7 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
             severity: 'pass',
             title: 'Info.plist checks passed',
             description: 'All required keys present, bundle ID valid, version format correct, usage descriptions adequate.',
+            confidence: 100,
         });
     }
 
