@@ -1537,7 +1537,7 @@
                                 </div>
                                 {#if hasThirdPartyLogin}
                                     <p class="field-hint warning-hint" style="margin-top: 0.75rem;">
-                                        Apps with third-party login must also offer Sign in with Apple (Guideline 4.8)
+                                        Third-party login triggers additional requirements.
                                     </p>
                                 {/if}
                             </div>
@@ -1550,7 +1550,7 @@
                                         <span>My app has an account deletion option</span>
                                     </label>
                                     <p class="field-hint">
-                                        Apple requires all apps with sign-in to let users delete their account (Guideline 5.1.1).
+                                        Account deletion is checked during review.
                                         {#if !hasAccountDeletion}
                                             <strong class="warning-hint">This will be flagged as a critical issue.</strong>
                                         {/if}
@@ -1652,7 +1652,7 @@
                                                 <input type="checkbox" checked={hasUgcModeration === true} onchange={() => hasUgcModeration = hasUgcModeration === true ? false : true} />
                                                 <span>We have reporting, blocking, and content filtering</span>
                                             </label>
-                                            <p class="field-hint">Required by Guideline 1.2 for UGC apps.</p>
+                                            <p class="field-hint">UGC apps have specific moderation requirements.</p>
                                         </div>
                                     {/if}
                                 </div>
@@ -1675,7 +1675,7 @@
                                                 <input type="checkbox" checked={hasHealthDisclaimers === true} onchange={() => hasHealthDisclaimers = hasHealthDisclaimers === true ? false : true} />
                                                 <span>We display appropriate medical disclaimers</span>
                                             </label>
-                                            <p class="field-hint">Required by Guideline 1.4.1 for health apps.</p>
+                                            <p class="field-hint">Health claims are closely scrutinized during review.</p>
                                         </div>
                                     {/if}
                                 </div>
@@ -1698,7 +1698,7 @@
                                                 <input type="checkbox" checked={hasAiContentFiltering === true} onchange={() => hasAiContentFiltering = hasAiContentFiltering === true ? false : true} />
                                                 <span>We have AI content filtering and moderation</span>
                                             </label>
-                                            <p class="field-hint">Required by Guideline 1.4.1 for AI-powered apps.</p>
+                                            <p class="field-hint">AI content apps have specific filtering requirements.</p>
                                         </div>
                                     {/if}
                                 </div>
@@ -1713,7 +1713,7 @@
                                         <label class="checklist-question">
                                             Are subscription terms displayed on your paywall?
                                         </label>
-                                        <p class="field-hint">Price, duration, renewal terms, and cancellation instructions.</p>
+                                        <p class="field-hint">Apple checks specific elements on your paywall.</p>
                                         <div class="checklist-options">
                                             <label class="radio-option" class:active={subscriptionTermsOnPaywall === true}>
                                                 <input type="radio" name="sub_terms" checked={subscriptionTermsOnPaywall === true} onchange={() => subscriptionTermsOnPaywall = true} /> Yes
@@ -1737,7 +1737,7 @@
                                             </label>
                                         </div>
                                         {#if sellsDigitalOutsideIap === true}
-                                            <p class="field-hint warning-hint">This will be flagged - Apple requires digital goods to use IAP (Guideline 3.1.1).</p>
+                                            <p class="field-hint warning-hint">This will be flagged as a critical issue.</p>
                                         {/if}
                                     </div>
 
@@ -1755,7 +1755,7 @@
                                                 </label>
                                             </div>
                                             {#if subscriptionsWithoutLogin === false}
-                                                <p class="field-hint warning-hint">Subscriptions behind login walls can cause review issues (Guideline 3.1.2).</p>
+                                                <p class="field-hint warning-hint">This can cause review issues.</p>
                                             {/if}
                                         </div>
                                     {/if}
@@ -1779,7 +1779,7 @@
                                         </label>
                                     </div>
                                     {#if screenshotsMatchUi === false}
-                                        <p class="field-hint warning-hint">Misleading screenshots are a top rejection reason (Guideline 2.3.1).</p>
+                                        <p class="field-hint warning-hint">Screenshot accuracy is verified during review.</p>
                                     {/if}
                                 </div>
 
@@ -1795,7 +1795,7 @@
                                             <input type="radio" name="tested_ipv6" checked={testedIpv6 === false} onchange={() => testedIpv6 = false} /> No
                                         </label>
                                     </div>
-                                    <p class="field-hint">Apple tests on IPv6. Hard-coded IPv4 addresses will cause rejection.</p>
+                                    <p class="field-hint">Apple tests networking under specific conditions.</p>
                                 </div>
 
                                 <div class="checklist-item">
@@ -1810,7 +1810,7 @@
                                             <input type="radio" name="contextual_perms" checked={contextualPermissions === false} onchange={() => contextualPermissions = false} /> No
                                         </label>
                                     </div>
-                                    <p class="field-hint">Permissions should be requested when the user taps a feature that needs them — never at launch or on first open.</p>
+                                    <p class="field-hint">Permission timing is evaluated during review.</p>
                                 </div>
 
                                 <div class="checklist-item">
@@ -1825,7 +1825,7 @@
                                             <input type="radio" name="alt_icons" checked={hasAlternateIcons === false} onchange={() => hasAlternateIcons = false} /> No
                                         </label>
                                     </div>
-                                    <p class="field-hint">Alternate icons must use the system API, not a custom settings page.</p>
+                                    <p class="field-hint">Alternate icons have specific implementation requirements.</p>
                                 </div>
                             </div>
                         </div>
@@ -1865,7 +1865,7 @@
                                 {#if signInRequired}
                                     <div class="demo-credentials">
                                         <p class="warning-hint">
-                                            Missing demo credentials is the #1 rejection reason for apps with login. Apple's reviewer will need these to actually test your app.
+                                            Demo credentials are required for apps with login. Missing them is a common rejection reason.
                                         </p>
                                         <div class="form-row">
                                             <div class="form-group">
