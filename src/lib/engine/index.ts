@@ -164,9 +164,8 @@ export async function runAnalysis(
                 const beforeCount = allChecks.filter(c => c.severity !== 'pass').length;
                 const crossReferencedChecks = crossReferenceChecks(allChecks, softResult.evidence);
 
-                // Replace allChecks with cross-referenced version
-                allChecks.length = 0;
-                allChecks.push(...crossReferencedChecks);
+                // Replace allChecks with cross-referenced version (splice+push is atomic)
+                allChecks.splice(0, allChecks.length, ...crossReferencedChecks);
 
                 const afterCount = allChecks.filter(c => c.severity !== 'pass').length;
                 const resolved = beforeCount - afterCount;
