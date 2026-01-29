@@ -110,17 +110,17 @@
                         <!-- Fuselage (thick, rounded nose, longer) -->
                         <path d="M0,-32 Q-5,-30 -5,-24 L-5,22 Q-4,30 0,32 Q4,30 5,22 L5,-24 Q5,-30 0,-32 Z" opacity="1" />
                         <!-- Left wing (straight) -->
-                        <polygon points="-5,-6 -30,3 -30,7 -5,1" opacity="1" />
+                        <polygon points="-5,-7 -30,2 -30,8 -5,2" opacity="1" />
                         <!-- Right wing (straight) -->
-                        <polygon points="5,-6 30,3 30,7 5,1" opacity="1" />
+                        <polygon points="5,-7 30,2 30,8 5,2" opacity="1" />
                         <!-- Left engine -->
                         <ellipse cx="-17" cy="2" rx="3.5" ry="7" opacity="0.9" />
                         <!-- Right engine -->
                         <ellipse cx="17" cy="2" rx="3.5" ry="7" opacity="0.9" />
                         <!-- Left tail stabilizer (at very back) -->
-                        <polygon points="-2,20 -16,27 -16,31 -2,27" opacity="1" />
+                        <polygon points="-2,21 -16,27 -16,30 -2,27" opacity="1" />
                         <!-- Right tail stabilizer -->
-                        <polygon points="2,20 16,27 16,31 2,27" opacity="1" />
+                        <polygon points="2,21 16,27 16,30 2,27" opacity="1" />
                     </g>
                 </svg>
 
