@@ -82,54 +82,99 @@
 
     {#if submissions.length === 0}
         <CockpitPanel class="empty-state">
-            <div class="empty-icon">
-                <svg
-                    width="56"
-                    height="56"
-                    viewBox="0 0 56 56"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <rect
-                        x="10"
-                        y="8"
-                        width="28"
-                        height="34"
-                        rx="6"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-opacity="0.6"
-                    />
-                    <path
-                        d="M18 18h12M18 24h8"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-opacity="0.4"
-                    />
-                    <circle
-                        cx="38"
-                        cy="36"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                    />
-                    <path
-                        d="M43 41l4 4"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                    />
+            <!-- Ambient glow behind the radar -->
+            <div class="empty-glow"></div>
+
+            <!-- Technical readout label -->
+            <div class="readout-label">SYS STATUS</div>
+
+            <!-- Radar scope -->
+            <div class="radar-scope">
+                <svg class="radar-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Concentric range rings -->
+                    <circle cx="100" cy="100" r="90" stroke="rgba(212, 168, 83, 0.08)" stroke-width="0.75" />
+                    <circle cx="100" cy="100" r="65" stroke="rgba(212, 168, 83, 0.06)" stroke-width="0.75" />
+                    <circle cx="100" cy="100" r="40" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.75" />
+
+                    <!-- Crosshairs -->
+                    <line x1="100" y1="10" x2="100" y2="190" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.5" />
+                    <line x1="10" y1="100" x2="190" y2="100" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.5" />
+
+                    <!-- Pulse rings (expanding outward from center) -->
+                    <circle class="pulse-ring ring-1" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
+                    <circle class="pulse-ring ring-2" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
+                    <circle class="pulse-ring ring-3" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
+
+                    <!-- Center blip (steady glow) -->
+                    <circle cx="100" cy="100" r="4" fill="var(--accent)" opacity="0.5" class="center-blip" />
+                    <circle cx="100" cy="100" r="7" fill="none" stroke="var(--accent)" stroke-width="0.5" opacity="0.2" />
+
+                    <!-- Aircraft icon at center -->
+                    <g transform="translate(100, 100)">
+                        <!-- Fuselage -->
+                        <path d="M0,-18 L3,-6 L2,10 L6,18 L-6,18 L-2,10 L-3,-6 Z"
+                            fill="var(--accent)" opacity="0.7" />
+                        <!-- Wings -->
+                        <path d="M-3,-2 L-16,4 L-16,6 L-2,2 Z" fill="var(--accent)" opacity="0.5" />
+                        <path d="M3,-2 L16,4 L16,6 L2,2 Z" fill="var(--accent)" opacity="0.5" />
+                        <!-- Tail -->
+                        <path d="M-2,10 L-8,16 L-8,17 L-1,12 Z" fill="var(--accent)" opacity="0.4" />
+                        <path d="M2,10 L8,16 L8,17 L1,12 Z" fill="var(--accent)" opacity="0.4" />
+                    </g>
                 </svg>
+
+                <!-- Scanline overlay -->
+                <div class="scanlines"></div>
             </div>
-            <h2>No reviews yet</h2>
+
+            <!-- Status row -->
+            <div class="status-row">
+                <div class="status-item">
+                    <span class="status-dot idle"></span>
+                    <span class="status-text">NO SUBMISSIONS</span>
+                </div>
+                <div class="status-divider"></div>
+                <div class="status-item">
+                    <span class="status-dot standby"></span>
+                    <span class="status-text">AWAITING INPUT</span>
+                </div>
+            </div>
+
+            <!-- Heading -->
+            <h2>Ready for Departure</h2>
             <p>
-                Submit your first app and get a detailed compliance report
-                before you hit Send.
+                Your runway is clear. Upload your first iOS submission and Preflight
+                will scan it against Apple's review guidelines -- catching rejection
+                risks before you hit Send.
             </p>
-            <a href="/submit" class="btn btn-primary btn-lg"
-                >Start Your First Review</a
-            >
+
+            <!-- Checklist preview -->
+            <div class="preflight-checklist">
+                <div class="checklist-item">
+                    <span class="check-box"></span>
+                    <span>Metadata validation</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="check-box"></span>
+                    <span>Privacy manifest audit</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="check-box"></span>
+                    <span>Screenshot compliance</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="check-box"></span>
+                    <span>Guideline review</span>
+                </div>
+            </div>
+
+            <!-- CTA -->
+            <a href="/submit" class="btn btn-primary btn-lg cta-launch">
+                Begin Preflight Check
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+            </a>
         </CockpitPanel>
     {:else}
         <div class="submissions-list">
@@ -234,55 +279,245 @@
     }
 
     /* === Empty State === */
-    .empty-state {
+    :global(.empty-state .panel-content) {
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 80px 32px;
-        max-width: 320px;
-        margin: 0 auto;
+        padding: 48px 32px 56px;
         position: relative;
     }
 
-    .empty-state::before {
-        content: "";
+    .empty-glow {
         position: absolute;
-        inset: -40px;
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 400px;
+        height: 300px;
         background: radial-gradient(
-            ellipse at 50% 40%,
-            rgba(212, 168, 83, 0.03) 0%,
-            transparent 60%
+            ellipse at 50% 60%,
+            rgba(212, 168, 83, 0.06) 0%,
+            rgba(212, 168, 83, 0.02) 40%,
+            transparent 70%
         );
         pointer-events: none;
+        z-index: 0;
     }
 
-    .empty-icon {
-        color: var(--accent);
-        margin-bottom: 20px;
-        animation: float 3s ease-in-out infinite alternate;
+    .readout-label {
+        font-family: 'Instrument Mono', monospace;
+        font-size: 0.5rem;
+        font-weight: 700;
+        color: var(--gray-500);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 4px 12px;
+        margin-bottom: 32px;
     }
 
-    @keyframes float {
-        from {
-            transform: translateY(0);
+    /* Radar Scope */
+    .radar-scope {
+        position: relative;
+        width: 180px;
+        height: 180px;
+        margin-bottom: 28px;
+        border-radius: 50%;
+        overflow: hidden;
+        background: radial-gradient(
+            circle at 50% 50%,
+            rgba(212, 168, 83, 0.03) 0%,
+            transparent 70%
+        );
+    }
+
+    .radar-svg {
+        width: 100%;
+        height: 100%;
+    }
+
+    .pulse-ring {
+        transform-origin: 100px 100px;
+        animation: radar-pulse 3.5s ease-out infinite;
+        opacity: 0;
+    }
+
+    .ring-2 { animation-delay: 1.15s; }
+    .ring-3 { animation-delay: 2.3s; }
+
+    @keyframes radar-pulse {
+        0% {
+            r: 8;
+            opacity: 0.5;
+            stroke-width: 1.5;
         }
-        to {
-            transform: translateY(-4px);
+        100% {
+            r: 90;
+            opacity: 0;
+            stroke-width: 0.3;
         }
     }
 
-    .empty-state h2 {
-        font-size: 18px;
-        font-weight: 600;
-        margin-bottom: 8px;
+    .center-blip {
+        animation: blip-glow 3.5s ease-in-out infinite;
     }
 
-    .empty-state p {
+    @keyframes blip-glow {
+        0%, 100% { opacity: 0.3; }
+        15% { opacity: 0.8; }
+        30% { opacity: 0.3; }
+    }
+
+    .scanlines {
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(212, 168, 83, 0.015) 3px,
+            rgba(212, 168, 83, 0.015) 4px
+        );
+        pointer-events: none;
+        border-radius: 50%;
+    }
+
+    /* Status Row */
+    .status-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+    }
+
+    .status-dot.idle {
+        background: var(--gray-500);
+        box-shadow: 0 0 6px var(--gray-500);
+    }
+
+    .status-dot.standby {
+        background: var(--accent);
+        box-shadow: 0 0 6px var(--accent);
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+
+    .status-text {
+        font-family: 'Instrument Mono', monospace;
+        font-size: 0.5rem;
+        font-weight: 700;
+        color: var(--gray-500);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .status-divider {
+        width: 1px;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Empty state heading + copy */
+    :global(.empty-state .panel-content) h2 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--fg);
+        margin-bottom: 10px;
+        letter-spacing: -0.02em;
+    }
+
+    :global(.empty-state .panel-content) p {
         font-size: 14px;
         color: var(--gray-300);
-        line-height: 1.6;
-        margin-bottom: 24px;
+        line-height: 1.7;
+        max-width: 400px;
+        margin-bottom: 28px;
+    }
+
+    /* Preflight Checklist */
+    .preflight-checklist {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 24px;
+        margin-bottom: 32px;
+        padding: 16px 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        border-radius: 4px;
+    }
+
+    .checklist-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Instrument Sans', sans-serif;
+        font-size: 12px;
+        color: var(--gray-300);
+    }
+
+    .check-box {
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid rgba(212, 168, 83, 0.3);
+        border-radius: 2px;
+        flex-shrink: 0;
+    }
+
+    /* CTA Button */
+    .cta-launch {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Empty state responsive */
+    @media (max-width: 520px) {
+        :global(.empty-state .panel-content) {
+            padding: 36px 20px 44px;
+        }
+
+        .radar-scope {
+            width: 140px;
+            height: 140px;
+        }
+
+        .status-row {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-divider {
+            width: 20px;
+            height: 1px;
+        }
+
+        .preflight-checklist {
+            grid-template-columns: 1fr;
+            gap: 6px;
+            width: 100%;
+        }
+
+        :global(.empty-state .panel-content) h2 {
+            font-size: 19px;
+        }
     }
 
     /* === Submissions List === */
