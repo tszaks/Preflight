@@ -101,11 +101,20 @@ export async function runHardRules(
         data: { checksFound: urlChecks.length },
     }));
 
-    // Check 7: Privacy Mismatch (95-97%) - Cross-reference form vs manifest
+    // Check 6: Privacy Mismatch (95-97%) - Cross-reference form vs manifest
+    emit(createProgressEvent('check_start', 'Cross-referencing data collection vs privacy manifest...', 95, {
+        check: 'privacy_mismatch',
+        phase: 'hard_rules',
+    }));
     const mismatchChecks = checkPrivacyMismatch(input.data_collection, options?.manifestContent);
     checks.push(...mismatchChecks);
+    emit(createProgressEvent('check_complete', `Privacy mismatch check complete`, 97, {
+        check: 'privacy_mismatch',
+        phase: 'hard_rules',
+        data: { checksFound: mismatchChecks.length },
+    }));
 
-    // Check 6: Conditional Warnings (97-100%) - Form-field based warnings
+    // Check 7: Conditional Warnings (97-100%) - Form-field based warnings
     // These check for common rejection reasons based on app characteristics
     const conditionalChecks = checkConditionalWarnings({
         sign_in_required: input.sign_in_required,
