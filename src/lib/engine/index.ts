@@ -68,6 +68,8 @@ export async function runAnalysis(
             has_iap: input.has_iap,
             has_subscriptions: input.has_subscriptions,
             has_third_party_login: input.has_third_party_login,
+            // Privacy data collection (for mismatch detection)
+            data_collection: input.data_collection,
         };
 
         // Create progress callback for hard rules

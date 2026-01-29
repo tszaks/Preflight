@@ -11,6 +11,7 @@ import { checkPrivacyManifest } from './privacy-manifest';
 import { checkInfoPlist } from './info-plist';
 import { checkUrls } from './urls';
 import { checkConditionalWarnings } from './conditional-warnings';
+import { checkPrivacyMismatch } from './privacy-mismatch';
 
 export interface HardRulesResult {
     checks: CheckResult[];
@@ -100,7 +101,11 @@ export async function runHardRules(
         data: { checksFound: urlChecks.length },
     }));
 
-    // Check 6: Conditional Warnings (95-100%) - Form-field based warnings
+    // Check 7: Privacy Mismatch (95-97%) - Cross-reference form vs manifest
+    const mismatchChecks = checkPrivacyMismatch(input.data_collection, options?.manifestContent);
+    checks.push(...mismatchChecks);
+
+    // Check 6: Conditional Warnings (97-100%) - Form-field based warnings
     // These check for common rejection reasons based on app characteristics
     const conditionalChecks = checkConditionalWarnings({
         sign_in_required: input.sign_in_required,

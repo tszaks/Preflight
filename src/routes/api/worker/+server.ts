@@ -49,7 +49,7 @@ export const POST: RequestHandler = async ({ request }) => {
     // Fetch files from storage
     const files = await fetchSubmissionFiles(supabase, submission);
 
-    // Build soft rules input
+    // Build soft rules input (include ALL form fields for conditional warnings)
     const input: SoftRulesInput = {
         app_name: submission.app_name,
         subtitle: submission.subtitle,
@@ -68,6 +68,15 @@ export const POST: RequestHandler = async ({ request }) => {
         manifest_content: files.manifestContent,
         plist_content: files.plistContent,
         privacy_policy_text: files.privacyPolicyText,
+        // Form-field based checks (for conditional warnings)
+        sign_in_required: submission.sign_in_required ?? false,
+        has_iap: submission.has_iap ?? false,
+        has_subscriptions: submission.has_subscriptions ?? false,
+        has_third_party_login: submission.has_third_party_login ?? false,
+        // Privacy data collection (for mismatch detection)
+        data_collection: submission.data_collection
+            ? (() => { try { return JSON.parse(submission.data_collection); } catch { return undefined; } })()
+            : undefined,
     };
 
     // Run analysis

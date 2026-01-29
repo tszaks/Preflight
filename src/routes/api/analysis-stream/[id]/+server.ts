@@ -134,6 +134,10 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
                     has_iap: submission.has_iap ?? false,
                     has_subscriptions: submission.has_subscriptions ?? false,
                     has_third_party_login: submission.has_third_party_login ?? false,
+                    // Privacy data collection (for mismatch detection)
+                    data_collection: submission.data_collection
+                        ? (() => { try { return JSON.parse(submission.data_collection); } catch { return undefined; } })()
+                        : undefined,
                 };
 
                 // Run analysis with progress streaming (service role bypasses RLS for report writes)
