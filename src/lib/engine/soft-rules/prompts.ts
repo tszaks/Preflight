@@ -208,9 +208,25 @@ Based on the app description provided above:
 
 ---
 
+### 6. FEATURE EVIDENCE EXTRACTION
+
+In addition to finding issues, report whether you observe any of the following features in the screenshot(s). This evidence is used to cross-reference against other compliance checks.
+
+Look for:
+- **Account Deletion**: A "Delete Account", "Remove Account", "Close Account", or similar option visible in a settings or profile screen.
+- **Restore Purchases**: A "Restore Purchases", "Restore", or similar button, typically in a settings, subscription, or paywall screen.
+- **Subscription Terms**: Visible subscription pricing, billing period, free trial details, or auto-renewal disclosure text.
+- **Sign in with Apple**: An Apple sign-in button ("Sign in with Apple", Apple logo sign-in button) on a login or onboarding screen.
+
+Only mark a feature as "seen" if you have clear visual evidence — do not guess.
+
+---
+
 ## OUTPUT FORMAT
 
-Return a JSON array of genuine issues found. Focus on real rejection risks and actionable improvements. Do NOT flag items just to be thorough — quality over quantity. Use today's date ({{current_date}}) when evaluating whether dates in screenshots are in the past, present, or future.
+Return a JSON object with two keys: "issues" (array) and "evidence" (object).
+
+Focus on real rejection risks and actionable improvements. Do NOT flag items just to be thorough — quality over quantity. Use today's date ({{current_date}}) when evaluating whether dates in screenshots are in the past, present, or future.
 
 For each issue:
 - severity: "critical" (will cause rejection), "warning" (likely rejection), "info" (suggestion)
@@ -226,21 +242,29 @@ IMPORTANT GUIDELINES:
 - Section 4.0: Design guidelines must be followed
 - Section 1.1: No objectionable content
 
-[
-  {
-    "severity": "critical" | "warning" | "info",
-    "title": "specific issue title",
-    "description": "detailed explanation of what was found",
-    "guideline_ref": "Section X.X - Title",
-    "fix_suggestion": "specific fix instructions",
-    "confidence": 0-100
+{
+  "issues": [
+    {
+      "severity": "critical" | "warning" | "info",
+      "title": "specific issue title",
+      "description": "detailed explanation of what was found",
+      "guideline_ref": "Section X.X - Title",
+      "fix_suggestion": "specific fix instructions",
+      "confidence": 0-100
+    }
+  ],
+  "evidence": {
+    "account_deletion_seen": true | false,
+    "restore_purchases_seen": true | false,
+    "subscription_terms_seen": true | false,
+    "sign_in_with_apple_seen": true | false
   }
-]
+}
 
 confidence: Your certainty this is a real issue (100 = definite, 50 = uncertain, <30 = speculative).
 
 If NO issues found after thorough analysis, return:
-[{"severity": "pass", "title": "Screenshot {{index}} analysis passed", "description": "Comprehensive analysis found no policy violations. Text extraction completed, UI authenticity verified, content appropriate for stated age rating.", "confidence": 100}]`;
+{"issues": [{"severity": "pass", "title": "Screenshot {{index}} analysis passed", "description": "Comprehensive analysis found no policy violations. Text extraction completed, UI authenticity verified, content appropriate for stated age rating.", "confidence": 100}], "evidence": {"account_deletion_seen": false, "restore_purchases_seen": false, "subscription_terms_seen": false, "sign_in_with_apple_seen": false}}`;
 
 export const PRIVACY_POLICY_REVIEW_PROMPT = `Cross-check this privacy policy against the app's privacy manifest declarations.
 

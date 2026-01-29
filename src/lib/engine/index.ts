@@ -10,6 +10,7 @@ import {
 } from '$lib/types/progress';
 import { runHardRules } from './hard-rules';
 import { runSoftRules } from './soft-rules';
+import { crossReferenceChecks } from './cross-reference';
 import { generateReport } from './report/generator';
 
 export type { CheckResult, EngineResult, HardRulesInput, SoftRulesInput };
@@ -147,10 +148,38 @@ export async function runAnalysis(
             allChecks.push(...softResult.checks);
             console.log('[Analysis] Soft rules complete. Found', softResult.checks.length, 'checks');
 
-            emit(createProgressEvent('phase_complete', 'PreFlight analysis complete', 85, {
+            emit(createProgressEvent('phase_complete', 'PreFlight analysis complete', 83, {
                 phase: 'soft_rules',
                 data: { checksFound: softResult.checks.length },
             }));
+
+            // === Phase 2.5: Cross-Reference (83-85%) ===
+            // Resolve conditional warnings using evidence from screenshot analysis
+            if (softResult.evidence) {
+                emit(createProgressEvent('check_start', 'Cross-referencing screenshots with compliance checks...', 83, {
+                    check: 'cross_reference',
+                    phase: 'cross_reference',
+                }));
+
+                const beforeCount = allChecks.filter(c => c.severity !== 'pass').length;
+                const crossReferencedChecks = crossReferenceChecks(allChecks, softResult.evidence);
+
+                // Replace allChecks with cross-referenced version
+                allChecks.length = 0;
+                allChecks.push(...crossReferencedChecks);
+
+                const afterCount = allChecks.filter(c => c.severity !== 'pass').length;
+                const resolved = beforeCount - afterCount;
+
+                console.log(`[Analysis] Cross-reference complete. Resolved ${resolved} warnings via screenshot evidence.`);
+                emit(createProgressEvent('check_complete', resolved > 0
+                    ? `Cross-reference resolved ${resolved} warning${resolved !== 1 ? 's' : ''} via screenshot evidence`
+                    : 'Cross-reference complete (no warnings resolved)', 85, {
+                    check: 'cross_reference',
+                    phase: 'cross_reference',
+                    data: { resolved, evidence: softResult.evidence },
+                }));
+            }
 
             // Mark soft rules done
             await supabase

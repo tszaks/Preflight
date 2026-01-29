@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { CheckResult, SoftRulesInput, ASOAnalysisResult } from '../types';
+import type { CheckResult, SoftRulesInput, ASOAnalysisResult, ScreenshotEvidence } from '../types';
 import type { OnProgressCallback } from '$lib/types/progress';
+import { EMPTY_EVIDENCE, mergeEvidence } from '../cross-reference';
 import {
     createProgressEvent,
     PROGRESS_CHECKS,
@@ -25,6 +26,8 @@ export interface SoftRulesResult {
     checks: CheckResult[];
     completed: boolean;
     aso_analysis?: ASOAnalysisResult;
+    /** Evidence extracted from screenshot AI analysis (for cross-referencing conditional warnings) */
+    evidence?: ScreenshotEvidence;
 }
 
 interface SoftRulesOptions {
@@ -111,6 +114,8 @@ export async function runSoftRules(
     }
 
     // 3. Screenshot AI Analysis (30-65%) - Most time-consuming
+    let screenshotEvidence: ScreenshotEvidence | undefined;
+
     if (input.review_type === 'full' && input.screenshots_data && input.screenshots_data.length > 0) {
         const totalScreenshots = input.screenshots_data.length;
         const batchSize = 3;
@@ -124,6 +129,7 @@ export async function runSoftRules(
         }));
 
         const allScreenshotResults: CheckResult[] = [];
+        const batchEvidences: ScreenshotEvidence[] = [];
 
         for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
             const startIdx = batchIndex * batchSize;
@@ -137,8 +143,11 @@ export async function runSoftRules(
             }));
 
             try {
-                const batchResults = await analyzeScreenshotBatch(client, input, startIdx, endIdx, calibrationCtx);
-                allScreenshotResults.push(...batchResults);
+                const batchResult = await analyzeScreenshotBatch(client, input, startIdx, endIdx, calibrationCtx);
+                allScreenshotResults.push(...batchResult.checks);
+                if (batchResult.evidence) {
+                    batchEvidences.push(batchResult.evidence);
+                }
             } catch (error) {
                 console.error(`Screenshot batch ${batchIndex + 1} failed:`, error);
                 emit(createProgressEvent('check_complete', `Screenshot batch ${batchIndex + 1} failed`, batchProgress, {
@@ -163,6 +172,7 @@ export async function runSoftRules(
         }
 
         checks.push(...allScreenshotResults);
+        screenshotEvidence = mergeEvidence(batchEvidences);
     } else {
         // Emit progress event so UI doesn't appear frozen between 30% and 65%
         emit(createProgressEvent('check_complete', 'Screenshot analysis skipped', 65, {
@@ -221,6 +231,7 @@ export async function runSoftRules(
         checks,
         completed: true,
         aso_analysis,
+        evidence: screenshotEvidence,
     };
 }
 
@@ -342,9 +353,16 @@ async function analyzeDescription(client: Anthropic, input: SoftRulesInput, cali
     return verifyFindings(client, categorized, `App description for "${input.app_name}": ${input.description}`, input.category);
 }
 
+/** Result from analyzing a batch of screenshots — includes both checks and evidence */
+interface ScreenshotBatchResult {
+    checks: CheckResult[];
+    evidence?: ScreenshotEvidence;
+}
+
 /**
  * Analyze a specific batch of screenshots (for progress tracking).
  * Called by runSoftRules when streaming progress.
+ * Returns both check results AND feature evidence for cross-referencing.
  */
 async function analyzeScreenshotBatch(
     client: Anthropic,
@@ -352,8 +370,8 @@ async function analyzeScreenshotBatch(
     startIdx: number,
     endIdx: number,
     calibrationCtx?: string
-): Promise<CheckResult[]> {
-    if (!input.screenshots_data) return [];
+): Promise<ScreenshotBatchResult> {
+    if (!input.screenshots_data) return { checks: [] };
 
     const systemPrompt = getSystemPrompt(input.category, ['screenshots'], calibrationCtx);
     const batch = input.screenshots_data.slice(startIdx, endIdx);
@@ -374,28 +392,32 @@ async function analyzeScreenshotBatch(
         mime_type: s.mime_type,
     }));
 
-    const results = await callClaudeForScreenshots(client, prompt, images, systemPrompt);
-    const categorized = results.map(r => ({ ...r, category: 'screenshots' as const }));
+    const { checks: rawChecks, evidence } = await callClaudeForScreenshots(client, prompt, images, systemPrompt, startIdx);
+    const categorized = rawChecks.map(r => ({ ...r, category: 'screenshots' as const }));
 
     // Multi-pass verification (text-only — can't re-send images to judge)
-    return verifyFindings(
+    const verified = await verifyFindings(
         client,
         categorized,
         `Screenshots ${startIdx + 1}-${endIdx} of "${input.app_name}" (${input.category || 'uncategorized'}). Description: ${descriptionPreview}`,
         input.category
     );
+
+    return { checks: verified, evidence };
 }
 
 /**
  * Specialized Claude call for screenshot analysis with higher token limits.
- * Uses shared buildContent/parseCheckFindings helpers.
+ * Parses the new JSON object format: { issues: [...], evidence: {...} }
+ * Falls back to legacy array format for backwards compatibility.
  */
 async function callClaudeForScreenshots(
     client: Anthropic,
     prompt: string,
     images: Array<{ base64: string; mime_type: string }>,
-    systemPromptOverride?: string
-): Promise<CheckResult[]> {
+    systemPromptOverride?: string,
+    batchStartIdx: number = 0
+): Promise<{ checks: CheckResult[]; evidence?: ScreenshotEvidence }> {
     const response = await client.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
@@ -404,17 +426,97 @@ async function callClaudeForScreenshots(
     });
 
     try {
-        return parseCheckFindings(extractResponseText(response), 'screenshots');
+        const text = extractResponseText(response);
+        return parseScreenshotResponse(text, batchStartIdx);
     } catch (error) {
         console.error('Failed to parse Claude screenshot analysis response:', error, extractResponseText(response).slice(0, 200));
-        return [{
-            category: 'screenshots',
-            severity: 'info',
-            title: 'Screenshot analysis incomplete',
-            description: 'The analysis for these screenshots could not be completed due to a processing error. Results may be partial.',
-            confidence: 0,
-        }];
+        return {
+            checks: [{
+                category: 'screenshots',
+                severity: 'info',
+                title: 'Screenshot analysis incomplete',
+                description: 'The analysis for these screenshots could not be completed due to a processing error. Results may be partial.',
+                confidence: 0,
+            }],
+        };
     }
+}
+
+/**
+ * Parses the screenshot analysis response, handling both formats:
+ * - New format: { "issues": [...], "evidence": {...} }
+ * - Legacy format: [...] (array of issues, no evidence)
+ */
+function parseScreenshotResponse(
+    text: string,
+    batchStartIdx: number
+): { checks: CheckResult[]; evidence?: ScreenshotEvidence } {
+    // Try new object format first: { "issues": [...], "evidence": {...} }
+    const objectMatch = text.match(/\{[\s\S]*"issues"\s*:\s*\[[\s\S]*\][\s\S]*"evidence"\s*:\s*\{[\s\S]*\}[\s\S]*\}/);
+    if (objectMatch) {
+        try {
+            const parsed = JSON.parse(objectMatch[0]) as {
+                issues: Array<{
+                    severity: string;
+                    title: string;
+                    description: string;
+                    guideline_ref?: string;
+                    fix_suggestion?: string;
+                    confidence?: number;
+                }>;
+                evidence?: {
+                    account_deletion_seen?: boolean;
+                    restore_purchases_seen?: boolean;
+                    subscription_terms_seen?: boolean;
+                    sign_in_with_apple_seen?: boolean;
+                };
+            };
+
+            const checks: CheckResult[] = (parsed.issues || []).map(item => ({
+                category: 'screenshots' as const,
+                severity: (['critical', 'warning', 'info', 'pass'].includes(item.severity)
+                    ? item.severity
+                    : 'info') as CheckResult['severity'],
+                title: item.title,
+                description: item.description,
+                guideline_ref: item.guideline_ref,
+                fix_suggestion: item.fix_suggestion,
+                confidence: typeof item.confidence === 'number' ? Math.max(0, Math.min(100, item.confidence)) : 50,
+            }));
+
+            let evidence: ScreenshotEvidence | undefined;
+            if (parsed.evidence) {
+                const ev = parsed.evidence;
+                // Build evidence_locations: map each seen feature to the batch screenshot indices
+                const batchIndices = Array.from(
+                    { length: 3 },
+                    (_, i) => batchStartIdx + i
+                );
+                const locations: Record<string, number[]> = {};
+
+                if (ev.account_deletion_seen) locations['account_deletion_seen'] = [...batchIndices];
+                if (ev.restore_purchases_seen) locations['restore_purchases_seen'] = [...batchIndices];
+                if (ev.subscription_terms_seen) locations['subscription_terms_seen'] = [...batchIndices];
+                if (ev.sign_in_with_apple_seen) locations['sign_in_with_apple_seen'] = [...batchIndices];
+
+                evidence = {
+                    account_deletion_seen: ev.account_deletion_seen ?? false,
+                    restore_purchases_seen: ev.restore_purchases_seen ?? false,
+                    subscription_terms_seen: ev.subscription_terms_seen ?? false,
+                    sign_in_with_apple_seen: ev.sign_in_with_apple_seen ?? false,
+                    evidence_locations: locations,
+                };
+            }
+
+            return { checks, evidence };
+        } catch {
+            // Fall through to legacy format
+        }
+    }
+
+    // Legacy format: plain JSON array [...]
+    const checks = parseCheckFindings(text, 'screenshots');
+    return { checks };
 }
 
 /**
