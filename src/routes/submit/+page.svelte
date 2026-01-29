@@ -1800,7 +1800,7 @@
 
                                 <div class="checklist-item">
                                     <label class="checklist-question">
-                                        Are permissions (camera, location, etc.) requested at a contextual time?
+                                        Does your app request permissions ONLY when the user first triggers the relevant feature?
                                     </label>
                                     <div class="checklist-options">
                                         <label class="radio-option" class:active={contextualPermissions === true}>
@@ -1810,7 +1810,7 @@
                                             <input type="radio" name="contextual_perms" checked={contextualPermissions === false} onchange={() => contextualPermissions = false} /> No
                                         </label>
                                     </div>
-                                    <p class="field-hint">Requesting all permissions at launch causes rejection (Guideline 5.1.1).</p>
+                                    <p class="field-hint">Permissions should be requested when the user taps a feature that needs them — never at launch or on first open.</p>
                                 </div>
 
                                 <div class="checklist-item">
