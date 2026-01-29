@@ -656,26 +656,83 @@ async function analyzeMetadataQuality(client: Anthropic, input: SoftRulesInput, 
 }
 
 function summarizeManifest(content: string): string {
+    if (!content.trim()) return 'No privacy manifest provided';
+
     const summary: string[] = [];
 
+    // Tracking declaration
     if (content.includes('NSPrivacyTracking')) {
         const tracking = content.includes('<true/>') ? 'YES' : 'NO';
         summary.push(`Tracking declared: ${tracking}`);
     }
 
+    // Extract tracking domains
     if (content.includes('NSPrivacyTrackingDomains')) {
-        summary.push('Tracking domains declared');
+        const domainMatches = content.match(/<string>([\w.-]+\.[a-z]{2,})<\/string>/g);
+        if (domainMatches) {
+            const domains = domainMatches.map(m => m.replace(/<\/?string>/g, ''));
+            summary.push(`Tracking domains: ${domains.join(', ')}`);
+        }
     }
 
-    if (content.includes('NSPrivacyAccessedAPITypes')) {
-        summary.push('Required-reason APIs declared');
+    // Extract required-reason API types
+    const apiTypeRegex = /NSPrivacyAccessedAPIType<\/key>\s*<string>([^<]+)<\/string>/g;
+    const apiTypes: string[] = [];
+    let apiMatch = apiTypeRegex.exec(content);
+    while (apiMatch !== null) {
+        apiTypes.push(apiMatch[1]);
+        apiMatch = apiTypeRegex.exec(content);
+    }
+    if (apiTypes.length > 0) {
+        summary.push(`Required-reason APIs declared:\n${apiTypes.map(t => `  - ${t}`).join('\n')}`);
     }
 
-    if (content.includes('NSPrivacyCollectedDataTypes')) {
-        summary.push('Collected data types declared');
+    // Extract API reason codes
+    const reasonRegex = /NSPrivacyAccessedAPITypeReasons[\s\S]*?<array>([\s\S]*?)<\/array>/g;
+    const reasons: string[] = [];
+    let reasonMatch = reasonRegex.exec(content);
+    while (reasonMatch !== null) {
+        const codes = reasonMatch[1].match(/<string>([^<]+)<\/string>/g);
+        if (codes) {
+            reasons.push(...codes.map(c => c.replace(/<\/?string>/g, '')));
+        }
+        reasonMatch = reasonRegex.exec(content);
+    }
+    if (reasons.length > 0) {
+        summary.push(`API reason codes: ${reasons.join(', ')}`);
     }
 
-    return summary.length > 0 ? summary.join('\n') : 'No privacy declarations found in manifest';
+    // Extract collected data types
+    const dataTypeRegex = /NSPrivacyCollectedDataType<\/key>\s*<string>([^<]+)<\/string>/g;
+    const dataTypes: string[] = [];
+    let dtMatch = dataTypeRegex.exec(content);
+    while (dtMatch !== null) {
+        dataTypes.push(dtMatch[1]);
+        dtMatch = dataTypeRegex.exec(content);
+    }
+    if (dataTypes.length > 0) {
+        summary.push(`Collected data types declared:\n${dataTypes.map(t => `  - ${t}`).join('\n')}`);
+    } else if (content.includes('NSPrivacyCollectedDataTypes')) {
+        summary.push('Collected data types section present but no specific types declared');
+    }
+
+    // Extract collection purposes
+    const purposeRegex = /NSPrivacyCollectedDataTypePurpose[\s\S]*?<string>([^<]+)<\/string>/g;
+    const purposes: string[] = [];
+    let pMatch = purposeRegex.exec(content);
+    while (pMatch !== null) {
+        if (!purposes.includes(pMatch[1])) purposes.push(pMatch[1]);
+        pMatch = purposeRegex.exec(content);
+    }
+    if (purposes.length > 0) {
+        summary.push(`Collection purposes: ${purposes.join(', ')}`);
+    }
+
+    if (summary.length === 0) {
+        return 'Privacy manifest file provided but contains no standard privacy declarations';
+    }
+
+    return summary.join('\n');
 }
 
 /**
