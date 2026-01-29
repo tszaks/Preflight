@@ -59,6 +59,7 @@ const EVIDENCE_TO_WARNING_TITLES: Record<keyof Omit<ScreenshotEvidence, 'evidenc
  * 1. Have a title matching a known conditional warning
  * 2. Are not already severity 'pass' (no need to resolve what's already passing)
  * 3. Have matching evidence from screenshot analysis
+ * 4. Have confidence <= 85 (developer's explicit answers at 90+ are never overridden by AI)
  */
 export function crossReferenceChecks(
     checks: CheckResult[],
@@ -78,6 +79,16 @@ export function crossReferenceChecks(
             if (!titleMatches) continue;
 
             if (evidence[key]) {
+                // Don't let AI evidence (confidence 85) override a developer's explicit answer
+                // (confidence 90+). The developer explicitly said the feature is missing —
+                // the AI might be wrong about what it saw in a screenshot.
+                if (check.confidence > 85) {
+                    return {
+                        ...check,
+                        description: `${check.description}\n\nℹ️ Cross-reference: AI may have detected this feature in a screenshot, but your explicit answer takes precedence. Update your submission form if the feature has been added.`,
+                    };
+                }
+
                 // Evidence found — resolve the warning to pass
                 const locations = evidence.evidence_locations[key];
                 const locationNote = locations && locations.length > 0
