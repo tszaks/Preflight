@@ -121,8 +121,6 @@
                         <!-- Tail wings -->
                         <path d="M0,11 L-9,16 L-9,17 L0,13 Z" />
                         <path d="M0,11 L9,16 L9,17 L0,13 Z" />
-                        <!-- Tail fin (center vertical stabilizer as a line) -->
-                        <rect x="-0.75" y="10" width="1.5" height="6" rx="0.5" />
                     </g>
                 </svg>
 
