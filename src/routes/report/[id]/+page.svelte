@@ -489,16 +489,25 @@
 
 <main class="container report-page">
     <header class="report-header">
-        <div>
-            <h1>{submission.app_name}</h1>
-            <p class="text-muted">
-                {submission.review_type === "full"
-                    ? "Full Review"
-                    : "Quick Check"}
-                &middot; {new Date(
-                    submission.completed_at || submission.created_at,
-                ).toLocaleDateString()}
-            </p>
+        <div class="report-header-info">
+            {#if submission.app_icon_url}
+                <img class="report-app-icon" src={submission.app_icon_url} alt="{submission.app_name} icon" />
+            {:else}
+                <div class="report-app-icon report-app-icon-fallback">
+                    {submission.app_name.charAt(0).toUpperCase()}
+                </div>
+            {/if}
+            <div>
+                <h1>{submission.app_name}</h1>
+                <p class="text-muted">
+                    {submission.review_type === "full"
+                        ? "Full Review"
+                        : "Quick Check"}
+                    &middot; {new Date(
+                        submission.completed_at || submission.created_at,
+                    ).toLocaleDateString()}
+                </p>
+            </div>
         </div>
         <div class="header-actions">
             <div class="export-wrapper">
@@ -1061,6 +1070,30 @@
         align-items: flex-start;
         margin-bottom: 2rem;
         gap: 1rem;
+    }
+
+    .report-header-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .report-app-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+        flex-shrink: 0;
+        object-fit: cover;
+    }
+
+    .report-app-icon-fallback {
+        background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+        color: #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 800;
     }
 
     .report-header h1 {

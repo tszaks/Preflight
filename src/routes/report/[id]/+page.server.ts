@@ -33,7 +33,8 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
                 user_id,
                 manifest_path,
                 plist_path,
-                screenshot_paths
+                screenshot_paths,
+                app_icon_path
             )
         `)
         .eq('id', params.id)
@@ -83,6 +84,15 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
         throw error(403, 'Access denied');
     }
 
+    // Generate signed URL for the app icon
+    let appIconUrl: string | null = null;
+    if (submission.app_icon_path) {
+        const { data: signedData } = await supabase.storage
+            .from('screenshots')
+            .createSignedUrl(submission.app_icon_path, 3600);
+        appIconUrl = signedData?.signedUrl || null;
+    }
+
     const { data: items } = await supabase
         .from('report_items')
         .select('*')
@@ -91,7 +101,7 @@ export const load: PageServerLoad = async ({ params, locals: { safeGetSession, s
 
     return {
         report,
-        submission,
+        submission: { ...submission, app_icon_url: appIconUrl },
         items: items || [],
     };
 };
