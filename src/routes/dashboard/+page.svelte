@@ -109,17 +109,20 @@
                     <circle cx="100" cy="100" r="4" fill="var(--accent)" opacity="0.5" class="center-blip" />
                     <circle cx="100" cy="100" r="7" fill="none" stroke="var(--accent)" stroke-width="0.5" opacity="0.2" />
 
-                    <!-- Aircraft icon at center -->
-                    <g transform="translate(100, 100)">
+                    <!-- Aircraft icon at center (top-down view) -->
+                    <g transform="translate(100, 100)" fill="var(--accent)" opacity="0.65">
                         <!-- Fuselage -->
-                        <path d="M0,-18 L3,-6 L2,10 L6,18 L-6,18 L-2,10 L-3,-6 Z"
-                            fill="var(--accent)" opacity="0.7" />
-                        <!-- Wings -->
-                        <path d="M-3,-2 L-16,4 L-16,6 L-2,2 Z" fill="var(--accent)" opacity="0.5" />
-                        <path d="M3,-2 L16,4 L16,6 L2,2 Z" fill="var(--accent)" opacity="0.5" />
-                        <!-- Tail -->
-                        <path d="M-2,10 L-8,16 L-8,17 L-1,12 Z" fill="var(--accent)" opacity="0.4" />
-                        <path d="M2,10 L8,16 L8,17 L1,12 Z" fill="var(--accent)" opacity="0.4" />
+                        <ellipse cx="0" cy="0" rx="2.5" ry="16" />
+                        <!-- Nose cone -->
+                        <path d="M-2,-16 Q0,-22 2,-16 Z" />
+                        <!-- Main wings (swept back) -->
+                        <path d="M0,-2 L-20,6 L-20,8 L-1,3 Z" />
+                        <path d="M0,-2 L20,6 L20,8 L1,3 Z" />
+                        <!-- Tail wings -->
+                        <path d="M0,11 L-9,16 L-9,17 L0,13 Z" />
+                        <path d="M0,11 L9,16 L9,17 L0,13 Z" />
+                        <!-- Tail fin (center vertical stabilizer as a line) -->
+                        <rect x="-0.75" y="10" width="1.5" height="6" rx="0.5" />
                     </g>
                 </svg>
 
