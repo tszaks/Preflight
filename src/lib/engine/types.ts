@@ -40,6 +40,28 @@ export interface HardRulesInput {
     has_iap?: boolean;
     has_subscriptions?: boolean;
     has_third_party_login?: boolean;
+    // Privacy data collection declarations from form
+    data_collection?: DataCollectionDeclaration;
+}
+
+/**
+ * Maps form-field data collection declarations.
+ * Keys match the form's checkbox field names, values indicate collected (true/false).
+ */
+export interface DataCollectionDeclaration {
+    contactInfo?: boolean;
+    healthFitness?: boolean;
+    financialInfo?: boolean;
+    location?: boolean;
+    sensitiveInfo?: boolean;
+    contacts?: boolean;
+    userContent?: boolean;
+    browsingHistory?: boolean;
+    searchHistory?: boolean;
+    identifiers?: boolean;
+    purchases?: boolean;
+    usageData?: boolean;
+    diagnostics?: boolean;
 }
 
 export interface SoftRulesInput extends HardRulesInput {
