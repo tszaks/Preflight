@@ -610,14 +610,21 @@
         ].filter(s => s !== null && s >= 80).length}
         {@const totalCategories = 6}
 
-        {#if criticalItems.length === 0 && warningItems.length > 0}
+        {#if criticalItems.length > 0}
+            <div class="status-banner critical">
+                <div class="banner-content">
+                    <strong>{criticalItems.length} critical issue{criticalItems.length === 1 ? '' : 's'} found</strong>
+                    <p>Your app will be rejected. Fix {criticalItems.length === 1 ? 'this issue' : 'these issues'} before submitting{warningItems.length > 0 ? ` · ${warningItems.length} warning${warningItems.length === 1 ? '' : 's'} also found` : ''}.</p>
+                </div>
+            </div>
+        {:else if warningItems.length > 0}
             <div class="status-banner">
                 <div class="banner-content">
                     <strong>No blocking issues</strong>
                     <p>{passingCategories}/{totalCategories} categories optimal · {warningItems.length} warning{warningItems.length === 1 ? '' : 's'} to review.</p>
                 </div>
             </div>
-        {:else if criticalItems.length === 0 && warningItems.length === 0}
+        {:else}
             <div class="status-banner clear">
                 <div class="banner-content">
                     <strong>No issues detected</strong>
@@ -1659,6 +1666,11 @@
         background: rgba(245, 158, 11, 0.04);
         border-left: 2px solid rgba(245, 158, 11, 0.4);
         margin-bottom: 32px;
+    }
+
+    .status-banner.critical {
+        background: rgba(239, 68, 68, 0.06);
+        border-left-color: rgba(239, 68, 68, 0.6);
     }
 
     .status-banner.clear {
