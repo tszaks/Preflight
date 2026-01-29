@@ -159,8 +159,13 @@
         email: reviewerContactPrefill?.email || "",
     });
 
-    // Credit cost for a full review
-    const CREDIT_COST = 100;
+    // Credit cost
+    const FULL_CREDIT_COST = 100;
+    const RETEST_CREDIT_COST = 25;
+    let creditCost = $derived(isResubmit ? RETEST_CREDIT_COST : FULL_CREDIT_COST);
+
+    // Re-review: optional notes about what was fixed
+    let retestNotes = $state("");
 
     // Required files validation
     let missingFiles = $derived.by(() => {
@@ -293,7 +298,7 @@
 
         // Client-side credit check (server also validates)
         const userCredits = data.credits ?? 0;
-        if (userCredits < CREDIT_COST) {
+        if (userCredits < creditCost) {
             showCreditModal = true;
             return;
         }
@@ -351,6 +356,9 @@
             if (isResubmit && data.originalSubmission?.id) {
                 formData.set("is_rereviewing", "true");
                 formData.set("original_submission_id", data.originalSubmission.id);
+                if (retestNotes.trim()) {
+                    formData.set("retest_notes", retestNotes.trim());
+                }
             }
 
             // Already-saved file paths (so server knows what to keep)
@@ -515,25 +523,220 @@
 
 <main class="submit-page">
     <div class="container">
-        <header class="submit-header">
-            <h1>Pre-Flight Check</h1>
-            {#if isEditingDraft}
-                <div class="draft-badge">
-                    <span>Editing Draft: {appName || "Untitled"}</span>
+
+        {#if isResubmit}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STREAMLINED RE-REVIEW FLOW (single page)                      -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <header class="submit-header">
+                <div class="rereview-header">
+                    <h1>Re-Review</h1>
+                    <span class="rereview-badge">{RETEST_CREDIT_COST} Credits</span>
                 </div>
-            {:else}
-                <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
+                <p class="subtitle">We'll re-run the full analysis on <strong>{appName}</strong> with your updated files.</p>
+            </header>
+
+            <!-- Summary of original submission -->
+            <CockpitPanel class="rereview-summary">
+                <h3>Original Submission</h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <span class="summary-label">App Name</span>
+                        <span class="summary-value">{appName}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Category</span>
+                        <span class="summary-value">{category || "Not set"}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Version</span>
+                        <span class="summary-value">{version || "1.0"}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Age Rating</span>
+                        <span class="summary-value">{calculatedAgeRating}</span>
+                    </div>
+                </div>
+            </CockpitPanel>
+
+            <!-- File updates -->
+            <CockpitPanel class="rereview-files">
+                <h3>Your Files</h3>
+                <p class="rereview-files-hint">Update any files you've changed since the last review. Everything from your original submission carries over.</p>
+
+                <!-- Screenshots -->
+                <div class="rereview-file-section">
+                    <label class="form-label">Screenshots ({totalScreenshotCount}/10)</label>
+                    {#if totalScreenshotCount < 10}
+                        <div class="file-upload">
+                            <input type="file" accept="image/*" multiple onchange={handleScreenshots} />
+                            <p>Drop screenshots here or click to browse</p>
+                        </div>
+                    {/if}
+
+                    {#if savedScreenshotPaths.length > 0 || screenshots.length > 0}
+                        <div class="screenshot-previews">
+                            {#each savedScreenshotPaths as path, i}
+                                <div class="screenshot-preview saved">
+                                    {#if fileUrls[path]}
+                                        <img src={fileUrls[path]} alt={getFilename(path)} />
+                                    {:else}
+                                        <div class="screenshot-saved-placeholder">
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <path d="M21 15l-5-5L5 21" />
+                                            </svg>
+                                        </div>
+                                    {/if}
+                                    <button class="screenshot-remove" onclick={() => removeSavedScreenshot(i)} title="Remove">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <span class="screenshot-name">{getFilename(path)}</span>
+                                </div>
+                            {/each}
+                            {#each screenshots as file, i}
+                                <div class="screenshot-preview">
+                                    <img src={URL.createObjectURL(file)} alt={file.name} />
+                                    <button class="screenshot-remove" onclick={() => removeScreenshot(i)} title="Remove">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                    <span class="screenshot-name">{file.name}</span>
+                                </div>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
+
+                <!-- Technical Files (compact) -->
+                <div class="rereview-file-section">
+                    <label class="form-label">Technical Files</label>
+                    <div class="rereview-tech-files">
+                        <div class="tech-file-row">
+                            <span class="tech-file-label">Info.plist</span>
+                            {#if infoPlist}
+                                <span class="tech-file-status status-ready">{infoPlist.name}</span>
+                                <button class="tech-file-clear" onclick={() => (infoPlist = null)}>Change</button>
+                            {:else if savedPlistPath}
+                                <span class="tech-file-status status-ready">✓ {getFilename(savedPlistPath)}</span>
+                                <label class="tech-file-change">
+                                    Replace
+                                    <input type="file" accept=".plist" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) { infoPlist = t.files[0]; savedPlistPath = null; } }} hidden />
+                                </label>
+                            {:else}
+                                <span class="tech-file-status status-warning">Missing</span>
+                                <label class="tech-file-change">
+                                    Upload
+                                    <input type="file" accept=".plist" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) infoPlist = t.files[0]; }} hidden />
+                                </label>
+                            {/if}
+                        </div>
+                        <div class="tech-file-row">
+                            <span class="tech-file-label">Privacy Manifest</span>
+                            {#if privacyManifest}
+                                <span class="tech-file-status status-ready">{privacyManifest.name}</span>
+                                <button class="tech-file-clear" onclick={() => (privacyManifest = null)}>Change</button>
+                            {:else if savedManifestPath}
+                                <span class="tech-file-status status-ready">✓ {getFilename(savedManifestPath)}</span>
+                                <label class="tech-file-change">
+                                    Replace
+                                    <input type="file" accept=".xcprivacy" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) { privacyManifest = t.files[0]; savedManifestPath = null; } }} hidden />
+                                </label>
+                            {:else}
+                                <span class="tech-file-status status-warning">Missing</span>
+                                <label class="tech-file-change">
+                                    Upload
+                                    <input type="file" accept=".xcprivacy" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) privacyManifest = t.files[0]; }} hidden />
+                                </label>
+                            {/if}
+                        </div>
+                        <div class="tech-file-row">
+                            <span class="tech-file-label">App Icon</span>
+                            {#if appIcon}
+                                <span class="tech-file-status status-ready">{appIcon.name}</span>
+                                <button class="tech-file-clear" onclick={() => (appIcon = null)}>Change</button>
+                            {:else if savedIconPath}
+                                <span class="tech-file-status status-ready">✓ {getFilename(savedIconPath)}</span>
+                                <label class="tech-file-change">
+                                    Replace
+                                    <input type="file" accept="image/*" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) { appIcon = t.files[0]; savedIconPath = null; } }} hidden />
+                                </label>
+                            {:else}
+                                <span class="tech-file-status status-muted">None</span>
+                                <label class="tech-file-change">
+                                    Upload
+                                    <input type="file" accept="image/*" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) appIcon = t.files[0]; }} hidden />
+                                </label>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+            </CockpitPanel>
+
+            <!-- What did you fix? -->
+            <CockpitPanel class="rereview-notes">
+                <h3>What did you fix?</h3>
+                <p class="rereview-notes-hint">Optional - helps us focus the analysis on your changes.</p>
+                <textarea
+                    class="input textarea"
+                    bind:value={retestNotes}
+                    placeholder="e.g. Updated privacy manifest, fixed missing NSCameraUsageDescription, replaced screenshots..."
+                    rows="3"
+                ></textarea>
+            </CockpitPanel>
+
+            <!-- Errors & Submit -->
+            {#if errorMsg}
+                <div class="error-msg">{errorMsg}</div>
             {/if}
-        </header>
 
-        <!-- Simple Progress Indicator -->
-        <div class="progress-indicator">
-            <span class="progress-text">Step {step} of 4</span>
-            <span class="progress-divider">·</span>
-            <span class="progress-label">{stepLabels[step - 1]}</span>
-        </div>
+            {#if !canSubmit}
+                <div class="missing-files-warning">
+                    <strong>Cannot submit:</strong>
+                    {#if !step2Valid}{missingFiles.join(", ")}. {/if}
+                </div>
+            {/if}
 
-        {#if step === 1}
+            <div class="step-actions rereview-actions">
+                <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+                <button
+                    class="btn btn-primary"
+                    onclick={submit}
+                    disabled={loading || !canSubmit}
+                >
+                    {loading ? "Analyzing..." : `Start Re-Review (${RETEST_CREDIT_COST} Credits)`}
+                </button>
+            </div>
+
+        {:else}
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- STANDARD FIRST REVIEW FLOW (4-step wizard)                    -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <header class="submit-header">
+                <h1>Pre-Flight Check</h1>
+                {#if isEditingDraft}
+                    <div class="draft-badge">
+                        <span>Editing Draft: {appName || "Untitled"}</span>
+                    </div>
+                {:else}
+                    <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
+                {/if}
+            </header>
+
+            <!-- Simple Progress Indicator -->
+            <div class="progress-indicator">
+                <span class="progress-text">Step {step} of 4</span>
+                <span class="progress-divider">·</span>
+                <span class="progress-label">{stepLabels[step - 1]}</span>
+            </div>
+
+            {#if step === 1}
             <!-- ═══════════════════════════════════════════════════════════════ -->
             <!-- STEP 1: Your App -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -1542,11 +1745,12 @@
                             onclick={submit}
                             disabled={loading || !canSubmit}
                         >
-                            {loading ? "Analyzing..." : "Start Review (100 Credits)"}
+                            {loading ? "Analyzing..." : `Start Review (${FULL_CREDIT_COST} Credits)`}
                         </button>
                     </div>
                 </div>
             </div>
+        {/if}
         {/if}
     </div>
 </main>
@@ -1558,7 +1762,7 @@
             <div class="credit-modal-icon">🚀</div>
             <h3 id="credit-modal-title">Ready to launch your review?</h3>
             <p class="credit-modal-body">
-                This review costs <strong>{CREDIT_COST} credits</strong>.<br />
+                This review costs <strong>{creditCost} credits</strong>.<br />
                 You currently have <strong>{data.credits ?? 0} credits</strong>.
             </p>
             <p class="credit-modal-nudge">Pick up a credit pack to get started:</p>
@@ -2782,5 +2986,113 @@
             opacity: 1;
             transform: translateY(0);
         }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* RE-REVIEW FLOW STYLES                                         */
+    /* ═══════════════════════════════════════════════════════════════ */
+
+    .rereview-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .rereview-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.3rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: var(--gold, #c9a84c);
+        color: var(--gray-900, #1a1a1a);
+        letter-spacing: 0.02em;
+    }
+
+    :global(.rereview-summary),
+    :global(.rereview-files),
+    :global(.rereview-notes) {
+        margin-bottom: 1.5rem;
+    }
+
+    .rereview-files-hint,
+    .rereview-notes-hint {
+        color: var(--gray-400, #888);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .rereview-file-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .rereview-file-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .rereview-tech-files {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .tech-file-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: var(--gray-800, #2a2a2a);
+        border-radius: 8px;
+        border: 1px solid var(--gray-700, #333);
+    }
+
+    .tech-file-label {
+        font-weight: 600;
+        color: var(--gray-200, #ddd);
+        min-width: 120px;
+        font-size: 0.9rem;
+    }
+
+    .tech-file-status {
+        flex: 1;
+        font-size: 0.85rem;
+    }
+
+    .tech-file-status.status-ready {
+        color: var(--green, #4ade80);
+    }
+
+    .tech-file-status.status-warning {
+        color: var(--amber, #fbbf24);
+    }
+
+    .tech-file-status.status-muted {
+        color: var(--gray-500, #666);
+    }
+
+    .tech-file-change,
+    .tech-file-clear {
+        font-size: 0.8rem;
+        color: var(--gold, #c9a84c);
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        font-weight: 500;
+    }
+
+    .tech-file-change:hover,
+    .tech-file-clear:hover {
+        text-decoration: underline;
+    }
+
+    .rereview-actions {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-700, #333);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 </style>
