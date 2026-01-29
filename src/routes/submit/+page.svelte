@@ -230,18 +230,15 @@
     function applyScanResults() {
         if (!scanResults) return;
 
-        applyingFiles = true;
+        // Capture references before closing the modal
+        const plist = scanResults.infoPlist;
+        const manifest = scanResults.privacyManifest;
+
         showScanResults = false;
 
-        setTimeout(() => {
-            if (scanResults?.infoPlist) {
-                infoPlist = scanResults.infoPlist;
-            }
-            if (scanResults?.privacyManifest) {
-                privacyManifest = scanResults.privacyManifest;
-            }
-            applyingFiles = false;
-        }, 100);
+        // Assign files synchronously — no setTimeout race condition
+        if (plist) infoPlist = plist;
+        if (manifest) privacyManifest = manifest;
     }
 
     function closeScanResults() {
