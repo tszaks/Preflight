@@ -59,10 +59,9 @@
         estimateReviewTime({
             categoryId,
             isNewApp: submission.is_new_app ?? false,
-            hasIAP: submission.has_iap ?? (submission.description?.toLowerCase().includes("in-app purchase") ?? false),
-            hasSubscription: submission.has_subscriptions ?? (submission.description?.toLowerCase().includes("subscription") ?? false),
-            hasUGC:
-                submission.description?.toLowerCase().includes("user") ?? false,
+            hasIAP: submission.has_iap ?? false,
+            hasSubscription: submission.has_subscriptions ?? false,
+            hasUGC: false,
             isNewDeveloper: false,
             submissionDay: new Date().getDay(),
         }),
@@ -155,6 +154,17 @@
             metadata_quality: null,
         };
         return scores[cat] ?? null;
+    }
+
+    function categoryStatus(cat: string, score: number | null): string {
+        if (score === null) return 'Pending';
+        const catItems = items.filter(i => i.category === cat);
+        const hasCritical = catItems.some(i => i.severity === 'critical');
+        const hasWarning = catItems.some(i => i.severity === 'warning');
+        if (hasCritical) return 'Critical';
+        if (hasWarning) return 'Needs Review';
+        if (score >= 80) return 'Optimal';
+        return 'Advisory';
     }
 
     function friendlySeverity(severity: string): {
@@ -420,12 +430,14 @@
         setTimeout(() => (copiedFixId = null), 2000);
     }
 
-    // Confidence badge display
-    function confidenceBadge(confidence: number | null | undefined): { label: string; class: string } | null {
+    // Confidence badge display — severity-aware so colors match context
+    function confidenceBadge(confidence: number | null | undefined, severity?: string): { label: string; class: string } | null {
         if (confidence == null) return null;
-        if (confidence >= 80) return { label: 'High', class: 'confidence-high' };
-        if (confidence >= 50) return { label: 'Medium', class: 'confidence-medium' };
-        return { label: 'Low', class: 'confidence-low' };
+        const level = confidence >= 80 ? 'High' : confidence >= 50 ? 'Medium' : 'Low';
+        const cls = severity === 'critical' ? 'confidence-on-critical'
+            : severity === 'warning' ? 'confidence-on-warning'
+            : 'confidence-neutral';
+        return { label: level, class: cls };
     }
 
     // User feedback state
@@ -787,8 +799,8 @@
                                 <div class="action-content">
                                     <div class="item-meta-row">
                                         <span class="item-meta">{categoryLabel(item.category)}</span>
-                                        {#if confidenceBadge(item.confidence)}
-                                            {@const badge = confidenceBadge(item.confidence)}
+                                        {#if confidenceBadge(item.confidence, item.severity)}
+                                            {@const badge = confidenceBadge(item.confidence, item.severity)}
                                             <span class="confidence-badge {badge?.class}">{badge?.label}</span>
                                         {/if}
                                     </div>
@@ -850,8 +862,8 @@
                                 <div class="action-content">
                                     <div class="item-meta-row">
                                         <span class="item-meta">{categoryLabel(item.category)}</span>
-                                        {#if confidenceBadge(item.confidence)}
-                                            {@const badge = confidenceBadge(item.confidence)}
+                                        {#if confidenceBadge(item.confidence, item.severity)}
+                                            {@const badge = confidenceBadge(item.confidence, item.severity)}
                                             <span class="confidence-badge {badge?.class}">{badge?.label}</span>
                                         {/if}
                                     </div>
@@ -930,15 +942,7 @@
                         </div>
                         <div class="matrix-footer">
                             <span class="matrix-val">{score ?? "--"}%</span>
-                            <span class="matrix-status"
-                                >{score === null
-                                    ? "Pending"
-                                    : score >= 80
-                                      ? "Optimal"
-                                      : score >= 50
-                                        ? "Advisory"
-                                        : "Critical"}</span
-                            >
+                            <span class="matrix-status">{categoryStatus(cat, score)}</span>
                         </div>
                     </CockpitPanel>
                 {/each}
@@ -956,8 +960,8 @@
                                 <span class="suggestion-title"
                                     >{item.title}</span
                                 >
-                                {#if confidenceBadge(item.confidence)}
-                                    {@const badge = confidenceBadge(item.confidence)}
+                                {#if confidenceBadge(item.confidence, item.severity)}
+                                    {@const badge = confidenceBadge(item.confidence, item.severity)}
                                     <span class="confidence-badge {badge?.class}">{badge?.label}</span>
                                 {/if}
                                 <span class="suggestion-category"
@@ -1043,6 +1047,10 @@
                             <span class="rec-note">{todayRecommendation.notes}</span>
                         </div>
                     {/if}
+                    <p class="timeline-disclaimer">
+                        Estimates based on community-reported data. Preflight is not affiliated with Apple.
+                        Actual review times vary and are not guaranteed.
+                    </p>
                 </div>
             </CockpitPanel>
         </section>
@@ -1054,6 +1062,11 @@
             <p class="footer-hint">
                 Need help fixing these issues? Click "Export for AI" above and
                 paste into your LLM of choice.
+            </p>
+            <p class="legal-disclaimer">
+                Preflight simulates Apple's review process based on publicly available guidelines.
+                This is not an official Apple service. Results are informational only and do not guarantee
+                approval or rejection. Use at your own discretion.
             </p>
         </div>
     {/if}
@@ -1901,6 +1914,20 @@
         color: var(--gray-500);
     }
 
+    .timeline-disclaimer {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        margin-top: 1rem;
+        line-height: 1.4;
+    }
+
+    .legal-disclaimer {
+        font-size: 0.7rem;
+        color: var(--gray-500);
+        margin-top: 1.5rem;
+        line-height: 1.4;
+    }
+
     .btn-lg {
         padding: 0.875rem 1.75rem;
         font-size: 1rem;
@@ -2066,20 +2093,20 @@
         border-radius: 3px;
     }
 
-    .confidence-high {
-        color: hsl(145, 80%, 50%);
-        background: hsla(145, 80%, 50%, 0.1);
-        border: 1px solid hsla(145, 80%, 50%, 0.2);
+    .confidence-on-critical {
+        color: hsl(0, 85%, 65%);
+        background: hsla(0, 85%, 65%, 0.1);
+        border: 1px solid hsla(0, 85%, 65%, 0.2);
     }
 
-    .confidence-medium {
+    .confidence-on-warning {
         color: hsl(38, 95%, 60%);
         background: hsla(38, 95%, 60%, 0.1);
         border: 1px solid hsla(38, 95%, 60%, 0.2);
     }
 
-    .confidence-low {
-        color: var(--gray-500);
+    .confidence-neutral {
+        color: var(--gray-400);
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid rgba(255, 255, 255, 0.08);
     }
