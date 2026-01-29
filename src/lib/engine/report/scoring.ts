@@ -80,15 +80,13 @@ function scoreCategory(checks: CheckResult[]): number {
     let score = 100;
 
     for (const check of checks) {
-        // Weight penalty by confidence (default 100 for hard rules)
-        const conf = (check.confidence ?? 100) / 100;
-
+        // Flat penalties — all checks are deterministic (confidence always 100)
         switch (check.severity) {
             case 'critical':
-                score -= 30 * conf;
+                score -= 30;
                 break;
             case 'warning':
-                score -= 15 * conf;
+                score -= 15;
                 break;
             // info and pass don't affect score
         }

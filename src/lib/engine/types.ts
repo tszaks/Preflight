@@ -49,6 +49,25 @@ export interface HardRulesInput {
     paywall_screenshot_index?: number | null;
     // Privacy data collection declarations from form
     data_collection?: DataCollectionDeclaration;
+
+    // === Self-Report: Content & Features ===
+    has_ugc?: boolean | null;
+    has_ugc_moderation?: boolean | null;
+    makes_health_claims?: boolean | null;
+    has_health_disclaimers?: boolean | null;
+    generates_ai_content?: boolean | null;
+    has_ai_content_filtering?: boolean | null;
+
+    // === Self-Report: Monetization ===
+    subscription_terms_on_paywall?: boolean | null;
+    sells_digital_outside_iap?: boolean | null;
+    subscriptions_without_login?: boolean | null;
+
+    // === Self-Report: Technical ===
+    screenshots_match_ui?: boolean | null;
+    tested_ipv6?: boolean | null;
+    contextual_permissions?: boolean | null;
+    has_alternate_icons?: boolean | null;
 }
 
 /**

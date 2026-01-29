@@ -361,6 +361,33 @@ export const actions: Actions = {
             paywall_screenshot_index: formData.get('paywall_screenshot_index')
                 ? parseInt(formData.get('paywall_screenshot_index')!.toString(), 10)
                 : null,
+            // Self-report checklist (null when not answered)
+            has_ugc: formData.has('has_ugc')
+                ? formData.get('has_ugc') === 'true' : null,
+            has_ugc_moderation: formData.has('has_ugc_moderation')
+                ? formData.get('has_ugc_moderation') === 'true' : null,
+            makes_health_claims: formData.has('makes_health_claims')
+                ? formData.get('makes_health_claims') === 'true' : null,
+            has_health_disclaimers: formData.has('has_health_disclaimers')
+                ? formData.get('has_health_disclaimers') === 'true' : null,
+            generates_ai_content: formData.has('generates_ai_content')
+                ? formData.get('generates_ai_content') === 'true' : null,
+            has_ai_content_filtering: formData.has('has_ai_content_filtering')
+                ? formData.get('has_ai_content_filtering') === 'true' : null,
+            subscription_terms_on_paywall: formData.has('subscription_terms_on_paywall')
+                ? formData.get('subscription_terms_on_paywall') === 'true' : null,
+            sells_digital_outside_iap: formData.has('sells_digital_outside_iap')
+                ? formData.get('sells_digital_outside_iap') === 'true' : null,
+            subscriptions_without_login: formData.has('subscriptions_without_login')
+                ? formData.get('subscriptions_without_login') === 'true' : null,
+            screenshots_match_ui: formData.has('screenshots_match_ui')
+                ? formData.get('screenshots_match_ui') === 'true' : null,
+            tested_ipv6: formData.has('tested_ipv6')
+                ? formData.get('tested_ipv6') === 'true' : null,
+            contextual_permissions: formData.has('contextual_permissions')
+                ? formData.get('contextual_permissions') === 'true' : null,
+            has_alternate_icons: formData.has('has_alternate_icons')
+                ? formData.get('has_alternate_icons') === 'true' : null,
         };
 
         let submissionId: string;
@@ -608,6 +635,33 @@ export const actions: Actions = {
             paywall_screenshot_index: formData.get('paywall_screenshot_index')
                 ? parseInt(formData.get('paywall_screenshot_index')!.toString(), 10)
                 : null,
+            // Self-report checklist (null when not answered)
+            has_ugc: formData.has('has_ugc')
+                ? formData.get('has_ugc') === 'true' : null,
+            has_ugc_moderation: formData.has('has_ugc_moderation')
+                ? formData.get('has_ugc_moderation') === 'true' : null,
+            makes_health_claims: formData.has('makes_health_claims')
+                ? formData.get('makes_health_claims') === 'true' : null,
+            has_health_disclaimers: formData.has('has_health_disclaimers')
+                ? formData.get('has_health_disclaimers') === 'true' : null,
+            generates_ai_content: formData.has('generates_ai_content')
+                ? formData.get('generates_ai_content') === 'true' : null,
+            has_ai_content_filtering: formData.has('has_ai_content_filtering')
+                ? formData.get('has_ai_content_filtering') === 'true' : null,
+            subscription_terms_on_paywall: formData.has('subscription_terms_on_paywall')
+                ? formData.get('subscription_terms_on_paywall') === 'true' : null,
+            sells_digital_outside_iap: formData.has('sells_digital_outside_iap')
+                ? formData.get('sells_digital_outside_iap') === 'true' : null,
+            subscriptions_without_login: formData.has('subscriptions_without_login')
+                ? formData.get('subscriptions_without_login') === 'true' : null,
+            screenshots_match_ui: formData.has('screenshots_match_ui')
+                ? formData.get('screenshots_match_ui') === 'true' : null,
+            tested_ipv6: formData.has('tested_ipv6')
+                ? formData.get('tested_ipv6') === 'true' : null,
+            contextual_permissions: formData.has('contextual_permissions')
+                ? formData.get('contextual_permissions') === 'true' : null,
+            has_alternate_icons: formData.has('has_alternate_icons')
+                ? formData.get('has_alternate_icons') === 'true' : null,
             review_type: 'full',
             status: 'draft',
         };
