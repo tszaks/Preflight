@@ -63,6 +63,7 @@ export async function runAnalysis(
             screenshot_paths: input.screenshot_paths,
             manifest_path: input.manifest_path,
             plist_path: input.plist_path,
+            ipa_path: input.ipa_path,
             // Form-field based checks (for conditional warnings)
             sign_in_required: input.sign_in_required,
             has_iap: input.has_iap,
@@ -107,6 +108,7 @@ export async function runAnalysis(
             screenshotData: input.screenshots_data,
             manifestContent: input.manifest_content,
             plistContent: input.plist_content,
+            ipaBuffer: input.ipa_buffer,
             onProgress: hardRulesProgress,
         });
 
@@ -263,12 +265,14 @@ export async function fetchSubmissionFiles(
     plistContent?: string;
     screenshotsData?: SoftRulesInput['screenshots_data'];
     privacyPolicyText?: string;
+    ipaBuffer?: ArrayBuffer;
 }> {
     const result: {
         manifestContent?: string;
         plistContent?: string;
         screenshotsData?: SoftRulesInput['screenshots_data'];
         privacyPolicyText?: string;
+        ipaBuffer?: ArrayBuffer;
     } = {};
 
     // Fetch manifest content
@@ -350,6 +354,20 @@ export async function fetchSubmissionFiles(
             }
         } catch (fetchError) {
             console.warn(`[Storage] Privacy policy fetch failed (${submission.privacy_url}):`, fetchError instanceof Error ? fetchError.message : fetchError);
+        }
+    }
+
+    // Fetch IPA binary (if uploaded)
+    if (submission.ipa_path) {
+        const { data, error } = await supabase.storage
+            .from('ipas')
+            .download(submission.ipa_path);
+
+        if (data) {
+            result.ipaBuffer = await data.arrayBuffer();
+            console.log(`[Storage] IPA downloaded: ${(result.ipaBuffer.byteLength / (1024 * 1024)).toFixed(1)} MB`);
+        } else if (error) {
+            console.warn(`[Storage] Failed to download IPA (${submission.ipa_path}):`, error.message);
         }
     }
 

@@ -66,6 +66,7 @@ export const PROGRESS_CHECKS = {
     PRIVACY_MANIFEST: 'privacy_manifest',
     INFO_PLIST: 'info_plist',
     URLS: 'urls',
+    IPA_SCAN: 'ipa_scan',
 
     // Soft Rules (40-85%)
     DESCRIPTION: 'description',
@@ -99,6 +100,7 @@ export const PROGRESS_MESSAGES: Record<string, string> = {
     [PROGRESS_CHECKS.PRIVACY_MANIFEST]: 'Analyzing privacy manifest...',
     [PROGRESS_CHECKS.INFO_PLIST]: 'Parsing Info.plist configuration...',
     [PROGRESS_CHECKS.URLS]: 'Testing URL reachability...',
+    [PROGRESS_CHECKS.IPA_SCAN]: 'Scanning IPA binary...',
 
     // Soft rules
     [PROGRESS_CHECKS.DESCRIPTION]: 'AI analyzing app description...',

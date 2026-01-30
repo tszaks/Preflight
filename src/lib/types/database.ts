@@ -242,6 +242,7 @@ export type Database = {
           has_ugc: boolean | null
           has_ugc_moderation: boolean | null
           id: string
+          ipa_path: string | null
           is_new_app: boolean | null
           is_rereviewing: boolean | null
           keywords: string | null
@@ -304,6 +305,7 @@ export type Database = {
           has_ugc?: boolean | null
           has_ugc_moderation?: boolean | null
           id?: string
+          ipa_path?: string | null
           is_new_app?: boolean | null
           is_rereviewing?: boolean | null
           keywords?: string | null
@@ -366,6 +368,7 @@ export type Database = {
           has_ugc?: boolean | null
           has_ugc_moderation?: boolean | null
           id?: string
+          ipa_path?: string | null
           is_new_app?: boolean | null
           is_rereviewing?: boolean | null
           keywords?: string | null
@@ -444,6 +447,7 @@ export type Database = {
         | "content_policy"
         | "description"
         | "metadata_quality"
+        | "ipa_binary"
       job_status: "pending" | "running" | "completed" | "failed" | "retrying"
       review_type: "quick" | "full"
       severity_level: "critical" | "warning" | "info" | "pass"
@@ -590,6 +594,7 @@ export const Constants = {
         "content_policy",
         "description",
         "metadata_quality",
+        "ipa_binary",
       ],
       job_status: ["pending", "running", "completed", "failed", "retrying"],
       review_type: ["quick", "full"],

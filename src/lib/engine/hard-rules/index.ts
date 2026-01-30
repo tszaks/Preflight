@@ -12,10 +12,15 @@ import { checkInfoPlist } from './info-plist';
 import { checkUrls } from './urls';
 import { checkConditionalWarnings } from './conditional-warnings';
 import { checkPrivacyMismatch } from './privacy-mismatch';
+import { scanIPA } from '../ipa-scanner';
 
 export interface HardRulesResult {
     checks: CheckResult[];
     completed: boolean;
+    /** Info.plist content extracted from IPA (overrides uploaded plist) */
+    ipaExtractedPlist?: string;
+    /** Privacy manifest content extracted from IPA (overrides uploaded manifest) */
+    ipaExtractedManifest?: string;
 }
 
 /**
@@ -28,6 +33,7 @@ export async function runHardRules(
         screenshotData?: ScreenshotData[];
         manifestContent?: string;
         plistContent?: string;
+        ipaBuffer?: ArrayBuffer;
         onProgress?: OnProgressCallback;
     }
 ): Promise<HardRulesResult> {
@@ -101,20 +107,53 @@ export async function runHardRules(
         data: { checksFound: urlChecks.length },
     }));
 
-    // Check 6: Privacy Mismatch (95-97%) - Cross-reference form vs manifest
-    emit(createProgressEvent('check_start', 'Cross-referencing data collection vs privacy manifest...', 95, {
+    // Check 6: IPA Binary Scan (85-93%) - Extract and analyze the actual app binary
+    let ipaExtractedPlist: string | undefined;
+    let ipaExtractedManifest: string | undefined;
+    let effectiveManifest = options?.manifestContent;
+    let effectivePlist = options?.plistContent;
+
+    if (options?.ipaBuffer) {
+        emit(createProgressEvent('check_start', PROGRESS_MESSAGES[PROGRESS_CHECKS.IPA_SCAN], 85, {
+            check: PROGRESS_CHECKS.IPA_SCAN,
+            phase: 'hard_rules',
+        }));
+
+        const ipaScanResult = await scanIPA(options.ipaBuffer);
+        checks.push(...ipaScanResult.checks);
+
+        // Use IPA-extracted files as ground truth (override uploaded files)
+        if (ipaScanResult.extracted.infoPlist) {
+            ipaExtractedPlist = ipaScanResult.extracted.infoPlist;
+            effectivePlist = ipaExtractedPlist;
+        }
+        if (ipaScanResult.extracted.privacyManifest) {
+            ipaExtractedManifest = ipaScanResult.extracted.privacyManifest;
+            effectiveManifest = ipaExtractedManifest;
+        }
+
+        emit(createProgressEvent('check_complete', `IPA scan complete — found ${ipaScanResult.checks.length} findings, ${ipaScanResult.extracted.frameworks.length} SDKs`, 93, {
+            check: PROGRESS_CHECKS.IPA_SCAN,
+            phase: 'hard_rules',
+            data: { checksFound: ipaScanResult.checks.length },
+        }));
+    }
+
+    // Check 7: Privacy Mismatch (93-96%) - Cross-reference form vs manifest
+    // Uses IPA-extracted manifest if available (ground truth from actual binary)
+    emit(createProgressEvent('check_start', 'Cross-referencing data collection vs privacy manifest...', 93, {
         check: 'privacy_mismatch',
         phase: 'hard_rules',
     }));
-    const mismatchChecks = checkPrivacyMismatch(input.data_collection, options?.manifestContent);
+    const mismatchChecks = checkPrivacyMismatch(input.data_collection, effectiveManifest);
     checks.push(...mismatchChecks);
-    emit(createProgressEvent('check_complete', `Privacy mismatch check complete`, 97, {
+    emit(createProgressEvent('check_complete', `Privacy mismatch check complete`, 96, {
         check: 'privacy_mismatch',
         phase: 'hard_rules',
         data: { checksFound: mismatchChecks.length },
     }));
 
-    // Check 7: Conditional Warnings (97-100%) - Form-field based warnings
+    // Check 8: Conditional Warnings (96-100%) - Form-field based warnings
     // These check for common rejection reasons based on app characteristics
     const conditionalChecks = checkConditionalWarnings({
         sign_in_required: input.sign_in_required,
@@ -134,5 +173,7 @@ export async function runHardRules(
     return {
         checks,
         completed: true,
+        ipaExtractedPlist,
+        ipaExtractedManifest,
     };
 }

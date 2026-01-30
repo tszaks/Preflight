@@ -130,7 +130,7 @@ export function analyzeFrameworks(frameworks: string[]): CheckResult[] {
         for (const rule of FRAMEWORK_RULES) {
             if (rule.pattern.test(fw)) {
                 results.push({
-                    category: 'info_plist', // Closest existing category
+                    category: 'ipa_binary',
                     severity: rule.severity,
                     title: rule.title,
                     description: rule.description,

@@ -239,6 +239,21 @@ export const actions: Actions = {
             }
         }
 
+        // Upload IPA binary
+        let ipaPath: string | null = null;
+        const ipa = formData.get('ipa') as File | null;
+        if (ipa && ipa.size > 0) {
+            const path = `${basePath}/app.ipa`;
+            const { error } = await supabase.storage
+                .from('ipas')
+                .upload(path, ipa, { upsert: true, contentType: 'application/octet-stream' });
+            if (error) {
+                console.error('[uploadFiles] IPA upload FAILED:', path, error.message, error);
+            } else {
+                ipaPath = path;
+            }
+        }
+
         // Update submission with file paths
         const { error: pathUpdateError } = await supabase
             .from('submissions')
@@ -247,6 +262,7 @@ export const actions: Actions = {
                 manifest_path: manifestPath,
                 plist_path: plistPath,
                 app_icon_path: iconPath,
+                ipa_path: ipaPath,
             })
             .eq('id', submissionId);
 
@@ -254,7 +270,7 @@ export const actions: Actions = {
             console.error('[uploadFiles] Path update FAILED:', pathUpdateError);
         }
 
-        return { success: true, screenshotPaths, manifestPath, plistPath, iconPath };
+        return { success: true, screenshotPaths, manifestPath, plistPath, iconPath, ipaPath };
     },
 
     // Test mode: Skip Stripe, run analysis immediately
@@ -505,13 +521,30 @@ export const actions: Actions = {
             }
         }
 
+        // Upload IPA binary
+        let ipaPath: string | null = null;
+        const ipa = formData.get('ipa') as File | null;
+        if (ipa && ipa.size > 0) {
+            const path = `${basePath}/app.ipa`;
+            const { error } = await supabase.storage
+                .from('ipas')
+                .upload(path, ipa, { upsert: true, contentType: 'application/octet-stream' });
+            if (error) {
+                console.error('[testSubmit] IPA upload FAILED:', path, error.message, error);
+            } else {
+                ipaPath = path;
+            }
+        }
+
         const savedIcon = formData.get('saved_icon_path')?.toString() || null;
+        const savedIpa = formData.get('saved_ipa_path')?.toString() || null;
 
         // Merge: saved paths + newly uploaded
         const allScreenshotPaths = [...savedScreenPaths, ...newScreenshotPaths];
         const finalManifestPath = manifestPath || savedManifest;
         const finalPlistPath = plistPath || savedPlist;
         const finalIconPath = iconPath || savedIcon;
+        const finalIpaPath = ipaPath || savedIpa;
 
         const { error: pathUpdateError } = await supabase
             .from('submissions')
@@ -520,6 +553,7 @@ export const actions: Actions = {
                 manifest_path: finalManifestPath,
                 plist_path: finalPlistPath,
                 app_icon_path: finalIconPath,
+                ipa_path: finalIpaPath,
             })
             .eq('id', submissionId);
 
@@ -788,19 +822,38 @@ export const actions: Actions = {
             }
         }
 
+        // Upload IPA binary
+        let ipaPath: string | null = null;
+        const ipa = formData.get('ipa') as File | null;
+        console.log('[saveDraft] IPA file:', ipa?.name, 'size:', ipa?.size);
+        if (ipa && ipa.size > 0) {
+            const path = `${basePath}/app.ipa`;
+            const { error } = await supabase.storage
+                .from('ipas')
+                .upload(path, ipa, { upsert: true, contentType: 'application/octet-stream' });
+            if (error) {
+                console.error('[saveDraft] IPA upload FAILED:', error.message, error);
+            } else {
+                ipaPath = path;
+            }
+        }
+
         const savedIcon = formData.get('saved_icon_path')?.toString() || null;
+        const savedIpa = formData.get('saved_ipa_path')?.toString() || null;
 
         // Merge: saved paths + newly uploaded paths
         const allScreenshotPaths = [...savedScreenPaths, ...newScreenshotPaths];
         const finalManifestPath = manifestPath || savedManifest;
         const finalPlistPath = plistPath || savedPlist;
         const finalIconPath = iconPath || savedIcon;
+        const finalIpaPath = ipaPath || savedIpa;
 
         console.log('[saveDraft] Final paths:', {
             screenshots: allScreenshotPaths.length,
             manifest: finalManifestPath,
             plist: finalPlistPath,
             icon: finalIconPath,
+            ipa: finalIpaPath,
         });
 
         // Always update file paths (to reflect any removals too)
@@ -811,6 +864,7 @@ export const actions: Actions = {
                 manifest_path: finalManifestPath,
                 plist_path: finalPlistPath,
                 app_icon_path: finalIconPath,
+                ipa_path: finalIpaPath,
             })
             .eq('id', submissionId);
 

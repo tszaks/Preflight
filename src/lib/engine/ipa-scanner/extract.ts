@@ -14,6 +14,8 @@ export interface ExtractedIPA {
     privacyManifest?: string;
     /** List of embedded framework names */
     frameworks: string[];
+    /** Frameworks that are missing their own PrivacyInfo.xcprivacy (ITMS-91061) */
+    frameworksMissingPrivacyManifest: string[];
     /** Entitlements XML if found */
     entitlements?: string;
     /** App icon file names found */
@@ -31,6 +33,7 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
     const result: ExtractedIPA = {
         bundleName: '',
         frameworks: [],
+        frameworksMissingPrivacyManifest: [],
         iconFiles: [],
         totalSize: buffer.byteLength,
     };
@@ -64,6 +67,15 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
             }
         }
     });
+
+    // Check each framework for its own PrivacyInfo.xcprivacy (ITMS-91061)
+    for (const fw of result.frameworks) {
+        const fwPrivacyPath = `${frameworksDir}${fw}.framework/PrivacyInfo.xcprivacy`;
+        const hasPrivacyManifest = zip.file(fwPrivacyPath) !== null;
+        if (!hasPrivacyManifest) {
+            result.frameworksMissingPrivacyManifest.push(fw);
+        }
+    }
 
     // Find entitlements (embedded.mobileprovision contains them, but they're also in the binary)
     const entFile = zip.file(`${appDir}archived-expanded-entitlements.xcent`);
