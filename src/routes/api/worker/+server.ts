@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { WORKER_SECRET, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY } from '$env/static/private';
+import { createHash } from 'crypto';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
@@ -110,9 +111,16 @@ export const POST: RequestHandler = async ({ request }) => {
     console.log('[Worker] Has manifest content:', !!files.manifestContent);
     console.log('[Worker] Has IPA binary:', !!files.ipaBuffer, files.ipaBuffer ? `(${(files.ipaBuffer.byteLength / (1024 * 1024)).toFixed(1)} MB)` : '');
 
+    // Derive ASC encryption key for behavioral heuristics (ASC review history)
+    const ascEncryptionKey = process.env.ASC_ENCRYPTION_KEY?.length === 64
+        ? process.env.ASC_ENCRYPTION_KEY
+        : createHash('sha256').update(SUPABASE_SERVICE_ROLE_KEY).digest('hex');
+
     const result = await runAnalysis(supabase, submission.id, input, {
         anthropicApiKey: ANTHROPIC_API_KEY,
         skipChecklistRules: submission.review_type === 'quick' && !files.manifestContent,
+        userId: submission.user_id,
+        ascEncryptionKey,
     });
 
     console.log('[Worker] Analysis result:', result);
