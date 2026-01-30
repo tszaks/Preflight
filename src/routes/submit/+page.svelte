@@ -66,6 +66,7 @@
     let totalScreenshotCount = $derived(screenshots.length + savedScreenshotPaths.length);
     let hasManifest = $derived(!!privacyManifest || !!savedManifestPath);
     let hasPlist = $derived(!!infoPlist || !!savedPlistPath);
+    let hasIpa = $derived(!!ipaBinary || !!savedIpaPath);
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 3: Settings & Access - Collapsible Sections
@@ -2159,6 +2160,12 @@
                             </span>
                         </div>
                         <div class="summary-item">
+                            <span class="summary-label">IPA Binary</span>
+                            <span class="summary-value status-{hasIpa ? 'ready' : 'warning'}">
+                                {hasIpa ? "✓ Attached" : "Missing"}
+                            </span>
+                        </div>
+                        <div class="summary-item">
                             <span class="summary-label">Sign-in Required</span>
                             <span class="summary-value">{signInRequired ? "Yes" : "No"}</span>
                         </div>
@@ -2182,6 +2189,7 @@
                         <li>Privacy manifest vs data collection declarations</li>
                         <li>Screenshot guidelines compliance</li>
                         <li>Info.plist required keys and format</li>
+                        <li>IPA binary deep scan (frameworks, entitlements, symbols)</li>
                         <li>Demo account validity (if sign-in required)</li>
                         <li>Category-specific requirements</li>
                     </ul>
