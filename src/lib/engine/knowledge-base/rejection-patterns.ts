@@ -19,7 +19,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     // Metadata rejections
     {
         id: 'meta-price-in-name',
-        guideline: '2.3',
+        guideline: '2.3.7',
         category: 'metadata',
         title: 'Price in app name',
         trigger: 'Including "Free", "$0.99", pricing info, or "Sale" in the app name or subtitle',
@@ -27,7 +27,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'meta-platform-in-name',
-        guideline: '2.3',
+        guideline: '2.3.10',
         category: 'metadata',
         title: 'Platform reference in name',
         trigger: 'Including "iOS", "iPhone", "iPad", "Apple Watch", or "for iOS" in the app name',
@@ -35,7 +35,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'meta-keyword-stuffing',
-        guideline: '2.3',
+        guideline: '2.3.7',
         category: 'metadata',
         title: 'Keyword stuffing in name/subtitle',
         trigger: 'Cramming unrelated keywords, competitor names, or category names into the title/subtitle',
@@ -69,7 +69,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     // Screenshot rejections
     {
         id: 'screen-wrong-device',
-        guideline: '2.3.7',
+        guideline: '2.3.3',
         category: 'screenshots',
         title: 'Wrong device frame',
         trigger: 'Using iPhone frames for iPad screenshots or vice versa, or outdated device frames',
@@ -77,7 +77,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'screen-fake-ui',
-        guideline: '2.3.7',
+        guideline: '2.3.3',
         category: 'screenshots',
         title: 'Fake UI elements',
         trigger: 'Screenshots showing UI that doesn\'t exist in the app, fabricated notifications, or fake system UI',
@@ -85,7 +85,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'screen-wrong-dimensions',
-        guideline: '2.3.7',
+        guideline: '2.3.3',
         category: 'screenshots',
         title: 'Invalid screenshot dimensions',
         trigger: 'Screenshots that don\'t match required dimensions for any supported device size',
@@ -153,7 +153,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'plist-background-mode',
-        guideline: '2.5',
+        guideline: '2.5.4',
         category: 'info_plist',
         title: 'Unjustified background mode',
         trigger: 'Declaring background modes (audio, location, fetch) that the app doesn\'t actually use',
@@ -211,7 +211,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         category: 'content_policy',
         title: 'External purchase for digital goods',
         trigger: 'App directs users to purchase digital content/subscriptions outside of In-App Purchase',
-        fix: 'Digital goods and subscriptions must use Apple\'s In-App Purchase system.',
+        fix: 'Digital goods and subscriptions must use Apple\'s In-App Purchase system. Note: As of May 2025, US apps may include external payment links per Epic v. Apple ruling, but Apple still charges a 27% commission on those transactions.',
     },
     {
         id: 'biz-minimum-functionality',

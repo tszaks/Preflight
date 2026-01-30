@@ -10,23 +10,71 @@ import type { CheckResult, DataCollectionDeclaration } from '../types';
 import { getGuidelineRef } from '../knowledge-base/guidelines';
 
 /**
- * Maps form field keys to their corresponding NSPrivacyCollectedDataType values.
- * These are the Apple-defined privacy manifest data type identifiers.
+ * Maps form field keys to Apple's real NSPrivacyCollectedDataType constants.
+ * Each category maps to an array of specific sub-type constants that Apple
+ * actually defines. A category is considered "declared" if ANY of its
+ * sub-types appear in the manifest.
+ *
+ * Reference: https://developer.apple.com/documentation/bundleresources/privacy_manifest_files/describing_data_use_in_privacy_manifests
  */
-const FORM_TO_MANIFEST_MAP: Record<keyof DataCollectionDeclaration, string> = {
-    contactInfo: 'NSPrivacyCollectedDataTypeContactInfo',
-    healthFitness: 'NSPrivacyCollectedDataTypeHealthAndFitness',
-    financialInfo: 'NSPrivacyCollectedDataTypeFinancialInfo',
-    location: 'NSPrivacyCollectedDataTypeLocation',
-    sensitiveInfo: 'NSPrivacyCollectedDataTypeSensitiveInfo',
-    contacts: 'NSPrivacyCollectedDataTypeContacts',
-    userContent: 'NSPrivacyCollectedDataTypeUserContent',
-    browsingHistory: 'NSPrivacyCollectedDataTypeBrowsingHistory',
-    searchHistory: 'NSPrivacyCollectedDataTypeSearchHistory',
-    identifiers: 'NSPrivacyCollectedDataTypeIdentifiers',
-    purchases: 'NSPrivacyCollectedDataTypePurchases',
-    usageData: 'NSPrivacyCollectedDataTypeUsageData',
-    diagnostics: 'NSPrivacyCollectedDataTypeDiagnostics',
+const FORM_TO_MANIFEST_MAP: Record<keyof DataCollectionDeclaration, string[]> = {
+    contactInfo: [
+        'NSPrivacyCollectedDataTypeName',
+        'NSPrivacyCollectedDataTypeEmailAddress',
+        'NSPrivacyCollectedDataTypePhoneNumber',
+        'NSPrivacyCollectedDataTypePhysicalAddress',
+        'NSPrivacyCollectedDataTypeOtherUserContactInfo',
+    ],
+    healthFitness: [
+        'NSPrivacyCollectedDataTypeHealth',
+        'NSPrivacyCollectedDataTypeFitness',
+    ],
+    financialInfo: [
+        'NSPrivacyCollectedDataTypePaymentInfo',
+        'NSPrivacyCollectedDataTypeCreditInfo',
+        'NSPrivacyCollectedDataTypeOtherFinancialInfo',
+    ],
+    location: [
+        'NSPrivacyCollectedDataTypePreciseLocation',
+        'NSPrivacyCollectedDataTypeCoarseLocation',
+    ],
+    sensitiveInfo: [
+        'NSPrivacyCollectedDataTypeSensitiveInfo',
+    ],
+    contacts: [
+        'NSPrivacyCollectedDataTypeContacts',
+    ],
+    userContent: [
+        'NSPrivacyCollectedDataTypeEmailsOrTextMessages',
+        'NSPrivacyCollectedDataTypePhotosorVideos',
+        'NSPrivacyCollectedDataTypeAudioData',
+        'NSPrivacyCollectedDataTypeGameplayContent',
+        'NSPrivacyCollectedDataTypeCustomerSupport',
+        'NSPrivacyCollectedDataTypeOtherUserContent',
+    ],
+    browsingHistory: [
+        'NSPrivacyCollectedDataTypeBrowsingHistory',
+    ],
+    searchHistory: [
+        'NSPrivacyCollectedDataTypeSearchHistory',
+    ],
+    identifiers: [
+        'NSPrivacyCollectedDataTypeUserID',
+        'NSPrivacyCollectedDataTypeDeviceID',
+    ],
+    purchases: [
+        'NSPrivacyCollectedDataTypePurchaseHistory',
+    ],
+    usageData: [
+        'NSPrivacyCollectedDataTypeProductInteraction',
+        'NSPrivacyCollectedDataTypeAdvertisingData',
+        'NSPrivacyCollectedDataTypeOtherUsageData',
+    ],
+    diagnostics: [
+        'NSPrivacyCollectedDataTypeCrashData',
+        'NSPrivacyCollectedDataTypePerformanceData',
+        'NSPrivacyCollectedDataTypeOtherDiagnosticData',
+    ],
 };
 
 /** Human-readable names for form data types */
@@ -113,10 +161,12 @@ export function checkPrivacyMismatch(
     }
 
     // Case 3: Manifest exists with data types section - check individual types
+    // A category is "declared" if ANY of its Apple sub-type constants appear in the manifest
     const missingTypes: string[] = [];
     for (const formKey of collectedTypes) {
-        const manifestType = FORM_TO_MANIFEST_MAP[formKey];
-        if (!manifestContent.includes(manifestType)) {
+        const manifestTypes = FORM_TO_MANIFEST_MAP[formKey];
+        const anyDeclared = manifestTypes.some(t => manifestContent.includes(t));
+        if (!anyDeclared) {
             missingTypes.push(DATA_TYPE_DISPLAY_NAMES[formKey]);
         }
     }
@@ -139,7 +189,7 @@ export function checkPrivacyMismatch(
 
     // Case 4 (info): Manifest declares types that form says aren't collected
     const manifestDeclaredKeys = Object.entries(FORM_TO_MANIFEST_MAP)
-        .filter(([, manifestType]) => manifestContent.includes(manifestType))
+        .filter(([, manifestTypes]) => (manifestTypes as string[]).some(t => manifestContent.includes(t)))
         .map(([formKey]) => formKey as keyof DataCollectionDeclaration);
 
     const extraInManifest = manifestDeclaredKeys.filter(
