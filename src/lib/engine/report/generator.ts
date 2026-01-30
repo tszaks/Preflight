@@ -148,7 +148,8 @@ function filterInfoItems(checks: CheckResult[]): CheckResult[] {
 
 /**
  * Deduplicate similar checks that may come from both hard and soft rules.
- * Uses title similarity to identify duplicates - keeps the higher severity version.
+ * Groups by: (1) same guideline_ref + same severity, or (2) title word similarity.
+ * Keeps the highest severity version; ties broken by confidence.
  */
 function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
     const severityRank: Record<string, number> = {
@@ -161,27 +162,41 @@ function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
     // Normalize title for comparison (lowercase, remove extra spaces)
     const normalizeTitle = (title: string) => title.toLowerCase().trim().replace(/\s+/g, ' ');
 
-    // Group by similar titles
+    // Group by guideline_ref + severity, or by similar titles
     const groups = new Map<string, CheckResult[]>();
 
     for (const check of checks) {
         const normalizedTitle = normalizeTitle(check.title);
-
-        // Check for similar existing titles (contains key words)
         let matchedKey: string | null = null;
 
-        // Keywords that indicate similar issues
-        const titleWords = normalizedTitle.split(' ').filter(w => w.length > 3);
+        // 1. Guideline-based grouping: same guideline_ref + same severity = same issue
+        //    (different severities under the same guideline are kept separate —
+        //     e.g. a critical "missing from manifest" vs warning "not in policy" for 5.1.1)
+        if (check.guideline_ref) {
+            for (const [existingKey, existingChecks] of groups) {
+                const sameGuidelineAndSeverity = existingChecks.some(
+                    ec => ec.guideline_ref === check.guideline_ref && ec.severity === check.severity
+                );
+                if (sameGuidelineAndSeverity) {
+                    matchedKey = existingKey;
+                    break;
+                }
+            }
+        }
 
-        for (const [existingKey] of groups) {
-            const existingWords = existingKey.split(' ').filter(w => w.length > 3);
-            // If 60%+ of significant words match, consider it similar
-            const matchingWords = titleWords.filter(w => existingWords.includes(w));
-            const similarity = matchingWords.length / Math.max(titleWords.length, existingWords.length);
+        // 2. Title-based grouping: 60%+ significant word overlap
+        if (!matchedKey) {
+            const titleWords = normalizedTitle.split(' ').filter(w => w.length > 3);
 
-            if (similarity >= 0.6) {
-                matchedKey = existingKey;
-                break;
+            for (const [existingKey] of groups) {
+                const existingWords = existingKey.split(' ').filter(w => w.length > 3);
+                const matchingWords = titleWords.filter(w => existingWords.includes(w));
+                const similarity = matchingWords.length / Math.max(titleWords.length, existingWords.length);
+
+                if (similarity >= 0.6) {
+                    matchedKey = existingKey;
+                    break;
+                }
             }
         }
 
@@ -191,18 +206,18 @@ function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
         groups.set(key, existing);
     }
 
-    // For each group, keep the highest severity version (or merge info)
+    // For each group, keep the highest severity version (confidence as tiebreaker)
     const result: CheckResult[] = [];
 
     for (const [, groupChecks] of groups) {
         if (groupChecks.length === 1) {
             result.push(groupChecks[0]);
         } else {
-            // Sort by severity (highest first)
-            groupChecks.sort((a, b) =>
-                (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0)
-            );
-            // Keep the highest severity version
+            groupChecks.sort((a, b) => {
+                const sevDiff = (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0);
+                if (sevDiff !== 0) return sevDiff;
+                return (b.confidence ?? 0) - (a.confidence ?? 0);
+            });
             result.push(groupChecks[0]);
         }
     }
