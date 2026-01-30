@@ -874,7 +874,7 @@
                         <span>Editing Draft: {appName || "Untitled"}</span>
                     </div>
                 {:else}
-                    <p class="subtitle">We'll analyze everything Apple checks - so you catch issues before they do.</p>
+                    <p class="subtitle">We'll analyze the most common reasons Apple rejects apps - so you can fix issues before submitting.</p>
                 {/if}
             </header>
 

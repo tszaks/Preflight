@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 import type { Database } from '$lib/types/database';
 import {
+    getApp,
     getLatestVersion,
     getAppMetadata,
     getAppInfo,
@@ -57,7 +58,8 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
     };
 
     // Fetch app data in parallel (each call is resilient — partial data is fine)
-    const [version, appInfo] = await Promise.all([
+    const [app, version, appInfo] = await Promise.all([
+        getApp(credentials, appId).catch(() => null),
         getLatestVersion(credentials, appId).catch(() => null),
         getAppInfo(credentials, appId).catch(() => null),
     ]);
@@ -68,12 +70,13 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
         metadata = await getAppMetadata(credentials, version.id).catch(() => null);
     }
 
-    // Save selected app to connection record
+    // Save selected app to connection record (prefer app-level name over localized)
+    const resolvedAppName = app?.name || metadata?.name || null;
     await serviceSupabase
         .from('asc_connections')
         .update({
             selected_app_id: appId,
-            selected_app_name: metadata?.name || null,
+            selected_app_name: resolvedAppName,
             updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
@@ -108,8 +111,8 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
     return json({
         success: true,
         data: {
-            // Basic info
-            app_name: metadata?.name || '',
+            // Basic info (app-level name > localized name)
+            app_name: app?.name || metadata?.name || '',
             subtitle: metadata?.subtitle || '',
             description: metadata?.description || '',
             keywords: metadata?.keywords || '',
