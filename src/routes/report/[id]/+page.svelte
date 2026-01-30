@@ -387,6 +387,10 @@
     // Track which fix tip was just copied
     let copiedFixId: string | null = $state(null);
 
+    // Suggestions collapse state
+    let showAllSuggestions = $state(false);
+    const TOP_SUGGESTIONS_COUNT = 3;
+
     async function copyFixSuggestion(text: string, itemId: string) {
         await navigator.clipboard.writeText(text);
         copiedFixId = itemId;
@@ -904,10 +908,15 @@
 
         <!-- Suggestions (non-blocking) -->
         {#if infoItems.length > 0}
+            {@const visibleSuggestions = showAllSuggestions ? infoItems : infoItems.slice(0, TOP_SUGGESTIONS_COUNT)}
+            {@const hasMore = infoItems.length > TOP_SUGGESTIONS_COUNT}
             <section class="suggestions-section">
-                <div class="section-label">Suggestions</div>
+                <div class="section-label">
+                    Suggestions
+                    <span class="section-count">{infoItems.length}</span>
+                </div>
                 <div class="suggestions-list">
-                    {#each infoItems as item, i}
+                    {#each visibleSuggestions as item, i}
                         <CockpitPanel class="suggestion-card">
                             <div class="suggestion-header">
                                 <span class="suggestion-title"
@@ -926,6 +935,16 @@
                         </CockpitPanel>
                     {/each}
                 </div>
+                {#if hasMore}
+                    <button
+                        class="show-all-btn"
+                        onclick={() => (showAllSuggestions = !showAllSuggestions)}
+                    >
+                        {showAllSuggestions
+                            ? 'Show less'
+                            : `Show all ${infoItems.length} suggestions`}
+                    </button>
+                {/if}
             </section>
         {/if}
 
@@ -1366,6 +1385,42 @@
     /* --- SUGGESTIONS LIST --- */
     .suggestions-section {
         margin-bottom: 64px;
+    }
+
+    .section-count {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--gray-500);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 1px 6px;
+        border-radius: 3px;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    .show-all-btn {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px dashed rgba(255, 255, 255, 0.08);
+        border-radius: 4px;
+        color: var(--gray-400);
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .show-all-btn:hover {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.12);
+        color: var(--gray-200);
     }
 
     .suggestions-list {
