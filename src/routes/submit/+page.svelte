@@ -156,7 +156,7 @@
     // Explicit feature confirmations (Phase 3: Smarter Form Questions)
     let hasAccountDeletion = $state(prefill?.has_account_deletion ?? true);
     let hasRestorePurchases = $state(prefill?.has_restore_purchases ?? true);
-    let isNewApp = $state(prefill?.is_new_app ?? !data.hasAscConnection);
+    let isNewApp = $state(true); // Always run full analysis — no light mode
     let settingsScreenshotIndex: number | null = $state(prefill?.settings_screenshot_index ?? null);
     let paywallScreenshotIndex: number | null = $state(prefill?.paywall_screenshot_index ?? null);
 
@@ -285,8 +285,7 @@
         ascConnected = true;
         ascAppName = formData.app_name || '';
 
-        // If they connected ASC, the app already exists in the store — not a first submission
-        isNewApp = false;
+        // Always run full analysis regardless of ASC connection status
 
         // Background: download ASC screenshots to Supabase Storage
         if (formData.screenshot_urls?.length > 0) {
@@ -1788,15 +1787,6 @@
                                 </div>
                             {/if}
 
-                            <div class="conditional-question">
-                                <label class="checkbox-label prominent">
-                                    <input type="checkbox" bind:checked={isNewApp} />
-                                    <span>This is a brand new app (first submission)</span>
-                                </label>
-                                <p class="field-hint">
-                                    New apps receive a more thorough initial review. Uncheck if this is an update.
-                                </p>
-                            </div>
                         </div>
                     {/if}
                 </div>
@@ -1829,8 +1819,9 @@
 
                                 <div class="checklist-item">
                                     <label class="checklist-question">
-                                        Does your app have user-generated content?
+                                        Can users post, comment, upload, or share content with others?
                                     </label>
+                                    <p class="field-hint">This includes photos, videos, text posts, comments, reviews, messages, or any content users create inside your app that others can see.</p>
                                     <div class="checklist-options">
                                         <label class="radio-option" class:active={hasUgc === true}>
                                             <input type="radio" name="has_ugc" checked={hasUgc === true} onchange={() => hasUgc = true} /> Yes
@@ -1845,7 +1836,7 @@
                                                 <input type="checkbox" checked={hasUgcModeration === true} onchange={() => hasUgcModeration = hasUgcModeration === true ? false : true} />
                                                 <span>We have reporting, blocking, and content filtering</span>
                                             </label>
-                                            <p class="field-hint">UGC apps have specific moderation requirements.</p>
+                                            <p class="field-hint">Apple requires apps with user-created content to include tools for reporting abuse, blocking users, and filtering inappropriate content.</p>
                                         </div>
                                     {/if}
                                 </div>
