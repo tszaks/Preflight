@@ -46,6 +46,14 @@ export interface ASCAppMetadata {
     privacyUrl: string | null;
     supportUrl: string | null;
     marketingUrl: string | null;
+    localizationId?: string;
+}
+
+export interface ASCScreenshotUrl {
+    url: string;
+    width: number;
+    height: number;
+    fileName: string;
 }
 
 export interface ASCReviewDetail {
@@ -284,6 +292,7 @@ export async function getAppMetadata(
         credentials,
     )) as {
         data: Array<{
+            id: string;
             attributes: {
                 locale: string;
                 name?: string;
@@ -300,7 +309,8 @@ export async function getAppMetadata(
 
     if (!data.data.length) return null;
 
-    const loc = data.data[0].attributes;
+    const locData = data.data[0];
+    const loc = locData.attributes;
     return {
         name: loc.name || '',
         subtitle: loc.subtitle || null,
@@ -310,6 +320,7 @@ export async function getAppMetadata(
         privacyUrl: loc.privacyPolicyUrl || null,
         supportUrl: loc.supportUrl || null,
         marketingUrl: loc.marketingUrl || null,
+        localizationId: locData.id,
     };
 }
 
@@ -472,6 +483,81 @@ export async function getAppStoreVersions(
             appStoreState: v.attributes.appStoreState,
             createdDate: v.attributes.createdDate,
         }));
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Get screenshot URLs from App Store Connect for a given localization.
+ *
+ * API chain: localization → screenshotSets → screenshots per set.
+ * Each screenshot has an imageAsset with a templateUrl containing {w} and {h} placeholders.
+ */
+export async function getScreenshotUrls(
+    credentials: ASCCredentials,
+    localizationId: string,
+): Promise<ASCScreenshotUrl[]> {
+    try {
+        // 1. Get screenshot sets for this localization
+        const setsData = (await ascFetch(
+            `/appStoreVersionLocalizations/${localizationId}/appScreenshotSets?fields[appScreenshotSets]=screenshotDisplayType`,
+            credentials,
+        )) as {
+            data: Array<{
+                id: string;
+                attributes: { screenshotDisplayType: string };
+            }>;
+        };
+
+        if (!setsData.data.length) return [];
+
+        // 2. Fetch screenshots from all sets in parallel
+        const allScreenshots = await Promise.all(
+            setsData.data.map(async (set) => {
+                try {
+                    const screenshotData = (await ascFetch(
+                        `/appScreenshotSets/${set.id}/appScreenshots?fields[appScreenshots]=fileName,fileSize,imageAsset`,
+                        credentials,
+                    )) as {
+                        data: Array<{
+                            id: string;
+                            attributes: {
+                                fileName: string;
+                                fileSize: number;
+                                imageAsset?: {
+                                    templateUrl?: string;
+                                    width?: number;
+                                    height?: number;
+                                };
+                            };
+                        }>;
+                    };
+
+                    return screenshotData.data
+                        .filter((s) => s.attributes.imageAsset?.templateUrl)
+                        .map((s) => {
+                            const asset = s.attributes.imageAsset!;
+                            const w = asset.width || 1290;
+                            const h = asset.height || 2796;
+                            // Replace {w} and {h} placeholders in the template URL
+                            const url = asset.templateUrl!
+                                .replace('{w}', String(w))
+                                .replace('{h}', String(h));
+                            return {
+                                url,
+                                width: w,
+                                height: h,
+                                fileName: s.attributes.fileName,
+                            };
+                        });
+                } catch {
+                    return [];
+                }
+            }),
+        );
+
+        return allScreenshots.flat();
     } catch {
         return [];
     }

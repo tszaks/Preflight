@@ -57,7 +57,10 @@
     let savedIpaPath: string | null = $state(prefill?.ipa_path || null);
 
     // Signed URLs for displaying saved file thumbnails (path → URL map)
-    const fileUrls: Record<string, string> = data.fileUrls || {};
+    let fileUrls: Record<string, string> = $state(data.fileUrls || {});
+
+    // Loading state for ASC screenshot background download
+    let loadingAscScreenshots = $state(false);
 
     // Combined file counts (new uploads + saved)
     let totalScreenshotCount = $derived(screenshots.length + savedScreenshotPaths.length);
@@ -282,6 +285,29 @@
 
         // If they connected ASC, the app already exists in the store — not a first submission
         isNewApp = false;
+
+        // Background: download ASC screenshots to Supabase Storage
+        if (formData.screenshot_urls?.length > 0) {
+            loadingAscScreenshots = true;
+            fetch('/api/asc/screenshot-proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urls: formData.screenshot_urls }),
+            })
+                .then((res) => res.json())
+                .then((result: { paths: string[]; signedUrls: Record<string, string> }) => {
+                    if (result.paths?.length) {
+                        savedScreenshotPaths = [...savedScreenshotPaths, ...result.paths];
+                        fileUrls = { ...fileUrls, ...result.signedUrls };
+                    }
+                })
+                .catch(() => {
+                    // Screenshot import failed silently — user can still upload manually
+                })
+                .finally(() => {
+                    loadingAscScreenshots = false;
+                });
+        }
     }
 
     async function disconnectAsc() {
@@ -727,10 +753,17 @@
                 <!-- Screenshots -->
                 <div class="rereview-file-section">
                     <label class="form-label">Screenshots ({totalScreenshotCount}/10)</label>
-                    {#if totalScreenshotCount < 10}
+                    {#if totalScreenshotCount < 10 && !loadingAscScreenshots}
                         <div class="file-upload">
                             <input type="file" accept="image/*" multiple onchange={handleScreenshots} />
                             <p>Drop screenshots here or click to browse</p>
+                        </div>
+                    {/if}
+
+                    {#if loadingAscScreenshots}
+                        <div class="asc-screenshots-loading">
+                            <span class="asc-loading-spinner"></span>
+                            Importing screenshots from App Store Connect...
                         </div>
                     {/if}
 
@@ -1144,10 +1177,17 @@
 
                 <div class="form-group">
                     <label class="form-label">Screenshots <span class="required">*</span> ({totalScreenshotCount}/10)</label>
-                    {#if totalScreenshotCount < 10}
+                    {#if totalScreenshotCount < 10 && !loadingAscScreenshots}
                         <div class="file-upload">
                             <input type="file" accept="image/*" multiple onchange={handleScreenshots} />
                             <p>Drop screenshots here or click to browse</p>
+                        </div>
+                    {/if}
+
+                    {#if loadingAscScreenshots}
+                        <div class="asc-screenshots-loading">
+                            <span class="asc-loading-spinner"></span>
+                            Importing screenshots from App Store Connect...
                         </div>
                     {/if}
 
@@ -2708,6 +2748,34 @@
         align-items: center;
         justify-content: center;
         color: var(--gray-500);
+    }
+
+    /* ASC screenshot import loading state */
+    .asc-screenshots-loading {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(99, 102, 241, 0.08);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: var(--gray-300);
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .asc-loading-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(99, 102, 241, 0.3);
+        border-top-color: rgb(99, 102, 241);
+        border-radius: 50%;
+        animation: asc-spin 0.8s linear infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes asc-spin {
+        to { transform: rotate(360deg); }
     }
 
     .screenshot-name {
