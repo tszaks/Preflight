@@ -1647,6 +1647,17 @@
                                         diagnostics: "Diagnostics"
                                     }}
                                     {@const sublabels: Record<string, string> = {
+                                        contactInfo: "Name, email address, phone number, or physical address",
+                                        healthFitness: "HealthKit data, workouts, step counts, or medical records",
+                                        financialInfo: "Credit card info, bank accounts, salary, credit score, or transactions",
+                                        locationData: "GPS coordinates, city, or region \u2014 even approximate location counts",
+                                        sensitiveInfo: "Racial/ethnic data, sexual orientation, disability, religious or political beliefs",
+                                        contacts: "The user's address book or contacts list \u2014 not just their own contact info",
+                                        userContent: "Photos, videos, audio, emails, texts, or messages the user creates in your app",
+                                        browsingHistory: "Websites or web pages the user has visited (in-app browser or tracked externally)",
+                                        searchHistory: "Searches the user has performed inside your app",
+                                        identifiers: "User ID, device ID, or advertising identifier (IDFA)",
+                                        purchases: "Purchase history or in-app purchase records",
                                         usageData: "Third-party analytics (Firebase, Mixpanel, etc.) \u2014 not native system logging",
                                         diagnostics: "Crash reporting services (Crashlytics, Sentry) \u2014 not native system logs"
                                     }}
