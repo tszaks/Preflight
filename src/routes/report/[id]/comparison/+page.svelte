@@ -78,13 +78,13 @@
 
         <div class="summary-stats">
             {#if diff.summary.total_fixed > 0}
-                <span class="stat fixed">✅ {diff.summary.total_fixed} fixed</span>
+                <span class="stat fixed">{diff.summary.total_fixed} fixed</span>
             {/if}
             {#if diff.summary.total_still_present > 0}
-                <span class="stat present">⚠️ {diff.summary.total_still_present} remaining</span>
+                <span class="stat present">{diff.summary.total_still_present} remaining</span>
             {/if}
             {#if diff.summary.total_new_issues > 0}
-                <span class="stat new-issues">🆕 {diff.summary.total_new_issues} new</span>
+                <span class="stat new-issues">{diff.summary.total_new_issues} new</span>
             {/if}
         </div>
     </section>
@@ -118,7 +118,7 @@
     <!-- Fixed Issues -->
     {#if diff.fixed.length > 0}
         <section class="diff-section fixed-section">
-            <h2>✅ Fixed Issues ({diff.fixed.length})</h2>
+            <h2>Fixed Issues ({diff.fixed.length})</h2>
             <div class="items-list">
                 {#each diff.fixed as item}
                     <div class="diff-item fixed">
@@ -136,7 +136,7 @@
     <!-- Still Present -->
     {#if diff.still_present.length > 0}
         <section class="diff-section present-section">
-            <h2>⚠️ Still Present ({diff.still_present.length})</h2>
+            <h2>Still Present ({diff.still_present.length})</h2>
             <div class="items-list">
                 {#each diff.still_present as item}
                     <div class="diff-item present">
