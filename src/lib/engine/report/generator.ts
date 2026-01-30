@@ -123,6 +123,18 @@ function generateSummary(checks: CheckResult[], overallScore: number): string {
 }
 
 /**
+ * Normalize a guideline_ref to its numeric prefix for consistent comparison.
+ * "5.1.1 — Data Collection and Storage" → "5.1.1"
+ * "Section 5.1.1 - Data Collection"     → "5.1.1"
+ * "3.1.2(a) — Subscription Management"  → "3.1.2(a)"
+ * "3.1.2" → "3.1.2" (already normalized)
+ */
+function normalizeGuidelineRef(ref: string): string {
+    const match = ref.match(/(?:Section\s+)?(\d+\.\d+(?:\.\d+)?(?:\([a-z]\))?)/);
+    return match ? match[1] : ref;
+}
+
+/**
  * Filter low-value info items to reduce noise.
  * - Drops info items with confidence < 50 (kills low-signal guesses)
  * - Drops info items whose guideline is already covered by a warning/critical
@@ -137,16 +149,17 @@ function filterInfoItems(checks: CheckResult[]): CheckResult[] {
     const infoItems = checks.filter(c => c.severity === 'info');
 
     // Guidelines already covered by a warning or critical — info tips are redundant
+    // Normalize refs: "5.1.1 — Data Collection" → "5.1.1" for consistent matching
     const coveredGuidelines = new Set(
         nonInfo
             .filter(c => c.guideline_ref && c.severity !== 'pass')
-            .map(c => c.guideline_ref)
+            .map(c => normalizeGuidelineRef(c.guideline_ref!))
     );
 
     // Drop info items below confidence floor OR redundant with a higher-severity item
     const qualifiedInfo = infoItems.filter(c => {
         if ((c.confidence ?? 0) < INFO_CONFIDENCE_FLOOR) return false;
-        if (c.guideline_ref && coveredGuidelines.has(c.guideline_ref)) return false;
+        if (c.guideline_ref && coveredGuidelines.has(normalizeGuidelineRef(c.guideline_ref))) return false;
         return true;
     });
 
@@ -185,9 +198,12 @@ function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
         //    (different severities under the same guideline are kept separate —
         //     e.g. a critical "missing from manifest" vs warning "not in policy" for 5.1.1)
         if (check.guideline_ref) {
+            const normalizedRef = normalizeGuidelineRef(check.guideline_ref);
             for (const [existingKey, existingChecks] of groups) {
                 const sameGuidelineAndSeverity = existingChecks.some(
-                    ec => ec.guideline_ref === check.guideline_ref && ec.severity === check.severity
+                    ec => ec.guideline_ref &&
+                        normalizeGuidelineRef(ec.guideline_ref) === normalizedRef &&
+                        ec.severity === check.severity
                 );
                 if (sameGuidelineAndSeverity) {
                     matchedKey = existingKey;
