@@ -56,16 +56,16 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
         privateKey,
     };
 
-    // Fetch app data in parallel
+    // Fetch app data in parallel (each call is resilient — partial data is fine)
     const [version, appInfo] = await Promise.all([
-        getLatestVersion(credentials, appId),
-        getAppInfo(credentials, appId),
+        getLatestVersion(credentials, appId).catch(() => null),
+        getAppInfo(credentials, appId).catch(() => null),
     ]);
 
     // Fetch localized metadata if we have a version
     let metadata = null;
     if (version) {
-        metadata = await getAppMetadata(credentials, version.id);
+        metadata = await getAppMetadata(credentials, version.id).catch(() => null);
     }
 
     // Save selected app to connection record
