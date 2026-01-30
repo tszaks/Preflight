@@ -34,10 +34,11 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
     // Weighted overall — only include categories that have actual data.
     // Null categories (files not provided) are excluded and their weight
     // is redistributed proportionally, like a GPA that ignores untaken classes.
+    // Weights must sum to 1.00 (normalized proportionally when null categories excluded)
     const categoryWeights: { score: number | null; weight: number }[] = [
-        { score: score_metadata, weight: 0.25 },
+        { score: score_metadata, weight: 0.20 },
         { score: score_screenshots, weight: 0.15 },
-        { score: score_privacy, weight: 0.25 },
+        { score: score_privacy, weight: 0.20 },
         { score: score_plist, weight: 0.15 },
         { score: score_urls, weight: 0.10 },
         { score: score_content, weight: 0.10 },

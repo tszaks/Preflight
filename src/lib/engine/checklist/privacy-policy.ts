@@ -43,6 +43,9 @@ export function checkPrivacyPolicy(
         data_deletion: 'privacy_data_deletion',
         contact_info: 'privacy_contact_info',
         children: 'privacy_children',
+        data_sharing: 'privacy_data_sharing',
+        user_rights: 'privacy_user_rights',
+        international_transfers: 'privacy_international_transfers',
     };
 
     for (const [section, ruleId] of Object.entries(sectionRuleMap)) {
@@ -72,6 +75,57 @@ export function checkPrivacyPolicy(
                 fix_suggestion: rule.fix_suggestion,
                 confidence: 100,
             });
+        }
+    }
+
+    // === Policy length check ===
+    const wordCount = policyText.split(/\s+/).filter(w => w.length > 0).length;
+    if (wordCount < 200) {
+        checks.push({
+            category: 'content_policy',
+            severity: 'warning',
+            title: 'Privacy policy appears unusually short',
+            description: `The privacy policy contains only ${wordCount} words, which may not adequately cover required disclosures.`,
+            guideline_ref: '5.1.1 — Data Collection and Storage',
+            fix_suggestion: 'A comprehensive privacy policy typically covers data collection, usage, sharing, retention, deletion rights, and contact information.',
+            confidence: 75,
+        });
+    }
+
+    // === Last-updated date detection ===
+    const datePattern = /(?:last\s+(?:updated|modified|revised)|effective\s+date|updated?\s*:?\s*(?:on)?)\s*:?\s*(\w+\s+\d{1,2},?\s+\d{4}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/i;
+    const dateMatch = policyText.match(datePattern);
+    if (!dateMatch) {
+        checks.push({
+            category: 'content_policy',
+            severity: 'info',
+            title: 'No last-updated date detected in privacy policy',
+            description: 'No last-updated date detected in privacy policy. Apple recommends keeping policies current.',
+            guideline_ref: '5.1.1 — Data Collection and Storage',
+            fix_suggestion: 'Add a visible "Last Updated" or "Effective Date" to your privacy policy.',
+            confidence: 60,
+        });
+    } else {
+        const dateStr = dateMatch[1];
+        try {
+            const parsedDate = new Date(dateStr);
+            if (!isNaN(parsedDate.getTime())) {
+                const oneYearAgo = new Date();
+                oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                if (parsedDate < oneYearAgo) {
+                    checks.push({
+                        category: 'content_policy',
+                        severity: 'info',
+                        title: 'Privacy policy last-updated date appears outdated',
+                        description: `Privacy policy last-updated date appears to be over a year old (${dateStr}). Consider updating.`,
+                        guideline_ref: '5.1.1 — Data Collection and Storage',
+                        fix_suggestion: 'Review and update your privacy policy regularly, especially after adding new features or data practices.',
+                        confidence: 60,
+                    });
+                }
+            }
+        } catch (dateParseError) {
+            console.warn('[PrivacyPolicy] Could not parse last-updated date:', dateStr, dateParseError);
         }
     }
 

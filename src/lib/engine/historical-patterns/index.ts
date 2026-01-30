@@ -256,7 +256,6 @@ function toCheckResult(match: PatternMatch): CheckResult {
         guideline_ref: match.pattern.guideline,
         fix_suggestion: match.pattern.fix,
         confidence: match.confidence,
-        // Attach pattern_id for report_items linkage
         pattern_id: match.patternId,
-    } as CheckResult & { pattern_id: string };
+    };
 }

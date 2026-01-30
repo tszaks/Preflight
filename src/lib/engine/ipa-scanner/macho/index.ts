@@ -31,6 +31,7 @@ export async function analyzeMachOFromIPA(
                 arch: 'unknown',
                 linkedFrameworkCount: 0,
                 importedSymbolCount: 0,
+                importedSymbols: [],
                 encrypted: false,
             },
         };
@@ -50,6 +51,7 @@ export async function analyzeMachOFromIPA(
                 arch: 'unknown',
                 linkedFrameworkCount: 0,
                 importedSymbolCount: 0,
+                importedSymbols: [],
                 encrypted: false,
             },
         };
@@ -67,6 +69,7 @@ export async function analyzeMachOFromIPA(
                 arch: 'unknown',
                 linkedFrameworkCount: 0,
                 importedSymbolCount: 0,
+                importedSymbols: [],
                 encrypted: false,
             },
         };

@@ -84,7 +84,7 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
 
     // === Check description against forbidden patterns ===
     if (description) {
-        for (const { pattern, ruleId } of FORBIDDEN_DESCRIPTION_PATTERNS) {
+        for (const { pattern, ruleId, confidence: patternConfidence } of FORBIDDEN_DESCRIPTION_PATTERNS) {
             if (pattern.test(description) && !triggered.has(ruleId)) {
                 const match = description.match(pattern);
                 if (isFalsePositiveLabel(description, match)) continue;
@@ -98,7 +98,7 @@ export function checkDescription(input: HardRulesInput): CheckResult[] {
                         description: `Found "${match?.[0]}" in your description: "${getMatchContext(description, match)}". ${rule.description}`,
                         guideline_ref: rule.guideline_ref,
                         fix_suggestion: rule.fix_suggestion,
-                        confidence: 100,
+                        confidence: patternConfidence ?? 100,
                     });
                 }
             }
