@@ -111,6 +111,7 @@ export const POST: RequestHandler = async ({ request }) => {
     console.log('[Worker] Has IPA binary:', !!files.ipaBuffer, files.ipaBuffer ? `(${(files.ipaBuffer.byteLength / (1024 * 1024)).toFixed(1)} MB)` : '');
 
     const result = await runAnalysis(supabase, submission.id, input, {
+        anthropicApiKey: ANTHROPIC_API_KEY,
         skipChecklistRules: submission.review_type === 'quick' && !files.manifestContent,
     });
 
