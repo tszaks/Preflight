@@ -1928,8 +1928,9 @@
                                     {#if signInRequired}
                                         <div class="checklist-item">
                                             <label class="checklist-question">
-                                                Can users access subscriptions without logging in?
+                                                Can users restore their subscription without creating an account first?
                                             </label>
+                                            <p class="field-hint">Apple requires a "Restore Purchases" button that works with just an Apple ID — before the user logs in or signs up for your app.</p>
                                             <div class="checklist-options">
                                                 <label class="radio-option" class:active={subscriptionsWithoutLogin === true}>
                                                     <input type="radio" name="subs_no_login" checked={subscriptionsWithoutLogin === true} onchange={() => subscriptionsWithoutLogin = true} /> Yes
@@ -1939,7 +1940,7 @@
                                                 </label>
                                             </div>
                                             {#if subscriptionsWithoutLogin === false}
-                                                <p class="field-hint warning-hint">This can cause review issues.</p>
+                                                <p class="field-hint warning-hint">Apple will likely reject your app. Add a "Restore Purchases" button to your welcome or onboarding screen that uses StoreKit to check subscription status via Apple ID.</p>
                                             {/if}
                                         </div>
                                     {/if}
