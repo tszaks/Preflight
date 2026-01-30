@@ -182,7 +182,7 @@ export async function runAnalysis(
         }
 
         // === Phase 2.5: Historical Rejection Pattern Matching (instant) ===
-        const patternChecks = matchRejectionPatterns(hardInput);
+        const patternChecks = await matchRejectionPatterns(hardInput, supabase);
         allChecks.push(...patternChecks);
         if (patternChecks.length > 0) {
             console.log('[Analysis] Pattern matching found', patternChecks.length, 'advisory warnings');

@@ -147,6 +147,124 @@ export type Database = {
         }
         Relationships: []
       }
+      pattern_feedback: {
+        Row: {
+          id: string
+          pattern_id: string
+          report_item_id: string | null
+          user_id: string
+          was_helpful: boolean
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          pattern_id: string
+          report_item_id?: string | null
+          user_id: string
+          was_helpful: boolean
+          comment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          pattern_id?: string
+          report_item_id?: string | null
+          user_id?: string
+          was_helpful?: boolean
+          comment?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pattern_feedback_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "rejection_patterns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pattern_feedback_report_item_id_fkey"
+            columns: ["report_item_id"]
+            isOneToOne: false
+            referencedRelation: "report_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pattern_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rejection_patterns: {
+        Row: {
+          id: string
+          guideline: string
+          category: string
+          title: string
+          trigger_description: string
+          fix_suggestion: string
+          match_categories: string[]
+          match_keywords: string[]
+          match_features_required: string[]
+          match_features_absent: string[]
+          match_min_matches: number
+          base_confidence: number
+          calibrated_confidence: number | null
+          total_matches: number
+          source: string | null
+          source_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          guideline: string
+          category: string
+          title: string
+          trigger_description: string
+          fix_suggestion: string
+          match_categories?: string[]
+          match_keywords?: string[]
+          match_features_required?: string[]
+          match_features_absent?: string[]
+          match_min_matches?: number
+          base_confidence?: number
+          calibrated_confidence?: number | null
+          total_matches?: number
+          source?: string | null
+          source_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          guideline?: string
+          category?: string
+          title?: string
+          trigger_description?: string
+          fix_suggestion?: string
+          match_categories?: string[]
+          match_keywords?: string[]
+          match_features_required?: string[]
+          match_features_absent?: string[]
+          match_min_matches?: number
+          base_confidence?: number
+          calibrated_confidence?: number | null
+          total_matches?: number
+          source?: string | null
+          source_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       report_items: {
         Row: {
           category: Database["public"]["Enums"]["check_category"]
@@ -156,6 +274,7 @@ export type Database = {
           fix_suggestion: string | null
           guideline_ref: string | null
           id: string
+          pattern_id: string | null
           report_id: string
           severity: Database["public"]["Enums"]["severity_level"]
           title: string
@@ -169,6 +288,7 @@ export type Database = {
           fix_suggestion?: string | null
           guideline_ref?: string | null
           id?: string
+          pattern_id?: string | null
           report_id: string
           severity: Database["public"]["Enums"]["severity_level"]
           title: string
@@ -182,6 +302,7 @@ export type Database = {
           fix_suggestion?: string | null
           guideline_ref?: string | null
           id?: string
+          pattern_id?: string | null
           report_id?: string
           severity?: Database["public"]["Enums"]["severity_level"]
           title?: string
@@ -193,6 +314,13 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_items_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "rejection_patterns"
             referencedColumns: ["id"]
           },
         ]

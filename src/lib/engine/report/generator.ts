@@ -58,6 +58,7 @@ export async function generateReport(
             guideline_ref: check.guideline_ref || null,
             fix_suggestion: check.fix_suggestion || null,
             confidence: check.confidence ?? null,
+            pattern_id: (check as CheckResult & { pattern_id?: string }).pattern_id || null,
         }));
 
     let itemsInsertFailed = false;
