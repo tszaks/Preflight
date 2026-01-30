@@ -222,6 +222,7 @@ export async function runAnalysis(
                     has_iap: input.has_iap,
                     has_subscriptions: input.has_subscriptions,
                     has_third_party_login: input.has_third_party_login,
+                    analysis_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
                 });
 
                 allChecks.push(...screenshotResult.checks);
