@@ -140,13 +140,13 @@ export function formatDiffSummary(diff: ReportDiff): string {
 
     // Change summary
     if (summary.total_fixed > 0) {
-        lines.push(`✅ ${summary.total_fixed} issue(s) fixed`);
+        lines.push(`[FIXED] ${summary.total_fixed} issue(s) fixed`);
     }
     if (summary.total_still_present > 0) {
-        lines.push(`⚠️ ${summary.total_still_present} issue(s) still present`);
+        lines.push(`[WARN] ${summary.total_still_present} issue(s) still present`);
     }
     if (summary.total_new_issues > 0) {
-        lines.push(`🆕 ${summary.total_new_issues} new issue(s)`);
+        lines.push(`[NEW] ${summary.total_new_issues} new issue(s)`);
     }
 
     return lines.join('\n');

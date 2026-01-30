@@ -10,6 +10,7 @@ import type { RequestHandler } from './$types';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 import type { Database } from '$lib/types/database';
 import {
     getLatestVersion,
@@ -22,8 +23,7 @@ import { decryptPrivateKey } from '$lib/utils/asc-credential-store';
 function getEncryptionKey(): string {
     const envKey = process.env.ASC_ENCRYPTION_KEY;
     if (envKey && envKey.length === 64) return envKey;
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(SUPABASE_SERVICE_ROLE_KEY).digest('hex');
+    return createHash('sha256').update(SUPABASE_SERVICE_ROLE_KEY).digest('hex');
 }
 
 export const POST: RequestHandler = async ({ request, locals: { safeGetSession } }) => {
