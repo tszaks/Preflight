@@ -199,8 +199,9 @@ export async function getLatestVersion(
     credentials: ASCCredentials,
     appId: string,
 ): Promise<ASCAppVersion | null> {
+    // Fetch recent versions — keep query simple to avoid PARAMETER_ERROR.ILLEGAL
     const data = (await ascFetch(
-        `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=1&sort=-createdDate`,
+        `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=5&fields[appStoreVersions]=versionString,platform,appStoreState,createdDate`,
         credentials,
     )) as {
         data: Array<{
@@ -216,7 +217,11 @@ export async function getLatestVersion(
 
     if (!data.data.length) return null;
 
-    const v = data.data[0];
+    // Prefer the version being prepared for submission, then most recent
+    const preparing = data.data.find(
+        (v) => v.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION',
+    );
+    const v = preparing || data.data[0];
     return {
         id: v.id,
         versionString: v.attributes.versionString,
