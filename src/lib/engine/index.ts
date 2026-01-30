@@ -10,6 +10,7 @@ import {
 } from '$lib/types/progress';
 import { runHardRules } from './hard-rules';
 import { runChecklistRules } from './checklist';
+import { matchRejectionPatterns } from './historical-patterns';
 import { generateReport } from './report/generator';
 
 export type { CheckResult, EngineResult, HardRulesInput, SoftRulesInput };
@@ -176,6 +177,13 @@ export async function runAnalysis(
             emit(createProgressEvent('phase_complete', 'Skipped checklist analysis', 85, {
                 phase: 'checklist',
             }));
+        }
+
+        // === Phase 2.5: Historical Rejection Pattern Matching (instant) ===
+        const patternChecks = matchRejectionPatterns(hardInput);
+        allChecks.push(...patternChecks);
+        if (patternChecks.length > 0) {
+            console.log('[Analysis] Pattern matching found', patternChecks.length, 'advisory warnings');
         }
 
         // === Phase 3: Generate Report (85-100%) ===
