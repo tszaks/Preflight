@@ -9,6 +9,7 @@ import type { RequestHandler } from './$types';
 import { SUPABASE_SERVICE_ROLE_KEY } from '$env/static/private';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
 import type { Database } from '$lib/types/database';
 import { validateCredentials, listApps } from '$lib/utils/app-store-connect';
 import { encryptPrivateKey } from '$lib/utils/asc-credential-store';
@@ -20,9 +21,7 @@ function getEncryptionKey(): string {
     if (envKey && envKey.length === 64) return envKey;
 
     // Fallback: derive from service role key (not ideal but functional)
-    const crypto = require('crypto');
-    return crypto
-        .createHash('sha256')
+    return createHash('sha256')
         .update(SUPABASE_SERVICE_ROLE_KEY)
         .digest('hex');
 }
