@@ -46,12 +46,14 @@
     let appIcon: File | null = $state(null);
     let privacyManifest: File | null = $state(null);
     let infoPlist: File | null = $state(null);
+    let ipaBinary: File | null = $state(null);
 
     // Saved file paths from draft (already uploaded to Supabase Storage)
     let savedScreenshotPaths: string[] = $state(prefill?.screenshot_paths || []);
     let savedManifestPath: string | null = $state(prefill?.manifest_path || null);
     let savedPlistPath: string | null = $state(prefill?.plist_path || null);
     let savedIconPath: string | null = $state(prefill?.app_icon_path || null);
+    let savedIpaPath: string | null = $state(prefill?.ipa_path || null);
 
     // Signed URLs for displaying saved file thumbnails (path → URL map)
     const fileUrls: Record<string, string> = data.fileUrls || {};
@@ -317,6 +319,13 @@
         }
     }
 
+    function handleIpa(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (input.files?.[0]) {
+            ipaBinary = input.files[0];
+        }
+    }
+
     async function submit() {
         if (!canSubmit) {
             errorMsg = `Missing required fields or files`;
@@ -425,6 +434,7 @@
             if (savedManifestPath) formData.set("saved_manifest_path", savedManifestPath);
             if (savedPlistPath) formData.set("saved_plist_path", savedPlistPath);
             if (savedIconPath) formData.set("saved_icon_path", savedIconPath);
+            if (savedIpaPath) formData.set("saved_ipa_path", savedIpaPath);
 
             // New files
             for (const file of screenshots) {
@@ -433,6 +443,7 @@
             if (privacyManifest) formData.set("manifest", privacyManifest);
             if (infoPlist) formData.set("plist", infoPlist);
             if (appIcon) formData.set("icon", appIcon);
+            if (ipaBinary) formData.set("ipa", ipaBinary);
 
             const response = await fetch("/submit?/testSubmit", {
                 method: "POST",
@@ -550,6 +561,7 @@
             if (savedManifestPath) formData.set("saved_manifest_path", savedManifestPath);
             if (savedPlistPath) formData.set("saved_plist_path", savedPlistPath);
             if (savedIconPath) formData.set("saved_icon_path", savedIconPath);
+            if (savedIpaPath) formData.set("saved_ipa_path", savedIpaPath);
 
             // New files only
             for (const file of screenshots) {
@@ -563,6 +575,9 @@
             }
             if (appIcon) {
                 formData.set("icon", appIcon);
+            }
+            if (ipaBinary) {
+                formData.set("ipa", ipaBinary);
             }
 
             const response = await fetch("/submit?/saveDraft", {
@@ -1191,6 +1206,30 @@
                                     <span>Not added</span>
                                     <span class="upload-link">upload</span>
                                     <input type="file" accept="image/*" onchange={handleIcon} style="display: none;" />
+                                </label>
+                            {/if}
+                        </div>
+
+                        <div class="config-file-row">
+                            <div class="config-file-info">
+                                <strong>IPA Binary</strong>
+                                <span class="config-file-hint">Deep scan of your compiled app</span>
+                            </div>
+                            {#if ipaBinary}
+                                <div class="config-file-status success">
+                                    <span>{ipaBinary.name} ({(ipaBinary.size / (1024 * 1024)).toFixed(1)} MB)</span>
+                                    <button class="remove-btn" onclick={() => (ipaBinary = null)}>×</button>
+                                </div>
+                            {:else if savedIpaPath}
+                                <div class="config-file-status success">
+                                    <span>✓ {getFilename(savedIpaPath)}</span>
+                                    <button class="remove-btn" onclick={() => (savedIpaPath = null)}>×</button>
+                                </div>
+                            {:else}
+                                <label class="config-file-status empty">
+                                    <span>Not added</span>
+                                    <span class="upload-link">upload</span>
+                                    <input type="file" accept=".ipa" onchange={handleIpa} style="display: none;" />
                                 </label>
                             {/if}
                         </div>
@@ -2664,6 +2703,11 @@
     .config-file-info strong {
         font-size: 0.9rem;
         font-weight: 500;
+    }
+
+    .config-file-hint {
+        font-size: 0.75rem;
+        color: var(--gray-400);
     }
 
     .config-file-status {
