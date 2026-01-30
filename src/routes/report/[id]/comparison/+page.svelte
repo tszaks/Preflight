@@ -100,6 +100,7 @@
                 { label: 'Info.plist', delta: diff.score_delta.plist },
                 { label: 'URLs', delta: diff.score_delta.urls },
                 { label: 'Content', delta: diff.score_delta.content },
+                { label: 'IPA Binary', delta: diff.score_delta.ipa_binary },
             ] as cat}
                 {#if cat.delta}
                     <div class="cat-score" class:cat-improved={cat.delta.delta > 0} class:cat-regressed={cat.delta.delta < 0}>

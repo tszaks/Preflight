@@ -179,6 +179,7 @@ export interface ScoreResult {
     score_plist: number | null;
     score_urls: number;
     score_content: number;
+    score_ipa_binary: number | null;
     score_overall: number;
 }
 
