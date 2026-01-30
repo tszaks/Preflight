@@ -125,6 +125,7 @@ function generateSummary(checks: CheckResult[], overallScore: number): string {
 /**
  * Filter low-value info items to reduce noise.
  * - Drops info items with confidence < 50 (kills low-signal guesses)
+ * - Drops info items whose guideline is already covered by a warning/critical
  * - Caps total info items at 8, keeping highest confidence first
  * - Critical and warning items are never touched
  */
@@ -135,8 +136,19 @@ function filterInfoItems(checks: CheckResult[]): CheckResult[] {
     const nonInfo = checks.filter(c => c.severity !== 'info');
     const infoItems = checks.filter(c => c.severity === 'info');
 
-    // Drop info items below confidence floor
-    const qualifiedInfo = infoItems.filter(c => (c.confidence ?? 0) >= INFO_CONFIDENCE_FLOOR);
+    // Guidelines already covered by a warning or critical — info tips are redundant
+    const coveredGuidelines = new Set(
+        nonInfo
+            .filter(c => c.guideline_ref && c.severity !== 'pass')
+            .map(c => c.guideline_ref)
+    );
+
+    // Drop info items below confidence floor OR redundant with a higher-severity item
+    const qualifiedInfo = infoItems.filter(c => {
+        if ((c.confidence ?? 0) < INFO_CONFIDENCE_FLOOR) return false;
+        if (c.guideline_ref && coveredGuidelines.has(c.guideline_ref)) return false;
+        return true;
+    });
 
     // Cap at max, sorted by confidence descending
     const cappedInfo = qualifiedInfo

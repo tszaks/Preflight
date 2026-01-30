@@ -133,9 +133,9 @@ function scoreDBPatterns(input: HardRulesInput, patterns: DBRejectionPattern[]):
         if (criteriaMatched < minRequired) continue;
         if (matchReasons.length === 0) continue;
 
-        // Category-only matches need higher signal to avoid noise
+        // Category-only matches are too broad (e.g. all finance apps get crypto warnings)
         if (criteriaMatched === 1 && matchReasons[0]?.startsWith('App category')) {
-            if (confidence < 55) continue;
+            continue;
         }
 
         results.push({
@@ -224,9 +224,9 @@ function scoreStaticPatterns(input: HardRulesInput): PatternMatch[] {
         if (criteriaMatched < minRequired) continue;
         if (matchReasons.length === 0) continue;
 
-        // Category-only matches need higher signal to avoid noise
+        // Category-only matches are too broad (e.g. all finance apps get crypto warnings)
         if (criteriaMatched === 1 && matchReasons[0]?.startsWith('App category')) {
-            if (confidence < 55) continue;
+            continue;
         }
 
         results.push({
