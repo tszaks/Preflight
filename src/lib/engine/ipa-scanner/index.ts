@@ -6,13 +6,15 @@
  *   1. Extract key files from the IPA ZIP (extract.ts)
  *   2. Analyze embedded frameworks for known SDK issues (frameworks.ts)
  *   3. Analyze entitlements for capability concerns (entitlements.ts)
- *   4. Return combined CheckResult[] for the report
+ *   4. Mach-O binary analysis - private API detection (macho/)
+ *   5. Structural checks + return combined CheckResult[]
  */
 
 import type { CheckResult } from '../types';
 import { extractIPA, type ExtractedIPA } from './extract';
 import { analyzeFrameworks } from './frameworks';
 import { analyzeEntitlements } from './entitlements';
+import { analyzeMachOFromIPA } from './macho';
 
 /** Summary of what was found inside the IPA */
 export interface IPAScanResult {
@@ -93,7 +95,25 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
         checks.push(...entitlementChecks);
     }
 
-    // Step 4: Structural checks
+    // Step 4: Mach-O binary analysis
+    if (extracted.zip && extracted.appDir && extracted.bundleName) {
+        try {
+            const machoResult = await analyzeMachOFromIPA(
+                extracted.zip, extracted.appDir, extracted.bundleName
+            );
+            checks.push(...machoResult.checks);
+            console.log(
+                `[IPA] Mach-O analysis: ${machoResult.checks.length} findings, ` +
+                `${machoResult.metadata.importedSymbolCount} symbols analyzed, ` +
+                `arch=${machoResult.metadata.arch}`
+            );
+        } catch (machoError) {
+            console.error('[IPA] Mach-O analysis failed (continuing):', machoError);
+            // Graceful degradation: continue without binary analysis
+        }
+    }
+
+    // Step 5: Structural checks
     if (!extracted.infoPlist) {
         checks.push({
             category: 'ipa_binary',

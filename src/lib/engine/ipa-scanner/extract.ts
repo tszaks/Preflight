@@ -22,6 +22,10 @@ export interface ExtractedIPA {
     iconFiles: string[];
     /** Total IPA size in bytes */
     totalSize: number;
+    /** The JSZip instance (for deferred binary extraction by Mach-O analyzer) */
+    zip?: JSZip;
+    /** The app directory path inside the ZIP (e.g., "Payload/MyApp.app/") */
+    appDir?: string;
 }
 
 /**
@@ -36,6 +40,8 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
         frameworksMissingPrivacyManifest: [],
         iconFiles: [],
         totalSize: buffer.byteLength,
+        zip,
+        appDir: '',
     };
 
     // Find the .app directory inside Payload/
@@ -44,6 +50,7 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
         throw new Error('Invalid IPA: No .app bundle found in Payload/');
     }
     result.bundleName = appDir.split('/').filter(Boolean).pop() || '';
+    result.appDir = appDir;
 
     // Extract Info.plist
     const plistFile = zip.file(`${appDir}Info.plist`);
