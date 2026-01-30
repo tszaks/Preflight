@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      asc_connections: {
+        Row: {
+          id: string
+          user_id: string
+          key_id: string
+          issuer_id: string
+          encrypted_private_key: string
+          encryption_iv: string
+          selected_app_id: string | null
+          selected_app_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          key_id: string
+          issuer_id: string
+          encrypted_private_key: string
+          encryption_iv: string
+          selected_app_id?: string | null
+          selected_app_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          key_id?: string
+          issuer_id?: string
+          encrypted_private_key?: string
+          encryption_iv?: string
+          selected_app_id?: string | null
+          selected_app_name?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asc_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analysis_jobs: {
         Row: {
           attempts: number

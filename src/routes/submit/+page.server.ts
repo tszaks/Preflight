@@ -100,11 +100,28 @@ export const load: PageServerLoad = async ({ url, locals: { safeGetSession, supa
         }
     }
 
+    // Check if user has an active ASC connection (optional feature)
+    let hasAscConnection = false;
+    let ascAppName: string | null = null;
+    if (user) {
+        const { data: ascConn } = await supabase
+            .from('asc_connections')
+            .select('selected_app_name')
+            .eq('user_id', user.id)
+            .single();
+        if (ascConn) {
+            hasAscConnection = true;
+            ascAppName = ascConn.selected_app_name || null;
+        }
+    }
+
     return {
         user: user || { id: 'test-user' },
         draftSubmission,
         originalSubmission,
         fileUrls,
+        hasAscConnection,
+        ascAppName,
     };
 };
 

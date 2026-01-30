@@ -7,6 +7,7 @@
         type ScanResults,
     } from "$lib/utils/project-scanner";
     import CockpitPanel from "$lib/components/CockpitPanel.svelte";
+    import ASCConnectModal from "$lib/components/ASCConnectModal.svelte";
 
     // Props from server
     let { data } = $props();
@@ -239,6 +240,37 @@
     let scanning = $state(false);
     let scanProgress = $state("");
     let applyingFiles = $state(false);
+
+    // App Store Connect integration (optional)
+    let showAscModal = $state(false);
+    let ascConnected = $state(data.hasAscConnection || false);
+    let ascAppName = $state(data.ascAppName || '');
+
+    function handleAscAutofill(formData: Record<string, string>) {
+        if (formData.app_name) appName = formData.app_name;
+        if (formData.subtitle) subtitle = formData.subtitle;
+        if (formData.description) description = formData.description;
+        if (formData.keywords) keywords = formData.keywords;
+        if (formData.promotional_text) promotionalText = formData.promotional_text;
+        if (formData.privacy_url) privacyUrl = formData.privacy_url;
+        if (formData.support_url) supportUrl = formData.support_url;
+        if (formData.marketing_url) marketingUrl = formData.marketing_url;
+        if (formData.category) category = formData.category;
+        if (formData.secondary_category) secondaryCategory = formData.secondary_category;
+        if (formData.version) version = formData.version;
+        ascConnected = true;
+        ascAppName = formData.app_name || '';
+    }
+
+    async function disconnectAsc() {
+        try {
+            await fetch('/api/asc/connect', { method: 'DELETE' });
+            ascConnected = false;
+            ascAppName = '';
+        } catch {
+            // Silently ignore disconnect errors
+        }
+    }
 
     // Step labels for the progress indicator
     const stepLabels = ["Your App", "Your Files", "Settings & Access", "Review & Submit"];
@@ -857,6 +889,22 @@
             <!-- ═══════════════════════════════════════════════════════════════ -->
             <!-- STEP 1: Your App -->
             <!-- ═══════════════════════════════════════════════════════════════ -->
+
+            <!-- Optional: App Store Connect auto-fill -->
+            {#if !ascConnected}
+                <button class="asc-connect-bar" onclick={() => showAscModal = true}>
+                    <span class="asc-icon">🔗</span>
+                    <span class="asc-text">Connect App Store Connect (Optional)</span>
+                    <span class="asc-arrow">→</span>
+                </button>
+            {:else}
+                <div class="asc-connected-bar">
+                    <span class="asc-icon">✅</span>
+                    <span class="asc-text">Connected{ascAppName ? `: ${ascAppName}` : ''}</span>
+                    <button class="asc-disconnect" onclick={disconnectAsc}>Disconnect</button>
+                </div>
+            {/if}
+
             <CockpitPanel class="step-content">
                 <div class="step-intro">
                     <h2>Your App</h2>
@@ -2210,6 +2258,9 @@
         </div>
     </div>
 {/if}
+
+<!-- ASC Connect Modal -->
+<ASCConnectModal bind:open={showAscModal} onAutofill={handleAscAutofill} />
 
 <style>
     .submit-page {
@@ -3667,5 +3718,69 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+
+    /* ASC Connect Bar */
+    .asc-connect-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.875rem 1.25rem;
+        margin-bottom: 1rem;
+        background: rgba(99, 102, 241, 0.06);
+        border: 1px dashed rgba(99, 102, 241, 0.3);
+        border-radius: 12px;
+        color: var(--text-primary, #fff);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.875rem;
+    }
+
+    .asc-connect-bar:hover {
+        background: rgba(99, 102, 241, 0.12);
+        border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    .asc-connected-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.875rem 1.25rem;
+        margin-bottom: 1rem;
+        background: rgba(34, 197, 94, 0.06);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        border-radius: 12px;
+        font-size: 0.875rem;
+        color: var(--text-primary, #fff);
+    }
+
+    .asc-text {
+        flex: 1;
+    }
+
+    .asc-icon {
+        font-size: 1.125rem;
+    }
+
+    .asc-arrow {
+        color: var(--text-muted, #888);
+        font-size: 1.125rem;
+    }
+
+    .asc-disconnect {
+        background: none;
+        border: none;
+        color: var(--text-muted, #888);
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: color 0.2s;
+    }
+
+    .asc-disconnect:hover {
+        color: #ef4444;
     }
 </style>
