@@ -167,6 +167,31 @@ export async function validateCredentials(
 /**
  * List all apps accessible with these credentials.
  */
+export async function getApp(credentials: ASCCredentials, appId: string): Promise<ASCApp | null> {
+    const data = (await ascFetch(
+        `/apps/${appId}?fields[apps]=bundleId,name,sku,primaryLocale`,
+        credentials,
+    )) as {
+        data: {
+            id: string;
+            attributes: {
+                bundleId: string;
+                name: string;
+                sku: string;
+                primaryLocale: string;
+            };
+        };
+    };
+
+    return {
+        id: data.data.id,
+        bundleId: data.data.attributes.bundleId,
+        name: data.data.attributes.name,
+        sku: data.data.attributes.sku,
+        primaryLocale: data.data.attributes.primaryLocale,
+    };
+}
+
 export async function listApps(credentials: ASCCredentials): Promise<ASCApp[]> {
     const data = (await ascFetch(
         '/apps?fields[apps]=bundleId,name,sku,primaryLocale&limit=100',
