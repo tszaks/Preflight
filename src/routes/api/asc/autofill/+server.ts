@@ -18,6 +18,7 @@ import {
     getAppMetadata,
     getAppInfo,
     getReviewDetail,
+    getScreenshotUrls,
     type ASCCredentials,
 } from '$lib/utils/app-store-connect';
 import { decryptPrivateKey } from '$lib/utils/asc-credential-store';
@@ -75,6 +76,13 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
         ]);
     }
 
+    // Fetch screenshot URLs if we got a localization ID
+    let screenshotUrls: Array<{ url: string; fileName: string }> = [];
+    if (metadata?.localizationId) {
+        const urls = await getScreenshotUrls(credentials, metadata.localizationId).catch(() => []);
+        screenshotUrls = urls.map(({ url, fileName }) => ({ url, fileName }));
+    }
+
     // Save selected app to connection record (prefer app-level name over localized)
     const resolvedAppName = app?.name || metadata?.name || null;
     await serviceSupabase
@@ -121,6 +129,9 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
             contact_last_name: reviewDetail?.contactLastName || '',
             contact_phone: reviewDetail?.contactPhone || '',
             contact_email: reviewDetail?.contactEmail || '',
+
+            // Screenshots from ASC (Apple CDN URLs, need proxy to download)
+            screenshot_urls: screenshotUrls,
         },
     });
 };
