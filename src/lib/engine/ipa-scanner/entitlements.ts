@@ -72,7 +72,7 @@ export function analyzeEntitlements(entitlementsXml: string): CheckResult[] {
         if (entitlementsXml.includes(key)) {
             if (info.review_note) {
                 results.push({
-                    category: 'info_plist',
+                    category: 'ipa_binary',
                     severity: 'info',
                     title: `${info.name} entitlement detected`,
                     description: `The app requests the ${info.name} capability. ${info.review_note}`,

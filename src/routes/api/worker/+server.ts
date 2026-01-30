@@ -64,11 +64,13 @@ export const POST: RequestHandler = async ({ request }) => {
         screenshot_paths: submission.screenshot_paths || [],
         manifest_path: submission.manifest_path,
         plist_path: submission.plist_path,
+        ipa_path: submission.ipa_path,
         review_type: submission.review_type,
         screenshots_data: files.screenshotsData,
         manifest_content: files.manifestContent,
         plist_content: files.plistContent,
         privacy_policy_text: files.privacyPolicyText,
+        ipa_buffer: files.ipaBuffer,
         // Form-field based checks (for conditional warnings)
         sign_in_required: submission.sign_in_required ?? false,
         has_iap: submission.has_iap ?? false,
@@ -106,6 +108,7 @@ export const POST: RequestHandler = async ({ request }) => {
     console.log('[Worker] Submission ID:', submission.id);
     console.log('[Worker] Review type:', submission.review_type);
     console.log('[Worker] Has manifest content:', !!files.manifestContent);
+    console.log('[Worker] Has IPA binary:', !!files.ipaBuffer, files.ipaBuffer ? `(${(files.ipaBuffer.byteLength / (1024 * 1024)).toFixed(1)} MB)` : '');
 
     const result = await runAnalysis(supabase, submission.id, input, {
         skipChecklistRules: submission.review_type === 'quick' && !files.manifestContent,

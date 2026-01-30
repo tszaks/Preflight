@@ -35,6 +35,7 @@ export interface HardRulesInput {
     screenshot_paths: string[];
     manifest_path?: string | null;
     plist_path?: string | null;
+    ipa_path?: string | null;
     // Form-field based checks (for conditional warnings)
     sign_in_required?: boolean;
     has_iap?: boolean;
@@ -138,6 +139,8 @@ export interface SoftRulesInput extends HardRulesInput {
     manifest_content?: string;
     plist_content?: string;
     privacy_policy_text?: string;
+    /** IPA binary as ArrayBuffer (fetched from storage) */
+    ipa_buffer?: ArrayBuffer;
 }
 
 export interface ScreenshotData {
