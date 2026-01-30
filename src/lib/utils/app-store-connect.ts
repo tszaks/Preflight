@@ -34,6 +34,7 @@ export interface ASCAppVersion {
     platform: string;
     appStoreState: string;
     createdDate: string;
+    copyright: string | null;
 }
 
 export interface ASCAppMetadata {
@@ -45,6 +46,17 @@ export interface ASCAppMetadata {
     privacyUrl: string | null;
     supportUrl: string | null;
     marketingUrl: string | null;
+}
+
+export interface ASCReviewDetail {
+    demoAccountRequired: boolean;
+    demoAccountName: string | null;
+    demoAccountPassword: string | null;
+    contactFirstName: string | null;
+    contactLastName: string | null;
+    contactPhone: string | null;
+    contactEmail: string | null;
+    notes: string | null;
 }
 
 export interface ASCReviewSubmission {
@@ -226,7 +238,7 @@ export async function getLatestVersion(
 ): Promise<ASCAppVersion | null> {
     // Fetch recent versions — keep query simple to avoid PARAMETER_ERROR.ILLEGAL
     const data = (await ascFetch(
-        `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=5&fields[appStoreVersions]=versionString,platform,appStoreState,createdDate`,
+        `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=5&fields[appStoreVersions]=versionString,platform,appStoreState,createdDate,copyright`,
         credentials,
     )) as {
         data: Array<{
@@ -236,6 +248,7 @@ export async function getLatestVersion(
                 platform: string;
                 appStoreState: string;
                 createdDate: string;
+                copyright?: string;
             };
         }>;
     };
@@ -253,6 +266,7 @@ export async function getLatestVersion(
         platform: v.attributes.platform,
         appStoreState: v.attributes.appStoreState,
         createdDate: v.attributes.createdDate,
+        copyright: v.attributes.copyright || null,
     };
 }
 
@@ -297,6 +311,50 @@ export async function getAppMetadata(
         supportUrl: loc.supportUrl || null,
         marketingUrl: loc.marketingUrl || null,
     };
+}
+
+/**
+ * Get the app review detail (demo account, contact info, notes) for a specific version.
+ */
+export async function getReviewDetail(
+    credentials: ASCCredentials,
+    versionId: string,
+): Promise<ASCReviewDetail | null> {
+    try {
+        const data = (await ascFetch(
+            `/appStoreVersions/${versionId}/appStoreReviewDetail`,
+            credentials,
+        )) as {
+            data: {
+                attributes: {
+                    demoAccountRequired?: boolean;
+                    demoAccountName?: string;
+                    demoAccountPassword?: string;
+                    contactFirstName?: string;
+                    contactLastName?: string;
+                    contactPhone?: string;
+                    contactEmail?: string;
+                    notes?: string;
+                };
+            };
+        };
+
+        const attrs = data.data?.attributes;
+        if (!attrs) return null;
+
+        return {
+            demoAccountRequired: attrs.demoAccountRequired || false,
+            demoAccountName: attrs.demoAccountName || null,
+            demoAccountPassword: attrs.demoAccountPassword || null,
+            contactFirstName: attrs.contactFirstName || null,
+            contactLastName: attrs.contactLastName || null,
+            contactPhone: attrs.contactPhone || null,
+            contactEmail: attrs.contactEmail || null,
+            notes: attrs.notes || null,
+        };
+    } catch {
+        return null;
+    }
 }
 
 /**
