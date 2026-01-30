@@ -297,12 +297,14 @@
         // Capture references before closing the modal
         const plist = scanResults.infoPlist;
         const manifest = scanResults.privacyManifest;
+        const ipa = scanResults.ipaBinary;
 
         showScanResults = false;
 
         // Assign files synchronously — no setTimeout race condition
         if (plist) infoPlist = plist;
         if (manifest) privacyManifest = manifest;
+        if (ipa) ipaBinary = ipa;
     }
 
     function closeScanResults() {
@@ -2187,7 +2189,7 @@
         <div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div class="modal-header">
                 <h3>
-                    {#if scanResults.infoPlist || scanResults.privacyManifest}
+                    {#if scanResults.infoPlist || scanResults.privacyManifest || scanResults.ipaBinary}
                         Found files in {scanResults.projectName}/
                     {:else}
                         No config files found
@@ -2231,10 +2233,28 @@
                         </div>
                     </div>
                 {/if}
+
+                {#if scanResults.ipaBinary}
+                    <div class="scan-result-item success">
+                        <div class="result-icon">✓</div>
+                        <div class="result-content">
+                            <strong>IPA Binary</strong>
+                            <span class="result-path">{formatPath(scanResults.ipaBinaryPath || "")}</span>
+                        </div>
+                    </div>
+                {:else}
+                    <div class="scan-result-item warning">
+                        <div class="result-icon">—</div>
+                        <div class="result-content">
+                            <strong>IPA Binary</strong>
+                            <span class="result-path">Not found - you can upload one separately</span>
+                        </div>
+                    </div>
+                {/if}
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick={closeScanResults}>Cancel</button>
-                {#if scanResults.infoPlist || scanResults.privacyManifest}
+                {#if scanResults.infoPlist || scanResults.privacyManifest || scanResults.ipaBinary}
                     <button class="btn btn-primary" onclick={applyScanResults}>Use These Files</button>
                 {/if}
             </div>

@@ -301,31 +301,49 @@ export async function getAppMetadata(
 
 /**
  * Get the app's general info (category, etc).
+ * Uses `include` to get full category objects from the JSON:API `included` array.
  */
 export async function getAppInfo(
     credentials: ASCCredentials,
     appId: string,
-): Promise<{ categoryId: string | null; subcategoryId: string | null } | null> {
+): Promise<{ categoryName: string | null; subcategoryName: string | null } | null> {
     try {
         const data = (await ascFetch(
-            `/apps/${appId}/appInfos?limit=1&sort=-state`,
+            `/apps/${appId}/appInfos?limit=1&include=primaryCategory,secondaryCategory`,
             credentials,
         )) as {
             data: Array<{
                 id: string;
                 relationships?: {
-                    primaryCategory?: { data?: { id: string } };
-                    secondaryCategory?: { data?: { id: string } };
+                    primaryCategory?: { data?: { id: string; type: string } | null };
+                    secondaryCategory?: { data?: { id: string; type: string } | null };
                 };
+            }>;
+            included?: Array<{
+                id: string;
+                type: string;
+                attributes?: { name?: string };
             }>;
         };
 
         if (!data.data.length) return null;
 
         const info = data.data[0];
+        const included = data.included || [];
+
+        // Look up category names from the included array
+        const primaryId = info.relationships?.primaryCategory?.data?.id;
+        const secondaryId = info.relationships?.secondaryCategory?.data?.id;
+
+        const findName = (id: string | undefined) => {
+            if (!id) return null;
+            const match = included.find((inc) => inc.id === id);
+            return match?.attributes?.name || null;
+        };
+
         return {
-            categoryId: info.relationships?.primaryCategory?.data?.id || null,
-            subcategoryId: info.relationships?.secondaryCategory?.data?.id || null,
+            categoryName: findName(primaryId),
+            subcategoryName: findName(secondaryId),
         };
     } catch {
         return null;

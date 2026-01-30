@@ -81,33 +81,6 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
         })
         .eq('user_id', user.id);
 
-    // Map ASC category IDs to human-readable names (partial mapping)
-    const categoryMap: Record<string, string> = {
-        'BUSINESS': 'Business',
-        'DEVELOPER_TOOLS': 'Developer Tools',
-        'EDUCATION': 'Education',
-        'ENTERTAINMENT': 'Entertainment',
-        'FINANCE': 'Finance',
-        'FOOD_AND_DRINK': 'Food & Drink',
-        'GAMES': 'Games',
-        'GRAPHICS_AND_DESIGN': 'Graphics & Design',
-        'HEALTH_AND_FITNESS': 'Health & Fitness',
-        'LIFESTYLE': 'Lifestyle',
-        'MEDICAL': 'Medical',
-        'MUSIC': 'Music',
-        'NAVIGATION': 'Navigation',
-        'NEWS': 'News',
-        'PHOTO_AND_VIDEO': 'Photo & Video',
-        'PRODUCTIVITY': 'Productivity',
-        'REFERENCE': 'Reference',
-        'SHOPPING': 'Shopping',
-        'SOCIAL_NETWORKING': 'Social Networking',
-        'SPORTS': 'Sports',
-        'TRAVEL': 'Travel',
-        'UTILITIES': 'Utilities',
-        'WEATHER': 'Weather',
-    };
-
     return json({
         success: true,
         data: {
@@ -123,13 +96,9 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
             support_url: metadata?.supportUrl || '',
             marketing_url: metadata?.marketingUrl || '',
 
-            // Category (best-effort mapping)
-            category: appInfo?.categoryId
-                ? categoryMap[appInfo.categoryId] || appInfo.categoryId
-                : '',
-            secondary_category: appInfo?.subcategoryId
-                ? categoryMap[appInfo.subcategoryId] || appInfo.subcategoryId
-                : '',
+            // Category (names resolved directly from Apple's API)
+            category: appInfo?.categoryName || '',
+            secondary_category: appInfo?.subcategoryName || '',
 
             // Version info
             version: version?.versionString || '',

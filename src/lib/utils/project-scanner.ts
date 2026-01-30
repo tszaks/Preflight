@@ -4,6 +4,7 @@
  * Uses the browser's webkitdirectory API to scan a folder and find:
  * - Info.plist (app configuration)
  * - PrivacyInfo.xcprivacy (privacy manifest, required iOS 17+)
+ * - .ipa binary (compiled app for deep scan)
  */
 
 export interface ScanResults {
@@ -11,6 +12,8 @@ export interface ScanResults {
   infoPlistPath: string | null;
   privacyManifest: File | null;
   privacyManifestPath: string | null;
+  ipaBinary: File | null;
+  ipaBinaryPath: string | null;
   projectName: string | null;
 }
 
@@ -39,6 +42,8 @@ export function scanProjectFolder(files: FileList): ScanResults {
     infoPlistPath: null,
     privacyManifest: null,
     privacyManifestPath: null,
+    ipaBinary: null,
+    ipaBinaryPath: null,
     projectName: null,
   };
 
@@ -68,6 +73,15 @@ export function scanProjectFolder(files: FileList): ScanResults {
       if (!results.privacyManifest || file.name === 'PrivacyInfo.xcprivacy') {
         results.privacyManifest = file;
         results.privacyManifestPath = path;
+      }
+    }
+
+    // Find IPA binary (.ipa files)
+    if (file.name.endsWith('.ipa')) {
+      // Prefer the largest IPA (most likely the full app build)
+      if (!results.ipaBinary || file.size > results.ipaBinary.size) {
+        results.ipaBinary = file;
+        results.ipaBinaryPath = path;
       }
     }
 
