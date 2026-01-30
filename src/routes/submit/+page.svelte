@@ -209,6 +209,7 @@
         if (screenshots.length === 0 && savedScreenshotPaths.length === 0) missing.push("At least 1 screenshot");
         if (!privacyManifest && !savedManifestPath) missing.push("Privacy manifest (PrivacyInfo.xcprivacy)");
         if (!infoPlist && !savedPlistPath) missing.push("Info.plist");
+        if (!ipaBinary && !savedIpaPath) missing.push("IPA Binary");
         return missing;
     });
 
@@ -1325,6 +1326,7 @@
                         <div class="config-file-row">
                             <div class="config-file-info">
                                 <strong>IPA Binary</strong>
+                                <span class="required">*</span>
                                 <span class="config-file-hint">Deep scan of your compiled app</span>
                             </div>
                             {#if ipaBinary}
