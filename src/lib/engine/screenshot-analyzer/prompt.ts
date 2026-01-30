@@ -19,6 +19,7 @@ export interface ScreenshotAnalysisContext {
     has_iap?: boolean;
     has_subscriptions?: boolean;
     has_third_party_login?: boolean;
+    analysis_date?: string;
 }
 
 export interface AIFinding {
@@ -69,6 +70,10 @@ export function buildSystemPrompt(context: ScreenshotAnalysisContext): string {
         conditionals.push('App has third-party login (Google, Facebook, etc.)');
     }
 
+    if (context.analysis_date) {
+        conditionals.push(`Analysis date: ${context.analysis_date} (use this to determine if dates in screenshots are past, present, or future)`);
+    }
+
     const contextBlock = conditionals.length > 0
         ? `\nApp context:\n${conditionals.map((c) => `- ${c}`).join('\n')}\n`
         : '';
@@ -78,7 +83,7 @@ export function buildSystemPrompt(context: ScreenshotAnalysisContext): string {
 You are reviewing screenshots for the app "${context.app_name}".${contextBlock}
 For each screenshot, analyze:
 
-1. PLACEHOLDER CONTENT: Look for "Lorem ipsum", "John Doe", "test@test.com", "$0.00" placeholders, "TODO", debug text, or obviously fake data.
+1. PLACEHOLDER CONTENT: Look for "Lorem ipsum", "John Doe", "test@test.com", "$0.00" placeholders, "TODO", debug text, or obviously fake data. When evaluating dates, use the analysis date from the app context to determine if dates are actually in the future. Recent past dates and current-month dates are NOT fake data.
 
 2. STATUS BAR ISSUES: Visible debug indicators, "Carrier" text instead of carrier name, unusual time displays.
 
