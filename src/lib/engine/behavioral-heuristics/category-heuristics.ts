@@ -49,15 +49,19 @@ export function matchCategoryHeuristics(input: HardRulesInput): CheckResult[] {
         });
     }
 
-    // Check for missing required features (advisory)
+    // Check for missing required features (advisory, only if corroborated by keywords)
     for (const feature of heuristic.required_features) {
-        results.push({
-            category: 'content_policy',
-            severity: 'info',
-            title: `${formatCategoryName(key)} requirement: ${feature}`,
-            description: `Apps in the ${formatCategoryName(key)} category typically need: ${feature}. Verify this is addressed in your submission.`,
-            confidence: 40,
-        });
+        const featureWords = feature.toLowerCase().split(/[\s,/]+/).filter(w => w.length > 3);
+        const relevant = featureWords.some(w => corpus.includes(w));
+        if (relevant) {
+            results.push({
+                category: 'content_policy',
+                severity: 'info',
+                title: `${formatCategoryName(key)} requirement: ${feature}`,
+                description: `Apps in the ${formatCategoryName(key)} category typically need: ${feature}. Verify this is addressed in your submission.`,
+                confidence: 55,
+            });
+        }
     }
 
     // General category advisory (one combined note if risk is high)

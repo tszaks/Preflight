@@ -133,6 +133,11 @@ function scoreDBPatterns(input: HardRulesInput, patterns: DBRejectionPattern[]):
         if (criteriaMatched < minRequired) continue;
         if (matchReasons.length === 0) continue;
 
+        // Category-only matches need higher signal to avoid noise
+        if (criteriaMatched === 1 && matchReasons[0]?.startsWith('App category')) {
+            if (confidence < 55) continue;
+        }
+
         results.push({
             patternId: pattern.id,
             pattern: {
@@ -218,6 +223,11 @@ function scoreStaticPatterns(input: HardRulesInput): PatternMatch[] {
         const minRequired = pattern.match.min_matches ?? 1;
         if (criteriaMatched < minRequired) continue;
         if (matchReasons.length === 0) continue;
+
+        // Category-only matches need higher signal to avoid noise
+        if (criteriaMatched === 1 && matchReasons[0]?.startsWith('App category')) {
+            if (confidence < 55) continue;
+        }
 
         results.push({
             patternId: pattern.id,

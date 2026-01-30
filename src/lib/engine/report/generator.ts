@@ -19,12 +19,15 @@ export async function generateReport(
     // Deduplicate similar issues (hard rules + soft rules can flag same thing)
     const deduplicatedChecks = deduplicateChecks(cappedChecks);
 
+    // Filter low-value info items: confidence floor + cap total count
+    const filteredChecks = filterInfoItems(deduplicatedChecks);
+
     // Calculate scores
-    const scores = calculateScores(deduplicatedChecks);
-    const counts = countBySeverity(deduplicatedChecks);
+    const scores = calculateScores(filteredChecks);
+    const counts = countBySeverity(filteredChecks);
 
     // Generate summary
-    const summary = generateSummary(deduplicatedChecks, scores.score_overall);
+    const summary = generateSummary(filteredChecks, scores.score_overall);
 
     // Create report record
     const { data: report, error: reportError } = await supabase
@@ -47,7 +50,7 @@ export async function generateReport(
     }
 
     // Create report items (filter out pass results to keep it clean)
-    const items = deduplicatedChecks
+    const items = filteredChecks
         .filter(check => check.severity !== 'pass')
         .map(check => ({
             report_id: report.id,
@@ -117,6 +120,30 @@ function generateSummary(checks: CheckResult[], overallScore: number): string {
     }
 
     return `${criticals.length} critical issue(s) found that will likely cause rejection. Fix these before submitting. ${warnings.length > 0 ? `Also review ${warnings.length} warning(s).` : ''}`;
+}
+
+/**
+ * Filter low-value info items to reduce noise.
+ * - Drops info items with confidence < 50 (kills low-signal guesses)
+ * - Caps total info items at 8, keeping highest confidence first
+ * - Critical and warning items are never touched
+ */
+function filterInfoItems(checks: CheckResult[]): CheckResult[] {
+    const INFO_CONFIDENCE_FLOOR = 50;
+    const MAX_INFO_ITEMS = 8;
+
+    const nonInfo = checks.filter(c => c.severity !== 'info');
+    const infoItems = checks.filter(c => c.severity === 'info');
+
+    // Drop info items below confidence floor
+    const qualifiedInfo = infoItems.filter(c => (c.confidence ?? 0) >= INFO_CONFIDENCE_FLOOR);
+
+    // Cap at max, sorted by confidence descending
+    const cappedInfo = qualifiedInfo
+        .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
+        .slice(0, MAX_INFO_ITEMS);
+
+    return [...nonInfo, ...cappedInfo];
 }
 
 /**
