@@ -11,6 +11,8 @@ import {
 import { runHardRules } from './hard-rules';
 import { runChecklistRules } from './checklist';
 import { matchRejectionPatterns } from './historical-patterns';
+import { analyzeScreenshots } from './screenshot-analyzer';
+import type { ScreenshotEvidence } from './types';
 import { generateReport } from './report/generator';
 
 export type { CheckResult, EngineResult, HardRulesInput, SoftRulesInput };
@@ -184,6 +186,56 @@ export async function runAnalysis(
         allChecks.push(...patternChecks);
         if (patternChecks.length > 0) {
             console.log('[Analysis] Pattern matching found', patternChecks.length, 'advisory warnings');
+        }
+
+        // === Phase 2.75: Screenshot AI Analysis (70-84%) ===
+        let screenshotEvidence: ScreenshotEvidence | undefined;
+
+        if (input.screenshots_data?.length && options.anthropicApiKey) {
+            emit(createProgressEvent('check_start', PROGRESS_MESSAGES[PROGRESS_CHECKS.SCREENSHOTS_AI], 70, {
+                check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+                phase: 'soft_rules',
+            }));
+
+            try {
+                const Anthropic = (await import('@anthropic-ai/sdk')).default;
+                const anthropic = new Anthropic({ apiKey: options.anthropicApiKey });
+
+                const screenshotResult = await analyzeScreenshots(anthropic, input.screenshots_data, {
+                    app_name: input.app_name,
+                    category: input.category,
+                    age_rating: input.age_rating,
+                    sign_in_required: input.sign_in_required,
+                    has_iap: input.has_iap,
+                    has_subscriptions: input.has_subscriptions,
+                    has_third_party_login: input.has_third_party_login,
+                });
+
+                allChecks.push(...screenshotResult.checks);
+                screenshotEvidence = screenshotResult.evidence;
+
+                console.log('[Analysis] Screenshot AI found', screenshotResult.checks.length, 'issues');
+
+                emit(createProgressEvent('check_complete', `Screenshot AI: ${screenshotResult.checks.length} findings`, 84, {
+                    check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+                    phase: 'soft_rules',
+                    data: { evidence: screenshotEvidence },
+                }));
+            } catch (screenshotError) {
+                console.error('[Analysis] Screenshot AI failed (continuing without):', screenshotError);
+                emit(createProgressEvent('check_complete', 'Screenshot AI: skipped (error)', 84, {
+                    check: PROGRESS_CHECKS.SCREENSHOTS_AI,
+                    phase: 'soft_rules',
+                }));
+            }
+        }
+
+        // Cross-reference: resolve conditional warnings using screenshot evidence
+        if (screenshotEvidence) {
+            const resolved = resolveConditionalWarnings(allChecks, screenshotEvidence);
+            if (resolved > 0) {
+                console.log('[Analysis] Cross-reference resolved', resolved, 'conditional warnings');
+            }
         }
 
         // === Phase 3: Generate Report (85-100%) ===
@@ -380,6 +432,51 @@ export async function fetchSubmissionFiles(
     }
 
     return result;
+}
+
+/**
+ * Cross-reference conditional warnings against screenshot evidence.
+ * If the AI saw a required UI element in a screenshot, downgrade the
+ * corresponding conditional warning from 'warning' to 'pass'.
+ *
+ * Returns the number of warnings resolved.
+ */
+function resolveConditionalWarnings(checks: CheckResult[], evidence: ScreenshotEvidence): number {
+    let resolved = 0;
+
+    // Map evidence fields to the warning titles they resolve
+    const resolutions: Array<{
+        evidenceKey: keyof Omit<ScreenshotEvidence, 'evidence_locations'>;
+        titleIncludes: string;
+    }> = [
+        { evidenceKey: 'account_deletion_seen', titleIncludes: 'account deletion' },
+        { evidenceKey: 'restore_purchases_seen', titleIncludes: 'restore purchases' },
+        { evidenceKey: 'subscription_terms_seen', titleIncludes: 'subscription' },
+        { evidenceKey: 'sign_in_with_apple_seen', titleIncludes: 'sign in with apple' },
+    ];
+
+    for (const resolution of resolutions) {
+        if (evidence[resolution.evidenceKey] !== true) continue;
+
+        for (let i = 0; i < checks.length; i++) {
+            const check = checks[i];
+            if (
+                check.severity === 'warning' &&
+                check.title.toLowerCase().includes(resolution.titleIncludes)
+            ) {
+                checks[i] = {
+                    ...check,
+                    severity: 'pass',
+                    description:
+                        check.description +
+                        ' [Resolved: AI confirmed this element is visible in screenshots.]',
+                };
+                resolved++;
+            }
+        }
+    }
+
+    return resolved;
 }
 
 async function updateJobStatus(

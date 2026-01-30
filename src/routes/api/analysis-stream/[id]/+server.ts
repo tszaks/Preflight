@@ -164,6 +164,7 @@ export const GET: RequestHandler = async ({ params, locals: { safeGetSession, su
 
                 // Run analysis with progress streaming (service role bypasses RLS for report writes)
                 const result = await runAnalysis(serviceSupabase, submissionId, input, {
+                    anthropicApiKey: ANTHROPIC_API_KEY,
                     onProgress: sendEvent,
                 });
 
