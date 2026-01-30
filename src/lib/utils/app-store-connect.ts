@@ -53,6 +53,14 @@ export interface ASCReviewSubmission {
     submittedDate: string | null;
 }
 
+export interface ASCAppStoreVersion {
+    id: string;
+    versionString: string;
+    platform: string;
+    appStoreState: string;
+    createdDate: string;
+}
+
 // ── Constants ────────────────────────────────────────────────────
 
 const ASC_BASE_URL = 'https://api.appstoreconnect.apple.com/v1';
@@ -319,6 +327,44 @@ export async function getReviewSubmissions(
             id: sub.id,
             state: sub.attributes.state,
             submittedDate: sub.attributes.submittedDate,
+        }));
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Get app store version history for a specific app.
+ * Returns up to 20 versions sorted by creation date (newest first).
+ * Version states include: READY_FOR_SALE, REJECTED, DEVELOPER_REJECTED,
+ * WAITING_FOR_REVIEW, IN_REVIEW, PREPARE_FOR_SUBMISSION, etc.
+ */
+export async function getAppStoreVersions(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<ASCAppStoreVersion[]> {
+    try {
+        const data = (await ascFetch(
+            `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=20&sort=-createdDate&fields[appStoreVersions]=versionString,platform,appStoreState,createdDate`,
+            credentials,
+        )) as {
+            data: Array<{
+                id: string;
+                attributes: {
+                    versionString: string;
+                    platform: string;
+                    appStoreState: string;
+                    createdDate: string;
+                };
+            }>;
+        };
+
+        return data.data.map((v) => ({
+            id: v.id,
+            versionString: v.attributes.versionString,
+            platform: v.attributes.platform,
+            appStoreState: v.attributes.appStoreState,
+            createdDate: v.attributes.createdDate,
         }));
     } catch {
         return [];

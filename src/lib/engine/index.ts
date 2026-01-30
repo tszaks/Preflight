@@ -11,6 +11,7 @@ import {
 import { runHardRules } from './hard-rules';
 import { runChecklistRules } from './checklist';
 import { matchRejectionPatterns } from './historical-patterns';
+import { runBehavioralHeuristics } from './behavioral-heuristics';
 import { analyzeScreenshots } from './screenshot-analyzer';
 import type { ScreenshotEvidence } from './types';
 import { generateReport } from './report/generator';
@@ -36,6 +37,8 @@ export async function runAnalysis(
         anthropicApiKey?: string;
         skipChecklistRules?: boolean;
         onProgress?: OnProgressCallback;
+        userId?: string;
+        ascEncryptionKey?: string;
     }
 ): Promise<{ reportId: string; success: boolean; error?: string }> {
     const allChecks: CheckResult[] = [];
@@ -186,6 +189,16 @@ export async function runAnalysis(
         allChecks.push(...patternChecks);
         if (patternChecks.length > 0) {
             console.log('[Analysis] Pattern matching found', patternChecks.length, 'advisory warnings');
+        }
+
+        // === Phase 2.6: Behavioral Heuristics ===
+        const behavioralChecks = await runBehavioralHeuristics(hardInput, supabase, {
+            userId: options.userId,
+            ascEncryptionKey: options.ascEncryptionKey,
+        });
+        allChecks.push(...behavioralChecks);
+        if (behavioralChecks.length > 0) {
+            console.log('[Analysis] Behavioral heuristics found', behavioralChecks.length, 'checks');
         }
 
         // === Phase 2.75: Screenshot AI Analysis (70-84%) ===
