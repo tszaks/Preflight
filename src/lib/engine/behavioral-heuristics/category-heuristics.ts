@@ -41,7 +41,7 @@ export function matchCategoryHeuristics(input: HardRulesInput): CheckResult[] {
         results.push({
             category: 'content_policy',
             severity,
-            title: `${formatCategoryName(key)}: ${reason.description.slice(0, 80)}`,
+            title: `${formatCategoryName(key)}: ${truncateAtWord(reason.description, 80)}`,
             description: reason.description,
             guideline_ref: reason.guideline,
             fix_suggestion: buildFixSuggestion(reason, key),
@@ -156,6 +156,15 @@ function buildFixSuggestion(reason: CategoryRejectionReason, categoryKey: string
     }
 
     return base;
+}
+
+/**
+ * Truncate text at a word boundary to avoid mid-word cuts.
+ */
+function truncateAtWord(text: string, maxLen: number): string {
+    if (text.length <= maxLen) return text;
+    const lastSpace = text.lastIndexOf(' ', maxLen);
+    return lastSpace > maxLen * 0.5 ? text.slice(0, lastSpace) : text.slice(0, maxLen);
 }
 
 /**
