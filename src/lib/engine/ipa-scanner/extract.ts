@@ -26,6 +26,14 @@ export interface ExtractedIPA {
     zip?: JSZip;
     /** The app directory path inside the ZIP (e.g., "Payload/MyApp.app/") */
     appDir?: string;
+    /** Breakdown of IPA size by content type */
+    sizeBreakdown?: {
+        frameworksSize: number;
+        assetsSize: number;
+        executableSize: number;
+        otherSize: number;
+        largestFrameworks: Array<{ name: string; size: number }>;
+    };
 }
 
 /**
@@ -97,6 +105,63 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
             if (name) result.iconFiles.push(name);
         }
     });
+
+    // Calculate size breakdown by content type
+    const executableName = result.bundleName.replace(/\.app$/, '');
+    const executablePath = `${appDir}${executableName}`;
+    const assetExtensions = /\.(car|png|jpg|jpeg|gif|mp4|mov|mp3|wav|pdf)$/i;
+
+    let frameworksSize = 0;
+    let assetsSize = 0;
+    let executableSize = 0;
+    let otherSize = 0;
+    const frameworkSizeMap = new Map<string, number>();
+
+    zip.forEach((path: string, file: JSZip.JSZipObject) => {
+        if (file.dir) return;
+
+        // JSZip exposes _data.uncompressedSize for entries (compressed size not directly available,
+        // so we use the uncompressed size as reported by the ZIP central directory)
+        const entrySize = (file as unknown as { _data?: { uncompressedSize?: number } })._data?.uncompressedSize ?? 0;
+
+        if (path === executablePath) {
+            executableSize = entrySize;
+        } else if (path.startsWith(frameworksDir)) {
+            frameworksSize += entrySize;
+            // Track per-framework sizes
+            const relativePath = path.replace(frameworksDir, '');
+            const fwName = relativePath.split('/')[0]?.replace('.framework', '') || '';
+            if (fwName) {
+                frameworkSizeMap.set(fwName, (frameworkSizeMap.get(fwName) || 0) + entrySize);
+            }
+        } else if (
+            assetExtensions.test(path) ||
+            path.includes('Assets.car') ||
+            path.includes('/Assets/')
+        ) {
+            assetsSize += entrySize;
+        } else {
+            otherSize += entrySize;
+        }
+    });
+
+    // Sort frameworks by size descending
+    const largestFrameworks = Array.from(frameworkSizeMap.entries())
+        .map(([name, size]) => ({ name, size }))
+        .sort((a, b) => b.size - a.size);
+
+    // Only report size breakdown if we actually got meaningful data from JSZip internals.
+    // _data.uncompressedSize is an internal API — if it stops working, all sizes will be 0.
+    const calculatedTotal = frameworksSize + assetsSize + executableSize + otherSize;
+    if (calculatedTotal > 0) {
+        result.sizeBreakdown = {
+            frameworksSize,
+            assetsSize,
+            executableSize,
+            otherSize,
+            largestFrameworks,
+        };
+    }
 
     return result;
 }

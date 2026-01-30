@@ -5,6 +5,7 @@ import {
     USAGE_DESCRIPTION_KEYS,
     BUNDLE_ID_REGEX,
     VERSION_REGEX,
+    BUILD_NUMBER_REGEX,
 } from '../knowledge-base/requirements';
 import { getGuidelineRef } from '../knowledge-base/guidelines';
 
@@ -144,6 +145,19 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
                 fix_suggestion: 'Use semantic versioning: major.minor or major.minor.patch (e.g., 1.0, 2.1.3).',
             });
         }
+
+        // Check for 0.x pre-release version
+        if (!isXcodeBuildVariable(version) && VERSION_REGEX.test(version) && version.startsWith('0.')) {
+            results.push({
+                category: 'info_plist',
+                severity: 'info',
+                title: 'Pre-release version number detected',
+                description: `Version ${version} starts with 0.x which suggests a pre-release build. Apple may question this during review.`,
+                confidence: 60,
+                guideline_ref: getGuidelineRef('2.5'),
+                fix_suggestion: 'Consider using version 1.0 or higher for production releases.',
+            });
+        }
     }
 
     // Also check CFBundleVersion (build number) for build variables
@@ -156,6 +170,37 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
             description: `Build number "${buildMatch[1]}" is an Xcode build variable. This is normal.`,
             confidence: 100,
             fix_suggestion: 'No action needed.',
+        });
+    }
+
+    // Validate CFBundleVersion format (if not a build variable)
+    if (buildMatch && !isXcodeBuildVariable(buildMatch[1])) {
+        const buildNumber = buildMatch[1];
+        if (!BUILD_NUMBER_REGEX.test(buildNumber)) {
+            results.push({
+                category: 'info_plist',
+                severity: 'warning',
+                title: 'Unexpected build number format',
+                description: `Build number '${buildNumber}' doesn't match expected format (X, X.Y, or X.Y.Z, all numeric).`,
+                confidence: 90,
+                guideline_ref: 'CFBundleVersion',
+                fix_suggestion: 'Use a numeric build number in the format X, X.Y, or X.Y.Z (e.g., 1, 1.0, 1.0.1).',
+            });
+        }
+    }
+
+    // Check if version and build number are identical
+    if (versionMatch && buildMatch &&
+        !isXcodeBuildVariable(versionMatch[1]) && !isXcodeBuildVariable(buildMatch[1]) &&
+        versionMatch[1] === buildMatch[1]) {
+        results.push({
+            category: 'info_plist',
+            severity: 'info',
+            title: 'Version and build number are identical',
+            description: `Version and build number are both '${versionMatch[1]}'. Using separate incrementing build numbers (e.g., 1, 2, 3) helps track builds.`,
+            confidence: 50,
+            guideline_ref: getGuidelineRef('2.5'),
+            fix_suggestion: 'Use an incrementing integer or date-based build number (e.g., 20240115) separate from the marketing version.',
         });
     }
 

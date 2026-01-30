@@ -13,6 +13,8 @@ import { checkUrls } from './urls';
 import { checkConditionalWarnings } from './conditional-warnings';
 import { checkPrivacyMismatch } from './privacy-mismatch';
 import { scanIPA } from '../ipa-scanner';
+import { auditPrivacyFrameworks } from '../ipa-scanner/privacy-framework-audit';
+import { auditEntitlements } from '../ipa-scanner/entitlements-audit';
 
 export interface HardRulesResult {
     checks: CheckResult[];
@@ -137,6 +139,27 @@ export async function runHardRules(
             phase: 'hard_rules',
             data: { checksFound: ipaScanResult.checks.length },
         }));
+
+        // Check 6b: Privacy-Framework cross-reference
+        // Run when frameworks OR entitlements exist (entitlements alone can indicate privacy-sensitive usage)
+        if (ipaScanResult.extracted.frameworks.length > 0 || ipaScanResult.extracted.entitlements) {
+            const privacyAuditChecks = auditPrivacyFrameworks(
+                ipaScanResult.extracted.frameworks,
+                ipaScanResult.extracted.entitlements,
+                effectiveManifest,
+            );
+            checks.push(...privacyAuditChecks);
+        }
+
+        // Check 6c: Entitlements deep audit
+        if (ipaScanResult.extracted.entitlements) {
+            const entitlementAuditChecks = auditEntitlements(
+                ipaScanResult.extracted.entitlements,
+                ipaScanResult.extracted.frameworks || [],
+                effectiveManifest,
+            );
+            checks.push(...entitlementAuditChecks);
+        }
     }
 
     // Check 7: Privacy Mismatch (93-96%) - Cross-reference form vs manifest

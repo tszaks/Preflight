@@ -26,6 +26,7 @@ export const URL_REQUIREMENTS = {
 
 export const BUNDLE_ID_REGEX = /^[a-zA-Z][a-zA-Z0-9\-\.]*[a-zA-Z0-9]$/;
 export const VERSION_REGEX = /^\d+\.\d+(\.\d+)?$/;
+export const BUILD_NUMBER_REGEX = /^\d+(\.\d+){0,2}$/;
 
 export const REQUIRED_PLIST_KEYS = [
     'CFBundleIdentifier',

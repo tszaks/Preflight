@@ -100,6 +100,17 @@
                     <line x1="100" y1="10" x2="100" y2="190" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.5" />
                     <line x1="10" y1="100" x2="190" y2="100" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.5" />
 
+                    <!-- Slow sweep beam -->
+                    <g class="radar-sweep">
+                        <defs>
+                            <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
+                                <stop offset="0%" stop-color="rgba(212, 168, 83, 0)" />
+                                <stop offset="100%" stop-color="rgba(212, 168, 83, 0.12)" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M100,100 L100,10 A90,90 0 0,1 163,35 Z" fill="url(#sweepGrad)" />
+                    </g>
+
                     <!-- Pulse rings (expanding outward from center) -->
                     <circle class="pulse-ring ring-1" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
                     <circle class="pulse-ring ring-2" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
@@ -354,6 +365,17 @@
     .radar-svg {
         width: 100%;
         height: 100%;
+    }
+
+    .radar-sweep {
+        transform-origin: 100px 100px;
+        animation: sweep-rotate 8s linear infinite;
+        opacity: 0.6;
+    }
+
+    @keyframes sweep-rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     .pulse-ring {

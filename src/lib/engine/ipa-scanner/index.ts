@@ -15,6 +15,7 @@ import { extractIPA, type ExtractedIPA } from './extract';
 import { analyzeFrameworks } from './frameworks';
 import { analyzeEntitlements } from './entitlements';
 import { analyzeMachOFromIPA } from './macho';
+import { checkExportCompliance } from './export-compliance';
 
 /** Summary of what was found inside the IPA */
 export interface IPAScanResult {
@@ -26,6 +27,11 @@ export interface IPAScanResult {
 
 /** Maximum IPA file size we'll attempt to process (500 MB) */
 const MAX_IPA_SIZE = 500 * 1024 * 1024;
+
+/** Convert bytes to megabytes, formatted to a fixed number of decimal places. */
+function toMB(bytes: number, decimals = 0): string {
+    return (bytes / (1024 * 1024)).toFixed(decimals);
+}
 
 /**
  * Scan an IPA file buffer and return App Store review findings.
@@ -45,7 +51,7 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             category: 'ipa_binary',
             severity: 'warning',
             title: 'IPA file is very large',
-            description: `The IPA is ${(buffer.byteLength / (1024 * 1024)).toFixed(0)} MB. Apple recommends keeping app size under 200 MB for cellular downloads. Apps over 4 GB are rejected.`,
+            description: `The IPA is ${toMB(buffer.byteLength)} MB. Apple recommends keeping app size under 200 MB for cellular downloads. Apps over 4 GB are rejected.`,
             guideline_ref: 'App Thinning and Download Size',
             fix_suggestion: 'Use App Thinning (bitcode, sliced assets) and review asset sizes. Consider on-demand resources for large content.',
             confidence: 100,
@@ -96,12 +102,14 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
     }
 
     // Step 4: Mach-O binary analysis
+    let importedSymbols: string[] = [];
     if (extracted.zip && extracted.appDir && extracted.bundleName) {
         try {
             const machoResult = await analyzeMachOFromIPA(
                 extracted.zip, extracted.appDir, extracted.bundleName
             );
             checks.push(...machoResult.checks);
+            importedSymbols = machoResult.metadata.importedSymbols;
             console.log(
                 `[IPA] Mach-O analysis: ${machoResult.checks.length} findings, ` +
                 `${machoResult.metadata.importedSymbolCount} symbols analyzed, ` +
@@ -112,6 +120,14 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             // Graceful degradation: continue without binary analysis
         }
     }
+
+    // Step 4b: Export compliance detection
+    const exportChecks = checkExportCompliance(
+        extracted.frameworks,
+        importedSymbols,
+        extracted.infoPlist,
+    );
+    checks.push(...exportChecks);
 
     // Step 5: Structural checks
     if (!extracted.infoPlist) {
@@ -153,10 +169,74 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             category: 'ipa_binary',
             severity: 'info',
             title: 'Large app bundle size',
-            description: `The IPA is ${(extracted.totalSize / (1024 * 1024)).toFixed(0)} MB. Apps over 200 MB cannot be downloaded over cellular data without user confirmation.`,
+            description: `The IPA is ${toMB(extracted.totalSize)} MB. Apps over 200 MB cannot be downloaded over cellular data without user confirmation.`,
             fix_suggestion: 'Consider App Thinning and on-demand resources to reduce initial download size.',
             confidence: 100,
         });
+    }
+
+    // Step 6: Size breakdown analysis
+    if (extracted.totalSize > 100 * 1024 * 1024 && extracted.sizeBreakdown) {
+        const breakdown = extracted.sizeBreakdown;
+        const totalUncompressed = breakdown.frameworksSize + breakdown.assetsSize + breakdown.executableSize + breakdown.otherSize;
+
+        if (totalUncompressed > 0) {
+            const pct = (bytes: number): string => ((bytes / totalUncompressed) * 100).toFixed(1);
+            const fwPct = pct(breakdown.frameworksSize);
+            const assetPct = pct(breakdown.assetsSize);
+            const execPct = pct(breakdown.executableSize);
+            const otherPct = pct(breakdown.otherSize);
+
+            checks.push({
+                category: 'ipa_binary',
+                severity: 'info',
+                title: 'App binary size breakdown',
+                description:
+                    `IPA size breakdown: ` +
+                    `Frameworks ${fwPct}% (${toMB(breakdown.frameworksSize, 1)} MB), ` +
+                    `Assets ${assetPct}% (${toMB(breakdown.assetsSize, 1)} MB), ` +
+                    `Executable ${execPct}% (${toMB(breakdown.executableSize, 1)} MB), ` +
+                    `Other ${otherPct}% (${toMB(breakdown.otherSize, 1)} MB).`,
+                confidence: 90,
+            });
+
+            // Flag individual frameworks > 20 MB
+            for (const fw of breakdown.largestFrameworks) {
+                if (fw.size > 20 * 1024 * 1024) {
+                    const fwMB = toMB(fw.size, 1);
+                    checks.push({
+                        category: 'ipa_binary',
+                        severity: 'info',
+                        title: `Large framework: ${fw.name} (${fwMB} MB)`,
+                        description:
+                            `The embedded framework "${fw.name}" is ${fwMB} MB. ` +
+                            `Large frameworks significantly increase download size. Consider whether all features of this SDK are needed.`,
+                        fix_suggestion:
+                            `Check if ${fw.name} offers a modular/lite build. Remove unused SDK features or consider alternatives with a smaller footprint.`,
+                        confidence: 90,
+                    });
+                }
+            }
+
+            // Check if executable + frameworks > 60% of total
+            const codeSize = breakdown.executableSize + breakdown.frameworksSize;
+            const codePct = (codeSize / totalUncompressed) * 100;
+            if (codePct > 60) {
+                checks.push({
+                    category: 'ipa_binary',
+                    severity: 'info',
+                    title: 'Code-heavy binary (executable + frameworks > 60%)',
+                    description:
+                        `Executable and framework code make up ${codePct.toFixed(0)}% of the app. ` +
+                        `This suggests significant code weight. Consider App Thinning and On-Demand Resources to reduce download size.`,
+                    fix_suggestion:
+                        'Enable App Thinning in Xcode to generate optimized variants. Use On-Demand Resources for content ' +
+                        'that isn\'t needed at launch. Strip unused architectures and debug symbols from release builds.',
+                    guideline_ref: 'App Thinning and Download Size',
+                    confidence: 85,
+                });
+            }
+        }
     }
 
     return { checks, extracted };

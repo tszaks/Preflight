@@ -20,6 +20,8 @@ export interface CheckResult {
     fix_suggestion?: string;
     /** Confidence in this finding (0-100). Hard rules = 100. AI rules vary. */
     confidence: number;
+    /** Optional pattern ID for linking to historical rejection patterns */
+    pattern_id?: string;
 }
 
 export interface HardRulesInput {

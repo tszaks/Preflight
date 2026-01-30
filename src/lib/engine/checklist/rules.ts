@@ -91,6 +91,50 @@ export const DESCRIPTION_RULES: ChecklistRule[] = [
         fix_suggestion: 'If your app uses AI/ML, ensure your privacy nutrition label accurately reflects any data sent to third-party AI services.',
         source: 'Apple November 2025 guidelines update + developer reports',
     },
+    {
+        id: 'desc_competitor_names',
+        tier: 1,
+        category: 'description',
+        severity: 'warning',
+        title: 'Competitor app mentioned in description',
+        description: 'Mentioning other apps by name may be flagged during review. Apple discourages referencing competitor products.',
+        guideline_ref: '2.3.10 — Accurate Metadata',
+        fix_suggestion: 'Remove specific competitor names. Use generic terms like "other apps" or "similar services" instead.',
+        source: 'Apple Guideline 2.3.10 + App Store rejection patterns',
+    },
+    {
+        id: 'desc_medical_claims',
+        tier: 1,
+        category: 'description',
+        severity: 'warning',
+        title: 'Potential medical claim detected',
+        description: 'Descriptions suggesting an app can diagnose, treat, cure, or prevent medical conditions require evidence and may trigger additional review.',
+        guideline_ref: '1.4.1 — Medical: Physical harm',
+        fix_suggestion: 'If your app provides health information, clarify it is for informational purposes only and not a substitute for professional medical advice.',
+        source: 'Apple Guideline 1.4.1 + FDA digital health guidelines',
+    },
+    {
+        id: 'desc_performance_guarantee',
+        tier: 1,
+        category: 'description',
+        severity: 'warning',
+        title: 'Performance guarantee or absolute claim detected',
+        description: 'Absolute guarantees like "100% accurate" or "guaranteed results" may be considered misleading.',
+        guideline_ref: '2.3 — Accurate Metadata',
+        fix_suggestion: 'Use qualified language instead, such as "designed to be highly accurate" or "aims to provide reliable results."',
+        source: 'Apple Guideline 2.3 + App Store rejection patterns',
+    },
+    {
+        id: 'desc_earnings_claims',
+        tier: 1,
+        category: 'description',
+        severity: 'warning',
+        title: 'Earnings or revenue claim detected',
+        description: 'Claims about specific earnings potential may be considered misleading and trigger App Review scrutiny.',
+        guideline_ref: '2.3 — Accurate Metadata',
+        fix_suggestion: 'Remove specific dollar amounts. If applicable, include appropriate disclaimers about results varying.',
+        source: 'Apple Guideline 2.3 + App Store rejection patterns',
+    },
 ];
 
 // ============================================================
@@ -152,6 +196,39 @@ export const PRIVACY_POLICY_RULES: ChecklistRule[] = [
         guideline_ref: '1.3 — Kids Category',
         fix_suggestion: 'If applicable, add a COPPA compliance section addressing children\'s data collection.',
         source: 'Apple Guideline 1.3 + COPPA requirements',
+    },
+    {
+        id: 'privacy_data_sharing',
+        tier: 1,
+        category: 'content_policy',
+        severity: 'warning',
+        title: 'Privacy policy missing data sharing section',
+        description: 'Privacy policy does not mention how user data is shared with third parties.',
+        guideline_ref: '5.1.1 — Data Collection and Storage',
+        fix_suggestion: 'Add a section describing whether and how user data is shared with third parties, partners, or service providers.',
+        source: 'Apple Guideline 5.1.1',
+    },
+    {
+        id: 'privacy_user_rights',
+        tier: 1,
+        category: 'content_policy',
+        severity: 'warning',
+        title: 'Privacy policy missing user rights section',
+        description: 'Privacy policy does not describe user rights regarding their data (access, deletion, portability, opt-out).',
+        guideline_ref: '5.1.1 — Data Collection and Storage',
+        fix_suggestion: 'Add a section describing users\' rights over their data, including how to access, correct, delete, or port their information.',
+        source: 'Apple Guideline 5.1.1 + GDPR/CCPA requirements',
+    },
+    {
+        id: 'privacy_international_transfers',
+        tier: 1,
+        category: 'content_policy',
+        severity: 'info',
+        title: 'Privacy policy does not address international data transfers',
+        description: 'Privacy policy does not mention international data transfers or regional compliance (GDPR, CCPA).',
+        guideline_ref: '5.1.1 — Data Collection and Storage',
+        fix_suggestion: 'If applicable, add a section describing international data transfers and compliance with regional privacy laws (GDPR, CCPA).',
+        source: 'Apple Guideline 5.1.1 + international privacy regulations',
     },
     {
         id: 'privacy_manifest_cross_ref',
@@ -441,6 +518,19 @@ export const PRIVACY_POLICY_KEYWORDS: Record<string, string[]> = {
         'children', 'child', 'minors', 'under 13', 'under 16',
         'coppa', 'kids', 'parental consent', 'age',
     ],
+    data_sharing: [
+        'share', 'third party', 'third-party', 'partners', 'vendors',
+        'service providers', 'disclose', 'data sharing', 'shared with',
+    ],
+    user_rights: [
+        'right to delete', 'right to access', 'data portability', 'opt out',
+        'opt-out', 'withdraw consent', 'your rights', 'data subject rights',
+        'right to know', 'right to correct',
+    ],
+    international_transfers: [
+        'international', 'cross-border', 'european', 'gdpr', 'ccpa',
+        'california', 'transfer', 'data transfer', 'eu', 'eea',
+    ],
 };
 
 /**
@@ -474,10 +564,14 @@ export const FORBIDDEN_NAME_PATTERNS: Array<{ pattern: RegExp; ruleId: string }>
     { pattern: /\b(ios|iphone|ipad|apple\s*watch|android|mobile)\b/i, ruleId: 'desc_platform_in_name' },
 ];
 
-export const FORBIDDEN_DESCRIPTION_PATTERNS: Array<{ pattern: RegExp; ruleId: string }> = [
+export const FORBIDDEN_DESCRIPTION_PATTERNS: Array<{ pattern: RegExp; ruleId: string; confidence?: number }> = [
     { pattern: /\b(beta|demo|test\s+version|coming\s+soon|under\s+construction|work\s+in\s+progress)\b/i, ruleId: 'desc_forbidden_labels' },
     { pattern: /\b(lorem\s+ipsum|todo|tbd|\[insert|example\.com|test@|placeholder|xxx|sample\s+text)\b/i, ruleId: 'desc_placeholder_content' },
     { pattern: /\b(#1|number\s*one|best\s+app|top[- ]rated|most\s+popular|leading|world'?s?\s+first|award[- ]winning)\b/i, ruleId: 'desc_misleading_superlatives' },
+    { pattern: /\b(whatsapp|instagram|tiktok|snapchat|facebook|twitter|youtube|spotify|uber|netflix|amazon|google|apple\s+music|discord)\b/i, ruleId: 'desc_competitor_names', confidence: 75 },
+    { pattern: /\b(diagnos(?:e|is|tic)|treat(?:s|ment)?|cure(?:s|d)?|prevent(?:s|ion)?)\b[^.]{0,50}\b(disease|illness|condition|disorder|cancer|diabetes|depression|anxiety)\b/i, ruleId: 'desc_medical_claims', confidence: 70 },
+    { pattern: /\b(guaranteed?|100%\s*(?:accurate|safe|secure|effective|reliable)|money[- ]?back|no[- ]?risk|risk[- ]?free)\b/i, ruleId: 'desc_performance_guarantee', confidence: 70 },
+    { pattern: /\b(?:earn|make)\s+\$\d+|\$\d+.*\b(?:per|a|each)\s+(?:day|week|month|year)\b/i, ruleId: 'desc_earnings_claims', confidence: 75 },
 ];
 
 export const AI_MENTION_PATTERN = /\b(artificial\s+intelligence|machine\s+learning|ai[- ]powered|gpt|llm|generative\s+ai|neural|deep\s+learning|ai\s+assistant|chatbot)\b/i;

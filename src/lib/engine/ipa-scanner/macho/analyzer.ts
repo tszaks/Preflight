@@ -23,6 +23,7 @@ export interface MachOAnalysisResult {
         sdk?: string;
         linkedFrameworkCount: number;
         importedSymbolCount: number;
+        importedSymbols: string[];
         encrypted: boolean;
     };
 }
@@ -149,6 +150,7 @@ export function analyzeMachOBinary(parseResult: MachOParseResult): MachOAnalysis
             sdk: parseResult.buildVersion?.sdk,
             linkedFrameworkCount: parseResult.linkedFrameworks.length,
             importedSymbolCount: parseResult.importedSymbols.length,
+            importedSymbols: parseResult.importedSymbols,
             encrypted: parseResult.encrypted,
         },
     };
