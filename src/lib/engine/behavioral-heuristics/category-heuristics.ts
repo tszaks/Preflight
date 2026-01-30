@@ -60,6 +60,7 @@ export function matchCategoryHeuristics(input: HardRulesInput): CheckResult[] {
                 title: `${formatCategoryName(key)} requirement: ${feature}`,
                 description: `Apps in the ${formatCategoryName(key)} category typically need: ${feature}. Verify this is addressed in your submission.`,
                 confidence: 55,
+                guideline_ref: extractGuidelineRef(feature),
             });
         }
     }
@@ -159,12 +160,25 @@ function buildFixSuggestion(reason: CategoryRejectionReason, categoryKey: string
 }
 
 /**
- * Truncate text at a word boundary to avoid mid-word cuts.
+ * Truncate text cleanly: prefer sentence boundary, fall back to word boundary.
  */
 function truncateAtWord(text: string, maxLen: number): string {
     if (text.length <= maxLen) return text;
+    // Prefer cutting at a sentence boundary (". " within limit)
+    const lastSentence = text.lastIndexOf('. ', maxLen);
+    if (lastSentence > maxLen * 0.5) return text.slice(0, lastSentence + 1);
+    // Fall back to word boundary
     const lastSpace = text.lastIndexOf(' ', maxLen);
     return lastSpace > maxLen * 0.5 ? text.slice(0, lastSpace) : text.slice(0, maxLen);
+}
+
+/**
+ * Extract a guideline reference from feature text like "Account deletion capability (5.1.1)".
+ * Returns undefined for non-guideline parentheticals like "(if applicable)".
+ */
+function extractGuidelineRef(text: string): string | undefined {
+    const match = text.match(/\((\d+\.\d+(?:\.\d+)?(?:\([a-z]\))?)\)\s*$/);
+    return match ? match[1] : undefined;
 }
 
 /**
