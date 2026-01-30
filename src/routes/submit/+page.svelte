@@ -152,7 +152,7 @@
     // Explicit feature confirmations (Phase 3: Smarter Form Questions)
     let hasAccountDeletion = $state(prefill?.has_account_deletion ?? true);
     let hasRestorePurchases = $state(prefill?.has_restore_purchases ?? true);
-    let isNewApp = $state(prefill?.is_new_app ?? true);
+    let isNewApp = $state(prefill?.is_new_app ?? !data.hasAscConnection);
     let settingsScreenshotIndex: number | null = $state(prefill?.settings_screenshot_index ?? null);
     let paywallScreenshotIndex: number | null = $state(prefill?.paywall_screenshot_index ?? null);
 
@@ -246,20 +246,42 @@
     let ascConnected = $state(data.hasAscConnection || false);
     let ascAppName = $state(data.ascAppName || '');
 
-    function handleAscAutofill(formData: Record<string, string>) {
+    function handleAscAutofill(formData: Record<string, any>) {
+        // Step 1: Basic app info
         if (formData.app_name) appName = formData.app_name;
         if (formData.subtitle) subtitle = formData.subtitle;
         if (formData.description) description = formData.description;
         if (formData.keywords) keywords = formData.keywords;
         if (formData.promotional_text) promotionalText = formData.promotional_text;
+        if (formData.copyright) copyright = formData.copyright;
+
+        // URLs
         if (formData.privacy_url) privacyUrl = formData.privacy_url;
         if (formData.support_url) supportUrl = formData.support_url;
         if (formData.marketing_url) marketingUrl = formData.marketing_url;
+
+        // Category & version
         if (formData.category) category = formData.category;
         if (formData.secondary_category) secondaryCategory = formData.secondary_category;
         if (formData.version) version = formData.version;
+
+        // Step 3: Sign-in & review info
+        if (formData.sign_in_required) signInRequired = true;
+        if (formData.demo_username) demoUsername = formData.demo_username;
+        if (formData.demo_password) demoPassword = formData.demo_password;
+        if (formData.review_notes) reviewNotes = formData.review_notes;
+
+        // Contact info
+        if (formData.contact_first_name) reviewerContact.firstName = formData.contact_first_name;
+        if (formData.contact_last_name) reviewerContact.lastName = formData.contact_last_name;
+        if (formData.contact_phone) reviewerContact.phone = formData.contact_phone;
+        if (formData.contact_email) reviewerContact.email = formData.contact_email;
+
         ascConnected = true;
         ascAppName = formData.app_name || '';
+
+        // If they connected ASC, the app already exists in the store — not a first submission
+        isNewApp = false;
     }
 
     async function disconnectAsc() {

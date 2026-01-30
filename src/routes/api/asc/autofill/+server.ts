@@ -17,6 +17,7 @@ import {
     getLatestVersion,
     getAppMetadata,
     getAppInfo,
+    getReviewDetail,
     type ASCCredentials,
 } from '$lib/utils/app-store-connect';
 import { decryptPrivateKey } from '$lib/utils/asc-credential-store';
@@ -64,10 +65,14 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
         getAppInfo(credentials, appId).catch(() => null),
     ]);
 
-    // Fetch localized metadata if we have a version
+    // Fetch version-dependent data in parallel (metadata + review detail)
     let metadata = null;
+    let reviewDetail = null;
     if (version) {
-        metadata = await getAppMetadata(credentials, version.id).catch(() => null);
+        [metadata, reviewDetail] = await Promise.all([
+            getAppMetadata(credentials, version.id).catch(() => null),
+            getReviewDetail(credentials, version.id).catch(() => null),
+        ]);
     }
 
     // Save selected app to connection record (prefer app-level name over localized)
@@ -102,7 +107,20 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
 
             // Version info
             version: version?.versionString || '',
+            copyright: version?.copyright || '',
             app_store_state: version?.appStoreState || '',
+
+            // Sign-in / review info
+            sign_in_required: reviewDetail?.demoAccountRequired || false,
+            demo_username: reviewDetail?.demoAccountName || '',
+            demo_password: reviewDetail?.demoAccountPassword || '',
+            review_notes: reviewDetail?.notes || '',
+
+            // Contact info
+            contact_first_name: reviewDetail?.contactFirstName || '',
+            contact_last_name: reviewDetail?.contactLastName || '',
+            contact_phone: reviewDetail?.contactPhone || '',
+            contact_email: reviewDetail?.contactEmail || '',
         },
     });
 };
