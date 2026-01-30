@@ -73,7 +73,7 @@ export const POST: RequestHandler = async ({ request, locals: { safeGetSession }
 
     if (dbError) {
         console.error('[ASC] Failed to save connection:', dbError);
-        throw error(500, 'Failed to save connection');
+        throw error(500, `Failed to save connection: ${dbError.message} (${dbError.code})`);
     }
 
     // Fetch apps to return to the UI
