@@ -29,6 +29,7 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
         ...(categoryChecks.content_policy || []),
         ...(categoryChecks.description || []),
     ]);
+    const score_ipa_binary = scoreCategoryOrNull(categoryChecks.ipa_binary || [], 'No IPA binary provided');
 
     // Weighted overall — only include categories that have actual data.
     // Null categories (files not provided) are excluded and their weight
@@ -40,6 +41,7 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
         { score: score_plist, weight: 0.15 },
         { score: score_urls, weight: 0.10 },
         { score: score_content, weight: 0.10 },
+        { score: score_ipa_binary, weight: 0.10 },
     ];
 
     const active = categoryWeights.filter(w => w.score !== null);
@@ -70,6 +72,7 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
         score_plist,
         score_urls,
         score_content,
+        score_ipa_binary,
         score_overall,
     };
 }

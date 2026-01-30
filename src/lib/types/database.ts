@@ -155,6 +155,7 @@ export type Database = {
           created_at: string
           id: string
           score_content: number | null
+          score_ipa_binary: number | null
           score_metadata: number | null
           score_overall: number | null
           score_plist: number | null
@@ -172,6 +173,7 @@ export type Database = {
           created_at?: string
           id?: string
           score_content?: number | null
+          score_ipa_binary?: number | null
           score_metadata?: number | null
           score_overall?: number | null
           score_plist?: number | null
@@ -189,6 +191,7 @@ export type Database = {
           created_at?: string
           id?: string
           score_content?: number | null
+          score_ipa_binary?: number | null
           score_metadata?: number | null
           score_overall?: number | null
           score_plist?: number | null

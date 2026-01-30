@@ -84,6 +84,7 @@
             content_policy: "Content Guidelines",
             description: "App Description",
             metadata_quality: "Optimization Tips",
+            ipa_binary: "IPA Binary",
         };
         return labels[cat] || cat;
     }
@@ -98,6 +99,7 @@
             content_policy: "Age ratings and content appropriateness",
             description: "Your app store description text",
             metadata_quality: "Tips to improve App Store visibility",
+            ipa_binary: "Analysis of your compiled app binary",
         };
         return descriptions[cat] || "";
     }
@@ -112,6 +114,7 @@
             content_policy: report.score_content,
             description: report.score_content,
             metadata_quality: null,
+            ipa_binary: report.score_ipa_binary,
         };
         return scores[cat] ?? null;
     }

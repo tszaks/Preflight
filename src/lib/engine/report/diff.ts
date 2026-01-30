@@ -27,6 +27,7 @@ export interface ScoreDelta {
     plist: { old: number; new: number; delta: number } | null;
     urls: { old: number; new: number; delta: number } | null;
     content: { old: number; new: number; delta: number } | null;
+    ipa_binary: { old: number; new: number; delta: number } | null;
 }
 
 export interface DiffSummary {
@@ -122,6 +123,7 @@ function calculateScoreDeltas(old: ScoreResult, current: ScoreResult): ScoreDelt
         plist: delta(old.score_plist, current.score_plist),
         urls: delta(old.score_urls, current.score_urls),
         content: delta(old.score_content, current.score_content),
+        ipa_binary: delta(old.score_ipa_binary, current.score_ipa_binary),
     };
 }
 
