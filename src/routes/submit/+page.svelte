@@ -883,6 +883,25 @@
                                 </label>
                             {/if}
                         </div>
+                        <div class="tech-file-row">
+                            <span class="tech-file-label">IPA Binary</span>
+                            {#if ipaBinary}
+                                <span class="tech-file-status status-ready">{ipaBinary.name} ({(ipaBinary.size / (1024 * 1024)).toFixed(1)} MB)</span>
+                                <button class="tech-file-clear" onclick={() => (ipaBinary = null)}>Change</button>
+                            {:else if savedIpaPath}
+                                <span class="tech-file-status status-ready">✓ {getFilename(savedIpaPath)}</span>
+                                <label class="tech-file-change">
+                                    Replace
+                                    <input type="file" accept=".ipa" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) { ipaBinary = t.files[0]; savedIpaPath = null; } }} hidden />
+                                </label>
+                            {:else}
+                                <span class="tech-file-status status-warning">Missing</span>
+                                <label class="tech-file-change">
+                                    Upload
+                                    <input type="file" accept=".ipa" onchange={(e) => { const t = e.target as HTMLInputElement; if (t.files?.[0]) ipaBinary = t.files[0]; }} hidden />
+                                </label>
+                            {/if}
+                        </div>
                     </div>
                 </div>
             </CockpitPanel>
