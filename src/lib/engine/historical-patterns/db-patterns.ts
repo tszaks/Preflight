@@ -10,7 +10,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '$lib/types/database';
+import type { Database } from '@/lib/types/database';
 import { ENHANCED_PATTERNS, type EnhancedRejectionPattern } from './patterns-enhanced';
 
 /** Shape of a pattern row from the rejection_patterns table */
@@ -117,19 +117,16 @@ export function incrementMatchCounters(
 ): void {
     if (patternIds.length === 0) return;
 
-    // Fire-and-forget RPC or individual updates
+    // Fire-and-forget updates
     for (const id of patternIds) {
-        supabase
-            .rpc('increment_pattern_matches' as never, { pattern_id: id } as never)
-            .then(() => {})
-            .catch(() => {
-                // Fallback: direct update (less atomic but works without RPC)
-                supabase
-                    .from('rejection_patterns')
-                    .update({ total_matches: undefined as unknown as number }) // Can't increment directly
-                    .eq('id', id)
-                    .then(() => {});
-            });
+        void (async () => {
+            try {
+                await supabase.rpc('increment_pattern_matches' as never, { pattern_id: id } as never);
+            } catch {
+                // Fallback: log and continue (counter increment is non-critical)
+                console.debug('[Patterns] Failed to increment match counter for pattern:', id);
+            }
+        })();
     }
 }
 

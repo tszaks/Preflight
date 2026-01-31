@@ -1,13 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '$lib/types/database';
+import type { Database } from '@/lib/types/database';
 import type { HardRulesInput, SoftRulesInput, CheckResult, EngineResult } from './types';
-import type { OnProgressCallback, ProgressEvent } from '$lib/types/progress';
+import type { OnProgressCallback, ProgressEvent } from '@/lib/types/progress';
 import {
     createProgressEvent,
     PROGRESS_CHECKS,
     PROGRESS_MESSAGES,
     PROGRESS_RANGES,
-} from '$lib/types/progress';
+} from '@/lib/types/progress';
 import { runHardRules } from './hard-rules';
 import { runChecklistRules } from './checklist';
 import { matchRejectionPatterns } from './historical-patterns';
@@ -42,7 +42,7 @@ export async function runAnalysis(
     }
 ): Promise<{ reportId: string; success: boolean; error?: string }> {
     const allChecks: CheckResult[] = [];
-    const emit = options.onProgress || (() => {});
+    const emit = options.onProgress || (() => { });
 
     // Update job status
     await updateJobStatus(supabase, submissionId, 'running');
@@ -222,7 +222,6 @@ export async function runAnalysis(
                     has_iap: input.has_iap,
                     has_subscriptions: input.has_subscriptions,
                     has_third_party_login: input.has_third_party_login,
-                    analysis_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
                 });
 
                 allChecks.push(...screenshotResult.checks);
@@ -463,11 +462,11 @@ function resolveConditionalWarnings(checks: CheckResult[], evidence: ScreenshotE
         evidenceKey: keyof Omit<ScreenshotEvidence, 'evidence_locations'>;
         titleIncludes: string;
     }> = [
-        { evidenceKey: 'account_deletion_seen', titleIncludes: 'account deletion' },
-        { evidenceKey: 'restore_purchases_seen', titleIncludes: 'restore purchases' },
-        { evidenceKey: 'subscription_terms_seen', titleIncludes: 'subscription' },
-        { evidenceKey: 'sign_in_with_apple_seen', titleIncludes: 'sign in with apple' },
-    ];
+            { evidenceKey: 'account_deletion_seen', titleIncludes: 'account deletion' },
+            { evidenceKey: 'restore_purchases_seen', titleIncludes: 'restore purchases' },
+            { evidenceKey: 'subscription_terms_seen', titleIncludes: 'subscription' },
+            { evidenceKey: 'sign_in_with_apple_seen', titleIncludes: 'sign in with apple' },
+        ];
 
     for (const resolution of resolutions) {
         if (evidence[resolution.evidenceKey] !== true) continue;
@@ -503,14 +502,15 @@ async function updateJobStatus(
         .update({
             status,
             ...(status === 'running' ? { started_at: new Date().toISOString() } : {}),
+            ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {}),
         })
         .eq('submission_id', submissionId);
 
     // Also update submission status
-    if (status === 'running') {
-        await supabase
-            .from('submissions')
-            .update({ status: 'analyzing' })
-            .eq('id', submissionId);
-    }
+    const submissionStatus = status === 'completed' ? 'complete' : status === 'running' ? 'analyzing' : 'failed';
+
+    await supabase
+        .from('submissions')
+        .update({ status: submissionStatus })
+        .eq('id', submissionId);
 }
