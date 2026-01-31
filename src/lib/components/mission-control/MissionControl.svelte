@@ -24,37 +24,11 @@
 </script>
 
 <div class="mission-control">
-    <div class="control-grid">
-        <!-- Left Panel: Status & Telemetry -->
-        <div class="panel-left">
-            <CockpitPanel class="telemetry-panel">
-                <SystemStatus />
-            </CockpitPanel>
-
-            <CockpitPanel class="info-panel">
-                <div class="target-info">
-                    <span class="label">TARGET</span>
-                    <span class="value">{appName}</span>
-                </div>
-                <div class="target-info">
-                    <span class="label">STATUS</span>
-                    <span class="value blink">ANALYZING</span>
-                </div>
-                <div class="target-info">
-                    <span class="label">MODE</span>
-                    <span class="value">DEEP SCAN</span>
-                </div>
-            </CockpitPanel>
-        </div>
-
-        <!-- Center: Radar -->
-        <div class="panel-center">
-            <div class="radar-wrapper">
-                <RadarScan>
-                    <div class="app-icon-placeholder">
-                        {appName.charAt(0)}
-                    </div>
-                </RadarScan>
+    <CockpitPanel class="analysis-panel">
+        <div class="analysis-content">
+            <div class="analysis-header">
+                <h2>Analyzing {appName}</h2>
+                <span class="status-badge analyzing">ANALYZING</span>
             </div>
 
             <div class="progress-section">
@@ -65,157 +39,123 @@
                     ></div>
                 </div>
                 <div class="progress-label">
-                    <span>SECURITY SCAN IN PROGRESS</span>
-                    <span>{Math.floor(scanProgress)}%</span>
+                    <span>{Math.floor(scanProgress)}% Complete</span>
                 </div>
             </div>
-        </div>
 
-        <!-- Right: Logs -->
-        <div class="panel-right">
-            <LogStream />
+            <p class="analysis-message">Your app is being reviewed against Apple's guidelines...</p>
         </div>
-    </div>
+    </CockpitPanel>
 </div>
 
 <style>
     .mission-control {
         position: fixed;
         inset: 0;
-        background: #050505;
+        background: rgba(8, 8, 10, 0.95);
         z-index: 100;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 40px;
-        font-family: "Outfit", sans-serif;
+        padding: 40px 24px;
+        backdrop-filter: blur(10px);
     }
 
-    .control-grid {
-        display: grid;
-        grid-template-columns: 300px 1fr 350px;
-        gap: 24px;
-        width: 100%;
-        max-width: 1400px;
-        height: 700px;
-    }
-
-    .panel-left {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .mission-control :global(.telemetry-panel),
-    .mission-control :global(.info-panel) {
-        background: rgba(10, 10, 10, 0.6);
-    }
-
-    .target-info {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        font-family: "Instrument Mono", monospace;
-    }
-
-    .target-info:last-child {
-        border-bottom: none;
-    }
-
-    .label {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.6rem;
-        font-weight: 700;
-        color: var(--gray-600);
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-    }
-
-    .value {
-        font-family: "Instrument Mono", monospace;
-        font-size: 0.85rem;
-        color: var(--fg);
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .blink {
-        color: var(--accent);
-        animation: blink 1.5s step-end infinite;
-    }
-
-    .panel-center {
-        display: flex;
-        flex-direction: column;
-        gap: 32px;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .radar-wrapper {
-        width: 400px;
-        height: 400px;
-    }
-
-    .app-icon-placeholder {
-        width: 80px;
-        height: 80px;
-        background: #fff;
-        color: #000;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        font-weight: 800;
-    }
-
-    .progress-section {
+    .mission-control :global(.analysis-panel) {
         width: 100%;
         max-width: 500px;
     }
 
+    .analysis-content {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .analysis-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .analysis-header h2 {
+        font-family: "Outfit", sans-serif;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .status-badge {
+        font-family: "Instrument Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .status-badge.analyzing {
+        background: rgba(212, 168, 83, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(212, 168, 83, 0.3);
+        animation: status-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes status-pulse {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+
+    .progress-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
     .progress-bar-container {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
         overflow: hidden;
-        margin-bottom: 12px;
     }
 
     .progress-bar {
         height: 100%;
         background: var(--accent);
-        box-shadow: 0 0 12px var(--accent-glow);
         transition: width 0.1s linear;
     }
 
     .progress-label {
-        display: flex;
-        justify-content: space-between;
         font-family: "Instrument Mono", monospace;
-        font-size: 0.65rem;
-        font-weight: 700;
-        color: var(--accent);
-        letter-spacing: 0.1em;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--gray-400);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
     }
 
-    .panel-right {
-        height: 100%;
+    .analysis-message {
+        font-size: 0.95rem;
+        color: var(--gray-300);
+        line-height: 1.6;
+        margin: 0;
     }
 
-    @keyframes blink {
-        50% {
-            opacity: 0;
+    @media (max-width: 600px) {
+        .mission-control {
+            padding: 20px;
         }
-    }
 
-    @media (max-width: 1024px) {
-        .control-grid {
-            grid-template-columns: 1fr;
-            height: auto;
-            overflow-y: auto;
+        .analysis-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .analysis-header h2 {
+            font-size: 1.5rem;
         }
     }
 </style>
