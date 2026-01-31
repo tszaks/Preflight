@@ -13,7 +13,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '$lib/types/database';
+import type { Database } from '@/lib/types/database';
 import type { CheckResult, HardRulesInput, CheckCategory } from '../types';
 import { ENHANCED_PATTERNS, type EnhancedRejectionPattern } from './patterns-enhanced';
 import { loadPatternsFromDB, incrementMatchCounters, type DBRejectionPattern } from './db-patterns';
@@ -104,9 +104,8 @@ function scoreDBPatterns(input: HardRulesInput, patterns: DBRejectionPattern[]):
             }
         }
 
-        // Feature flag matching (required)
         if (pattern.match_features_required.length > 0) {
-            const inputAny = input as Record<string, unknown>;
+            const inputAny = input as unknown as Record<string, unknown>;
             const hasAll = pattern.match_features_required.every((f) => inputAny[f] === true);
             if (hasAll) {
                 criteriaMatched++;
@@ -117,9 +116,8 @@ function scoreDBPatterns(input: HardRulesInput, patterns: DBRejectionPattern[]):
             }
         }
 
-        // Feature flag matching (absent)
         if (pattern.match_features_absent.length > 0) {
-            const inputAny = input as Record<string, unknown>;
+            const inputAny = input as unknown as Record<string, unknown>;
             const allAbsent = pattern.match_features_absent.every((f) => inputAny[f] !== true);
             if (allAbsent) {
                 criteriaMatched++;
@@ -132,11 +130,6 @@ function scoreDBPatterns(input: HardRulesInput, patterns: DBRejectionPattern[]):
         const minRequired = pattern.match_min_matches ?? 1;
         if (criteriaMatched < minRequired) continue;
         if (matchReasons.length === 0) continue;
-
-        // Category-only matches are too broad (e.g. all finance apps get crypto warnings)
-        if (criteriaMatched === 1 && matchReasons[0]?.startsWith('App category')) {
-            continue;
-        }
 
         results.push({
             patternId: pattern.id,
@@ -199,7 +192,7 @@ function scoreStaticPatterns(input: HardRulesInput): PatternMatch[] {
         }
 
         if (pattern.match.features_required?.length) {
-            const inputAny = input as Record<string, unknown>;
+            const inputAny = input as unknown as Record<string, unknown>;
             const hasAll = pattern.match.features_required.every((f) => inputAny[f] === true);
             if (hasAll) {
                 criteriaMatched++;
@@ -211,7 +204,7 @@ function scoreStaticPatterns(input: HardRulesInput): PatternMatch[] {
         }
 
         if (pattern.match.features_absent?.length) {
-            const inputAny = input as Record<string, unknown>;
+            const inputAny = input as unknown as Record<string, unknown>;
             const allAbsent = pattern.match.features_absent.every((f) => inputAny[f] !== true);
             if (allAbsent) {
                 criteriaMatched++;
@@ -223,11 +216,6 @@ function scoreStaticPatterns(input: HardRulesInput): PatternMatch[] {
         const minRequired = pattern.match.min_matches ?? 1;
         if (criteriaMatched < minRequired) continue;
         if (matchReasons.length === 0) continue;
-
-        // Category-only matches are too broad (e.g. all finance apps get crypto warnings)
-        if (criteriaMatched === 1 && matchReasons[0]?.startsWith('App category')) {
-            continue;
-        }
 
         results.push({
             patternId: pattern.id,

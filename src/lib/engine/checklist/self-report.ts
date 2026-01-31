@@ -167,13 +167,8 @@ function shouldShowInformationalRule(ruleId: string, input: HardRulesInput): boo
 
     switch (ruleId) {
         case 'info_no_feature_switch':
-            // Only relevant if description hints at feature toggling, A/B testing, or remote config
-            return /\b(feature\s*flag|remote\s*config|a\/b\s*test|toggle|unlock|hidden|switch\s*feature|server[- ]?side)\b/.test(desc);
-
         case 'info_original_value':
-            // Only relevant if description is suspiciously short or app is in clone-heavy categories
-            return (input.description || '').length < 100
-                || /\b(utilit|tool|calculator|flashlight|qr|scanner|converter|timer|clock)\b/.test(category);
+            return true; // Universal risk — always relevant
 
         case 'info_value_beyond_ads':
             return /\b(ads?|advertising|ad[- ]supported)\b/.test(desc) || category === 'games';
@@ -190,5 +185,5 @@ function shouldShowInformationalRule(ruleId: string, input: HardRulesInput): boo
  * Safely get a field value from the input by string key.
  */
 function getFieldValue(input: HardRulesInput, field: string): boolean | null | undefined {
-    return (input as Record<string, unknown>)[field] as boolean | null | undefined;
+    return (input as unknown as Record<string, unknown>)[field] as boolean | null | undefined;
 }

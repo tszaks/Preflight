@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '$lib/types/database';
+import type { Database } from '@/lib/types/database';
 import type { CheckResult } from '../types';
 import { capSeverityByConfidence } from '../types';
 import { calculateScores, countBySeverity } from './scoring';
@@ -19,15 +19,12 @@ export async function generateReport(
     // Deduplicate similar issues (hard rules + soft rules can flag same thing)
     const deduplicatedChecks = deduplicateChecks(cappedChecks);
 
-    // Filter low-value info items: confidence floor + cap total count
-    const filteredChecks = filterInfoItems(deduplicatedChecks);
-
     // Calculate scores
-    const scores = calculateScores(filteredChecks);
-    const counts = countBySeverity(filteredChecks);
+    const scores = calculateScores(deduplicatedChecks);
+    const counts = countBySeverity(deduplicatedChecks);
 
     // Generate summary
-    const summary = generateSummary(filteredChecks, scores.score_overall);
+    const summary = generateSummary(deduplicatedChecks, scores.score_overall);
 
     // Create report record
     const { data: report, error: reportError } = await supabase
@@ -50,7 +47,7 @@ export async function generateReport(
     }
 
     // Create report items (filter out pass results to keep it clean)
-    const items = filteredChecks
+    const items = deduplicatedChecks
         .filter(check => check.severity !== 'pass')
         .map(check => ({
             report_id: report.id,
@@ -123,58 +120,8 @@ function generateSummary(checks: CheckResult[], overallScore: number): string {
 }
 
 /**
- * Normalize a guideline_ref to its numeric prefix for consistent comparison.
- * "5.1.1 — Data Collection and Storage" → "5.1.1"
- * "Section 5.1.1 - Data Collection"     → "5.1.1"
- * "3.1.2(a) — Subscription Management"  → "3.1.2(a)"
- * "3.1.2" → "3.1.2" (already normalized)
- */
-function normalizeGuidelineRef(ref: string): string {
-    const match = ref.match(/(?:Section\s+)?(\d+\.\d+(?:\.\d+)?(?:\([a-z]\))?)/);
-    return match ? match[1] : ref;
-}
-
-/**
- * Filter low-value info items to reduce noise.
- * - Drops info items with confidence < 50 (kills low-signal guesses)
- * - Drops info items whose guideline is already covered by a warning/critical
- * - Caps total info items at 8, keeping highest confidence first
- * - Critical and warning items are never touched
- */
-function filterInfoItems(checks: CheckResult[]): CheckResult[] {
-    const INFO_CONFIDENCE_FLOOR = 50;
-    const MAX_INFO_ITEMS = 8;
-
-    const nonInfo = checks.filter(c => c.severity !== 'info');
-    const infoItems = checks.filter(c => c.severity === 'info');
-
-    // Guidelines already covered by a warning or critical — info tips are redundant
-    // Normalize refs: "5.1.1 — Data Collection" → "5.1.1" for consistent matching
-    const coveredGuidelines = new Set(
-        nonInfo
-            .filter(c => c.guideline_ref && c.severity !== 'pass')
-            .map(c => normalizeGuidelineRef(c.guideline_ref!))
-    );
-
-    // Drop info items below confidence floor OR redundant with a higher-severity item
-    const qualifiedInfo = infoItems.filter(c => {
-        if ((c.confidence ?? 0) < INFO_CONFIDENCE_FLOOR) return false;
-        if (c.guideline_ref && coveredGuidelines.has(normalizeGuidelineRef(c.guideline_ref))) return false;
-        return true;
-    });
-
-    // Cap at max, sorted by confidence descending
-    const cappedInfo = qualifiedInfo
-        .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
-        .slice(0, MAX_INFO_ITEMS);
-
-    return [...nonInfo, ...cappedInfo];
-}
-
-/**
  * Deduplicate similar checks that may come from both hard and soft rules.
- * Groups by: (1) same guideline_ref + same severity, or (2) title word similarity.
- * Keeps the highest severity version; ties broken by confidence.
+ * Uses title similarity to identify duplicates - keeps the higher severity version.
  */
 function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
     const severityRank: Record<string, number> = {
@@ -187,44 +134,27 @@ function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
     // Normalize title for comparison (lowercase, remove extra spaces)
     const normalizeTitle = (title: string) => title.toLowerCase().trim().replace(/\s+/g, ' ');
 
-    // Group by guideline_ref + severity, or by similar titles
+    // Group by similar titles
     const groups = new Map<string, CheckResult[]>();
 
     for (const check of checks) {
         const normalizedTitle = normalizeTitle(check.title);
+
+        // Check for similar existing titles (contains key words)
         let matchedKey: string | null = null;
 
-        // 1. Guideline-based grouping: same guideline_ref + same severity = same issue
-        //    (different severities under the same guideline are kept separate —
-        //     e.g. a critical "missing from manifest" vs warning "not in policy" for 5.1.1)
-        if (check.guideline_ref) {
-            const normalizedRef = normalizeGuidelineRef(check.guideline_ref);
-            for (const [existingKey, existingChecks] of groups) {
-                const sameGuidelineAndSeverity = existingChecks.some(
-                    ec => ec.guideline_ref &&
-                        normalizeGuidelineRef(ec.guideline_ref) === normalizedRef &&
-                        ec.severity === check.severity
-                );
-                if (sameGuidelineAndSeverity) {
-                    matchedKey = existingKey;
-                    break;
-                }
-            }
-        }
+        // Keywords that indicate similar issues
+        const titleWords = normalizedTitle.split(' ').filter(w => w.length > 3);
 
-        // 2. Title-based grouping: 60%+ significant word overlap
-        if (!matchedKey) {
-            const titleWords = normalizedTitle.split(' ').filter(w => w.length > 3);
+        for (const [existingKey] of groups) {
+            const existingWords = existingKey.split(' ').filter(w => w.length > 3);
+            // If 60%+ of significant words match, consider it similar
+            const matchingWords = titleWords.filter(w => existingWords.includes(w));
+            const similarity = matchingWords.length / Math.max(titleWords.length, existingWords.length);
 
-            for (const [existingKey] of groups) {
-                const existingWords = existingKey.split(' ').filter(w => w.length > 3);
-                const matchingWords = titleWords.filter(w => existingWords.includes(w));
-                const similarity = matchingWords.length / Math.max(titleWords.length, existingWords.length);
-
-                if (similarity >= 0.6) {
-                    matchedKey = existingKey;
-                    break;
-                }
+            if (similarity >= 0.6) {
+                matchedKey = existingKey;
+                break;
             }
         }
 
@@ -234,18 +164,18 @@ function deduplicateChecks(checks: CheckResult[]): CheckResult[] {
         groups.set(key, existing);
     }
 
-    // For each group, keep the highest severity version (confidence as tiebreaker)
+    // For each group, keep the highest severity version (or merge info)
     const result: CheckResult[] = [];
 
     for (const [, groupChecks] of groups) {
         if (groupChecks.length === 1) {
             result.push(groupChecks[0]);
         } else {
-            groupChecks.sort((a, b) => {
-                const sevDiff = (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0);
-                if (sevDiff !== 0) return sevDiff;
-                return (b.confidence ?? 0) - (a.confidence ?? 0);
-            });
+            // Sort by severity (highest first)
+            groupChecks.sort((a, b) =>
+                (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0)
+            );
+            // Keep the highest severity version
             result.push(groupChecks[0]);
         }
     }

@@ -17,7 +17,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '$lib/types/database';
+import type { Database } from '@/lib/types/database';
 import type { HardRulesInput, CheckResult } from '../types';
 import { matchCategoryHeuristics } from './category-heuristics';
 import { analyzeASCHistory } from './asc-review-history';

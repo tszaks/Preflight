@@ -1,4 +1,4 @@
-import type { Database } from '$lib/types/database';
+import type { Database } from '@/lib/types/database';
 
 // Re-export DB types for convenience
 export type Submission = Database['public']['Tables']['submissions']['Row'];

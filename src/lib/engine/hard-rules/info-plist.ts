@@ -85,11 +85,12 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
         if (isXcodeBuildVariable(bundleId)) {
             results.push({
                 category: 'info_plist',
-                severity: 'pass',
+                severity: 'info',
                 title: 'Bundle ID uses Xcode build variable',
                 description: `Bundle ID "${bundleId}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
                 confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
+                fix_suggestion: 'No action needed. Xcode will substitute the real bundle ID from your build settings when compiling.',
             });
         } else if (!BUNDLE_ID_REGEX.test(bundleId)) {
             results.push({
@@ -126,11 +127,12 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
         if (isXcodeBuildVariable(version)) {
             results.push({
                 category: 'info_plist',
-                severity: 'pass',
+                severity: 'info',
                 title: 'Version uses Xcode build variable',
                 description: `Version "${version}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
                 confidence: 100,
                 guideline_ref: getGuidelineRef('2.5'),
+                fix_suggestion: 'No action needed. Xcode will substitute the real version from your build settings when compiling.',
             });
         } else if (!VERSION_REGEX.test(version)) {
             results.push({
@@ -163,10 +165,11 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
     if (buildMatch && isXcodeBuildVariable(buildMatch[1])) {
         results.push({
             category: 'info_plist',
-            severity: 'pass',
+            severity: 'info',
             title: 'Build number uses Xcode build variable',
             description: `Build number "${buildMatch[1]}" is an Xcode build variable. This is normal.`,
             confidence: 100,
+            fix_suggestion: 'No action needed.',
         });
     }
 

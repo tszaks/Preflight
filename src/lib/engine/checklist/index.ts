@@ -1,6 +1,6 @@
 import type { CheckResult, SoftRulesInput } from '../types';
-import type { OnProgressCallback } from '$lib/types/progress';
-import { createProgressEvent } from '$lib/types/progress';
+import type { OnProgressCallback } from '@/lib/types/progress';
+import { createProgressEvent } from '@/lib/types/progress';
 import { checkDescription } from './description';
 import { checkContentPolicy } from './content-policy';
 import { checkPrivacyPolicy } from './privacy-policy';

@@ -19,7 +19,6 @@ export interface ScreenshotAnalysisContext {
     has_iap?: boolean;
     has_subscriptions?: boolean;
     has_third_party_login?: boolean;
-    analysis_date?: string;
 }
 
 export interface AIFinding {
@@ -70,22 +69,16 @@ export function buildSystemPrompt(context: ScreenshotAnalysisContext): string {
         conditionals.push('App has third-party login (Google, Facebook, etc.)');
     }
 
-    // analysis_date is now injected directly into the prompt header, not as a conditional
-
     const contextBlock = conditionals.length > 0
         ? `\nApp context:\n${conditionals.map((c) => `- ${c}`).join('\n')}\n`
         : '';
 
-    const dateBlock = context.analysis_date
-        ? `\nTODAY'S DATE: ${context.analysis_date}. Any date from the past 6 months through today is REAL DATA, not placeholder content.\n`
-        : '';
-
     return `You are an Apple App Store screenshot reviewer. You analyze iOS app screenshots for compliance issues that would cause App Store rejection.
-${dateBlock}
+
 You are reviewing screenshots for the app "${context.app_name}".${contextBlock}
 For each screenshot, analyze:
 
-1. PLACEHOLDER CONTENT: Look for "Lorem ipsum", "John Doe", "test@test.com", "$0.00" placeholders, "TODO", debug text, or obviously fake data. Dates within the last 6 months and the current month are REAL financial data — do NOT flag them as placeholder or fake content.
+1. PLACEHOLDER CONTENT: Look for "Lorem ipsum", "John Doe", "test@test.com", "$0.00" placeholders, "TODO", debug text, or obviously fake data.
 
 2. STATUS BAR ISSUES: Visible debug indicators, "Carrier" text instead of carrier name, unusual time displays.
 
@@ -135,7 +128,6 @@ IMPORTANT RULES:
 - Do NOT flag marketing overlay text on screenshots (Apple allows promotional text around the device frame).
 - If a screenshot appears to be a marketing composite (device mockup with text), analyze the screen content inside the device frame only.
 - For required elements, only flag as "missing" if you are CONFIDENT the app context requires them AND you have reviewed enough screenshots. If unsure, use severity "info" not "critical".
-- DATE RULE: Use TODAY'S DATE from the top of this prompt as your reference for the current date. Any dates within the past 6 months are real user data. Only flag dates as placeholder if they are clearly far in the future (e.g., year 2030) or use obviously fake formats (e.g., "January 1, 2000", "12/34/5678").
 - Return ONLY the JSON object. No markdown fences, no explanation text.`;
 }
 

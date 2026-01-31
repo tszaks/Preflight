@@ -5,7 +5,7 @@
  * streaming analysis progress to the client.
  */
 
-export type ProgressPhase = 'hard_rules' | 'soft_rules' | 'cross_reference' | 'report_generation';
+export type ProgressPhase = 'hard_rules' | 'soft_rules' | 'cross_reference' | 'report_generation' | 'checklist';
 
 export type ProgressEventType =
     | 'phase_start'

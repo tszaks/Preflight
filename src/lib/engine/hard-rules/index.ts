@@ -1,10 +1,10 @@
 import type { CheckResult, HardRulesInput, ScreenshotData } from '../types';
-import type { OnProgressCallback } from '$lib/types/progress';
+import type { OnProgressCallback } from '@/lib/types/progress';
 import {
     createProgressEvent,
     PROGRESS_CHECKS,
     PROGRESS_MESSAGES,
-} from '$lib/types/progress';
+} from '@/lib/types/progress';
 import { checkMetadata } from './metadata';
 import { checkScreenshots } from './screenshots';
 import { checkPrivacyManifest } from './privacy-manifest';
