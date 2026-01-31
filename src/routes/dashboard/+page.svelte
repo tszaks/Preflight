@@ -85,58 +85,23 @@
             <!-- Ambient glow behind the radar -->
             <div class="empty-glow"></div>
 
-            <!-- Technical readout label -->
-            <div class="readout-label"><span class="status-dot"></span> SYS STATUS</div>
+            <!-- Status label -->
+            <div class="readout-label"><span class="status-dot"></span> Status</div>
 
-            <!-- Radar scope -->
-            <div class="radar-scope">
-                <svg class="radar-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Concentric range rings -->
-                    <circle cx="100" cy="100" r="90" stroke="rgba(212, 168, 83, 0.08)" stroke-width="0.75" />
-                    <circle cx="100" cy="100" r="65" stroke="rgba(212, 168, 83, 0.06)" stroke-width="0.75" />
-                    <circle cx="100" cy="100" r="40" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.75" />
+            <!-- Scan visualization -->
+            <div class="scan-visual">
+                <svg class="scan-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Concentric circles (static) -->
+                    <circle cx="100" cy="100" r="80" stroke="rgba(212, 168, 83, 0.1)" stroke-width="1" />
+                    <circle cx="100" cy="100" r="55" stroke="rgba(212, 168, 83, 0.06)" stroke-width="0.75" />
+                    <circle cx="100" cy="100" r="30" stroke="rgba(212, 168, 83, 0.04)" stroke-width="0.75" />
 
-                    <!-- Crosshairs -->
-                    <line x1="100" y1="10" x2="100" y2="190" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.5" />
-                    <line x1="10" y1="100" x2="190" y2="100" stroke="rgba(212, 168, 83, 0.05)" stroke-width="0.5" />
-
-                    <!-- Slow sweep beam -->
-                    <g class="radar-sweep">
-                        <defs>
-                            <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
-                                <stop offset="0%" stop-color="rgba(212, 168, 83, 0)" />
-                                <stop offset="100%" stop-color="rgba(212, 168, 83, 0.12)" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M100,100 L100,10 A90,90 0 0,1 163,35 Z" fill="url(#sweepGrad)" />
-                    </g>
-
-                    <!-- Pulse rings (expanding outward from center) -->
-                    <circle class="pulse-ring ring-1" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
-                    <circle class="pulse-ring ring-2" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
-                    <circle class="pulse-ring ring-3" cx="100" cy="100" r="20" fill="none" stroke="var(--accent)" stroke-width="0.75" />
-
-                    <!-- Airliner — straight wings, thick body, rounded nose -->
-                    <g transform="translate(100, 100) scale(1.15)" fill="var(--accent)">
-                        <!-- Fuselage (thick, rounded nose, longer) -->
-                        <path d="M0,-32 Q-5,-30 -5,-24 L-5,22 Q-4,30 0,32 Q4,30 5,22 L5,-24 Q5,-30 0,-32 Z" opacity="1" />
-                        <!-- Left wing (straight) -->
-                        <polygon points="-5,-7 -30,2 -30,8 -5,2" opacity="1" />
-                        <!-- Right wing (straight) -->
-                        <polygon points="5,-7 30,2 30,8 5,2" opacity="1" />
-                        <!-- Left engine -->
-                        <ellipse cx="-17" cy="2" rx="3.5" ry="7" opacity="0.9" />
-                        <!-- Right engine -->
-                        <ellipse cx="17" cy="2" rx="3.5" ry="7" opacity="0.9" />
-                        <!-- Left tail stabilizer (at very back) -->
-                        <polygon points="-2,21 -16,27 -16,30 -2,27" opacity="1" />
-                        <!-- Right tail stabilizer -->
-                        <polygon points="2,21 16,27 16,30 2,27" opacity="1" />
-                    </g>
+                    <!-- Center dot -->
+                    <circle cx="100" cy="100" r="3" fill="var(--accent)" opacity="0.8" />
                 </svg>
 
-                <!-- Scanline overlay -->
-                <div class="scanlines"></div>
+                <!-- Subtle pulsing overlay -->
+                <div class="scan-pulse"></div>
             </div>
 
             <!-- Status row -->
@@ -347,81 +312,38 @@
         50% { opacity: 0.5; box-shadow: 0 0 3px #22c55e, 0 0 6px rgba(34, 197, 94, 0.2); }
     }
 
-    /* Radar Scope */
-    .radar-scope {
+    /* Scan Visualization */
+    .scan-visual {
         position: relative;
-        width: 225px;
-        height: 225px;
+        width: 180px;
+        height: 180px;
         margin-bottom: 20px;
         border-radius: 50%;
         overflow: hidden;
         background: radial-gradient(
             circle at 50% 50%,
-            rgba(212, 168, 83, 0.03) 0%,
-            transparent 70%
+            rgba(212, 168, 83, 0.02) 0%,
+            transparent 60%
         );
     }
 
-    .radar-svg {
+    .scan-svg {
         width: 100%;
         height: 100%;
+        opacity: 0.7;
     }
 
-    .radar-sweep {
-        transform-origin: 100px 100px;
-        animation: sweep-rotate 8s linear infinite;
-        opacity: 0.6;
-    }
-
-    @keyframes sweep-rotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .pulse-ring {
-        transform-origin: 100px 100px;
-        animation: radar-pulse 3.5s ease-out infinite;
-        opacity: 0;
-    }
-
-    .ring-2 { animation-delay: 1.15s; }
-    .ring-3 { animation-delay: 2.3s; }
-
-    @keyframes radar-pulse {
-        0% {
-            r: 5;
-            opacity: 0.7;
-            stroke-width: 2.5;
-        }
-        100% {
-            r: 95;
-            opacity: 0;
-            stroke-width: 0.3;
-        }
-    }
-
-    .center-blip {
-        animation: blip-glow 3.5s ease-in-out infinite;
-    }
-
-    @keyframes blip-glow {
-        0%, 100% { opacity: 0.3; }
-        15% { opacity: 0.8; }
-        30% { opacity: 0.3; }
-    }
-
-    .scanlines {
+    .scan-pulse {
         position: absolute;
         inset: 0;
-        background: repeating-linear-gradient(
-            0deg,
-            transparent 0px,
-            transparent 3px,
-            rgba(212, 168, 83, 0.015) 3px,
-            rgba(212, 168, 83, 0.015) 4px
-        );
-        pointer-events: none;
         border-radius: 50%;
+        background: radial-gradient(circle, rgba(212, 168, 83, 0.2), transparent);
+        animation: scan-fade 2.5s ease-in-out infinite;
+    }
+
+    @keyframes scan-fade {
+        0%, 100% { opacity: 0.2; transform: scale(0.8); }
+        50% { opacity: 0.5; transform: scale(1); }
     }
 
     /* Status Row */
