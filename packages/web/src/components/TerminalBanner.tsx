@@ -26,6 +26,8 @@ export function TerminalBanner() {
         className="pointer-events-auto inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 cursor-pointer"
       >
         <Terminal className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+        <span className="text-xs text-gray-500 font-medium">Install the CLI</span>
+        <span className="w-px h-3 bg-white/10" />
         <div className="flex items-center gap-2">
           {commands.map((cmd, i) => (
             <span key={i} className="inline-flex items-center gap-1.5">
