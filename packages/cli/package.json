@@ -1,5 +1,5 @@
 {
-  "name": "@preflight/cli",
+  "name": "preflightlaunch",
   "version": "0.1.0",
   "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",

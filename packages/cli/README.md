@@ -1,4 +1,4 @@
-# @preflight/cli
+# preflightlaunch
 
 **Preflight** - App Store Review Scanner from your terminal. Catch rejection reasons before Apple does.
 
@@ -6,7 +6,7 @@
 
 ```bash
 # npm
-npm install -g @preflight/cli
+npm install -g preflightlaunch
 
 # Homebrew
 brew tap tszaks/preflight
