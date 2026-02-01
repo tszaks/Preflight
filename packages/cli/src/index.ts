@@ -116,6 +116,7 @@ async function interactiveMenu() {
             s.stop(`Logged in as ${result.email}`)
         } else {
             s.stop('Login failed or timed out. Run `preflight login` to try again.')
+            ui.outro()
             return
         }
     }
