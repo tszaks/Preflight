@@ -114,16 +114,3 @@ export function scanProjectFolder(files: FileList): ScanResults {
 
   return results;
 }
-
-/**
- * Get a user-friendly display path (truncate if too long)
- */
-export function formatPath(path: string, maxLength = 50): string {
-  if (path.length <= maxLength) return path;
-
-  const parts = path.split('/');
-  if (parts.length <= 2) return path;
-
-  // Show first folder + ... + filename
-  return `${parts[0]}/.../${parts[parts.length - 1]}`;
-}

@@ -89,39 +89,6 @@ body {
   }
 }
 
-@keyframes pulse-slow {
-
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.6;
-    transform: scale(1.05);
-  }
-}
-
-@keyframes orbit {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes glint {
-  0% {
-    left: -100%;
-  }
-
-  100% {
-    left: 100%;
-  }
-}
 
 @keyframes matrix-fade {
   0% {
@@ -157,65 +124,13 @@ body {
   }
 }
 
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-
-  50% {
-    transform: translateY(-10px) rotate(1deg);
-  }
-}
-
-@keyframes scan-horizontal {
-  0% {
-    left: -10%;
-  }
-
-  100% {
-    left: 110%;
-  }
-}
 
 .animate-scan {
   animation: scan-line 4s linear infinite;
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 3s ease-in-out infinite;
-}
-
-.animate-orbit {
-  animation: orbit 10s linear infinite;
-}
-
-.animate-glint {
-  position: relative;
-  overflow: hidden;
-}
-
-.animate-glint::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.05),
-      transparent);
-  animation: glint 3s infinite;
-}
-
 .mask-gradient-b {
   mask-image: linear-gradient(to bottom, black 80%, transparent);
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
 }
 
 .animate-matrix {
@@ -224,10 +139,6 @@ body {
 
 .animate-blink {
   animation: blink 1s step-end infinite;
-}
-
-.animate-scan-h {
-  animation: scan-horizontal 3s linear infinite;
 }
 
 /* Hide scrollbar for clean terminal look */
