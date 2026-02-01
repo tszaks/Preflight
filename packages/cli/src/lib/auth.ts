@@ -12,6 +12,17 @@ function escapeHtml(str: string): string {
         .replace(/'/g, '&#039;')
 }
 
+function htmlPage(title: string, subtitle: string): string {
+    return `<html>
+        <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
+            <div style="text-align: center;">
+                <h1>${title}</h1>
+                <p style="color: #888;">${subtitle}</p>
+            </div>
+        </body>
+        </html>`
+}
+
 /**
  * Decodes a JWT payload without verifying the signature.
  * Used to extract user info (email, sub) from the access token.
@@ -39,23 +50,13 @@ export async function loginWithBrowser(): Promise<{ email: string } | null> {
                 if (!accessToken || !refreshToken) {
                     const errorMsg = escapeHtml(url.searchParams.get('error') || 'No tokens received')
                     res.writeHead(400, { 'Content-Type': 'text/html' })
-                    res.end(`
-                        <html>
-                        <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
-                            <div style="text-align: center;">
-                                <h1>Login failed</h1>
-                                <p style="color: #888;">${errorMsg}</p>
-                            </div>
-                        </body>
-                        </html>
-                    `)
+                    res.end(htmlPage('Login failed', errorMsg))
                     server.close()
                     resolve(null)
                     return
                 }
 
                 try {
-                    // Decode JWT to extract user info
                     const payload = decodeJwtPayload(accessToken)
                     const userId = (payload.sub as string) || ''
                     const email = (payload.email as string) || ''
@@ -64,31 +65,13 @@ export async function loginWithBrowser(): Promise<{ email: string } | null> {
                     setUser(userId, email)
 
                     res.writeHead(200, { 'Content-Type': 'text/html' })
-                    res.end(`
-                        <html>
-                        <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
-                            <div style="text-align: center;">
-                                <h1>Logged in to Preflight!</h1>
-                                <p style="color: #888;">You can close this tab and return to your terminal.</p>
-                            </div>
-                        </body>
-                        </html>
-                    `)
+                    res.end(htmlPage('Logged in to Preflight!', 'You can close this tab and return to your terminal.'))
 
                     server.close()
                     resolve({ email })
                 } catch (err) {
                     res.writeHead(500, { 'Content-Type': 'text/html' })
-                    res.end(`
-                        <html>
-                        <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
-                            <div style="text-align: center;">
-                                <h1>Login failed</h1>
-                                <p style="color: #888;">Could not process authentication tokens.</p>
-                            </div>
-                        </body>
-                        </html>
-                    `)
+                    res.end(htmlPage('Login failed', 'Could not process authentication tokens.'))
                     server.close()
                     resolve(null)
                 }

@@ -13,7 +13,7 @@ export function getSupabaseClient() {
     })
 }
 
-export async function refreshSession() {
+export async function refreshSession(): Promise<boolean> {
     const { refreshToken } = getConfig()
     if (!refreshToken) return false
 
@@ -22,16 +22,17 @@ export async function refreshSession() {
 
     if (error || !data.session) return false
 
-    if (!data.session.refresh_token) {
-        console.warn('Warning: No refresh token returned. Storing access token only.')
-        setTokens(data.session.access_token, refreshToken!)
-    } else {
-        setTokens(data.session.access_token, data.session.refresh_token)
-    }
+    setTokens(data.session.access_token, data.session.refresh_token ?? refreshToken)
     return true
 }
 
-export async function apiRequest(path: string, options: RequestInit = {}) {
+function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout))
+}
+
+export async function apiRequest(path: string, options: RequestInit = {}): Promise<Response> {
     const { apiUrl, accessToken } = getConfig()
     const url = `${apiUrl}${path}`
 
@@ -44,33 +45,20 @@ export async function apiRequest(path: string, options: RequestInit = {}) {
         headers['Authorization'] = `Bearer ${accessToken}`
     }
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
+    let response = await fetchWithTimeout(url, { ...options, headers })
 
-    try {
-        let response = await fetch(url, { ...options, headers, signal: controller.signal })
-
-        // If 401, try refreshing the token
-        if (response.status === 401) {
-            const refreshed = await refreshSession()
-            if (refreshed) {
-                const newConfig = getConfig()
-                headers['Authorization'] = `Bearer ${newConfig.accessToken}`
-                const retryController = new AbortController()
-                const retryTimeout = setTimeout(() => retryController.abort(), API_TIMEOUT_MS)
-                try {
-                    response = await fetch(url, { ...options, headers, signal: retryController.signal })
-                } finally {
-                    clearTimeout(retryTimeout)
-                }
-            } else {
-                clearAuth()
-                throw new Error('Session expired. Please run `preflight login` to re-authenticate.')
-            }
+    // If 401, try refreshing the token
+    if (response.status === 401) {
+        const refreshed = await refreshSession()
+        if (refreshed) {
+            const newConfig = getConfig()
+            headers['Authorization'] = `Bearer ${newConfig.accessToken}`
+            response = await fetchWithTimeout(url, { ...options, headers })
+        } else {
+            clearAuth()
+            throw new Error('Session expired. Please run `preflight login` to re-authenticate.')
         }
-
-        return response
-    } finally {
-        clearTimeout(timeout)
     }
+
+    return response
 }

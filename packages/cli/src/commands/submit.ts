@@ -1,7 +1,6 @@
 import chalk from 'chalk'
-import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
-import { basename } from 'node:path'
+import { basename, resolve } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
 import { isLoggedIn } from '../lib/config.js'
@@ -226,12 +225,8 @@ async function pollForReport(
         spinner.text = `Analysis in progress... (${Math.min((i + 1) * 3, 95)}%)`
 
         if (submission.status === 'complete') {
-            // Fetch the report
-            const reportsRes = await apiRequest(`/api/submissions/${submissionId}`)
-            const reportsData = await reportsRes.json()
-
-            if (reportsData.data?.report_id) {
-                const reportRes = await apiRequest(`/api/reports/${reportsData.data.report_id}`)
+            if (submission.report_id) {
+                const reportRes = await apiRequest(`/api/reports/${submission.report_id}`)
                 const reportData = await reportRes.json()
                 return { status: 'complete', data: reportData }
             }

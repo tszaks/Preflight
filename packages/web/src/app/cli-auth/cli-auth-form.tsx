@@ -32,23 +32,20 @@ export default function CLIAuthForm() {
 
             if (authError) {
                 setError(authError.message)
-                setLoading(false)
                 return
             }
 
             if (!data.session) {
                 setError('Login succeeded but no session was returned.')
-                setLoading(false)
+                return
+            }
+
+            if (!redirectTo) {
+                setError('Missing redirect URL. Please start the login from the Preflight CLI.')
                 return
             }
 
             const { access_token, refresh_token } = data.session
-
-            if (!redirectTo) {
-                setError('Missing redirect URL. Please start the login from the Preflight CLI.')
-                setLoading(false)
-                return
-            }
 
             // Show success briefly, then redirect with tokens
             setSuccess(true)
@@ -57,12 +54,13 @@ export default function CLIAuthForm() {
             callbackUrl.searchParams.set('access_token', access_token)
             callbackUrl.searchParams.set('refresh_token', refresh_token || '')
 
-            // Small delay so the user sees the success state
             setTimeout(() => {
                 window.location.href = callbackUrl.toString()
             }, 800)
+            return
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unexpected error occurred.')
+        } finally {
             setLoading(false)
         }
     }
