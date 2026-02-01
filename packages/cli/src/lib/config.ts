@@ -25,8 +25,12 @@ const config = new Conf<PreflightConfig>({
 })
 
 // Migrate existing users from old domain
-if (config.get('apiUrl') === 'https://preflight.dev') {
-    config.set('apiUrl', DEFAULT_API_URL)
+try {
+    if (config.get('apiUrl') === 'https://preflight.dev') {
+        config.set('apiUrl', DEFAULT_API_URL)
+    }
+} catch {
+    // Migration failed, getConfig() fallback handles it
 }
 
 export function getConfig(): PreflightConfig {

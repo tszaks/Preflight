@@ -31,30 +31,22 @@ export async function runOnboarding() {
                 s.start('Opening signup page...')
                 await loginWithBrowser('signup')
                 s.stop('Signup page opened in browser')
-                ui.log.info('After creating your account, come back here and log in.')
+                ui.log.info('Create your account in the browser, then come back here.')
 
-                // Now prompt them to log in
-                const s2 = ui.spinner()
-                s2.start('Opening login page...')
-                const result = await loginWithBrowser('login')
-                if (result) {
-                    s2.stop(`Logged in as ${result.email}`)
-                    authenticated = true
-                } else {
-                    s2.stop('Login failed or timed out')
-                    ui.log.warning('Let\'s try again.')
-                }
+                const ready = await ui.confirm('Ready to log in?')
+                if (!ready) continue
+            }
+
+            // Both paths end with login — signup users need to log in after creating their account
+            const s = ui.spinner()
+            s.start('Opening login page...')
+            const result = await loginWithBrowser('login')
+            if (result) {
+                s.stop(`Logged in as ${result.email}`)
+                authenticated = true
             } else {
-                const s = ui.spinner()
-                s.start('Opening login page...')
-                const result = await loginWithBrowser('login')
-                if (result) {
-                    s.stop(`Logged in as ${result.email}`)
-                    authenticated = true
-                } else {
-                    s.stop('Login failed or timed out')
-                    ui.log.warning('Let\'s try again.')
-                }
+                s.stop('Login failed or timed out')
+                ui.log.warning('Let\'s try again.')
             }
         }
     } else {
