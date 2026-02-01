@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-
-const CREDIT_COSTS = {
-    full: 100,
-    recheck: 25,
-} as const
+import { CREDIT_COSTS } from '@/lib/constants'
 
 export async function POST(
     req: NextRequest,
