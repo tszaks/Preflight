@@ -1,16 +1,32 @@
 {
   "name": "@preflight/cli",
   "version": "0.1.0",
+  "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",
   "bin": {
-    "preflight": "./dist/index.mjs"
+    "preflight": "dist/index.js"
   },
-  "main": "./dist/index.mjs",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist/index.js",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tszaks/Preflight.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://preflightlaunch.com",
+  "author": "Tyler Szakacs <tylerszakacs@gmail.com>",
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",
     "chalk": "^5.4.1",
@@ -35,7 +51,9 @@
     "app-store",
     "ios",
     "review",
-    "cli"
+    "cli",
+    "apple",
+    "scanner"
   ],
   "license": "MIT"
 }
