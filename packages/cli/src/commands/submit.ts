@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import { resolve } from 'node:path'
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
@@ -118,17 +118,23 @@ export async function submitCommand(path: string, options: SubmitOptions) {
             const urlInfo = urlsData.urls[i]
             const fileInfo = files[i]
             const fileBuffer = readFileSync(fileInfo.path)
-            const fileSize = statSync(fileInfo.path).size
+            const fileSize = fileBuffer.length
 
             spinner.text = `Uploading ${fileInfo.filename} (${formatBytes(fileSize)})...`
 
-            await fetch(urlInfo.signedUrl, {
+            const uploadRes = await fetch(urlInfo.signedUrl, {
                 method: 'PUT',
                 body: fileBuffer,
                 headers: {
                     'Content-Type': 'application/octet-stream',
                 },
             })
+
+            if (!uploadRes.ok) {
+                spinner.stop()
+                error(`Failed to upload ${fileInfo.filename}: HTTP ${uploadRes.status} ${uploadRes.statusText}`)
+                process.exit(1)
+            }
         }
 
         // 6. Finalize and trigger analysis
@@ -163,14 +169,17 @@ export async function submitCommand(path: string, options: SubmitOptions) {
 
         spinner.stop()
 
-        if (reportData) {
+        if (reportData.status === 'complete' && reportData.data) {
             if (options.json) {
-                console.log(JSON.stringify(reportData, null, 2))
+                console.log(JSON.stringify(reportData.data, null, 2))
             } else {
-                renderReport(reportData.report, reportData.items)
-                console.log(chalk.dim(`  Full report: https://preflight.dev/report/${reportData.report.id}`))
+                renderReport(reportData.data.report, reportData.data.items)
+                console.log(chalk.dim(`  Full report: https://preflight.dev/report/${reportData.data.report.id}`))
                 console.log()
             }
+        } else if (reportData.status === 'failed') {
+            error('Analysis failed. Please try submitting again or contact support.')
+            process.exit(1)
         } else {
             warn('Analysis is still running. Check status with:')
             console.log(chalk.dim(`  preflight status ${submissionId}`))
@@ -182,20 +191,37 @@ export async function submitCommand(path: string, options: SubmitOptions) {
     }
 }
 
+interface PollResult {
+    status: 'complete' | 'failed' | 'timeout'
+    data?: { report: any; items: any[] }
+}
+
 async function pollForReport(
     submissionId: string,
     spinner: { text: string },
     maxAttempts = 60,
     interval = 5000
-): Promise<{ report: any; items: any[] } | null> {
+): Promise<PollResult> {
+    let consecutiveFailures = 0
+
     for (let i = 0; i < maxAttempts; i++) {
         await new Promise((r) => setTimeout(r, interval))
 
         const res = await apiRequest(`/api/submissions/${submissionId}`)
+
+        if (!res.ok) {
+            consecutiveFailures++
+            if (res.status === 401) {
+                throw new Error('Session expired. Please run `preflight login` to re-authenticate.')
+            }
+            if (consecutiveFailures >= 3) {
+                throw new Error(`Polling failed after 3 consecutive errors (last status: HTTP ${res.status})`)
+            }
+            continue
+        }
+
+        consecutiveFailures = 0
         const data = await res.json()
-
-        if (!res.ok) continue
-
         const submission = data.data
         spinner.text = `Analysis in progress... (${Math.min((i + 1) * 3, 95)}%)`
 
@@ -207,17 +233,17 @@ async function pollForReport(
             if (reportsData.data?.report_id) {
                 const reportRes = await apiRequest(`/api/reports/${reportsData.data.report_id}`)
                 const reportData = await reportRes.json()
-                return reportData
+                return { status: 'complete', data: reportData }
             }
-            return null
+            return { status: 'failed' }
         }
 
         if (submission.status === 'failed') {
-            return null
+            return { status: 'failed' }
         }
     }
 
-    return null
+    return { status: 'timeout' }
 }
 
 function formatBytes(bytes: number): string {

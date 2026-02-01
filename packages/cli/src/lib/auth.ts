@@ -1,42 +1,67 @@
 import http from 'node:http'
-import { createClient } from '@supabase/supabase-js'
 import open from 'open'
-import { setTokens, setUser, clearAuth } from './config.js'
+import { setTokens, setUser, clearAuth, getConfig } from './config.js'
+import { CALLBACK_PORT, DEFAULT_API_URL } from './constants.js'
 
-const SUPABASE_URL = 'https://cfqzdyktjhkalfrmcgmw.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmcXpkeWt0amhrYWxmcm1jZ213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzM4MjYsImV4cCI6MjA4NDg0OTgyNn0.O1bPUNHw7kzpWecAyT4Pizh2ITRSal3PJsrUIkZY04o'
-const CALLBACK_PORT = 54321
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}
+
+/**
+ * Decodes a JWT payload without verifying the signature.
+ * Used to extract user info (email, sub) from the access token.
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> {
+    const parts = token.split('.')
+    if (parts.length !== 3) throw new Error('Invalid JWT format')
+    const payload = parts[1]!
+    const decoded = Buffer.from(payload, 'base64url').toString('utf-8')
+    return JSON.parse(decoded)
+}
 
 export async function loginWithBrowser(): Promise<{ email: string } | null> {
+    const { apiUrl } = getConfig()
+    const baseUrl = apiUrl || DEFAULT_API_URL
+
     return new Promise((resolve) => {
         const server = http.createServer(async (req, res) => {
             const url = new URL(req.url!, `http://localhost:${CALLBACK_PORT}`)
 
             if (url.pathname === '/callback') {
-                const code = url.searchParams.get('code')
+                const accessToken = url.searchParams.get('access_token')
+                const refreshToken = url.searchParams.get('refresh_token')
 
-                if (!code) {
+                if (!accessToken || !refreshToken) {
+                    const errorMsg = escapeHtml(url.searchParams.get('error') || 'No tokens received')
                     res.writeHead(400, { 'Content-Type': 'text/html' })
-                    res.end('<html><body><h1>Login failed</h1><p>No authorization code received.</p></body></html>')
+                    res.end(`
+                        <html>
+                        <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
+                            <div style="text-align: center;">
+                                <h1>Login failed</h1>
+                                <p style="color: #888;">${errorMsg}</p>
+                            </div>
+                        </body>
+                        </html>
+                    `)
                     server.close()
                     resolve(null)
                     return
                 }
 
                 try {
-                    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-                    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+                    // Decode JWT to extract user info
+                    const payload = decodeJwtPayload(accessToken)
+                    const userId = (payload.sub as string) || ''
+                    const email = (payload.email as string) || ''
 
-                    if (error || !data.session) {
-                        res.writeHead(400, { 'Content-Type': 'text/html' })
-                        res.end('<html><body><h1>Login failed</h1><p>' + (error?.message || 'Unknown error') + '</p></body></html>')
-                        server.close()
-                        resolve(null)
-                        return
-                    }
-
-                    setTokens(data.session.access_token, data.session.refresh_token!)
-                    setUser(data.session.user.id, data.session.user.email || '')
+                    setTokens(accessToken, refreshToken)
+                    setUser(userId, email)
 
                     res.writeHead(200, { 'Content-Type': 'text/html' })
                     res.end(`
@@ -44,27 +69,48 @@ export async function loginWithBrowser(): Promise<{ email: string } | null> {
                         <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
                             <div style="text-align: center;">
                                 <h1>Logged in to Preflight!</h1>
-                                <p>You can close this tab and return to your terminal.</p>
+                                <p style="color: #888;">You can close this tab and return to your terminal.</p>
                             </div>
                         </body>
                         </html>
                     `)
 
                     server.close()
-                    resolve({ email: data.session.user.email || '' })
+                    resolve({ email })
                 } catch (err) {
                     res.writeHead(500, { 'Content-Type': 'text/html' })
-                    res.end('<html><body><h1>Login failed</h1><p>Internal error</p></body></html>')
+                    res.end(`
+                        <html>
+                        <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0a; color: white;">
+                            <div style="text-align: center;">
+                                <h1>Login failed</h1>
+                                <p style="color: #888;">Could not process authentication tokens.</p>
+                            </div>
+                        </body>
+                        </html>
+                    `)
                     server.close()
                     resolve(null)
                 }
+            } else {
+                res.writeHead(404, { 'Content-Type': 'text/plain' })
+                res.end('Not found')
             }
         })
 
+        server.on('error', (err: NodeJS.ErrnoException) => {
+            if (err.code === 'EADDRINUSE') {
+                console.error(`Error: Port ${CALLBACK_PORT} is already in use. Close the other process and try again.`)
+            } else {
+                console.error(`Server error: ${err.message}`)
+            }
+            resolve(null)
+        })
+
         server.listen(CALLBACK_PORT, () => {
-            const loginUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=email&redirect_to=http://localhost:${CALLBACK_PORT}/callback`
-            // Open the Preflight login page which will redirect to Supabase auth
-            open(`${SUPABASE_URL}/auth/v1/authorize?provider=email&redirect_to=http://localhost:${CALLBACK_PORT}/callback`)
+            const redirectTo = encodeURIComponent(`http://localhost:${CALLBACK_PORT}/callback`)
+            const loginUrl = `${baseUrl}/cli-auth?redirect_to=${redirectTo}`
+            open(loginUrl)
         })
 
         // Timeout after 5 minutes
