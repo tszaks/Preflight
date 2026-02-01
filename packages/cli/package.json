@@ -1,0 +1,41 @@
+{
+  "name": "@preflight/cli",
+  "version": "0.1.0",
+  "description": "Preflight CLI - App Store Review Scanner from your terminal",
+  "bin": {
+    "preflight": "./dist/index.mjs"
+  },
+  "main": "./dist/index.mjs",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.93.3",
+    "chalk": "^5.4.1",
+    "cli-progress": "^3.12.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^13.1.0",
+    "conf": "^13.1.0",
+    "open": "^10.1.0",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/node": "^20",
+    "tsup": "^8.4.0",
+    "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "preflight",
+    "app-store",
+    "ios",
+    "review",
+    "cli"
+  ],
+  "license": "MIT"
+}
