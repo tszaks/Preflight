@@ -92,6 +92,16 @@ export async function POST(req: NextRequest) {
             submissionId = submission.id
         }
 
+        // For drafts without files, just save metadata and return early
+        const hasFiles = (infoPlist && infoPlist.size > 0) ||
+            (privacyManifest && privacyManifest.size > 0) ||
+            (ipaBinary && ipaBinary.size > 0) ||
+            screenshots.length > 0
+
+        if (isDraft && !hasFiles) {
+            return NextResponse.json({ submissionId, message: 'Draft saved successfully' })
+        }
+
         const basePath = `${user.id}/${submissionId}`
 
         // 3. Upload Files

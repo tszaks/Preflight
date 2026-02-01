@@ -117,7 +117,7 @@ export function SelfChecklist({ value, onChange }: SelfChecklistProps) {
                 className={`
                     cursor-pointer border rounded-lg p-5 flex items-center justify-between transition-all group
                     ${isChecked ? 'bg-white border-white' : 'bg-black border-white/10 hover:border-white/30'}
-                    ${isConditional ? 'border-l-2 border-l-blue-500/50' : ''}
+                    ${isConditional ? 'border-l-2 border-l-white/20' : ''}
                 `}
             >
                 <div className="flex items-center gap-4">

@@ -665,11 +665,14 @@ function SubmitPageContent() {
             if (isDraft) formData.append('is_draft', 'true')
             if (activeSubmissionId) formData.append('submission_id', activeSubmissionId)
 
-            if (infoPlist) formData.append('plist', infoPlist)
-            if (privacyManifest) formData.append('manifest', privacyManifest)
-            if (ipaBinary) formData.append('ipa', ipaBinary)
-
-            screenshots.forEach(f => formData.append('screenshots', f))
+            // Only include files for the final submission — not for draft auto-saves
+            // (files are large and would exceed the request body size limit)
+            if (!isDraft) {
+                if (infoPlist) formData.append('plist', infoPlist)
+                if (privacyManifest) formData.append('manifest', privacyManifest)
+                if (ipaBinary) formData.append('ipa', ipaBinary)
+                screenshots.forEach(f => formData.append('screenshots', f))
+            }
 
             const response = await fetch('/api/submissions', {
                 method: 'POST',
