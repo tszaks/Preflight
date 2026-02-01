@@ -1,3 +1,4 @@
+import { homedir } from 'node:os'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext } from '../ui/theme.js'
 import { isLoggedIn, markAsRun, setLastScannedPath } from '../lib/config.js'
@@ -45,7 +46,7 @@ export async function runOnboarding() {
         const choices = allProjects.slice(0, 5).map((proj) => ({
             value: proj.path,
             label: `${proj.name} (${proj.type === 'xcworkspace' ? '.xcworkspace' : '.xcodeproj'})`,
-            hint: proj.path.replace(process.env.HOME || '', '~'),
+            hint: proj.path.replace(homedir(), '~'),
         }))
 
         choices.push({
