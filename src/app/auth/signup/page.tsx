@@ -13,6 +13,7 @@ export default function SignupPage() {
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [existing, setExisting] = useState(false)
     const [checkingAuth, setCheckingAuth] = useState(true)
 
     // Redirect if already logged in
@@ -40,6 +41,9 @@ export default function SignupPage() {
 
         if (result?.error) {
             setError(result.error)
+            setLoading(false)
+        } else if (result?.existing) {
+            setExisting(true)
             setLoading(false)
         } else if (result?.success) {
             setMessage(result.message || 'Check your email to confirm your account.')
@@ -106,19 +110,30 @@ export default function SignupPage() {
                             </div>
                         )}
 
+                        {existing && (
+                            <div className="text-xs text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md space-y-2">
+                                <p>An account with this email already exists.</p>
+                                <Link href="/auth/login" className="inline-block text-white underline underline-offset-4 hover:text-yellow-300 transition-colors">
+                                    Sign in instead
+                                </Link>
+                            </div>
+                        )}
+
                         {message && (
                             <div className="text-xs text-green-500 bg-green-500/10 border border-green-500/20 p-3 rounded-md">
                                 {message}
                             </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="vercel-btn-primary w-full disabled:opacity-50"
-                        >
-                            {loading ? "Creating account..." : "Sign Up"}
-                        </button>
+                        {!existing && (
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="vercel-btn-primary w-full disabled:opacity-50"
+                            >
+                                {loading ? "Creating account..." : "Sign Up"}
+                            </button>
+                        )}
                     </form>
                 </div>
 
