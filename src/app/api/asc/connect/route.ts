@@ -1,18 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { createHash } from 'crypto'
 import { validateCredentials, listApps } from '@/lib/app-store-connect'
 import { encryptPrivateKey } from '@/lib/asc-credential-store'
-
-function getEncryptionKey(): string {
-    const envKey = process.env.ASC_ENCRYPTION_KEY
-    if (envKey && envKey.length === 64) return envKey
-
-    return createHash('sha256')
-        .update(process.env.SUPABASE_SERVICE_ROLE_KEY!)
-        .digest('hex')
-}
+import { getEncryptionKey } from '@/lib/asc-encryption'
 
 export async function POST(request: Request) {
     const supabase = await createClient()
