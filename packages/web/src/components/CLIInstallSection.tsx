@@ -15,7 +15,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="absolute top-3 right-3 p-1.5 rounded-md text-gray-500 hover:text-white hover:bg-white/10 transition-all duration-200"
+      className="p-1.5 rounded-md text-gray-500 hover:text-white hover:bg-white/10 transition-all duration-200"
       aria-label="Copy to clipboard"
     >
       {copied ? (
@@ -42,15 +42,17 @@ function InstallCard({
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
             {label}
           </span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#333333]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#333333]" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#333333]" />
+          <div className="flex items-center gap-3">
+            <CopyButton text={command} />
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#333333]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#333333]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#333333]" />
+            </div>
           </div>
         </div>
-        <div className="relative px-4 py-4">
-          <CopyButton text={command} />
-          <div className="flex items-center gap-2 pr-10 overflow-x-auto scrollbar-hide">
+        <div className="px-4 py-4">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             <span className="text-gray-500 select-none font-mono text-sm shrink-0">$</span>
             <code className="font-mono text-sm text-gray-200 whitespace-nowrap">{command}</code>
           </div>
