@@ -128,10 +128,10 @@ async function interactiveMenu() {
 
     switch (choice) {
         case 'scan':
-            await scanCommand(undefined as unknown as string)
+            await scanCommand()
             break
         case 'submit':
-            await submitCommand(undefined as unknown as string, {})
+            await submitCommand()
             break
         case 'login':
             await loginCommand()

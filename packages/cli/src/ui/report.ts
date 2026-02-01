@@ -116,9 +116,10 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         console.log(`  ${heading('Category Scores')}`)
         console.log(subtext(`  ${'─'.repeat(40)}`))
         for (const [name, score] of validCategories) {
-            const color = score >= 80 ? ok : score >= 60 ? warning : critical
-            const miniBar = color(icons.block.repeat(Math.round((score / 100) * 10)))
-            const emptyBar = subtext(icons.blockDim.repeat(10 - Math.round((score / 100) * 10)))
+            const color = score >= 80 ? ok : (score >= 60 ? warning : critical)
+            const filled = Math.round((score / 100) * 10)
+            const miniBar = color(icons.block.repeat(filled))
+            const emptyBar = subtext(icons.blockDim.repeat(10 - filled))
             console.log(`  ${name.padEnd(14)} ${miniBar}${emptyBar} ${color(`${score}`)}`)
         }
         console.log()

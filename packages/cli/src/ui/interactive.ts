@@ -1,5 +1,4 @@
 import * as p from '@clack/prompts'
-import chalk from 'chalk'
 import { brand, subtext, APP_VERSION, APP_NAME, APP_TAGLINE } from './theme.js'
 
 // Branded intro header — used at start of interactive flows
@@ -33,7 +32,7 @@ export function outro(message?: string) {
 // Contextual tip shown after commands
 export function tip(message: string) {
     console.log()
-    console.log(chalk.dim(`  \uD83D\uDCA1 Tip: ${message}`))
+    console.log(subtext(`  \uD83D\uDCA1 Tip: ${message}`))
     console.log()
 }
 
@@ -83,15 +82,8 @@ export function spinner() {
     return p.spinner()
 }
 
-// Log helpers that match @clack's visual style
-export const log = {
-    success: (msg: string) => p.log.success(msg),
-    error: (msg: string) => p.log.error(msg),
-    warning: (msg: string) => p.log.warning(msg),
-    info: (msg: string) => p.log.info(msg),
-    message: (msg: string) => p.log.message(msg),
-    step: (msg: string) => p.log.step(msg),
-}
+// Re-export @clack's log helpers directly
+export const log = p.log
 
 // Check if user cancelled
 export { isCancel } from '@clack/prompts'

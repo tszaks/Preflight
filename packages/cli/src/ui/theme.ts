@@ -53,8 +53,20 @@ export function severityBadge(severity: string): string {
 export function scoreBar(score: number, width = 20): string {
     const filled = Math.round((score / 100) * width)
     const empty = width - filled
-    const color = score >= 80 ? ok : score >= 60 ? warning : critical
-    const label = score >= 80 ? 'READY' : score >= 60 ? 'NEEDS ATTENTION' : 'AT RISK'
+
+    let color: typeof ok
+    let label: string
+    if (score >= 80) {
+        color = ok
+        label = 'READY'
+    } else if (score >= 60) {
+        color = warning
+        label = 'NEEDS ATTENTION'
+    } else {
+        color = critical
+        label = 'AT RISK'
+    }
+
     return `${score}/100  ${color(icons.block.repeat(filled))}${icons.blockDim.repeat(empty)}  ${color(label)}`
 }
 

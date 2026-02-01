@@ -1,13 +1,13 @@
 import chalk from 'chalk'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
-import { isLoggedIn, setLastScannedPath, getLastScannedPath } from '../lib/config.js'
+import { isLoggedIn, setLastScannedPath } from '../lib/config.js'
 import { loginWithBrowser } from '../lib/auth.js'
 import { createSpinner } from '../ui/spinner.js'
 import { renderReport } from '../ui/report.js'
-import { buildProjectChoices } from '../lib/project-finder.js'
+import { interactiveProjectSelect } from '../lib/project-finder.js'
 import { promptLogin } from '../ui/errors.js'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext, formatBytes, icons } from '../ui/theme.js'
@@ -21,7 +21,7 @@ interface SubmitOptions {
     json?: boolean
 }
 
-export async function submitCommand(path: string, options: SubmitOptions) {
+export async function submitCommand(path?: string, options: SubmitOptions = {}) {
     // Auth check with friendly prompt
     if (!isLoggedIn()) {
         const wantsLogin = await promptLogin()
@@ -99,6 +99,7 @@ export async function submitCommand(path: string, options: SubmitOptions) {
     ui.log.message(chalk.bold('Files to upload:') + '\n' + fileLines.join('\n'))
 
     const shouldContinue = await ui.confirm('This will use 1 credit. Continue?')
+    if (shouldContinue === null) return // User pressed Ctrl+C, @clack already showed cancel message
     if (!shouldContinue) {
         ui.outro('Submission cancelled.')
         return
@@ -224,7 +225,7 @@ export async function submitCommand(path: string, options: SubmitOptions) {
                     const open = (await import('open')).default
                     await open(`https://preflightlaunch.com/report/${reportData.data.report.id}`)
                 } else if (next === 'another') {
-                    await submitCommand(undefined as unknown as string, {})
+                    await submitCommand()
                 }
             }
         } else if (reportData.status === 'failed') {
@@ -241,46 +242,9 @@ export async function submitCommand(path: string, options: SubmitOptions) {
     }
 }
 
-async function interactiveProjectSelect(): Promise<string | null> {
-    const lastScanned = getLastScannedPath()
-    const choices = buildProjectChoices(lastScanned)
-
-    if (choices.length <= 1) {
-        const manualPath = await ui.text({
-            message: 'Enter the path to your project:',
-            placeholder: './MyApp',
-            validate: (val) => {
-                if (!val?.trim()) return 'Path is required'
-            },
-        })
-        return manualPath
-    }
-
-    const selected = await ui.select<string>({
-        message: 'Where\'s your Xcode project?',
-        options: choices,
-    })
-
-    if (selected === null) return null
-
-    if (selected === '__manual__') {
-        const manualPath = await ui.text({
-            message: 'Enter the path to your project:',
-            placeholder: './MyApp',
-            validate: (val) => {
-                if (!val?.trim()) return 'Path is required'
-            },
-        })
-        return manualPath
-    }
-
-    return selected
-}
-
 function getFileSize(filePath: string): number {
     try {
-        const buf = readFileSync(filePath)
-        return buf.length
+        return statSync(filePath).size
     } catch {
         return 0
     }
@@ -329,7 +293,8 @@ async function pollForReport(
                 const reportData = await reportRes.json()
                 return { status: 'complete', data: reportData }
             }
-            return { status: 'failed' }
+            // Server marked complete but no report was generated
+            return { status: 'failed' as const }
         }
 
         if (submission.status === 'failed') {

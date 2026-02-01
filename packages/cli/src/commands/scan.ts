@@ -1,14 +1,15 @@
 import chalk from 'chalk'
 import { resolve } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
-import { setLastScannedPath, getLastScannedPath } from '../lib/config.js'
-import { buildProjectChoices } from '../lib/project-finder.js'
+import { setLastScannedPath } from '../lib/config.js'
+import { interactiveProjectSelect } from '../lib/project-finder.js'
 import * as ui from '../ui/interactive.js'
 import { ok, critical, warning, subtext, brand, icons } from '../ui/theme.js'
 
-export async function scanCommand(path: string) {
+export async function scanCommand(path?: string) {
     // Interactive mode: no path provided
     if (!path) {
+        ui.intro('Scan your app')
         const resolvedPath = await interactiveProjectSelect()
         if (!resolvedPath) return
         path = resolvedPath
@@ -113,44 +114,4 @@ export async function scanCommand(path: string) {
     } else {
         ui.tip(`Run ${brand('preflight submit')} anytime to get AI-powered fix instructions.`)
     }
-}
-
-async function interactiveProjectSelect(): Promise<string | null> {
-    ui.intro('Scan your app')
-
-    const lastScanned = getLastScannedPath()
-    const choices = buildProjectChoices(lastScanned)
-
-    if (choices.length <= 1) {
-        // Only the manual option — go straight to text input
-        ui.log.info('No Xcode projects found in common locations.')
-        const manualPath = await ui.text({
-            message: 'Enter the path to your project:',
-            placeholder: './MyApp',
-            validate: (val) => {
-                if (!val?.trim()) return 'Path is required'
-            },
-        })
-        return manualPath
-    }
-
-    const selected = await ui.select<string>({
-        message: 'Where\'s your Xcode project?',
-        options: choices,
-    })
-
-    if (selected === null) return null
-
-    if (selected === '__manual__') {
-        const manualPath = await ui.text({
-            message: 'Enter the path to your project:',
-            placeholder: './MyApp',
-            validate: (val) => {
-                if (!val?.trim()) return 'Path is required'
-            },
-        })
-        return manualPath
-    }
-
-    return selected
 }

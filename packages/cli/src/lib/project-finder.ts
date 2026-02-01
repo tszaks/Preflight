@@ -1,6 +1,8 @@
-import { existsSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { homedir } from 'node:os'
+import { getLastScannedPath } from './config.js'
+import * as ui from '../ui/interactive.js'
 
 export interface FoundProject {
     name: string
@@ -141,6 +143,35 @@ export function buildProjectChoices(
     })
 
     return choices
+}
+
+// Prompt user to select a project interactively, with fallback to manual path input
+export async function interactiveProjectSelect(): Promise<string | null> {
+    const choices = buildProjectChoices(getLastScannedPath())
+
+    if (choices.length <= 1) {
+        ui.log.info('No Xcode projects found in common locations.')
+        return promptForManualPath()
+    }
+
+    const selected = await ui.select<string>({
+        message: 'Where\'s your Xcode project?',
+        options: choices,
+    })
+
+    if (selected === null) return null
+    if (selected === '__manual__') return promptForManualPath()
+    return selected
+}
+
+async function promptForManualPath(): Promise<string | null> {
+    return ui.text({
+        message: 'Enter the path to your project:',
+        placeholder: './MyApp',
+        validate: (val) => {
+            if (!val?.trim()) return 'Path is required'
+        },
+    })
 }
 
 // Shorten path for display (replace home dir with ~)
