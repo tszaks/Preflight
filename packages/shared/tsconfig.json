@@ -3,6 +3,7 @@
     "target": "ES2017",
     "lib": ["esnext"],
     "strict": true,
+    "skipLibCheck": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
