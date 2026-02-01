@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
+import { CREDIT_AMOUNTS } from '@/lib/constants'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-10-10' as any, // Use actual current API version
@@ -12,12 +13,6 @@ const PRICE_IDS: Record<string, string> = {
     starter: 'price_1StuTwCatxMRYTXTOJusK3zi',
     pro: 'price_1StuUXCatxMRYTXTBFlDuYjK',
     agency: 'price_1StuVaCatxMRYTXTkE9Qirqi',
-}
-
-const CREDIT_AMOUNTS: Record<string, number> = {
-    starter: 200,
-    pro: 600,
-    agency: 2000,
 }
 
 export async function buyCredits(planId: string) {
