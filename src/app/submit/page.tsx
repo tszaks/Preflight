@@ -1,14 +1,22 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, Plus, X, Link as LinkIcon, Loader2, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/components/ui/status'
-import { scanProjectFolder, type ScanResults } from '@/lib/project-scanner'
+import { scanProjectFolder } from '@/lib/project-scanner'
 import { ASCConnectModal } from '@/components/ASCConnectModal'
 import { AgeRating } from '@/components/submission/AgeRating'
 import { PrivacyDeclarations } from '@/components/submission/PrivacyDeclarations'
 import { SelfChecklist } from '@/components/submission/SelfChecklist'
+import {
+    buildFileManifest,
+    getSignedUploadUrls,
+    uploadAllFiles,
+    finalizeSubmission,
+    type FileManifestItem,
+    type UploadProgress,
+} from '@/lib/upload'
 
 const STEPS = ["App Info", "Files", "Compliance", "Review"]
 
@@ -42,6 +50,17 @@ function SubmitPageContent() {
     const [ageRating, setAgeRating] = useState({})
     const [privacy, setPrivacy] = useState({})
     const [checklist, setChecklist] = useState({})
+
+    // Upload state
+    const [uploadPhase, setUploadPhase] = useState<'uploading' | 'finalizing' | 'error' | null>(null)
+    const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+        currentFile: '',
+        currentIndex: 0,
+        totalFiles: 0,
+        failedFiles: [],
+    })
+    const manifestRef = useRef<FileManifestItem[]>([])
+    const uploadedFilesRef = useRef<{ type: string; bucket: string; path: string }[]>([])
 
     // ASC State
     const [showAscModal, setShowAscModal] = useState(false)
@@ -195,6 +214,75 @@ function SubmitPageContent() {
         setStep(s => Math.min(s + 1, 4))
     }
     const prevStep = () => setStep(s => Math.max(s - 1, 1))
+
+    async function handleRetry() {
+        if (!activeSubmissionId) return
+
+        const failedItems = uploadProgress.failedFiles
+        if (!failedItems.length) return
+
+        // Rebuild manifest for just the failed files
+        const retryManifest: FileManifestItem[] = []
+        for (const f of failedItems) {
+            let file: File | null = null
+            if (f.type === 'screenshot' && f.index !== undefined) {
+                file = screenshots[f.index]
+            } else if (f.type === 'plist') {
+                file = infoPlist
+            } else if (f.type === 'manifest') {
+                file = privacyManifest
+            } else if (f.type === 'ipa') {
+                file = ipaBinary
+            }
+            if (file) {
+                retryManifest.push({ type: f.type as FileManifestItem['type'], file, index: f.index })
+            }
+        }
+
+        if (retryManifest.length === 0) return
+
+        setUploadPhase('uploading')
+
+        try {
+            // Get fresh signed URLs for failed files (signed URLs are single-use)
+            const signedUrls = await getSignedUploadUrls(activeSubmissionId, retryManifest)
+            const { uploaded, failed } = await uploadAllFiles(
+                retryManifest,
+                signedUrls,
+                (progress) => setUploadProgress(progress)
+            )
+
+            // Add newly uploaded files to our running total
+            for (const u of uploaded) {
+                uploadedFilesRef.current.push({ type: u.type, bucket: u.bucket, path: u.path })
+            }
+
+            if (failed.length > 0) {
+                setUploadPhase('error')
+                setUploadProgress(prev => ({ ...prev, failedFiles: failed }))
+                return
+            }
+
+            // All files now uploaded — finalize
+            setUploadPhase('finalizing')
+            const result = await finalizeSubmission(activeSubmissionId, uploadedFilesRef.current)
+
+            if (!result.success) {
+                if (result.credits !== undefined) {
+                    alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
+                } else {
+                    alert(result.error || 'Failed to finalize submission')
+                }
+                setUploadPhase(null)
+                return
+            }
+
+            router.push(`/report/${activeSubmissionId}`)
+        } catch (err: any) {
+            console.error('Retry error:', err)
+            setUploadPhase('error')
+        }
+    }
 
     return (
         <div className="container mx-auto px-6 max-w-3xl py-12">
@@ -634,70 +722,194 @@ function SubmitPageContent() {
                 </div>
             </div>
 
+            {/* Upload Progress Overlay */}
+            {uploadPhase && (
+                <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center">
+                    <div className="max-w-md w-full mx-4 space-y-6">
+                        {uploadPhase === 'uploading' && (
+                            <>
+                                <div className="text-center space-y-2">
+                                    <Loader2 className="w-8 h-8 text-white animate-spin mx-auto" />
+                                    <h3 className="text-lg font-bold text-white">Uploading Files</h3>
+                                    <p className="text-sm text-gray-400 truncate">
+                                        {uploadProgress.currentFile}
+                                    </p>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-white rounded-full transition-all duration-300"
+                                            style={{ width: `${uploadProgress.totalFiles > 0 ? (uploadProgress.currentIndex / uploadProgress.totalFiles) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-500 text-center">
+                                        {uploadProgress.currentIndex}/{uploadProgress.totalFiles} files
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {uploadPhase === 'finalizing' && (
+                            <div className="text-center space-y-2">
+                                <Loader2 className="w-8 h-8 text-white animate-spin mx-auto" />
+                                <h3 className="text-lg font-bold text-white">Verifying Files</h3>
+                                <p className="text-sm text-gray-400">Starting analysis...</p>
+                            </div>
+                        )}
+
+                        {uploadPhase === 'error' && (
+                            <div className="text-center space-y-4">
+                                <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
+                                <h3 className="text-lg font-bold text-white">Upload Failed</h3>
+                                <div className="space-y-1 text-sm text-gray-400">
+                                    {uploadProgress.failedFiles.map((f, i) => (
+                                        <p key={i}>
+                                            {f.type}{f.index !== undefined ? ` #${f.index + 1}` : ''}: {f.error}
+                                        </p>
+                                    ))}
+                                </div>
+                                <div className="flex gap-3 justify-center pt-2">
+                                    <button
+                                        onClick={() => { setUploadPhase(null); setLoading(false) }}
+                                        className="vercel-btn-secondary text-xs"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleRetry}
+                                        className="vercel-btn-primary text-xs"
+                                    >
+                                        Retry Failed Files
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <ASCConnectModal
                 isOpen={showAscModal}
                 onClose={() => setShowAscModal(false)}
                 onAutofill={handleAutofill}
             />
-        </div >
+        </div>
     );
 
     async function handleFinalSubmit(isDraft: boolean = false) {
         setLoading(true)
         try {
-            const formData = new FormData()
-            formData.append('app_name', appName)
-            formData.append('promotional_text', promotionalText)
-            formData.append('description', description)
-            formData.append('keywords', keywords)
-            formData.append('category', category)
-            formData.append('support_url', supportUrl)
-            formData.append('marketing_url', marketingUrl)
-            formData.append('sign_in_required', signInRequired.toString())
-            if (demoUsername) formData.append('demo_username', demoUsername)
-            if (demoPassword) formData.append('demo_password', demoPassword)
-
-            // New Data Fields
-            formData.append('age_rating', JSON.stringify(ageRating))
-            formData.append('privacy_declarations', JSON.stringify(privacy))
-            formData.append('checklist', JSON.stringify(checklist))
-
-            if (isDraft) formData.append('is_draft', 'true')
-            if (activeSubmissionId) formData.append('submission_id', activeSubmissionId)
-
-            // Only include files for the final submission — not for draft auto-saves
-            // (files are large and would exceed the request body size limit)
-            if (!isDraft) {
-                if (infoPlist) formData.append('plist', infoPlist)
-                if (privacyManifest) formData.append('manifest', privacyManifest)
-                if (ipaBinary) formData.append('ipa', ipaBinary)
-                screenshots.forEach(f => formData.append('screenshots', f))
+            // Phase 1: Save metadata as JSON (no files touch the server)
+            const metadata = {
+                app_name: appName,
+                promotional_text: promotionalText,
+                description,
+                keywords,
+                category,
+                support_url: supportUrl,
+                marketing_url: marketingUrl,
+                sign_in_required: signInRequired,
+                demo_username: demoUsername || undefined,
+                demo_password: demoPassword || undefined,
+                age_rating: ageRating,
+                privacy_declarations: privacy,
+                checklist,
+                is_draft: isDraft,
+                submission_id: activeSubmissionId || undefined,
             }
 
             const response = await fetch('/api/submissions', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(metadata),
             })
 
-            if (response.ok) {
-                const { submissionId } = await response.json()
-                setActiveSubmissionId(submissionId)
-
-                if (isDraft) {
-                    setSaved(true)
-                    setTimeout(() => setSaved(false), 3000)
-                } else {
-                    router.push(`/report/${submissionId}`)
-                }
-            } else {
+            if (!response.ok) {
                 const error = await response.json()
-                alert(error.message || "Failed to submit")
+                alert(error.message || 'Failed to save submission')
+                return
             }
-        } catch (err) {
-            console.error(err)
-            alert("Something went wrong during submission")
+
+            const { submissionId } = await response.json()
+            setActiveSubmissionId(submissionId)
+
+            if (isDraft) {
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+                return
+            }
+
+            // Phase 2: Upload files directly to Supabase Storage
+            const manifest = buildFileManifest(ipaBinary, infoPlist, privacyManifest, screenshots)
+            manifestRef.current = manifest
+            uploadedFilesRef.current = []
+
+            if (manifest.length === 0) {
+                // No files — go straight to finalize
+                setUploadPhase('finalizing')
+                const result = await finalizeSubmission(submissionId, [])
+                if (!result.success) {
+                    if (result.credits !== undefined) {
+                        alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
+                    } else {
+                        alert(result.error || 'Failed to finalize')
+                    }
+                    setUploadPhase(null)
+                    return
+                }
+                router.push(`/report/${submissionId}`)
+                return
+            }
+
+            setUploadPhase('uploading')
+
+            const signedUrls = await getSignedUploadUrls(submissionId, manifest)
+            const { uploaded, failed } = await uploadAllFiles(
+                manifest,
+                signedUrls,
+                (progress) => setUploadProgress(progress)
+            )
+
+            // Track successfully uploaded files
+            uploadedFilesRef.current = uploaded.map(u => ({ type: u.type, bucket: u.bucket, path: u.path }))
+
+            if (failed.length > 0) {
+                setUploadPhase('error')
+                setUploadProgress(prev => ({ ...prev, failedFiles: failed }))
+                return
+            }
+
+            // Phase 3: Finalize — update file paths, deduct credits, trigger worker
+            setUploadPhase('finalizing')
+
+            const result = await finalizeSubmission(submissionId, uploadedFilesRef.current)
+
+            if (!result.success) {
+                if (result.credits !== undefined) {
+                    alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
+                } else {
+                    alert(result.error || 'Failed to finalize submission')
+                }
+                setUploadPhase(null)
+                return
+            }
+
+            router.push(`/report/${submissionId}`)
+        } catch (err: any) {
+            console.error('Submission error:', err)
+            if (uploadPhase) {
+                setUploadPhase('error')
+                setUploadProgress(prev => ({
+                    ...prev,
+                    failedFiles: [{ type: 'unknown', error: err.message || 'Something went wrong' }]
+                }))
+            } else {
+                alert('Something went wrong during submission')
+            }
         } finally {
-            setLoading(false)
+            if (!uploadPhase || uploadPhase === 'error') {
+                setLoading(false)
+            }
         }
     }
 }
