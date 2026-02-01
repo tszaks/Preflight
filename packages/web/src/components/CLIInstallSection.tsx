@@ -67,7 +67,7 @@ const usageCommands = [
   },
   {
     command: "preflight scan ./MyApp",
-    comment: "Dry-run scan (free)",
+    comment: "Dry-run scan (no credits used)",
   },
   {
     command: "preflight submit ./MyApp",
