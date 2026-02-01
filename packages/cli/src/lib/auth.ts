@@ -35,10 +35,17 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
     return JSON.parse(decoded)
 }
 
-export async function loginWithBrowser(): Promise<{ email: string } | null> {
+export async function loginWithBrowser(mode: 'login' | 'signup' = 'login'): Promise<{ email: string } | null> {
     const { apiUrl } = getConfig()
     const baseUrl = apiUrl || DEFAULT_API_URL
 
+    // Signup: just open the browser to the signup page, no callback needed
+    if (mode === 'signup') {
+        await open(`${baseUrl}/auth/signup`)
+        return null
+    }
+
+    // Login: use the local callback server to capture tokens
     return new Promise((resolve) => {
         const server = http.createServer(async (req, res) => {
             const url = new URL(req.url!, `http://localhost:${CALLBACK_PORT}`)

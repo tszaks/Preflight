@@ -1,4 +1,5 @@
 import Conf from 'conf'
+import { DEFAULT_API_URL } from './constants.js'
 
 interface PreflightConfig {
     accessToken?: string
@@ -15,7 +16,7 @@ const config = new Conf<PreflightConfig>({
     schema: {
         accessToken: { type: 'string' },
         refreshToken: { type: 'string' },
-        apiUrl: { type: 'string', default: 'https://preflight.dev' },
+        apiUrl: { type: 'string', default: DEFAULT_API_URL },
         userId: { type: 'string' },
         email: { type: 'string' },
         hasRunBefore: { type: 'boolean', default: false },
@@ -23,11 +24,16 @@ const config = new Conf<PreflightConfig>({
     },
 })
 
+// Migrate existing users from old domain
+if (config.get('apiUrl') === 'https://preflight.dev') {
+    config.set('apiUrl', DEFAULT_API_URL)
+}
+
 export function getConfig(): PreflightConfig {
     return {
         accessToken: config.get('accessToken'),
         refreshToken: config.get('refreshToken'),
-        apiUrl: config.get('apiUrl') || 'https://preflight.dev',
+        apiUrl: config.get('apiUrl') || DEFAULT_API_URL,
         userId: config.get('userId'),
         email: config.get('email'),
         hasRunBefore: config.get('hasRunBefore') || false,

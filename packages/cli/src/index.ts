@@ -12,6 +12,7 @@ import { setupCommand } from './commands/setup.js'
 import { runOnboarding } from './commands/onboarding.js'
 import { handleUnknownCommand } from './ui/errors.js'
 import { isLoggedIn, hasRunBefore } from './lib/config.js'
+import { loginWithBrowser } from './lib/auth.js'
 import * as ui from './ui/interactive.js'
 import { brand } from './ui/theme.js'
 
@@ -94,6 +95,8 @@ program.on('command:*', (operands) => {
 
 // Interactive welcome menu when run with no arguments
 async function interactiveMenu() {
+    ui.clearScreen()
+
     // First-run onboarding
     if (!hasRunBefore()) {
         await runOnboarding()
@@ -103,25 +106,29 @@ async function interactiveMenu() {
     ui.intro()
     ui.showTagline()
 
-    const loggedIn = isLoggedIn()
-
-    const options = loggedIn
-        ? [
-              { value: 'scan' as const, label: 'Scan my app', hint: 'Free preview' },
-              { value: 'submit' as const, label: 'Submit for full AI analysis', hint: 'Uses 1 credit' },
-              { value: 'history' as const, label: 'View my reports', hint: 'Past submissions' },
-              { value: 'account' as const, label: 'Check account & credits', hint: '' },
-              { value: 'help' as const, label: 'Help - show all commands', hint: '' },
-          ]
-        : [
-              { value: 'scan' as const, label: 'Scan my app', hint: 'Free, no login needed' },
-              { value: 'login' as const, label: 'Log in to your account', hint: 'Opens browser' },
-              { value: 'help' as const, label: 'Help - show all commands', hint: '' },
-          ]
+    // Require auth before showing menu
+    if (!isLoggedIn()) {
+        ui.log.warning('You need to log in to continue.')
+        const s = ui.spinner()
+        s.start('Opening login page...')
+        const result = await loginWithBrowser('login')
+        if (result) {
+            s.stop(`Logged in as ${result.email}`)
+        } else {
+            s.stop('Login failed or timed out. Run `preflight login` to try again.')
+            return
+        }
+    }
 
     const choice = await ui.select({
         message: 'What would you like to do?',
-        options,
+        options: [
+            { value: 'scan' as const, label: 'Scan my app', hint: 'Free preview' },
+            { value: 'submit' as const, label: 'Submit for full AI analysis', hint: 'Uses 1 credit' },
+            { value: 'history' as const, label: 'View my reports', hint: 'Past submissions' },
+            { value: 'account' as const, label: 'Check account & credits', hint: '' },
+            { value: 'help' as const, label: 'Help - show all commands', hint: '' },
+        ],
     })
 
     if (choice === null) return
@@ -132,9 +139,6 @@ async function interactiveMenu() {
             break
         case 'submit':
             await submitCommand()
-            break
-        case 'login':
-            await loginCommand()
             break
         case 'history':
             await historyCommand({})

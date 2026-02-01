@@ -15,7 +15,7 @@ export async function loginCommand() {
     spinner.start()
 
     try {
-        const result = await loginWithBrowser()
+        const result = await loginWithBrowser('login')
 
         if (result) {
             spinner.stop()
