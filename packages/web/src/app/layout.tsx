@@ -44,7 +44,7 @@ export default function RootLayout({
       >
         <Navbar />
         <TerminalBanner />
-        <div className="pt-[6.5rem] min-h-screen">
+        <div className="pt-16 min-h-screen">
           {children}
         </div>
       </body>
