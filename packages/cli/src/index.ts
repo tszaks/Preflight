@@ -8,6 +8,12 @@ import { submitCommand } from './commands/submit.js'
 import { statusCommand } from './commands/status.js'
 import { reportCommand } from './commands/report.js'
 import { historyCommand } from './commands/history.js'
+import { setupCommand } from './commands/setup.js'
+import { runOnboarding } from './commands/onboarding.js'
+import { handleUnknownCommand } from './ui/errors.js'
+import { isLoggedIn, hasRunBefore } from './lib/config.js'
+import * as ui from './ui/interactive.js'
+import { brand } from './ui/theme.js'
 
 const program = new Command()
 
@@ -75,4 +81,79 @@ program
     .description('Show credit balance')
     .action(creditsCommand)
 
-program.parse()
+program
+    .command('setup')
+    .description('Run guided setup (can be re-run anytime)')
+    .action(setupCommand)
+
+// Handle unknown commands with fuzzy matching
+program.on('command:*', (operands) => {
+    handleUnknownCommand(operands[0])
+    process.exitCode = 1
+})
+
+// Interactive welcome menu when run with no arguments
+async function interactiveMenu() {
+    // First-run onboarding
+    if (!hasRunBefore()) {
+        await runOnboarding()
+        return
+    }
+
+    ui.intro()
+    ui.showTagline()
+
+    const loggedIn = isLoggedIn()
+
+    const options = loggedIn
+        ? [
+              { value: 'scan' as const, label: 'Scan my app', hint: 'Free preview' },
+              { value: 'submit' as const, label: 'Submit for full AI analysis', hint: 'Uses 1 credit' },
+              { value: 'history' as const, label: 'View my reports', hint: 'Past submissions' },
+              { value: 'account' as const, label: 'Check account & credits', hint: '' },
+              { value: 'help' as const, label: 'Help - show all commands', hint: '' },
+          ]
+        : [
+              { value: 'scan' as const, label: 'Scan my app', hint: 'Free, no login needed' },
+              { value: 'login' as const, label: 'Log in to your account', hint: 'Opens browser' },
+              { value: 'help' as const, label: 'Help - show all commands', hint: '' },
+          ]
+
+    const choice = await ui.select({
+        message: 'What would you like to do?',
+        options,
+    })
+
+    if (choice === null) return
+
+    switch (choice) {
+        case 'scan':
+            await scanCommand(undefined as unknown as string)
+            break
+        case 'submit':
+            await submitCommand(undefined as unknown as string, {})
+            break
+        case 'login':
+            await loginCommand()
+            break
+        case 'history':
+            await historyCommand({})
+            break
+        case 'account':
+            await whoamiCommand()
+            break
+        case 'help':
+            program.outputHelp()
+            break
+    }
+}
+
+// If no args provided (just `preflight`), show interactive menu
+if (process.argv.length <= 2) {
+    interactiveMenu().catch((err) => {
+        console.error(err)
+        process.exit(1)
+    })
+} else {
+    program.parse()
+}

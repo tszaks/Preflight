@@ -3,9 +3,14 @@ import { readFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
-import { isLoggedIn } from '../lib/config.js'
-import { createSpinner, success, error, warn, header } from '../ui/spinner.js'
+import { isLoggedIn, setLastScannedPath, getLastScannedPath } from '../lib/config.js'
+import { loginWithBrowser } from '../lib/auth.js'
+import { createSpinner } from '../ui/spinner.js'
 import { renderReport } from '../ui/report.js'
+import { buildProjectChoices } from '../lib/project-finder.js'
+import { promptLogin } from '../ui/errors.js'
+import * as ui from '../ui/interactive.js'
+import { brand, subtext, formatBytes, icons } from '../ui/theme.js'
 
 interface SubmitOptions {
     appName?: string
@@ -17,13 +22,35 @@ interface SubmitOptions {
 }
 
 export async function submitCommand(path: string, options: SubmitOptions) {
+    // Auth check with friendly prompt
     if (!isLoggedIn()) {
-        error('Not logged in. Run `preflight login` first.')
-        process.exit(1)
+        const wantsLogin = await promptLogin()
+        if (wantsLogin) {
+            const s = ui.spinner()
+            s.start('Opening browser...')
+            const result = await loginWithBrowser()
+            if (result) {
+                s.stop(`Logged in as ${result.email}`)
+            } else {
+                s.stop('Login failed or cancelled')
+                return
+            }
+        } else {
+            ui.log.warning('Login required for submissions. Scan is free without login!')
+            ui.tip(`Run ${brand('preflight scan')} for a free preview.`)
+            return
+        }
     }
 
-    const dir = resolve(path || '.')
-    header('Submitting for analysis')
+    // Interactive mode: no path provided
+    if (!path) {
+        const resolvedPath = await interactiveProjectSelect()
+        if (!resolvedPath) return
+        path = resolvedPath
+    }
+
+    const dir = resolve(path)
+    setLastScannedPath(dir)
 
     // 1. Detect files
     const detected = scanProject(dir)
@@ -34,18 +61,50 @@ export async function submitCommand(path: string, options: SubmitOptions) {
     if (options.manifest) detected.privacyManifest = resolve(options.manifest)
     if (options.ipa) detected.ipa = resolve(options.ipa)
 
-    console.log(chalk.bold(`  App: ${appName}`))
+    // Build file list for display
+    const filesToUpload: Array<{ type: string; index?: number; filename: string; path: string }> = []
 
-    const foundFiles: string[] = []
-    if (detected.infoPlist) foundFiles.push('Info.plist')
-    if (detected.privacyManifest) foundFiles.push('PrivacyInfo.xcprivacy')
-    if (detected.ipa) foundFiles.push('IPA')
-    if (detected.screenshots.length > 0) foundFiles.push(`${detected.screenshots.length} screenshots`)
+    if (detected.infoPlist) {
+        filesToUpload.push({ type: 'plist', filename: 'Info.plist', path: detected.infoPlist })
+    }
+    if (detected.privacyManifest) {
+        filesToUpload.push({ type: 'manifest', filename: 'PrivacyInfo.xcprivacy', path: detected.privacyManifest })
+    }
+    if (detected.ipa) {
+        filesToUpload.push({ type: 'ipa', filename: basename(detected.ipa), path: detected.ipa })
+    }
+    for (let i = 0; i < Math.min(detected.screenshots.length, 10); i++) {
+        filesToUpload.push({
+            type: 'screenshot',
+            index: i,
+            filename: basename(detected.screenshots[i]),
+            path: detected.screenshots[i],
+        })
+    }
 
-    console.log(`  Found: ${foundFiles.join(', ') || 'no files'}`)
-    console.log()
+    if (filesToUpload.length === 0) {
+        ui.log.warning('No files to upload. Use --plist, --manifest, --ipa, or --screenshots flags.')
+        return
+    }
 
-    // 2. Create draft submission
+    // Show confirmation with file listing
+    ui.intro(`Submit ${appName} for analysis`)
+
+    const fileLines = filesToUpload.map((f) => {
+        const size = getFileSize(f.path)
+        const icon = f.type === 'screenshot' ? icons.image : icons.file
+        return `  ${icon} ${f.filename} ${subtext(`(${formatBytes(size)})`)}`
+    })
+
+    ui.log.message(chalk.bold('Files to upload:') + '\n' + fileLines.join('\n'))
+
+    const shouldContinue = await ui.confirm('This will use 1 credit. Continue?')
+    if (!shouldContinue) {
+        ui.outro('Submission cancelled.')
+        return
+    }
+
+    // 2. Create submission + upload + analyze
     const spinner = createSpinner('Creating submission...')
     spinner.start()
 
@@ -58,45 +117,21 @@ export async function submitCommand(path: string, options: SubmitOptions) {
 
         if (!createRes.ok) {
             spinner.stop()
-            error(createData.message || 'Failed to create submission')
+            ui.log.error(createData.message || 'Failed to create submission')
             process.exit(1)
         }
 
         const submissionId = createData.submissionId
-        spinner.text = 'Getting upload URLs...'
+        spinner.succeed('Submission created')
 
-        // 3. Build file list for upload
-        const files: Array<{ type: string; index?: number; filename: string; path: string }> = []
+        // 3. Get signed upload URLs
+        const uploadSpinner = createSpinner('Getting upload URLs...')
+        uploadSpinner.start()
 
-        if (detected.infoPlist) {
-            files.push({ type: 'plist', filename: 'Info.plist', path: detected.infoPlist })
-        }
-        if (detected.privacyManifest) {
-            files.push({ type: 'manifest', filename: 'PrivacyInfo.xcprivacy', path: detected.privacyManifest })
-        }
-        if (detected.ipa) {
-            files.push({ type: 'ipa', filename: basename(detected.ipa), path: detected.ipa })
-        }
-        for (let i = 0; i < Math.min(detected.screenshots.length, 10); i++) {
-            files.push({
-                type: 'screenshot',
-                index: i,
-                filename: basename(detected.screenshots[i]),
-                path: detected.screenshots[i],
-            })
-        }
-
-        if (files.length === 0) {
-            spinner.stop()
-            warn('No files to upload. Use --plist, --manifest, --ipa, or --screenshots flags.')
-            process.exit(1)
-        }
-
-        // 4. Get signed upload URLs
         const urlsRes = await apiRequest(`/api/submissions/${submissionId}/upload-urls`, {
             method: 'POST',
             body: JSON.stringify({
-                files: files.map((f) => ({
+                files: filesToUpload.map((f) => ({
                     type: f.type,
                     index: f.index,
                     filename: f.filename,
@@ -106,43 +141,42 @@ export async function submitCommand(path: string, options: SubmitOptions) {
         const urlsData = await urlsRes.json()
 
         if (!urlsRes.ok) {
-            spinner.stop()
-            error(urlsData.message || 'Failed to get upload URLs')
+            uploadSpinner.stop()
+            ui.log.error(urlsData.message || 'Failed to get upload URLs')
             process.exit(1)
         }
 
-        // 5. Upload files
-        spinner.text = 'Uploading files...'
+        // 4. Upload files
         for (let i = 0; i < urlsData.urls.length; i++) {
             const urlInfo = urlsData.urls[i]
-            const fileInfo = files[i]
+            const fileInfo = filesToUpload[i]
             const fileBuffer = readFileSync(fileInfo.path)
             const fileSize = fileBuffer.length
 
-            spinner.text = `Uploading ${fileInfo.filename} (${formatBytes(fileSize)})...`
+            uploadSpinner.text = `Uploading ${fileInfo.filename} (${formatBytes(fileSize)})...`
 
             const uploadRes = await fetch(urlInfo.signedUrl, {
                 method: 'PUT',
                 body: fileBuffer,
-                headers: {
-                    'Content-Type': 'application/octet-stream',
-                },
+                headers: { 'Content-Type': 'application/octet-stream' },
             })
 
             if (!uploadRes.ok) {
-                spinner.stop()
-                error(`Failed to upload ${fileInfo.filename}: HTTP ${uploadRes.status} ${uploadRes.statusText}`)
+                uploadSpinner.stop()
+                ui.log.error(`Failed to upload ${fileInfo.filename}: HTTP ${uploadRes.status} ${uploadRes.statusText}`)
                 process.exit(1)
             }
         }
+        uploadSpinner.succeed('Files uploaded')
 
-        // 6. Finalize and trigger analysis
-        spinner.text = 'Finalizing submission...'
+        // 5. Finalize
+        const analyzeSpinner = createSpinner('Starting analysis...')
+        analyzeSpinner.start()
 
         const finalizeRes = await apiRequest(`/api/submissions/${submissionId}/finalize`, {
             method: 'POST',
             body: JSON.stringify({
-                files: files.map((f) => ({
+                files: filesToUpload.map((f) => ({
                     type: f.type,
                     index: f.index,
                 })),
@@ -151,42 +185,104 @@ export async function submitCommand(path: string, options: SubmitOptions) {
         const finalizeData = await finalizeRes.json()
 
         if (!finalizeRes.ok) {
-            spinner.stop()
+            analyzeSpinner.stop()
             if (finalizeRes.status === 402) {
-                error(`Insufficient credits. Need ${finalizeData.required}, have ${finalizeData.credits}.`)
-                console.log(chalk.dim('  Purchase credits at https://preflight.dev/pricing'))
+                ui.log.error(`Insufficient credits. Need ${finalizeData.required}, have ${finalizeData.credits}.`)
+                console.log(subtext('  Purchase credits at https://preflightlaunch.com/pricing'))
             } else {
-                error(finalizeData.message || 'Failed to finalize submission')
+                ui.log.error(finalizeData.message || 'Failed to finalize submission')
             }
             process.exit(1)
         }
 
-        spinner.text = 'Analysis started! Waiting for results...'
+        analyzeSpinner.text = 'AI review in progress...'
 
-        // 7. Poll for completion
-        const reportData = await pollForReport(submissionId, spinner)
+        // 6. Poll for completion
+        const reportData = await pollForReport(submissionId, analyzeSpinner)
 
-        spinner.stop()
+        analyzeSpinner.stop()
 
         if (reportData.status === 'complete' && reportData.data) {
             if (options.json) {
                 console.log(JSON.stringify(reportData.data, null, 2))
             } else {
                 renderReport(reportData.data.report, reportData.data.items)
-                console.log(chalk.dim(`  Full report: https://preflight.dev/report/${reportData.data.report.id}`))
+                console.log(subtext(`  Full report: https://preflightlaunch.com/report/${reportData.data.report.id}`))
                 console.log()
+
+                // What next?
+                const next = await ui.select<'open' | 'another' | 'done'>({
+                    message: 'What next?',
+                    options: [
+                        { value: 'open', label: 'Open full report in browser' },
+                        { value: 'another', label: 'Submit a different app' },
+                        { value: 'done', label: 'Done' },
+                    ],
+                })
+
+                if (next === 'open') {
+                    const open = (await import('open')).default
+                    await open(`https://preflightlaunch.com/report/${reportData.data.report.id}`)
+                } else if (next === 'another') {
+                    await submitCommand(undefined as unknown as string, {})
+                }
             }
         } else if (reportData.status === 'failed') {
-            error('Analysis failed. Please try submitting again or contact support.')
+            ui.log.error('Analysis failed. Please try submitting again or contact support.')
             process.exit(1)
         } else {
-            warn('Analysis is still running. Check status with:')
-            console.log(chalk.dim(`  preflight status ${submissionId}`))
+            ui.log.warning('Analysis is still running. Check status with:')
+            console.log(subtext(`  preflight status ${submissionId}`))
         }
     } catch (err) {
         spinner.stop()
-        error(`Submit failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        ui.log.error(`Submit failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
         process.exit(1)
+    }
+}
+
+async function interactiveProjectSelect(): Promise<string | null> {
+    const lastScanned = getLastScannedPath()
+    const choices = buildProjectChoices(lastScanned)
+
+    if (choices.length <= 1) {
+        const manualPath = await ui.text({
+            message: 'Enter the path to your project:',
+            placeholder: './MyApp',
+            validate: (val) => {
+                if (!val?.trim()) return 'Path is required'
+            },
+        })
+        return manualPath
+    }
+
+    const selected = await ui.select<string>({
+        message: 'Where\'s your Xcode project?',
+        options: choices,
+    })
+
+    if (selected === null) return null
+
+    if (selected === '__manual__') {
+        const manualPath = await ui.text({
+            message: 'Enter the path to your project:',
+            placeholder: './MyApp',
+            validate: (val) => {
+                if (!val?.trim()) return 'Path is required'
+            },
+        })
+        return manualPath
+    }
+
+    return selected
+}
+
+function getFileSize(filePath: string): number {
+    try {
+        const buf = readFileSync(filePath)
+        return buf.length
+    } catch {
+        return 0
     }
 }
 
@@ -222,7 +318,10 @@ async function pollForReport(
         consecutiveFailures = 0
         const data = await res.json()
         const submission = data.data
-        spinner.text = `Analysis in progress... (${Math.min((i + 1) * 3, 95)}%)`
+
+        const stages = ['Files uploaded', 'Metadata validated', 'AI review in progress...', 'Generating report']
+        const stageIdx = Math.min(Math.floor(((i + 1) / maxAttempts) * stages.length), stages.length - 1)
+        spinner.text = `${stages[stageIdx]} (${Math.min((i + 1) * 3, 95)}%)`
 
         if (submission.status === 'complete') {
             if (submission.report_id) {
@@ -239,10 +338,4 @@ async function pollForReport(
     }
 
     return { status: 'timeout' }
-}
-
-function formatBytes(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
