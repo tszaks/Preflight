@@ -85,5 +85,12 @@ export function spinner() {
 // Re-export @clack's log helpers directly
 export const log = p.log
 
+// Clear the terminal screen (interactive mode only)
+export function clearScreen() {
+    if (process.stdout.isTTY) {
+        process.stdout.write('\x1B[2J\x1B[3J\x1B[H')
+    }
+}
+
 // Check if user cancelled
 export { isCancel } from '@clack/prompts'

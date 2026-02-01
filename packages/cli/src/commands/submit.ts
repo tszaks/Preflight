@@ -28,7 +28,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}) 
         if (wantsLogin) {
             const s = ui.spinner()
             s.start('Opening browser...')
-            const result = await loginWithBrowser()
+            const result = await loginWithBrowser('login')
             if (result) {
                 s.stop(`Logged in as ${result.email}`)
             } else {

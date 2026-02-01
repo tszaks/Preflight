@@ -4,6 +4,7 @@ import { isLoggedIn } from '../lib/config.js'
 import { apiRequest } from '../lib/api-client.js'
 import { createSpinner, error } from '../ui/spinner.js'
 import { renderReport, renderReportJson } from '../ui/report.js'
+import { DEFAULT_API_URL } from '../lib/constants.js'
 
 interface ReportOptions {
     json?: boolean
@@ -17,7 +18,7 @@ export async function reportCommand(id: string, options: ReportOptions) {
     }
 
     if (options.open) {
-        await open(`https://preflight.dev/report/${id}`)
+        await open(`${DEFAULT_API_URL}/report/${id}`)
         console.log(chalk.dim('  Opened report in browser'))
         return
     }
@@ -40,7 +41,7 @@ export async function reportCommand(id: string, options: ReportOptions) {
             renderReportJson(data.report, data.items)
         } else {
             renderReport(data.report, data.items)
-            console.log(chalk.dim(`  Full report: https://preflight.dev/report/${id}`))
+            console.log(chalk.dim(`  Full report: ${DEFAULT_API_URL}/report/${id}`))
             console.log()
         }
     } catch (err) {

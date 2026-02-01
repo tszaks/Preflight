@@ -11,24 +11,51 @@ export async function runOnboarding() {
 
     ui.log.message('Let\'s get you set up. This takes about 30 seconds.')
 
-    // Step 1: Account
+    // Step 1: Account (required)
     if (!isLoggedIn()) {
-        const authChoice = await ui.select<'signup' | 'login' | 'skip'>({
-            message: 'Step 1 of 2: Set up your account',
-            options: [
-                { value: 'signup', label: 'Open browser to sign up', hint: 'Create a free account' },
-                { value: 'login', label: 'I already have an account', hint: 'Log in' },
-                { value: 'skip', label: 'Skip for now', hint: 'Scan works without login' },
-            ],
-        })
+        let authenticated = false
 
-        if (authChoice === null) return
+        while (!authenticated) {
+            const authChoice = await ui.select<'signup' | 'login'>({
+                message: 'Step 1 of 2: Set up your account',
+                options: [
+                    { value: 'signup', label: 'Create a free account', hint: 'Opens browser' },
+                    { value: 'login', label: 'I already have an account', hint: 'Opens browser' },
+                ],
+            })
 
-        if (authChoice === 'signup' || authChoice === 'login') {
-            const s = ui.spinner()
-            s.start('Opening browser...')
-            const result = await loginWithBrowser()
-            s.stop(result ? `Logged in as ${result.email}` : 'Login skipped')
+            if (authChoice === null) return
+
+            if (authChoice === 'signup') {
+                const s = ui.spinner()
+                s.start('Opening signup page...')
+                await loginWithBrowser('signup')
+                s.stop('Signup page opened in browser')
+                ui.log.info('After creating your account, come back here and log in.')
+
+                // Now prompt them to log in
+                const s2 = ui.spinner()
+                s2.start('Opening login page...')
+                const result = await loginWithBrowser('login')
+                if (result) {
+                    s2.stop(`Logged in as ${result.email}`)
+                    authenticated = true
+                } else {
+                    s2.stop('Login failed or timed out')
+                    ui.log.warning('Let\'s try again.')
+                }
+            } else {
+                const s = ui.spinner()
+                s.start('Opening login page...')
+                const result = await loginWithBrowser('login')
+                if (result) {
+                    s.stop(`Logged in as ${result.email}`)
+                    authenticated = true
+                } else {
+                    s.stop('Login failed or timed out')
+                    ui.log.warning('Let\'s try again.')
+                }
+            }
         }
     } else {
         ui.log.success('Already logged in. Skipping account setup.')
