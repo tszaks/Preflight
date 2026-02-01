@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { CLIInstallSection } from "@/components/CLIInstallSection";
 
 export default function Home() {
   return (
@@ -65,6 +66,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* CLI Install */}
+      <CLIInstallSection />
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 mt-20">
