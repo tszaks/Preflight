@@ -9,6 +9,8 @@ const BUCKET_MAP: Record<string, string> = {
     ipa: 'ipas',
 }
 
+const ALLOWED_SCREENSHOT_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp'])
+
 export async function POST(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -53,8 +55,13 @@ export async function POST(
                 let path: string
                 switch (file.type) {
                     case 'screenshot': {
-                        const ext = file.filename.split('.').pop() || 'png'
-                        path = `${basePath}/screenshot_${file.index}.${ext}`
+                        const idx = Number(file.index)
+                        if (!Number.isInteger(idx) || idx < 0 || idx > 9) {
+                            throw new Error(`Invalid screenshot index: ${file.index}`)
+                        }
+                        const rawExt = (file.filename.split('.').pop() || 'png').toLowerCase()
+                        const ext = ALLOWED_SCREENSHOT_EXTENSIONS.has(rawExt) ? rawExt : 'png'
+                        path = `${basePath}/screenshot_${idx}.${ext}`
                         break
                     }
                     case 'plist':

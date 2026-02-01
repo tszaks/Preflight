@@ -171,6 +171,7 @@ export async function uploadAllFiles(
 
 /**
  * Finalize submission: update file paths, deduct credits, trigger analysis worker.
+ * Only sends file type + index — the server regenerates paths to prevent IDOR.
  */
 export async function finalizeSubmission(
     submissionId: string,
@@ -179,7 +180,14 @@ export async function finalizeSubmission(
     const response = await fetch(`/api/submissions/${submissionId}/finalize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files })
+        body: JSON.stringify({
+            files: files.map(f => ({
+                type: f.type,
+                index: f.type === 'screenshot'
+                    ? parseInt(f.path.match(/screenshot_(\d+)/)?.[1] ?? '0', 10)
+                    : undefined,
+            }))
+        })
     })
 
     if (!response.ok) {

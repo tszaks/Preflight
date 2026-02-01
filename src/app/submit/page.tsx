@@ -61,6 +61,7 @@ function SubmitPageContent() {
     })
     const manifestRef = useRef<FileManifestItem[]>([])
     const uploadedFilesRef = useRef<{ type: string; bucket: string; path: string }[]>([])
+    const submittingRef = useRef(false)
 
     // ASC State
     const [showAscModal, setShowAscModal] = useState(false)
@@ -217,6 +218,7 @@ function SubmitPageContent() {
 
     async function handleRetry() {
         if (!activeSubmissionId) return
+        if (submittingRef.current) return
 
         const failedItems = uploadProgress.failedFiles
         if (!failedItems.length) return
@@ -241,6 +243,8 @@ function SubmitPageContent() {
 
         if (retryManifest.length === 0) return
 
+        submittingRef.current = true
+        setLoading(true)
         setUploadPhase('uploading')
 
         try {
@@ -260,27 +264,18 @@ function SubmitPageContent() {
             if (failed.length > 0) {
                 setUploadPhase('error')
                 setUploadProgress(prev => ({ ...prev, failedFiles: failed }))
+                setLoading(false)
+                submittingRef.current = false
                 return
             }
 
             // All files now uploaded — finalize
-            setUploadPhase('finalizing')
-            const result = await finalizeSubmission(activeSubmissionId, uploadedFilesRef.current)
-
-            if (!result.success) {
-                if (result.credits !== undefined) {
-                    alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
-                } else {
-                    alert(result.error || 'Failed to finalize submission')
-                }
-                setUploadPhase(null)
-                return
-            }
-
-            router.push(`/report/${activeSubmissionId}`)
+            await handleFinalize(activeSubmissionId)
         } catch (err: any) {
             console.error('Retry error:', err)
             setUploadPhase('error')
+            setLoading(false)
+            submittingRef.current = false
         }
     }
 
@@ -770,7 +765,7 @@ function SubmitPageContent() {
                                 </div>
                                 <div className="flex gap-3 justify-center pt-2">
                                     <button
-                                        onClick={() => { setUploadPhase(null); setLoading(false) }}
+                                        onClick={() => { setUploadPhase(null); setLoading(false); submittingRef.current = false }}
                                         className="vercel-btn-secondary text-xs"
                                     >
                                         Cancel
@@ -796,8 +791,30 @@ function SubmitPageContent() {
         </div>
     );
 
+    async function handleFinalize(submissionId: string) {
+        setUploadPhase('finalizing')
+        const result = await finalizeSubmission(submissionId, uploadedFilesRef.current)
+
+        if (!result.success) {
+            if (result.credits !== undefined) {
+                alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
+            } else {
+                alert(result.error || 'Failed to finalize submission')
+            }
+            setUploadPhase(null)
+            setLoading(false)
+            submittingRef.current = false
+            return
+        }
+
+        router.push(`/report/${submissionId}`)
+    }
+
     async function handleFinalSubmit(isDraft: boolean = false) {
+        if (!isDraft && submittingRef.current) return
+        if (!isDraft) submittingRef.current = true
         setLoading(true)
+        let inUploadPhase = false
         try {
             // Phase 1: Save metadata as JSON (no files touch the server)
             const metadata = {
@@ -846,21 +863,12 @@ function SubmitPageContent() {
 
             if (manifest.length === 0) {
                 // No files — go straight to finalize
-                setUploadPhase('finalizing')
-                const result = await finalizeSubmission(submissionId, [])
-                if (!result.success) {
-                    if (result.credits !== undefined) {
-                        alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
-                    } else {
-                        alert(result.error || 'Failed to finalize')
-                    }
-                    setUploadPhase(null)
-                    return
-                }
-                router.push(`/report/${submissionId}`)
+                inUploadPhase = true
+                await handleFinalize(submissionId)
                 return
             }
 
+            inUploadPhase = true
             setUploadPhase('uploading')
 
             const signedUrls = await getSignedUploadUrls(submissionId, manifest)
@@ -880,24 +888,10 @@ function SubmitPageContent() {
             }
 
             // Phase 3: Finalize — update file paths, deduct credits, trigger worker
-            setUploadPhase('finalizing')
-
-            const result = await finalizeSubmission(submissionId, uploadedFilesRef.current)
-
-            if (!result.success) {
-                if (result.credits !== undefined) {
-                    alert(`Insufficient credits. You have ${result.credits} but need ${result.required}.`)
-                } else {
-                    alert(result.error || 'Failed to finalize submission')
-                }
-                setUploadPhase(null)
-                return
-            }
-
-            router.push(`/report/${submissionId}`)
+            await handleFinalize(submissionId)
         } catch (err: any) {
             console.error('Submission error:', err)
-            if (uploadPhase) {
+            if (inUploadPhase) {
                 setUploadPhase('error')
                 setUploadProgress(prev => ({
                     ...prev,
@@ -905,9 +899,10 @@ function SubmitPageContent() {
                 }))
             } else {
                 alert('Something went wrong during submission')
+                submittingRef.current = false
             }
         } finally {
-            if (!uploadPhase || uploadPhase === 'error') {
+            if (!inUploadPhase) {
                 setLoading(false)
             }
         }
