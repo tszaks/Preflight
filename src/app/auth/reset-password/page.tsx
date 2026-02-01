@@ -1,35 +1,25 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { login } from '../actions'
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { updatePassword } from '../actions'
+import { Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginForm() {
+export default function ResetPasswordPage() {
     const router = useRouter()
-    const searchParams = useSearchParams()
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [checkingAuth, setCheckingAuth] = useState(true)
 
-    // Show error from callback redirect (e.g. email verification failure)
-    useEffect(() => {
-        const urlError = searchParams.get('error')
-        if (urlError) {
-            setError(decodeURIComponent(urlError))
-        }
-    }, [searchParams])
-
-    // Redirect if already logged in
+    // User must be authenticated (via the email link callback) to reset their password
     useEffect(() => {
         const checkAuth = async () => {
             const supabase = createClient()
             const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                router.push('/dashboard')
+            if (!user) {
+                router.push('/auth/forgot-password')
             } else {
                 setCheckingAuth(false)
             }
@@ -43,7 +33,22 @@ export default function LoginForm() {
         setError(null)
 
         const formData = new FormData(e.currentTarget)
-        const result = await login(formData)
+        const password = formData.get('password') as string
+        const confirm = formData.get('confirm') as string
+
+        if (password !== confirm) {
+            setError('Passwords do not match.')
+            setLoading(false)
+            return
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters.')
+            setLoading(false)
+            return
+        }
+
+        const result = await updatePassword(formData)
 
         if (result?.error) {
             setError(result.error)
@@ -51,7 +56,6 @@ export default function LoginForm() {
         }
     }
 
-    // Show a loading state while checking auth
     if (checkingAuth) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black">
@@ -63,30 +67,14 @@ export default function LoginForm() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-black px-6">
             <div className="w-full max-w-sm">
-                <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-white transition-colors mb-8 group">
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    Back to site
-                </Link>
-
                 <div className="vercel-card">
-                    <h1 className="text-2xl font-bold tracking-tighter mb-2">Welcome back</h1>
-                    <p className="text-sm text-gray-500 font-light mb-8">Log in to your Preflight account</p>
+                    <h1 className="text-2xl font-bold tracking-tighter mb-2">Set new password</h1>
+                    <p className="text-sm text-gray-500 font-light mb-8">Choose a new password for your account</p>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Email</label>
-                            <input
-                                type="email"
-                                name="email"
-                                required
-                                className="w-full bg-black border border-border rounded-md px-3 py-2 text-sm focus:border-white transition-colors outline-none"
-                                placeholder="you@example.com"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                                <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Password</label>
+                                <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">New Password</label>
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
@@ -104,6 +92,17 @@ export default function LoginForm() {
                             />
                         </div>
 
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-400 uppercase tracking-widest">Confirm Password</label>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="confirm"
+                                required
+                                className="w-full bg-black border border-border rounded-md px-3 py-2 text-sm focus:border-white transition-colors outline-none"
+                                placeholder="••••••••"
+                            />
+                        </div>
+
                         {error && (
                             <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 p-3 rounded-md">
                                 {error}
@@ -115,24 +114,11 @@ export default function LoginForm() {
                             disabled={loading}
                             className="vercel-btn-primary w-full disabled:opacity-50"
                         >
-                            {loading ? "Logging in..." : "Log In"}
+                            {loading ? "Updating..." : "Update Password"}
                         </button>
-
-                        <div className="text-center">
-                            <Link href="/auth/forgot-password" className="text-xs text-gray-500 hover:text-white transition-colors">
-                                Forgot your password?
-                            </Link>
-                        </div>
                     </form>
                 </div>
-
-                <p className="text-center mt-8 text-sm text-gray-500 font-light">
-                    Don't have an account?{' '}
-                    <Link href="/auth/signup" className="text-white hover:underline underline-offset-4">
-                        Sign up
-                    </Link>
-                </p>
             </div>
         </div>
-    );
+    )
 }
