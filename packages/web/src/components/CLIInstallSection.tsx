@@ -83,7 +83,7 @@ const usageCommands = [
 
 export function CLIInstallSection() {
   return (
-    <section className="py-24 border-t border-white/5">
+    <section id="install" className="py-24 border-t border-white/5 scroll-mt-28">
       <div className="container mx-auto px-6 max-w-5xl">
         {/* Section Header */}
         <div className="flex items-center gap-3 mb-4">
