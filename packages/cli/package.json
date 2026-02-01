@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",
   "bin": {
-    "preflight": "dist/index.js"
+    "preflight": "dist/index.js",
+    "preflightlaunch": "dist/index.js"
   },
   "main": "./dist/index.js",
   "scripts": {
@@ -17,7 +18,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "dist/index.js",
+    "dist/**/*.js",
     "README.md"
   ],
   "repository": {
@@ -28,6 +29,7 @@
   "homepage": "https://preflightlaunch.com",
   "author": "Tyler Szakacs <tylerszakacs@gmail.com>",
   "dependencies": {
+    "@clack/prompts": "^1.0.0",
     "@supabase/supabase-js": "^2.93.3",
     "chalk": "^5.4.1",
     "cli-progress": "^3.12.0",

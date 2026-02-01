@@ -6,6 +6,8 @@ interface PreflightConfig {
     apiUrl?: string
     userId?: string
     email?: string
+    hasRunBefore?: boolean
+    lastScannedPath?: string
 }
 
 const config = new Conf<PreflightConfig>({
@@ -16,6 +18,8 @@ const config = new Conf<PreflightConfig>({
         apiUrl: { type: 'string', default: 'https://preflight.dev' },
         userId: { type: 'string' },
         email: { type: 'string' },
+        hasRunBefore: { type: 'boolean', default: false },
+        lastScannedPath: { type: 'string' },
     },
 })
 
@@ -26,6 +30,8 @@ export function getConfig(): PreflightConfig {
         apiUrl: config.get('apiUrl') || 'https://preflight.dev',
         userId: config.get('userId'),
         email: config.get('email'),
+        hasRunBefore: config.get('hasRunBefore') || false,
+        lastScannedPath: config.get('lastScannedPath'),
     }
 }
 
@@ -52,6 +58,22 @@ export function clearAuth() {
 
 export function isLoggedIn(): boolean {
     return !!config.get('accessToken')
+}
+
+export function hasRunBefore(): boolean {
+    return !!config.get('hasRunBefore')
+}
+
+export function markAsRun() {
+    config.set('hasRunBefore', true)
+}
+
+export function setLastScannedPath(path: string) {
+    config.set('lastScannedPath', path)
+}
+
+export function getLastScannedPath(): string | undefined {
+    return config.get('lastScannedPath')
 }
 
 export { config }

@@ -1,58 +1,156 @@
 import chalk from 'chalk'
 import { resolve } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
-import { success, warn, info, header } from '../ui/spinner.js'
+import { setLastScannedPath, getLastScannedPath } from '../lib/config.js'
+import { buildProjectChoices } from '../lib/project-finder.js'
+import * as ui from '../ui/interactive.js'
+import { ok, critical, warning, subtext, brand, icons } from '../ui/theme.js'
 
 export async function scanCommand(path: string) {
-    const dir = resolve(path || '.')
+    // Interactive mode: no path provided
+    if (!path) {
+        const resolvedPath = await interactiveProjectSelect()
+        if (!resolvedPath) return
+        path = resolvedPath
+    }
 
-    header('Scanning project')
+    const dir = resolve(path)
+    setLastScannedPath(dir)
+
+    ui.intro('Scanning project')
+
+    const s = ui.spinner()
+    s.start('Looking for App Store files...')
 
     const detected = scanProject(dir)
 
-    console.log(chalk.bold(`  Project: ${detected.projectName || 'Unknown'}`))
-    console.log()
+    s.stop('Scan complete')
 
-    // Xcode project
+    // Project name
+    ui.log.step(chalk.bold(detected.projectName || 'Unknown Project'))
+
+    // Files found section
+    const lines: string[] = []
+    lines.push(chalk.bold('Files Found'))
+
     if (detected.xcodeProject) {
-        success(`Xcode project: ${chalk.dim(detected.xcodeProject)}`)
+        lines.push(`  ${icons.check} Xcode project ${subtext('(' + detected.xcodeProject + ')')}`)
     } else {
-        warn('No .xcodeproj or .xcworkspace found')
+        lines.push(`  ${icons.cross} No .xcodeproj or .xcworkspace found`)
     }
 
-    // Info.plist
     if (detected.infoPlist) {
-        success(`Info.plist: ${chalk.dim(detected.infoPlist)}`)
+        lines.push(`  ${icons.check} Info.plist`)
     } else {
-        warn('No Info.plist found')
+        lines.push(`  ${icons.cross} No Info.plist found`)
     }
 
-    // Privacy manifest
     if (detected.privacyManifest) {
-        success(`PrivacyInfo.xcprivacy: ${chalk.dim(detected.privacyManifest)}`)
+        lines.push(`  ${icons.check} PrivacyInfo.xcprivacy`)
     } else {
-        warn('No PrivacyInfo.xcprivacy found')
+        lines.push(`  ${icons.cross} No PrivacyInfo.xcprivacy found`)
     }
 
-    // IPA
-    if (detected.ipa) {
-        success(`IPA: ${chalk.dim(detected.ipa)}`)
-    } else {
-        info('No .ipa found (optional - build one with Xcode Archive)')
-    }
-
-    // Screenshots
     if (detected.screenshots.length > 0) {
-        success(`Screenshots: ${detected.screenshots.length} found`)
-        for (const s of detected.screenshots.slice(0, 5)) {
-            console.log(chalk.dim(`      ${s}`))
-        }
-        if (detected.screenshots.length > 5) {
-            console.log(chalk.dim(`      ... and ${detected.screenshots.length - 5} more`))
-        }
+        lines.push(`  ${icons.check} ${detected.screenshots.length} screenshot${detected.screenshots.length === 1 ? '' : 's'}`)
     } else {
-        info('No screenshots found')
+        lines.push(`  ${chalk.dim('-')} No screenshots found ${subtext('(optional)')}`)
     }
 
-    console.log()
+    if (detected.ipa) {
+        lines.push(`  ${icons.check} IPA file`)
+    } else {
+        lines.push(`  ${chalk.dim('-')} No IPA found ${subtext('(optional)')}`)
+    }
+
+    ui.log.message(lines.join('\n'))
+
+    // Quick check summary
+    const issues: string[] = []
+    const warnings_list: string[] = []
+    const passed: string[] = []
+
+    if (detected.infoPlist) passed.push('Info.plist present')
+    else issues.push('Missing Info.plist')
+
+    if (detected.privacyManifest) passed.push('PrivacyInfo.xcprivacy present')
+    else issues.push('Missing PrivacyInfo.xcprivacy')
+
+    if (detected.xcodeProject) passed.push('Xcode project detected')
+    else warnings_list.push('No Xcode project found')
+
+    if (detected.screenshots.length > 0) passed.push(`${detected.screenshots.length} screenshots found`)
+
+    const summaryLines: string[] = [chalk.bold('Quick Check')]
+
+    if (passed.length > 0) {
+        summaryLines.push(`  ${ok(`${passed.length} item${passed.length === 1 ? '' : 's'} look${passed.length === 1 ? 's' : ''} good`)}`)
+    }
+    if (warnings_list.length > 0) {
+        summaryLines.push(`  ${warning(`${warnings_list.length} warning${warnings_list.length === 1 ? '' : 's'}`)} ${subtext('- ' + warnings_list.join(', '))}`)
+    }
+    if (issues.length > 0) {
+        summaryLines.push(`  ${critical(`${issues.length} issue${issues.length === 1 ? '' : 's'}`)} ${subtext('- ' + issues.join(', '))}`)
+    }
+
+    ui.log.message(summaryLines.join('\n'))
+
+    // Upsell + what next
+    ui.log.info('This is a free preview. For detailed fix\ninstructions, submit for full AI analysis.')
+
+    const next = await ui.select<'submit' | 'done'>({
+        message: 'What next?',
+        options: [
+            { value: 'submit', label: 'Submit for full analysis', hint: '1 credit' },
+            { value: 'done', label: 'Done for now' },
+        ],
+    })
+
+    if (next === 'submit') {
+        // Dynamic import to avoid circular dependency
+        const { submitCommand } = await import('./submit.js')
+        await submitCommand(dir, {})
+    } else {
+        ui.tip(`Run ${brand('preflight submit')} anytime to get AI-powered fix instructions.`)
+    }
+}
+
+async function interactiveProjectSelect(): Promise<string | null> {
+    ui.intro('Scan your app')
+
+    const lastScanned = getLastScannedPath()
+    const choices = buildProjectChoices(lastScanned)
+
+    if (choices.length <= 1) {
+        // Only the manual option — go straight to text input
+        ui.log.info('No Xcode projects found in common locations.')
+        const manualPath = await ui.text({
+            message: 'Enter the path to your project:',
+            placeholder: './MyApp',
+            validate: (val) => {
+                if (!val?.trim()) return 'Path is required'
+            },
+        })
+        return manualPath
+    }
+
+    const selected = await ui.select<string>({
+        message: 'Where\'s your Xcode project?',
+        options: choices,
+    })
+
+    if (selected === null) return null
+
+    if (selected === '__manual__') {
+        const manualPath = await ui.text({
+            message: 'Enter the path to your project:',
+            placeholder: './MyApp',
+            validate: (val) => {
+                if (!val?.trim()) return 'Path is required'
+            },
+        })
+        return manualPath
+    }
+
+    return selected
 }
