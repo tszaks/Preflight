@@ -1,18 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Eye, EyeOff, Terminal } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import OAuthButtons from '@/components/OAuthButtons'
 
-export default function CLIAuthForm() {
-    const searchParams = useSearchParams()
-    const redirectTo = searchParams.get('redirect_to')
+function isValidCLIRedirect(url: string): boolean {
+    try {
+        const parsed = new URL(url)
+        return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+    } catch {
+        return false
+    }
+}
+
+interface CLIAuthFormProps {
+    redirectTo?: string
+    error?: string
+}
+
+export default function CLIAuthForm({ redirectTo: rawRedirectTo, error: serverError }: CLIAuthFormProps) {
+    const redirectTo = rawRedirectTo && isValidCLIRedirect(rawRedirectTo) ? rawRedirectTo : undefined
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<string | null>(serverError || null)
     const [success, setSuccess] = useState(false)
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
