@@ -1,6 +1,6 @@
 import chalk from 'chalk'
-import { readFileSync, statSync } from 'node:fs'
-import { basename, resolve } from 'node:path'
+import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs'
+import { basename, resolve, extname, join } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
 import { isLoggedIn, setLastScannedPath, getAscConnected } from '../lib/config.js'
@@ -276,6 +276,46 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             filename: basename(detected.screenshots[i]),
             path: detected.screenshots[i],
         })
+    }
+
+    // If no screenshots found, ask user for a path
+    if (detected.screenshots.length === 0 && fromMenu) {
+        const screenshotPath = await ui.text({
+            message: 'Screenshots folder path (press Enter to skip)',
+            placeholder: 'e.g. ~/Desktop/screenshots',
+        })
+        if (screenshotPath === null) {
+            await offerDraftSave(draftState)
+            return
+        }
+        if (screenshotPath.trim()) {
+            const resolved = resolve(screenshotPath.trim().replace(/^~/, process.env.HOME || ''))
+            if (existsSync(resolved)) {
+                const imageExts = ['.png', '.jpg', '.jpeg']
+                try {
+                    const files = readdirSync(resolved)
+                        .filter(f => imageExts.includes(extname(f).toLowerCase()))
+                        .map(f => join(resolved, f))
+                    for (let i = 0; i < Math.min(files.length, 10); i++) {
+                        filesToUpload.push({
+                            type: 'screenshot',
+                            index: i,
+                            filename: basename(files[i]),
+                            path: files[i],
+                        })
+                    }
+                    if (files.length > 0) {
+                        ui.log.success(`Found ${files.length} screenshot${files.length === 1 ? '' : 's'}`)
+                    } else {
+                        ui.log.info('No images found in that folder.')
+                    }
+                } catch {
+                    ui.log.warning('Could not read that directory.')
+                }
+            } else {
+                ui.log.warning('Folder not found. Continuing without screenshots.')
+            }
+        }
     }
 
     if (filesToUpload.length === 0) {
