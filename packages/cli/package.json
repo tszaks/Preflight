@@ -1,6 +1,6 @@
 {
   "name": "preflightlaunch",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",
   "bin": {
