@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { StatusLight } from '@/components/ui/status'
-import { Check, AlertCircle, Info, ArrowLeft, Download, Copy, ExternalLink, ChevronDown, ChevronUp, Loader2, Search, Shield, Zap, FileText } from 'lucide-react'
+import { Check, AlertCircle, Info, ArrowLeft, Download, Copy } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/components/ui/status'
 import { createClient } from '@/lib/supabase/client'
@@ -11,6 +11,47 @@ interface ReportClientProps {
     initialSubmission: any
     initialReport: any
     initialItems: any[]
+}
+
+interface TerminalLine {
+    id: string
+    type: 'command' | 'info' | 'check' | 'ok' | 'fail' | 'divider' | 'blank' | 'result'
+    text: string
+    status?: 'pending' | 'done'
+    phase?: 'hard' | 'soft' | 'report'
+}
+
+type AnalysisPhase = 'init' | 'hard' | 'soft' | 'report' | 'done' | 'failed'
+
+const HARD_CHECKS = [
+    'Validating app name and keywords...',
+    'Checking screenshots...',
+    'Analyzing privacy manifest...',
+    'Parsing Info.plist configuration...',
+    'Testing URL reachability...',
+    'Scanning IPA binary...',
+]
+
+const SOFT_CHECKS = [
+    'AI analyzing app description...',
+    'Checking content guidelines...',
+    'AI reviewing screenshots...',
+    'Cross-checking privacy policy...',
+    'Generating ASO recommendations...',
+    'Running ASO analysis...',
+]
+
+const REPORT_CHECKS = [
+    'Calculating scores...',
+    'Saving report...',
+]
+
+const PHASE_ORDER: AnalysisPhase[] = ['init', 'hard', 'soft', 'report', 'done', 'failed']
+
+function asciiProgressBar(percent: number, width = 14): string {
+    const filled = Math.round((percent / 100) * width)
+    const empty = width - filled
+    return `[${'\u2588'.repeat(filled)}${'\u2591'.repeat(empty)}] ${String(Math.round(percent)).padStart(3)}%`
 }
 
 export default function ReportClient({ initialSubmission, initialReport, initialItems }: ReportClientProps) {
@@ -119,26 +160,31 @@ export default function ReportClient({ initialSubmission, initialReport, initial
         return 'text-red-500'
     }
 
-    const [currentLogIndex, setCurrentLogIndex] = useState(0)
+    // ── Terminal State ──────────────────────────────────────
+    const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([])
+    const [currentPhase, setCurrentPhase] = useState<AnalysisPhase>('init')
     const [isStopping, setIsStopping] = useState(false)
-    const logsContainerRef = useRef<HTMLDivElement>(null)
+    const [isClient, setIsClient] = useState(false)
+    const terminalRef = useRef<HTMLDivElement>(null)
+    const phaseCheckIndex = useRef(0)
 
-    // Auto-scroll logs when new content appears
+    useEffect(() => { setIsClient(true) }, [])
+
+    // Auto-scroll terminal when new lines appear
     useEffect(() => {
-        if (logsContainerRef.current) {
-            logsContainerRef.current.scrollTo({
-                top: logsContainerRef.current.scrollHeight,
+        if (terminalRef.current) {
+            terminalRef.current.scrollTo({
+                top: terminalRef.current.scrollHeight,
                 behavior: 'smooth'
             })
         }
-    }, [currentLogIndex])
+    }, [terminalLines])
 
     const handleStopReview = async () => {
         if (isStopping) return
         setIsStopping(true)
 
         try {
-            // Dynamic import of the server action
             const { stopReview } = await import('@/app/report/[id]/actions')
             const result = await stopReview(submission.id)
 
@@ -149,7 +195,6 @@ export default function ReportClient({ initialSubmission, initialReport, initial
             }
 
             console.log('[Stop Review] Successfully stopped')
-            // Redirect to dashboard after stopping
             window.location.href = '/dashboard'
         } catch (err) {
             console.error('[Stop Review] Exception:', err)
@@ -157,237 +202,290 @@ export default function ReportClient({ initialSubmission, initialReport, initial
         }
     }
 
-    const logs = [
-        "Initializing analysis runtime...",
-        "Loading submission context from secure storage...",
-        "Processing IPA binary structure...",
-        "Parsing metadata and configuration files...",
-        "Running App Store Guidelines v5.3 compliance check...",
-        "Analyzing Privacy Manifest for tracking declarations...",
-        "Cross-referencing Info.plist with binary entitlements...",
-        "Auditing screenshots for UI/UX patterns...",
-        "Validating URL reachability for Support and Privacy links...",
-        "Checking for incentivized review patterns...",
-        "Verifying third-party SDK signatures...",
-        "Generating final compliance report..."
+    // Initialize terminal when analyzing starts
+    useEffect(() => {
+        if (!isAnalyzing || !isClient) return
+        const now = new Date()
+        setTerminalLines([
+            { id: 'cmd', type: 'command', text: `preflight analyze "${submission.app_name}" --version ${submission.version || '1.0'} --full` },
+            { id: 'blank1', type: 'blank', text: '' },
+            { id: 'h1', type: 'info', text: '[PREFLIGHT] v3.2.1 -- App Store Review Engine' },
+            { id: 'h2', type: 'info', text: `[PREFLIGHT] Submission: ${submission.id?.substring(0, 8)}` },
+            { id: 'h3', type: 'info', text: `[PREFLIGHT] Started: ${now.toISOString().replace('T', ' ').substring(0, 19)} UTC` },
+            { id: 'blank2', type: 'blank', text: '' },
+        ])
+        setCurrentPhase('init')
+        phaseCheckIndex.current = 0
+    }, [isAnalyzing, isClient]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Phase transitions based on job state
+    useEffect(() => {
+        if (!job || !isAnalyzing) return
+
+        if (job.status === 'failed' && currentPhase !== 'failed') {
+            setCurrentPhase('failed')
+            const ts = Date.now()
+            setTerminalLines(prev => [
+                ...prev,
+                { id: `blank-f-${ts}`, type: 'blank', text: '' },
+                { id: `fail-${ts}`, type: 'fail', text: job.error_message || 'Analysis failed unexpectedly' },
+            ])
+            return
+        }
+
+        // Determine target phase from job state
+        let target: AnalysisPhase = 'init'
+        if (job.soft_rules_completed) target = 'report'
+        else if (job.hard_rules_completed) target = 'soft'
+        else if (job.status === 'running') target = 'hard'
+
+        const currentIdx = PHASE_ORDER.indexOf(currentPhase)
+        const targetIdx = PHASE_ORDER.indexOf(target)
+        if (targetIdx <= currentIdx) return
+
+        const newLines: TerminalLine[] = []
+        const ts = Date.now()
+
+        // Entering hard phase
+        if (currentIdx < 1 && targetIdx >= 1) {
+            newLines.push({ id: `hard-div-${ts}`, type: 'divider', text: 'Phase 1: Compliance Scan' })
+        }
+        // Completing hard phase (fast-forward remaining checks)
+        if (currentIdx <= 1 && targetIdx > 1) {
+            const start = currentPhase === 'hard' ? phaseCheckIndex.current : 0
+            HARD_CHECKS.slice(start).forEach((text, i) => {
+                newLines.push({ id: `h-${start + i}-${ts}`, type: 'check', text, status: 'done', phase: 'hard' })
+            })
+            newLines.push({ id: `hard-ok-${ts}`, type: 'ok', text: 'Hard rules complete' })
+            newLines.push({ id: `blank-hs-${ts}`, type: 'blank', text: '' })
+        }
+        // Entering soft phase
+        if (currentIdx < 2 && targetIdx >= 2) {
+            newLines.push({ id: `soft-div-${ts}`, type: 'divider', text: 'Phase 2: Heuristic Analysis' })
+        }
+        // Completing soft phase
+        if (currentIdx <= 2 && targetIdx > 2) {
+            const start = currentPhase === 'soft' ? phaseCheckIndex.current : 0
+            SOFT_CHECKS.slice(start).forEach((text, i) => {
+                newLines.push({ id: `s-${start + i}-${ts}`, type: 'check', text, status: 'done', phase: 'soft' })
+            })
+            newLines.push({ id: `soft-ok-${ts}`, type: 'ok', text: 'Heuristic analysis complete' })
+            newLines.push({ id: `blank-sr-${ts}`, type: 'blank', text: '' })
+        }
+        // Entering report phase
+        if (currentIdx < 3 && targetIdx >= 3) {
+            newLines.push({ id: `report-div-${ts}`, type: 'divider', text: 'Phase 3: Report Generation' })
+        }
+
+        phaseCheckIndex.current = 0
+        setCurrentPhase(target)
+        if (newLines.length > 0) {
+            setTerminalLines(prev => [...prev, ...newLines])
+        }
+    }, [job, currentPhase, isAnalyzing])
+
+    // Report completion
+    useEffect(() => {
+        if (!report?.id || currentPhase !== 'report') return
+        const remaining = REPORT_CHECKS.slice(phaseCheckIndex.current)
+        const ts = Date.now()
+        setCurrentPhase('done')
+        setTerminalLines(prev => [
+            ...prev,
+            ...remaining.map((text, i) => ({
+                id: `r-ff-${i}-${ts}`,
+                type: 'check' as const,
+                text,
+                status: 'done' as const,
+                phase: 'report' as const,
+            })),
+            { id: `report-ok-${ts}`, type: 'ok', text: 'Report generation complete' },
+            { id: `blank-done-${ts}`, type: 'blank', text: '' },
+            { id: `done-${ts}`, type: 'result', text: 'Analysis complete. Preparing report...' },
+        ])
+    }, [report, currentPhase])
+
+    // Trickle check lines one at a time
+    useEffect(() => {
+        if (!['hard', 'soft', 'report'].includes(currentPhase)) return
+        const checks = currentPhase === 'hard' ? HARD_CHECKS :
+                       currentPhase === 'soft' ? SOFT_CHECKS : REPORT_CHECKS
+        const interval = setInterval(() => {
+            const idx = phaseCheckIndex.current
+            if (idx < checks.length) {
+                const ts = Date.now()
+                setTerminalLines(prev => [
+                    ...prev,
+                    {
+                        id: `${currentPhase}-check-${idx}-${ts}`,
+                        type: 'check',
+                        text: checks[idx],
+                        status: 'done',
+                        phase: currentPhase as 'hard' | 'soft' | 'report',
+                    }
+                ])
+                phaseCheckIndex.current = idx + 1
+            }
+        }, 2000)
+        return () => clearInterval(interval)
+    }, [currentPhase])
+
+    // Phase status helpers for ASCII table
+    const getPhaseStatus = (phase: 'hard' | 'soft' | 'report'): string => {
+        if (currentPhase === 'failed') {
+            const phaseIdx = PHASE_ORDER.indexOf(phase)
+            const currentIdx = PHASE_ORDER.indexOf(currentPhase)
+            return phaseIdx < currentIdx ? 'DONE' : 'FAIL'
+        }
+        if (currentPhase === 'done') return 'DONE'
+        const phaseIdx = PHASE_ORDER.indexOf(phase)
+        const currentIdx = PHASE_ORDER.indexOf(currentPhase)
+        if (phaseIdx < currentIdx) return 'DONE'
+        if (phaseIdx === currentIdx) return 'RUNNING'
+        return 'QUEUED'
+    }
+
+    const getPhaseProgress = (phase: 'hard' | 'soft' | 'report'): number => {
+        const status = getPhaseStatus(phase)
+        if (status === 'DONE') return 100
+        if (status === 'QUEUED' || status === 'FAIL') return 0
+        const checks = phase === 'hard' ? HARD_CHECKS : phase === 'soft' ? SOFT_CHECKS : REPORT_CHECKS
+        const doneCount = terminalLines.filter(l => l.type === 'check' && l.phase === phase).length
+        return Math.round((doneCount / checks.length) * 100)
+    }
+
+    const statusColor = (status: string): string => {
+        switch (status) {
+            case 'DONE': return 'text-green-400'
+            case 'RUNNING': return 'text-yellow-400'
+            case 'QUEUED': return 'text-gray-600'
+            case 'FAIL': return 'text-red-400'
+            default: return 'text-gray-500'
+        }
+    }
+
+    const TABLE_PHASES: { key: 'hard' | 'soft' | 'report'; label: string }[] = [
+        { key: 'hard', label: 'Compliance Scan' },
+        { key: 'soft', label: 'Heuristic Analysis' },
+        { key: 'report', label: 'Report Generation' },
     ]
-
-    const logHexCodes = useMemo(() => logs.map(() => Math.random().toString(16).substring(2, 6).toUpperCase()), [])
-    const dataStreams = useMemo(() => Array.from({ length: 12 }).map(() =>
-        Array.from({ length: 20 }).map(() => Math.random().toString(16).substring(2, 10)).join(' ')
-    ), [])
-
-    // Stabilize telemetry values
-    const [ioBuffer, setIoBuffer] = useState(0)
-    useEffect(() => {
-        if (isAnalyzing) {
-            const interval = setInterval(() => setIoBuffer(Math.floor(Math.random() * 500) + 500), 2000)
-            return () => clearInterval(interval)
-        }
-    }, [isAnalyzing])
-
-    const [isClient, setIsClient] = useState(false)
-    useEffect(() => { setIsClient(true) }, [])
-
-    useEffect(() => {
-        // Advance logs for any analyzing state - pending, running, or while job hasn't loaded yet
-        // This provides smoother UX during the initial loading/connection period
-        if (isAnalyzing) {
-            const interval = setInterval(() => {
-                setCurrentLogIndex(prev => {
-                    if (prev < logs.length - 1) return prev + 1
-                    return prev
-                })
-            }, 2500)
-            return () => clearInterval(interval)
-        }
-    }, [isAnalyzing, logs.length])
 
     if (isAnalyzing && isClient) {
         return (
-            <div className="fixed inset-0 bg-black z-50 overflow-hidden flex flex-col items-center justify-center p-6 selection:bg-blue-500/30">
-                {/* Global Scanline Effect */}
-                <div className="absolute inset-0 pointer-events-none z-[100] opacity-[0.03]"
-                    style={{ background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))', backgroundSize: '100% 2px, 3px 100%' }} />
-
-                {/* Background: Adaptive Data Stream */}
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none select-none overflow-hidden flex justify-around">
-                    {dataStreams.map((stream: string, i: number) => (
-                        <div key={i} className="text-[10px] font-mono whitespace-nowrap animate-matrix" style={{ animationDelay: `${i * 0.7}s`, writingMode: 'vertical-rl' }}>
-                            {stream}
+            <div className="fixed inset-0 bg-[#1a1a1a] z-50 flex flex-col">
+                {/* Title bar */}
+                <div className="bg-[#2a2a2a] border-b border-[#3a3a3a] px-4 py-2.5 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={handleStopReview}
+                                disabled={isStopping}
+                                className="w-3 h-3 rounded-full bg-[#ff5f57] hover:bg-[#ff3b30] transition-colors disabled:opacity-50 cursor-pointer"
+                                title="Stop Review"
+                            />
+                            <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
+                            <span className="w-3 h-3 rounded-full bg-[#28c840]" />
                         </div>
-                    ))}
+                        <span className="text-xs font-mono text-gray-400 ml-2">
+                            preflight &mdash; analyzing {submission.app_name} v{submission.version || '1.0'}
+                        </span>
+                    </div>
+                    {isStopping && (
+                        <span className="text-xs font-mono text-yellow-400 animate-pulse">Stopping...</span>
+                    )}
                 </div>
 
-                {/* Corner Technical Accents */}
-                <div className="absolute top-8 left-8 flex flex-col gap-1 opacity-20 font-mono text-[10px] tracking-widest text-gray-400">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500/50" />
-                        <span>BRIDGE_SYNC_ACTIVE</span>
-                    </div>
-                    <div>IO_BUFFER: {ioBuffer}KB/S</div>
-                    <div>SID: {submission.id?.substring(0, 8).toUpperCase()}</div>
-                </div>
-
-                <div className="absolute top-8 right-8 flex flex-col items-end gap-1 opacity-20 font-mono text-[10px] tracking-widest text-gray-500">
-                    <div className="flex items-center gap-2">
-                        <span className="text-blue-400">LAT: 37.7749 // LNG: -122.4194</span>
-                        <div className="w-1.5 h-1.5 bg-gray-600" />
-                    </div>
-                    <div>SCAN_DEPTH: 2.44ms</div>
-                    <div>AUDIT_SESSION_ID: PRE_00{submission.id.length}</div>
-                </div>
-
-                <div className="max-w-5xl w-full space-y-8 relative z-10 scale-95 md:scale-100 flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                                <FileText className="w-5 h-5 text-blue-500 animate-pulse" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black italic text-white uppercase tracking-tighter">Reviewing {submission.app_name}_</h2>
-                                <div className="text-[10px] font-mono text-blue-500/50 tracking-[0.3em] uppercase animate-pulse">Neural_Audit_Active</div>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleStopReview}
-                            disabled={isStopping}
-                            className="vercel-btn-secondary py-2 px-6 text-[10px] font-black tracking-widest border-red-500/20 text-red-500/60 hover:text-white hover:bg-red-500/80 hover:border-red-500 transition-all rounded-full disabled:opacity-50"
-                        >
-                            {isStopping ? "HALTING..." : "STOP REVIEW"}
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                        {/* Terminal Log: High Fidelity Edition */}
-                        <div className="vercel-card bg-black/60 backdrop-blur-3xl border-white/10 p-0 overflow-hidden min-h-[400px] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.3)] relative">
-                            {/* Scanning horizontal line */}
-                            <div className="absolute top-0 left-0 w-full h-[1px] bg-blue-500/30 z-20 animate-scan" />
-
-                            <div className="bg-white/[0.03] px-5 py-3 border-b border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex gap-1.5">
-                                        <div className="w-2 h-2 rounded-full bg-red-500/40" />
-                                        <div className="w-2 h-2 rounded-full bg-yellow-500/40" />
-                                        <div className="w-2 h-2 rounded-full bg-green-500/40" />
-                                    </div>
-                                    <span className="text-[9px] font-mono text-gray-500 uppercase tracking-[0.3em] border-l border-white/10 pl-3">SYSTEM_OUTPUT</span>
+                {/* Terminal body */}
+                <div
+                    ref={terminalRef}
+                    className="flex-1 overflow-y-auto p-4 sm:p-6 font-mono text-xs sm:text-sm leading-relaxed"
+                >
+                    {/* Log lines */}
+                    {terminalLines.map((line) => (
+                        <div key={line.id} className="animate-terminal-line">
+                            {line.type === 'command' && (
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-green-400 select-none">$</span>
+                                    <span className="text-white">{line.text}</span>
                                 </div>
-                                <div className="text-[9px] font-mono text-blue-500/50">0xAE44_F2</div>
-                            </div>
-
-                            <div ref={logsContainerRef} className="p-6 font-mono text-[11px] space-y-3 h-[340px] overflow-y-auto scrollbar-hide mask-gradient-b">
-                                {logs.slice(0, currentLogIndex + 1).map((log, i) => (
-                                    <div key={i} className="flex gap-4 text-gray-500 animate-in fade-in slide-in-from-left-4 duration-500">
-                                        <span className="text-blue-500/40 shrink-0">[{logHexCodes[i]}]</span>
-                                        <span className={cn(
-                                            "leading-relaxed break-words",
-                                            i === currentLogIndex ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] animate-typewriter" : "text-gray-600"
-                                        )}>
-                                            {i === currentLogIndex ? "> " : "  "}{log}
-                                            {i === currentLogIndex && <span className="inline-block w-1.5 h-3 bg-blue-500 ml-1 animate-blink align-middle" />}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Status Grid: High Fidelity Edition */}
-                        <div className="space-y-4">
-                            {[
-                                {
-                                    icon: Shield,
-                                    label: "Compliance Scan",
-                                    sub: "0x1: Hard Rule Validation",
-                                    status: job?.hard_rules_completed ? "Complete" : job?.status === 'running' ? "Running" : "Pending",
-                                    progress: job?.hard_rules_completed ? 100 : job?.status === 'running' ? Math.min(90, (currentLogIndex / 4) * 100) : 0
-                                },
-                                {
-                                    icon: FileText,
-                                    label: "Heuristic Checklist",
-                                    sub: "0x2: Intelligent Audit",
-                                    status: job?.soft_rules_completed ? "Complete" : job?.hard_rules_completed ? "Running" : "Queued",
-                                    progress: job?.soft_rules_completed ? 100 : job?.hard_rules_completed ? Math.min(90, ((currentLogIndex - 4) / 4) * 100) : 0
-                                },
-                                {
-                                    icon: Zap,
-                                    label: "AI Vision Audit",
-                                    sub: "0x3: Neural Interface Scan",
-                                    status: report?.id ? "Complete" : job?.soft_rules_completed ? "Running" : "Queued",
-                                    progress: report?.id ? 100 : job?.soft_rules_completed ? Math.min(90, ((currentLogIndex - 8) / 4) * 100) : 0
-                                }
-                            ].map((p, i) => (
-                                <div key={i} className="vercel-card p-5 border-white/5 bg-white/[0.02] flex items-center justify-between group overflow-hidden relative backdrop-blur-3xl hover:bg-white/[0.04] transition-all">
-                                    <div className="flex items-center gap-5 relative z-10">
-                                        <div className={cn(
-                                            "p-3 rounded-xl transition-all duration-700",
-                                            p.status === 'Complete' ? "bg-green-500/10 text-green-500 shadow-[0_0_20px_rgba(34,197,94,0.1)]" :
-                                                p.status === 'Running' ? "bg-blue-500/10 text-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.1)]" : "bg-white/5 text-gray-700"
-                                        )}>
-                                            <p.icon className={cn("w-5 h-5", p.status === 'Running' && "animate-pulse")} />
-                                        </div>
-                                        <div>
-                                            <div className="text-[7px] font-black tracking-[0.4em] text-gray-500 uppercase mb-1">{p.sub}</div>
-                                            <div className="text-xs font-bold tracking-wider text-white uppercase">{p.label}</div>
-                                            <div className="text-[10px] font-mono text-gray-500 mt-1 flex items-center gap-2">
-                                                {p.status === 'Running' ? (
-                                                    <>
-                                                        <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
-                                                        <span className="text-blue-500">PROCESSING_STREAM...</span>
-                                                    </>
-                                                ) : (
-                                                    <span>STATUS: {p.status.toUpperCase()}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {/* HUD Circular Progress */}
-                                    <div className="relative w-12 h-12 flex items-center justify-center">
-                                        <svg className="w-full h-full -rotate-90">
-                                            <circle cx="24" cy="24" r="20" className="stroke-white/5 fill-none" strokeWidth="2" />
-                                            <circle
-                                                cx="24" cy="24" r="20"
-                                                className={cn("fill-none transition-all duration-1000", p.status === 'Complete' ? "stroke-green-500" : "stroke-blue-500")}
-                                                strokeWidth="2"
-                                                strokeDasharray={125.6}
-                                                strokeDashoffset={125.6 - (125.6 * p.progress) / 100}
-                                                strokeLinecap="round"
-                                            />
-                                        </svg>
-                                        <span className="absolute text-[8px] font-mono text-white/50">{Math.round(p.progress)}%</span>
-                                    </div>
-
-                                    {/* Scanline background */}
-                                    {p.status === 'Running' && (
-                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-blue-500/50 animate-scan z-0" />
+                            )}
+                            {line.type === 'info' && (
+                                <div className="text-cyan-400">{line.text}</div>
+                            )}
+                            {line.type === 'check' && (
+                                <div className="flex justify-between gap-4">
+                                    <span className="text-gray-300">
+                                        {'  '}
+                                        <span className="text-yellow-400">[CHECK]</span>
+                                        {' '}{line.text}
+                                    </span>
+                                    {line.status === 'done' && (
+                                        <span className="text-green-400 shrink-0">DONE</span>
                                     )}
                                 </div>
-                            ))}
+                            )}
+                            {line.type === 'ok' && (
+                                <div className="text-green-400">{'  '}[ OK ] {line.text}</div>
+                            )}
+                            {line.type === 'fail' && (
+                                <div className="text-red-400">{'  '}[FAIL] {line.text}</div>
+                            )}
+                            {line.type === 'divider' && (
+                                <div className="text-gray-500">
+                                    {'-- '}{line.text}{' '}{'-'.repeat(Math.max(0, 50 - line.text.length))}
+                                </div>
+                            )}
+                            {line.type === 'blank' && (
+                                <div className="h-5" />
+                            )}
+                            {line.type === 'result' && (
+                                <div className="text-green-400 font-bold">[DONE] {line.text}</div>
+                            )}
                         </div>
-                    </div>
+                    ))}
 
-                    {job?.status === 'failed' && (
-                        <div className="bg-red-500/[0.02] border border-red-500/20 backdrop-blur-2xl rounded-2xl p-8 mt-12 flex flex-col items-center gap-6 animate-in fade-in zoom-in slide-in-from-top-6 shadow-[0_0_50px_rgba(239,68,68,0.1)]">
-                            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                                <AlertCircle className="w-8 h-8 text-red-500 animate-pulse" />
-                            </div>
-                            <div className="text-center space-y-2">
-                                <h3 className="text-red-500 font-black text-xl tracking-tighter uppercase italic">Analysis Engine Fault</h3>
-                                <p className="text-red-400/60 text-xs font-mono max-w-sm mx-auto leading-relaxed uppercase tracking-widest">{job.error_message || "Critical interruption detected in review stream_ (0x000F)"}</p>
-                            </div>
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="vercel-btn-secondary px-10 text-[10px] font-black tracking-[0.2em] border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-all rounded-full py-3"
-                            >
-                                RE-INITIALIZE BRIDGE_
-                            </button>
+                    {/* ASCII Status Table */}
+                    {currentPhase !== 'init' && (
+                        <div className="mt-6 whitespace-pre text-gray-500 overflow-x-auto text-xs">
+                            <div>{'\u250c' + '\u2500'.repeat(24) + '\u252c' + '\u2500'.repeat(10) + '\u252c' + '\u2500'.repeat(24) + '\u2510'}</div>
+                            <div>{'\u2502' + ' PHASE'.padEnd(24) + '\u2502' + ' STATUS'.padEnd(10) + '\u2502' + ' PROGRESS'.padEnd(24) + '\u2502'}</div>
+                            <div>{'\u251c' + '\u2500'.repeat(24) + '\u253c' + '\u2500'.repeat(10) + '\u253c' + '\u2500'.repeat(24) + '\u2524'}</div>
+                            {TABLE_PHASES.map(({ key, label }) => {
+                                const status = getPhaseStatus(key)
+                                const progress = getPhaseProgress(key)
+                                const bar = asciiProgressBar(progress)
+                                return (
+                                    <div key={key}>
+                                        {'\u2502' + (' ' + label).padEnd(24) + '\u2502 '}
+                                        <span className={statusColor(status)}>{status.padEnd(8)}</span>
+                                        {' \u2502' + (' ' + bar).padEnd(24) + '\u2502'}
+                                    </div>
+                                )
+                            })}
+                            <div>{'\u2514' + '\u2500'.repeat(24) + '\u2534' + '\u2500'.repeat(10) + '\u2534' + '\u2500'.repeat(24) + '\u2518'}</div>
                         </div>
                     )}
 
-                    <div className="pt-12 text-center text-[10px] text-gray-800 font-mono italic uppercase tracking-[0.8em] animate-pulse">
-                        Preflight_System_Protocol_v3.2.1 // Ready_to_Deploy
-                    </div>
+                    {/* Blinking cursor */}
+                    {currentPhase !== 'done' && (
+                        <div className="mt-2">
+                            <span className="inline-block w-2 h-4 bg-gray-300 animate-blink" />
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="bg-[#2a2a2a] border-t border-[#3a3a3a] px-4 sm:px-6 py-2.5 flex items-center justify-between shrink-0">
+                    <span className="text-xs font-mono text-gray-600">
+                        Press Ctrl+C to cancel
+                    </span>
+                    <button
+                        onClick={handleStopReview}
+                        disabled={isStopping}
+                        className="text-xs font-mono text-gray-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                    >
+                        {isStopping ? 'Stopping...' : 'Stop Review'}
+                    </button>
                 </div>
             </div>
         )

@@ -10,6 +10,7 @@ import { reportCommand } from './commands/report.js'
 import { historyCommand, interactiveHistory } from './commands/history.js'
 import { setupCommand } from './commands/setup.js'
 import { showWelcomeScreen, showAuthScreen } from './commands/onboarding.js'
+import { ascConnectCommand, ascStatusCommand, ascDisconnectCommand, ascInteractiveMenu } from './commands/asc.js'
 import { handleUnknownCommand } from './ui/errors.js'
 import { isLoggedIn, hasRunBefore, getConfig } from './lib/config.js'
 import { clearAuth } from './lib/config.js'
@@ -88,6 +89,26 @@ program
     .description('Run guided setup (can be re-run anytime)')
     .action(setupCommand)
 
+// App Store Connect commands
+const ascCmd = program
+    .command('asc')
+    .description('App Store Connect integration')
+
+ascCmd
+    .command('connect')
+    .description('Connect your App Store Connect account')
+    .action(ascConnectCommand)
+
+ascCmd
+    .command('status')
+    .description('Check App Store Connect connection status')
+    .action(ascStatusCommand)
+
+ascCmd
+    .command('disconnect')
+    .description('Disconnect from App Store Connect')
+    .action(ascDisconnectCommand)
+
 // Handle unknown commands with fuzzy matching
 program.on('command:*', (operands) => {
     handleUnknownCommand(operands[0])
@@ -141,12 +162,13 @@ async function interactiveMenu() {
         const { email } = getConfig()
         ui.renderHeader(email, cachedCredits)
 
-        const choice = await ui.select<'review' | 'history' | 'buy' | 'logout'>({
+        const choice = await ui.select<'review' | 'history' | 'buy' | 'asc' | 'logout'>({
             message: 'What would you like to do?',
             options: [
                 { value: 'review', label: 'New Review', hint: 'Scan your app for App Store issues' },
                 { value: 'history', label: 'View Reviews', hint: 'See your past review reports' },
                 { value: 'buy', label: 'Buy Credits', hint: 'Get more credits at preflightlaunch.com' },
+                { value: 'asc', label: 'App Store Connect', hint: 'Connect your ASC account for autofill' },
                 { value: 'logout', label: 'Log Out' },
             ],
         })
@@ -176,6 +198,10 @@ async function interactiveMenu() {
                 // Refresh credits (user may have purchased)
                 await new Promise(r => setTimeout(r, 2000))
                 cachedCredits = await fetchCredits()
+                break
+
+            case 'asc':
+                await ascInteractiveMenu()
                 break
 
             case 'logout':

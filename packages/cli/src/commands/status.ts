@@ -14,6 +14,12 @@ export async function statusCommand(id: string, options: StatusOptions) {
         process.exit(1)
     }
 
+    if (!id) {
+        error('Please provide a submission ID. Run `preflight history` to find one.')
+        process.exitCode = 1
+        return
+    }
+
     if (options.watch) {
         return watchStatus(id)
     }

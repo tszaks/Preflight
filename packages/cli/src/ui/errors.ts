@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
-import { brand } from './theme.js'
+import { brand, brandDim } from './theme.js'
 
 // Known commands for fuzzy matching
 const KNOWN_COMMANDS = [
@@ -14,6 +14,7 @@ const KNOWN_COMMANDS = [
     { name: 'report', description: 'View analysis report' },
     { name: 'history', description: 'List past submissions' },
     { name: 'setup', description: 'Run guided setup' },
+    { name: 'asc', description: 'App Store Connect integration' },
 ]
 
 // Levenshtein distance for fuzzy matching
@@ -68,7 +69,7 @@ export function handleUnknownCommand(cmdName: string) {
         console.log()
         console.log(chalk.dim('  Did you mean:'))
         for (const s of suggestions) {
-            console.log(`    ${chalk.cyan('\u2192')} ${brand(`preflight ${s.name}`)}    ${chalk.dim(s.description)}`)
+            console.log(`    ${brandDim('\u2192')} ${brand(`preflight ${s.name}`)}    ${chalk.dim(s.description)}`)
         }
     }
 

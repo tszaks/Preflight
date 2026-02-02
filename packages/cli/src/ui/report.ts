@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import * as p from '@clack/prompts'
 import {
     ok, okBold, warning, warningBold, critical, criticalBold,
-    info, infoBold, subtext, heading, scoreBar, icons, brand,
+    info, infoBold, subtext, heading, scoreBar, icons, brand, brandDim,
 } from './theme.js'
 
 interface ReportItem {
@@ -57,7 +57,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         for (const item of criticals) {
             console.log(`  ${critical(item.title)}`)
             if (item.fix_suggestion) {
-                console.log(`  ${chalk.cyan(icons.arrow)} ${item.fix_suggestion}`)
+                console.log(`  ${brandDim(icons.arrow)} ${item.fix_suggestion}`)
             }
             if (item.description && item.description !== item.title) {
                 console.log(`  ${subtext(item.description)}`)
@@ -73,7 +73,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         for (const item of warnings) {
             console.log(`  ${warning(item.title)}`)
             if (item.fix_suggestion) {
-                console.log(`  ${chalk.cyan(icons.arrow)} ${item.fix_suggestion}`)
+                console.log(`  ${brandDim(icons.arrow)} ${item.fix_suggestion}`)
             }
             console.log()
         }

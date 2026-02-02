@@ -1,6 +1,7 @@
-import { existsSync, readdirSync } from 'node:fs'
-import { join, basename } from 'node:path'
-import { homedir } from 'node:os'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { join, basename, dirname, resolve } from 'node:path'
+import { homedir, platform } from 'node:os'
 import { getLastScannedPath } from './config.js'
 import * as ui from '../ui/interactive.js'
 
@@ -9,6 +10,7 @@ export interface FoundProject {
     path: string
     type: 'xcodeproj' | 'xcworkspace'
     fullPath: string
+    modifiedAt?: number
 }
 
 const SEARCH_DIRS = [
@@ -21,7 +23,63 @@ const SEARCH_DIRS = [
     'dev',
 ]
 
-// Finds Xcode projects in common locations (fast, 1 level deep)
+// Paths to filter out of Spotlight results (noise directories)
+const NOISE_PATTERNS = [
+    '/Pods/',
+    '/DerivedData/',
+    '/Carthage/',
+    '/build/',
+    '/.build/',
+    '/SourcePackages/',
+    '/Library/Developer/',
+    '/.Trash/',
+]
+
+// Search for Xcode projects using macOS Spotlight (instant, searches entire Mac)
+export function spotlightSearch(): FoundProject[] {
+    if (platform() !== 'darwin') return []
+
+    try {
+        const output = execFileSync('mdfind', [
+            'kMDItemFSName == "*.xcodeproj" || kMDItemFSName == "*.xcworkspace"',
+        ], { encoding: 'utf-8', timeout: 5000 })
+
+        const lines = output.trim().split('\n').filter(Boolean)
+        const seen = new Set<string>()
+        const projects: FoundProject[] = []
+
+        for (const fullPath of lines) {
+            // Filter out noise directories
+            if (NOISE_PATTERNS.some(pattern => fullPath.includes(pattern))) continue
+
+            const projectDir = dirname(fullPath)
+            if (seen.has(projectDir)) continue
+            seen.add(projectDir)
+
+            const type = fullPath.endsWith('.xcworkspace') ? 'xcworkspace' as const : 'xcodeproj' as const
+            const name = basename(fullPath).replace(/\.(xcodeproj|xcworkspace)$/, '')
+
+            let modifiedAt: number | undefined
+            try {
+                modifiedAt = statSync(fullPath).mtimeMs
+            } catch {
+                // skip if can't stat
+            }
+
+            projects.push({ name, path: projectDir, type, fullPath, modifiedAt })
+        }
+
+        // Sort by most recently modified first
+        projects.sort((a, b) => (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0))
+
+        return projects
+    } catch {
+        // Spotlight unavailable or timed out -- fall back to directory scanning
+        return []
+    }
+}
+
+// Finds Xcode projects in common locations (fast, 1 level deep) -- fallback for non-macOS
 export function findXcodeProjects(extraDirs: string[] = []): FoundProject[] {
     const home = homedir()
     const projects: FoundProject[] = []
@@ -49,7 +107,7 @@ export function findXcodeProjects(extraDirs: string[] = []): FoundProject[] {
                             if (seen.has(key)) continue
                             seen.add(key)
 
-                            const type = inner.endsWith('.xcworkspace') ? 'xcworkspace' : 'xcodeproj'
+                            const type = inner.endsWith('.xcworkspace') ? 'xcworkspace' as const : 'xcodeproj' as const
                             const name = basename(inner).replace(/\.(xcodeproj|xcworkspace)$/, '')
                             projects.push({
                                 name,
@@ -79,7 +137,7 @@ export function findProjectInDir(dir: string): FoundProject | null {
         const entries = readdirSync(dir)
         for (const entry of entries) {
             if (entry.endsWith('.xcworkspace') || entry.endsWith('.xcodeproj')) {
-                const type = entry.endsWith('.xcworkspace') ? 'xcworkspace' : 'xcodeproj'
+                const type = entry.endsWith('.xcworkspace') ? 'xcworkspace' as const : 'xcodeproj' as const
                 const name = basename(entry).replace(/\.(xcodeproj|xcworkspace)$/, '')
                 return {
                     name,
@@ -95,12 +153,31 @@ export function findProjectInDir(dir: string): FoundProject | null {
     return null
 }
 
+// Open native macOS Finder folder picker
+export function browseWithFinder(): string | null {
+    if (platform() !== 'darwin') return null
+
+    try {
+        const result = execFileSync('osascript', [
+            '-e', 'POSIX path of (choose folder with prompt "Select your Xcode project folder")',
+        ], { encoding: 'utf-8', timeout: 120000 })
+
+        const path = result.trim()
+        // Remove trailing slash if present
+        return path.endsWith('/') ? path.slice(0, -1) : path
+    } catch {
+        // User cancelled or osascript failed
+        return null
+    }
+}
+
 // Build a list of project choices for interactive selection
 export function buildProjectChoices(
     lastScannedPath?: string
 ): Array<{ value: string; label: string; hint?: string }> {
     const choices: Array<{ value: string; label: string; hint?: string }> = []
     const cwd = process.cwd()
+    const addedPaths = new Set<string>()
 
     // Last scanned project (if exists and has Xcode project)
     if (lastScannedPath && existsSync(lastScannedPath)) {
@@ -111,27 +188,43 @@ export function buildProjectChoices(
                 label: `${proj.name} (last scanned)`,
                 hint: shortenPath(lastScannedPath),
             })
+            addedPaths.add(lastScannedPath)
         }
     }
 
     // Current directory
     const cwdProj = findProjectInDir(cwd)
-    if (cwdProj && cwd !== lastScannedPath) {
+    if (cwdProj && !addedPaths.has(cwd)) {
         choices.push({
             value: cwd,
             label: cwdProj.name,
-            hint: `Current directory - ${shortenPath(cwd)}`,
+            hint: `Current directory`,
         })
+        addedPaths.add(cwd)
     }
 
-    // Discovered projects
-    const found = findXcodeProjects()
-    for (const proj of found.slice(0, 5)) {
-        if (proj.path === lastScannedPath || proj.path === cwd) continue
+    // Try Spotlight first, fall back to directory scanning
+    let found = spotlightSearch()
+    if (found.length === 0) {
+        found = findXcodeProjects()
+    }
+
+    for (const proj of found.slice(0, 8)) {
+        if (addedPaths.has(proj.path)) continue
         choices.push({
             value: proj.path,
             label: proj.name,
             hint: shortenPath(proj.path),
+        })
+        addedPaths.add(proj.path)
+    }
+
+    // Finder picker (macOS only)
+    if (platform() === 'darwin') {
+        choices.push({
+            value: '__finder__',
+            label: 'Open Finder to pick a folder',
+            hint: 'Browse with macOS file picker',
         })
     }
 
@@ -145,13 +238,14 @@ export function buildProjectChoices(
     return choices
 }
 
-// Prompt user to select a project interactively, with fallback to manual path input
+// Prompt user to select a project interactively
 export async function interactiveProjectSelect(): Promise<string | null> {
     const choices = buildProjectChoices(getLastScannedPath())
 
-    if (choices.length <= 1) {
-        ui.log.info('No Xcode projects found in common locations.')
-        return promptForManualPath()
+    // If no real projects found (only __finder__ and __manual__)
+    const realProjects = choices.filter(c => !c.value.startsWith('__'))
+    if (realProjects.length === 0) {
+        ui.log.info('No Xcode projects found on your Mac.')
     }
 
     const selected = await ui.select<string>({
@@ -160,7 +254,15 @@ export async function interactiveProjectSelect(): Promise<string | null> {
     })
 
     if (selected === null) return null
+
+    if (selected === '__finder__') {
+        const finderPath = browseWithFinder()
+        if (!finderPath) return null
+        return finderPath
+    }
+
     if (selected === '__manual__') return promptForManualPath()
+
     return selected
 }
 
@@ -170,6 +272,8 @@ async function promptForManualPath(): Promise<string | null> {
         placeholder: './MyApp',
         validate: (val) => {
             if (!val?.trim()) return 'Path is required'
+            const resolved = resolve(val.trim())
+            if (!existsSync(resolved)) return 'Directory not found'
         },
     })
 }
