@@ -7,21 +7,22 @@ import { scanCommand } from './commands/scan.js'
 import { submitCommand } from './commands/submit.js'
 import { statusCommand } from './commands/status.js'
 import { reportCommand } from './commands/report.js'
-import { historyCommand } from './commands/history.js'
+import { historyCommand, interactiveHistory } from './commands/history.js'
 import { setupCommand } from './commands/setup.js'
-import { runOnboarding } from './commands/onboarding.js'
+import { showWelcomeScreen, showAuthScreen } from './commands/onboarding.js'
 import { handleUnknownCommand } from './ui/errors.js'
-import { isLoggedIn, hasRunBefore } from './lib/config.js'
-import { loginWithBrowser } from './lib/auth.js'
+import { isLoggedIn, hasRunBefore, getConfig } from './lib/config.js'
+import { clearAuth } from './lib/config.js'
+import { apiRequest } from './lib/api-client.js'
 import * as ui from './ui/interactive.js'
-import { brand } from './ui/theme.js'
+import { subtext } from './ui/theme.js'
 
 const program = new Command()
 
 program
     .name('preflight')
     .description('Preflight - App Store Review Scanner')
-    .version('0.2.0')
+    .version('0.2.1')
 
 // Auth commands
 program
@@ -93,67 +94,105 @@ program.on('command:*', (operands) => {
     process.exitCode = 1
 })
 
-// Interactive welcome menu when run with no arguments
-async function interactiveMenu() {
-    ui.clearScreen()
+// ─── Full-Screen Interactive App ─────────────────────────────────────────
 
-    // First-run onboarding
-    if (!hasRunBefore()) {
-        await runOnboarding()
-        return
-    }
-
-    ui.intro()
-    ui.showTagline()
-
-    // Require auth before showing menu
-    if (!isLoggedIn()) {
-        ui.log.warning('You need to log in to continue.')
-        const s = ui.spinner()
-        s.start('Opening login page...')
-        const result = await loginWithBrowser('login')
-        if (result) {
-            s.stop(`Logged in as ${result.email}`)
-        } else {
-            s.stop('Login failed or timed out. Run `preflight login` to try again.')
-            ui.outro()
-            return
-        }
-    }
-
-    const choice = await ui.select({
-        message: 'What would you like to do?',
-        options: [
-            { value: 'scan' as const, label: 'Scan my app', hint: 'Free preview' },
-            { value: 'submit' as const, label: 'Submit for full AI analysis', hint: 'Uses 1 credit' },
-            { value: 'history' as const, label: 'View my reports', hint: 'Past submissions' },
-            { value: 'account' as const, label: 'Check account & credits', hint: '' },
-            { value: 'help' as const, label: 'Help - show all commands', hint: '' },
-        ],
-    })
-
-    if (choice === null) return
-
-    switch (choice) {
-        case 'scan':
-            await scanCommand()
-            break
-        case 'submit':
-            await submitCommand()
-            break
-        case 'history':
-            await historyCommand({})
-            break
-        case 'account':
-            await whoamiCommand()
-            break
-        case 'help':
-            program.outputHelp()
-            break
+// Fetch credit balance (cached between menu renders)
+async function fetchCredits(): Promise<number | undefined> {
+    try {
+        const res = await apiRequest('/api/credits')
+        if (!res.ok) return undefined
+        const data = await res.json()
+        return data.credits ?? undefined
+    } catch {
+        return undefined
     }
 }
 
-// If no args provided (just `preflight`), show interactive menu
+// Open URL with fallback
+async function openUrl(url: string): Promise<void> {
+    try {
+        const open = (await import('open')).default
+        await open(url)
+    } catch {
+        console.log(subtext(`  Visit: ${url}`))
+    }
+}
+
+async function interactiveMenu() {
+    // Screen 0: Welcome (first run only)
+    if (!hasRunBefore()) {
+        const welcomed = await showWelcomeScreen()
+        if (!welcomed) return
+    }
+
+    // Screen 1: Auth (if not logged in)
+    if (!isLoggedIn()) {
+        const authenticated = await showAuthScreen()
+        if (!authenticated) return
+    }
+
+    // Screen 2: Main Menu (loops until Esc or Log Out)
+    let cachedCredits: number | undefined
+
+    // Initial credit fetch
+    cachedCredits = await fetchCredits()
+
+    while (true) {
+        const { email } = getConfig()
+        ui.renderHeader(email, cachedCredits)
+
+        const choice = await ui.select<'review' | 'history' | 'buy' | 'logout'>({
+            message: 'What would you like to do?',
+            options: [
+                { value: 'review', label: 'New Review', hint: 'Scan your app for App Store issues' },
+                { value: 'history', label: 'View Reviews', hint: 'See your past review reports' },
+                { value: 'buy', label: 'Buy Credits', hint: 'Get more credits at preflightlaunch.com' },
+                { value: 'logout', label: 'Log Out' },
+            ],
+        })
+
+        if (choice === null) {
+            // Esc pressed -- quit
+            console.log()
+            console.log(subtext('  See you next time!'))
+            console.log()
+            return
+        }
+
+        switch (choice) {
+            case 'review':
+                await submitCommand(undefined, {}, true)
+                // Refresh credits after submission (may have been spent)
+                cachedCredits = await fetchCredits()
+                break
+
+            case 'history':
+                await interactiveHistory()
+                break
+
+            case 'buy':
+                await openUrl('https://preflightlaunch.com/pricing')
+                ui.log.info('Opened pricing page in browser.')
+                // Refresh credits (user may have purchased)
+                await new Promise(r => setTimeout(r, 2000))
+                cachedCredits = await fetchCredits()
+                break
+
+            case 'logout':
+                clearAuth()
+                // Show auth screen again
+                const authenticated = await showAuthScreen()
+                if (!authenticated) return
+                // Refresh credits for new user
+                cachedCredits = await fetchCredits()
+                break
+        }
+    }
+}
+
+// ─── Entry Point ─────────────────────────────────────────────────────────
+
+// If no args provided (just `preflight`), show full-screen interactive app
 if (process.argv.length <= 2) {
     interactiveMenu().catch((err) => {
         console.error(err)

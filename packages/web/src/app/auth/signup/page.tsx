@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { signup } from '../actions'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import OAuthButtons from '@/components/OAuthButtons'
 
 export default function SignupPage() {
     const router = useRouter()
@@ -71,6 +72,17 @@ export default function SignupPage() {
                 <div className="vercel-card">
                     <h1 className="text-2xl font-bold tracking-tighter mb-2">Create account</h1>
                     <p className="text-sm text-gray-500 font-light mb-8">Start scanning your iOS apps today</p>
+
+                    <OAuthButtons />
+
+                    <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-border" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                            <span className="bg-[#0a0a0a] px-3 text-gray-500">or</span>
+                        </div>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">

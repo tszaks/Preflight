@@ -1,95 +1,99 @@
-import { homedir } from 'node:os'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext } from '../ui/theme.js'
-import { isLoggedIn, markAsRun, setLastScannedPath } from '../lib/config.js'
+import { isLoggedIn, markAsRun } from '../lib/config.js'
 import { loginWithBrowser } from '../lib/auth.js'
-import { findXcodeProjects, findProjectInDir } from '../lib/project-finder.js'
 
-export async function runOnboarding() {
-    ui.brandSplash()
-    ui.intro('Welcome to Preflight!')
+// Screen 0: Welcome screen (first run only)
+export async function showWelcomeScreen(): Promise<boolean> {
+    ui.renderHeader()
+    console.log('   Preflight scans your app for common issues that')
+    console.log('   cause App Store rejections -- before you submit.')
+    console.log()
+    console.log(subtext('   How it works:'))
+    console.log(subtext('   1. Point us to your Xcode project'))
+    console.log(subtext('   2. We scan for 100+ rejection risks'))
+    console.log(subtext('   3. Get a detailed report with fixes'))
+    console.log()
 
-    ui.log.message('Let\'s get you set up. This takes about 30 seconds.')
+    const result = await ui.select<'start'>({
+        message: 'Ready?',
+        options: [
+            { value: 'start', label: 'Get Started' },
+        ],
+    })
 
-    // Step 1: Account (required)
-    if (!isLoggedIn()) {
-        let authenticated = false
-
-        while (!authenticated) {
-            const authChoice = await ui.select<'signup' | 'login'>({
-                message: 'Step 1 of 2: Set up your account',
-                options: [
-                    { value: 'signup', label: 'Create a free account', hint: 'Opens browser' },
-                    { value: 'login', label: 'I already have an account', hint: 'Opens browser' },
-                ],
-            })
-
-            if (authChoice === null) return
-
-            if (authChoice === 'signup') {
-                const s = ui.spinner()
-                s.start('Opening signup page...')
-                await loginWithBrowser('signup')
-                s.stop('Signup page opened in browser')
-                ui.log.info('Create your account in the browser, then come back here.')
-
-                const ready = await ui.confirm('Ready to log in?')
-                if (!ready) continue
-            }
-
-            // Both paths end with login — signup users need to log in after creating their account
-            const s = ui.spinner()
-            s.start('Opening login page...')
-            const result = await loginWithBrowser('login')
-            if (result) {
-                s.stop(`Logged in as ${result.email}`)
-                authenticated = true
-            } else {
-                s.stop('Login failed or timed out')
-                ui.log.warning('Let\'s try again.')
-            }
-        }
-    } else {
-        ui.log.success('Already logged in. Skipping account setup.')
-    }
-
-    // Step 2: Find Xcode projects
-    const projects = findXcodeProjects()
-    const cwdProject = findProjectInDir(process.cwd())
-
-    if (projects.length > 0 || cwdProject) {
-        const allProjects = cwdProject
-            ? [cwdProject, ...projects.filter((p) => p.path !== cwdProject.path)]
-            : projects
-
-        const choices = allProjects.slice(0, 5).map((proj) => ({
-            value: proj.path,
-            label: `${proj.name} (${proj.type === 'xcworkspace' ? '.xcworkspace' : '.xcodeproj'})`,
-            hint: proj.path.replace(homedir(), '~'),
-        }))
-
-        choices.push({
-            value: '__skip__',
-            label: 'Skip - I\'ll scan later',
-            hint: '',
-        })
-
-        const projectChoice = await ui.select<string>({
-            message: 'Step 2 of 2: Choose your Xcode project',
-            options: choices,
-        })
-
-        if (projectChoice === null) return
-
-        if (projectChoice !== '__skip__') {
-            setLastScannedPath(projectChoice)
-            ui.log.success(`Project saved! Run ${brand('preflight scan')} to scan it.`)
-        }
-    } else {
-        ui.log.info('No Xcode projects found on your Mac.\nRun ' + brand('preflight scan <path>') + ' when you\'re ready.')
-    }
+    if (result === null) return false
 
     markAsRun()
+    return true
+}
 
-    ui.outro('You\'re all set! Run ' + brand('preflight') + ' to get started.')
+// Screen 1: Auth screen (login or signup)
+export async function showAuthScreen(): Promise<boolean> {
+    ui.renderHeader()
+
+    const authChoice = await ui.select<'signup' | 'login'>({
+        message: 'How would you like to get started?',
+        options: [
+            { value: 'signup', label: 'Create a free account', hint: 'Sign up with email, GitHub, or Google' },
+            { value: 'login', label: 'I already have an account', hint: 'Log in with email, GitHub, or Google' },
+        ],
+    })
+
+    if (authChoice === null) return false
+
+    if (authChoice === 'signup') {
+        const s = ui.spinner()
+        s.start('Opening signup page in browser...')
+
+        try {
+            await loginWithBrowser('signup')
+        } catch {
+            s.stop('Could not open browser')
+        }
+        s.stop('Signup page opened')
+
+        ui.log.info('Create your account in the browser, then come back here.')
+        console.log()
+
+        const ready = await ui.confirm('Done signing up? Ready to log in?')
+        if (ready === null || !ready) {
+            ui.log.info(subtext('Run `preflight` anytime to come back.'))
+            return false
+        }
+    }
+
+    // Both paths end with login
+    const s = ui.spinner()
+    s.start('Opening login page... Waiting for you to finish in browser.')
+
+    try {
+        const result = await loginWithBrowser('login')
+        if (result) {
+            s.stop(`Logged in as ${result.email}`)
+            return true
+        } else {
+            s.stop('Login timed out or was cancelled')
+            ui.log.warning('Run `preflight` anytime to try again.')
+            return false
+        }
+    } catch {
+        s.stop('Could not open browser')
+        ui.log.warning('Run `preflight login` to try from the command line.')
+        return false
+    }
+}
+
+// Legacy onboarding function (kept for setup command compatibility)
+export async function runOnboarding() {
+    if (!isLoggedIn()) {
+        const welcomed = await showWelcomeScreen()
+        if (!welcomed) return
+
+        const authenticated = await showAuthScreen()
+        if (!authenticated) return
+    } else {
+        markAsRun()
+        ui.log.success('Already logged in.')
+    }
 }

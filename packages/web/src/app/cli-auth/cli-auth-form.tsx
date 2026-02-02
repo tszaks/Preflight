@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Eye, EyeOff, Terminal } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import OAuthButtons from '@/components/OAuthButtons'
 
 export default function CLIAuthForm() {
     const searchParams = useSearchParams()
@@ -161,6 +162,24 @@ export default function CLIAuthForm() {
                             {loading ? "Logging in..." : "Log In"}
                         </button>
                     </form>
+
+                    {redirectTo && (
+                        <>
+                            <div className="relative my-6">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-border" />
+                                </div>
+                                <div className="relative flex justify-center text-xs">
+                                    <span className="bg-[#0a0a0a] px-3 text-gray-500">or</span>
+                                </div>
+                            </div>
+
+                            <OAuthButtons
+                                cliRedirectTo={redirectTo}
+                                redirectAfterAuth="/auth/callback?next=/cli-auth/oauth-redirect"
+                            />
+                        </>
+                    )}
 
                     <div className="mt-6 pt-4 border-t border-border">
                         <p className="text-xs text-gray-600 text-center leading-relaxed">
