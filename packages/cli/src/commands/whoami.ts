@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import { isLoggedIn, getConfig } from '../lib/config.js'
 import { apiRequest } from '../lib/api-client.js'
 import { createSpinner, error } from '../ui/spinner.js'
+import { brandDim } from '../ui/theme.js'
 
 export async function whoamiCommand() {
     if (!isLoggedIn()) {
@@ -25,7 +26,7 @@ export async function whoamiCommand() {
 
         console.log()
         console.log(chalk.bold('  Account'))
-        console.log(`  Email:   ${chalk.cyan(data.user.email)}`)
+        console.log(`  Email:   ${brandDim(data.user.email)}`)
         console.log(`  ID:      ${chalk.dim(data.user.id)}`)
         if (data.user.credits != null) {
             console.log(`  Credits: ${chalk.green(data.user.credits)}`)

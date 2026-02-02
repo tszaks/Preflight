@@ -3,11 +3,16 @@ import Table from 'cli-table3'
 import { isLoggedIn } from '../lib/config.js'
 import { apiRequest } from '../lib/api-client.js'
 import { createSpinner, error } from '../ui/spinner.js'
+import { renderReport } from '../ui/report.js'
+import { subtext, brand } from '../ui/theme.js'
+import * as ui from '../ui/interactive.js'
+import { resumeSubmitCommand } from './submit.js'
 
 interface HistoryOptions {
     json?: boolean
 }
 
+// Direct CLI command (prints table)
 export async function historyCommand(options: HistoryOptions) {
     if (!isLoggedIn()) {
         error('Not logged in. Run `preflight login` first.')
@@ -75,5 +80,153 @@ export async function historyCommand(options: HistoryOptions) {
         spinner.stop()
         error(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
         process.exit(1)
+    }
+}
+
+// Interactive version for full-screen menu
+export async function interactiveHistory(): Promise<void> {
+    const s = ui.spinner()
+    s.start('Loading your reviews...')
+
+    try {
+        const res = await apiRequest('/api/submissions')
+        const data = await res.json()
+
+        s.stop('Reviews loaded')
+
+        if (!res.ok) {
+            ui.log.error(data.message || 'Failed to load reviews')
+            return
+        }
+
+        if (!data.data || data.data.length === 0) {
+            ui.log.info('No reviews yet. Start your first review from the main menu.')
+            console.log()
+            // Brief pause so user can read the message
+            await ui.confirm('Back to menu?', true)
+            return
+        }
+
+        // Build selectable list
+        const submissions = data.data as Array<{
+            id: string
+            app_name: string
+            status: string
+            created_at: string
+            report_id?: string
+        }>
+
+        while (true) {
+            const options = submissions.map((sub) => {
+                const date = new Date(sub.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                })
+                const statusLabel =
+                    sub.status === 'complete' ? 'Ready'
+                        : sub.status === 'failed' ? 'Failed'
+                            : sub.status === 'analyzing' ? 'Analyzing...'
+                                : sub.status === 'draft' ? 'Draft'
+                                    : sub.status
+                const hint =
+                    sub.status === 'complete' ? 'View report'
+                        : sub.status === 'draft' ? 'Resume draft'
+                            : ''
+                return {
+                    value: sub.id,
+                    label: `${sub.app_name || 'Unknown'} - ${statusLabel} (${date})`,
+                    hint,
+                }
+            })
+
+            options.push({
+                value: '__back__',
+                label: 'Back to menu',
+                hint: '',
+            })
+
+            const selected = await ui.select<string>({
+                message: 'Your Reviews',
+                options,
+            })
+
+            if (selected === null || selected === '__back__') return
+
+            // Find the selected submission
+            const sub = submissions.find(s => s.id === selected)
+            if (!sub) return
+
+            // Handle draft submissions — offer to resume
+            if (sub.status === 'draft') {
+                const draftAction = await ui.select<'resume' | 'back'>({
+                    message: `Draft: ${sub.app_name || 'Unknown'}`,
+                    options: [
+                        { value: 'resume', label: 'Resume Draft', hint: 'Continue where you left off' },
+                        { value: 'back', label: 'Back to list' },
+                    ],
+                })
+
+                if (draftAction === null || draftAction === 'back') continue
+
+                // Fetch full draft data
+                const draftSpinner = ui.spinner()
+                draftSpinner.start('Loading draft...')
+
+                try {
+                    const draftRes = await apiRequest(`/api/submissions/${sub.id}`)
+                    const draftData = await draftRes.json()
+
+                    draftSpinner.stop('Draft loaded')
+
+                    if (draftRes.ok && draftData.data) {
+                        await resumeSubmitCommand(draftData.data)
+                        return // Back to main menu after resume
+                    } else {
+                        ui.log.error('Could not load this draft.')
+                    }
+                } catch {
+                    draftSpinner.stop('Failed to load draft')
+                }
+                continue
+            }
+
+            if (sub.status !== 'complete' || !sub.report_id) {
+                if (sub.status === 'analyzing') {
+                    ui.log.info('This review is still being analyzed. Check back in a few minutes.')
+                } else if (sub.status === 'failed') {
+                    ui.log.warning('This review failed. Try submitting again.')
+                } else {
+                    ui.log.info(`Status: ${sub.status}`)
+                }
+                console.log()
+                continue
+            }
+
+            // Fetch and show report
+            const reportSpinner = ui.spinner()
+            reportSpinner.start('Loading report...')
+
+            try {
+                const reportRes = await apiRequest(`/api/reports/${sub.report_id}`)
+                const reportData = await reportRes.json()
+
+                reportSpinner.stop('Report loaded')
+
+                if (reportRes.ok) {
+                    renderReport(reportData.report, reportData.items)
+                    console.log(subtext(`  Full report: https://preflightlaunch.com/report/${sub.report_id}`))
+                    console.log()
+                } else {
+                    ui.log.error('Could not load this report.')
+                }
+            } catch {
+                reportSpinner.stop('Failed to load report')
+            }
+
+            // After viewing, loop back to list
+        }
+    } catch (err) {
+        s.stop('Failed to load reviews')
+        ui.log.error(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
 }

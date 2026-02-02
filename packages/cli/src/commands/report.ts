@@ -17,6 +17,12 @@ export async function reportCommand(id: string, options: ReportOptions) {
         process.exit(1)
     }
 
+    if (!id) {
+        error('Please provide a submission or report ID. Run `preflight history` to find one.')
+        process.exitCode = 1
+        return
+    }
+
     if (options.open) {
         await open(`${DEFAULT_API_URL}/report/${id}`)
         console.log(chalk.dim('  Opened report in browser'))

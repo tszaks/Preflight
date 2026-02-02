@@ -191,28 +191,33 @@ export function calculateAgeRating(answers: AgeRatingAnswers): string {
 
 // ─── Collect App Details ─────────────────────────────────────────────────
 
-export async function collectAppDetails(projectName: string): Promise<AppDetails | null> {
-    const skipGate = await ui.select<'fill' | 'skip'>({
-        message: 'App Details (you can always add these later on the web)',
-        options: [
-            { value: 'fill', label: 'Fill in now', hint: 'Name, description, keywords, category' },
-            { value: 'skip', label: 'Skip for now', hint: 'Just use the project name' },
-        ],
-    })
+export async function collectAppDetails(projectName: string, defaults?: Partial<AppDetails>): Promise<AppDetails | null> {
+    // When resuming a draft, skip the gate question and go straight to filling
+    if (!defaults) {
+        const skipGate = await ui.select<'fill' | 'skip'>({
+            message: 'App Details (you can always add these later on the web)',
+            options: [
+                { value: 'fill', label: 'Fill in now', hint: 'Name, description, keywords, category' },
+                { value: 'skip', label: 'Skip for now', hint: 'Just use the project name' },
+            ],
+        })
 
-    if (skipGate === null) return null
-    if (skipGate === 'skip') {
-        return {
-            appName: projectName,
-            signInRequired: false,
+        if (skipGate === null) return null
+        if (skipGate === 'skip') {
+            return {
+                appName: projectName,
+                signInRequired: false,
+            }
         }
     }
 
-    // App Name (required, pre-filled from project)
+    const defaultName = defaults?.appName || projectName
+
+    // App Name (required, pre-filled from project or draft)
     const appName = await ui.text({
         message: 'App Name',
-        placeholder: projectName,
-        defaultValue: projectName,
+        placeholder: defaultName,
+        defaultValue: defaultName,
         validate: (val) => {
             if (!val?.trim()) return 'App name is required'
         },
@@ -223,6 +228,7 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
     const description = await ui.text({
         message: 'Description (press Enter to skip)',
         placeholder: 'Describe your app as it appears in the App Store',
+        ...(defaults?.description ? { defaultValue: defaults.description } : {}),
     })
     if (description === null) return null
 
@@ -230,6 +236,7 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
     const keywords = await ui.text({
         message: 'Keywords (press Enter to skip)',
         placeholder: 'Comma-separated, 100 chars max',
+        ...(defaults?.keywords ? { defaultValue: defaults.keywords } : {}),
         validate: (val) => {
             if (val && val.length > 100) return 'Keywords must be 100 characters or less'
         },
@@ -240,6 +247,7 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
     const promotionalText = await ui.text({
         message: 'Promotional Text (press Enter to skip)',
         placeholder: 'Short promotional text, 170 chars max',
+        ...(defaults?.promotionalText ? { defaultValue: defaults.promotionalText } : {}),
         validate: (val) => {
             if (val && val.length > 170) return 'Promotional text must be 170 characters or less'
         },
@@ -254,6 +262,7 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
     const category = await ui.select<string>({
         message: 'Primary Category',
         options: categoryOptions,
+        ...(defaults?.category ? { initialValue: defaults.category } : {}),
     })
     if (category === null) return null
 
@@ -261,6 +270,7 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
     const supportUrl = await ui.text({
         message: 'Support URL (press Enter to skip)',
         placeholder: 'https://example.com/support',
+        ...(defaults?.supportUrl ? { defaultValue: defaults.supportUrl } : {}),
     })
     if (supportUrl === null) return null
 
@@ -268,11 +278,15 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
     const marketingUrl = await ui.text({
         message: 'Marketing URL (press Enter to skip)',
         placeholder: 'https://example.com',
+        ...(defaults?.marketingUrl ? { defaultValue: defaults.marketingUrl } : {}),
     })
     if (marketingUrl === null) return null
 
     // Sign-in Required?
-    const signInRequired = await ui.confirm('Does your app require sign-in for review?', false)
+    const signInRequired = await ui.confirm(
+        'Does your app require sign-in for review?',
+        defaults?.signInRequired ?? false,
+    )
     if (signInRequired === null) return null
 
     let demoUsername: string | undefined
@@ -282,6 +296,7 @@ export async function collectAppDetails(projectName: string): Promise<AppDetails
         const email = await ui.text({
             message: 'Demo Email',
             placeholder: 'test@example.com',
+            ...(defaults?.demoUsername ? { defaultValue: defaults.demoUsername } : {}),
             validate: (val) => {
                 if (!val?.trim()) return 'Demo email is required when sign-in is required'
             },
@@ -541,8 +556,8 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
 
 // ─── Orchestrate All Compliance ──────────────────────────────────────────
 
-export async function collectCompliance(): Promise<ComplianceData | null> {
-    // Age Rating
+export async function collectCompliance(defaults?: Partial<ComplianceData>): Promise<ComplianceData | null> {
+    // Age Rating (use defaults if resuming a draft)
     const ageResult = await collectAgeRating()
     if (ageResult === null) return null
 

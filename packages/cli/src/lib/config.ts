@@ -9,6 +9,7 @@ interface PreflightConfig {
     email?: string
     hasRunBefore?: boolean
     lastScannedPath?: string
+    ascConnected?: boolean
 }
 
 const config = new Conf<PreflightConfig>({
@@ -21,6 +22,7 @@ const config = new Conf<PreflightConfig>({
         email: { type: 'string' },
         hasRunBefore: { type: 'boolean', default: false },
         lastScannedPath: { type: 'string' },
+        ascConnected: { type: 'boolean', default: false },
     },
 })
 
@@ -42,6 +44,7 @@ export function getConfig(): PreflightConfig {
         email: config.get('email'),
         hasRunBefore: config.get('hasRunBefore') || false,
         lastScannedPath: config.get('lastScannedPath'),
+        ascConnected: config.get('ascConnected') || false,
     }
 }
 
@@ -84,6 +87,14 @@ export function setLastScannedPath(path: string) {
 
 export function getLastScannedPath(): string | undefined {
     return config.get('lastScannedPath')
+}
+
+export function getAscConnected(): boolean {
+    return config.get('ascConnected') || false
+}
+
+export function setAscConnected(connected: boolean) {
+    config.set('ascConnected', connected)
 }
 
 export { config }

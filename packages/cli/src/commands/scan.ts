@@ -13,12 +13,12 @@ export async function scanCommand(path?: string) {
         const resolvedPath = await interactiveProjectSelect()
         if (!resolvedPath) return
         path = resolvedPath
+    } else {
+        ui.intro('Scanning project')
     }
 
     const dir = resolve(path)
     setLastScannedPath(dir)
-
-    ui.intro('Scanning project')
 
     const s = ui.spinner()
     s.start('Looking for App Store files...')
@@ -102,7 +102,7 @@ export async function scanCommand(path?: string) {
     const next = await ui.select<'submit' | 'done'>({
         message: 'What next?',
         options: [
-            { value: 'submit', label: 'Submit for full analysis', hint: '1 credit' },
+            { value: 'submit', label: 'Submit for full analysis', hint: '100 credits' },
             { value: 'done', label: 'Done for now' },
         ],
     })

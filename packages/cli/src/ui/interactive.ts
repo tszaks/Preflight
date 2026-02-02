@@ -1,7 +1,8 @@
 import * as p from '@clack/prompts'
+import chalk from 'chalk'
 import { brand, subtext, APP_VERSION, APP_NAME, APP_TAGLINE } from './theme.js'
 
-// Branded intro header — used at start of interactive flows
+// Branded intro header -- used at start of interactive flows
 export function intro(title?: string) {
     p.intro(brand(`${APP_NAME} v${APP_VERSION}`))
     if (title) {
@@ -14,16 +15,6 @@ export function showTagline() {
     p.log.message(`${APP_TAGLINE}\nCatch rejection reasons before Apple does.`)
 }
 
-// First-run animated brand splash (plays once)
-export function brandSplash() {
-    console.log()
-    console.log(brand(`  ${APP_NAME.split('').join(' ')}`))
-    console.log()
-    console.log(subtext(`  ${APP_TAGLINE}`))
-    console.log(subtext(`  v${APP_VERSION}`))
-    console.log()
-}
-
 // Outro with optional next-step hint
 export function outro(message?: string) {
     p.outro(message || 'Done!')
@@ -32,7 +23,30 @@ export function outro(message?: string) {
 // Contextual tip shown after commands
 export function tip(message: string) {
     console.log()
-    console.log(subtext(`  \uD83D\uDCA1 Tip: ${message}`))
+    console.log(subtext(`  Tip: ${message}`))
+    console.log()
+}
+
+// Full-screen branded header for the interactive app
+export function renderHeader(email?: string, credits?: number) {
+    clearScreen()
+    console.log()
+    console.log(brand(`           ${APP_NAME.split('').map(c => c.toUpperCase()).join(' ')}`))
+    if (email) {
+        const creditDisplay = credits !== undefined
+            ? (credits < 100 ? chalk.yellow(`${credits} credits`) : `${credits} credits`)
+            : ''
+        console.log(subtext(`       ${email}${creditDisplay ? ` · ${creditDisplay}` : ''}`))
+    } else {
+        console.log(subtext(`       ${APP_TAGLINE}`))
+    }
+    console.log()
+}
+
+// Keyboard hint footer -- dimmed text at bottom of screens
+export function keyboardHints(hints: string) {
+    console.log()
+    console.log(subtext(`    ${hints}`))
     console.log()
 }
 
@@ -46,17 +60,32 @@ export async function select<T extends string>(opts: {
         options: opts.options as Array<{ value: string; label?: string; hint?: string }>,
     })
     if (p.isCancel(result)) {
-        p.cancel('Cancelled.')
         return null
     }
     return result as T
+}
+
+// Multiselect with cancel detection
+export async function multiselect<T extends string>(opts: {
+    message: string
+    options: Array<{ value: T; label: string; hint?: string }>
+    required?: boolean
+}): Promise<T[] | null> {
+    const result = await p.multiselect({
+        message: opts.message,
+        options: opts.options as Array<{ value: string; label?: string; hint?: string }>,
+        required: opts.required ?? false,
+    })
+    if (p.isCancel(result)) {
+        return null
+    }
+    return result as T[]
 }
 
 // Confirm prompt with cancel detection
 export async function confirm(message: string, initialValue = true): Promise<boolean | null> {
     const result = await p.confirm({ message, initialValue })
     if (p.isCancel(result)) {
-        p.cancel('Cancelled.')
         return null
     }
     return result
@@ -71,7 +100,18 @@ export async function text(opts: {
 }): Promise<string | null> {
     const result = await p.text(opts)
     if (p.isCancel(result)) {
-        p.cancel('Cancelled.')
+        return null
+    }
+    return result as string
+}
+
+// Password input with cancel detection
+export async function password(opts: {
+    message: string
+    validate?: (value: string | undefined) => string | Error | undefined
+}): Promise<string | null> {
+    const result = await p.password({ message: opts.message, validate: opts.validate })
+    if (p.isCancel(result)) {
         return null
     }
     return result as string
@@ -90,6 +130,11 @@ export function clearScreen() {
     if (process.stdout.isTTY) {
         process.stdout.write('\x1B[2J\x1B[3J\x1B[H')
     }
+}
+
+// Note display helper (for inline notes/messages in the flow)
+export function note(message: string, title?: string) {
+    p.note(message, title)
 }
 
 // Check if user cancelled

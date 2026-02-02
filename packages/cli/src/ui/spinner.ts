@@ -1,10 +1,11 @@
 import ora, { type Ora } from 'ora'
 import chalk from 'chalk'
+import { brand, brandDim } from './theme.js'
 
 export function createSpinner(text: string): Ora {
     return ora({
         text,
-        color: 'cyan',
+        color: 'yellow',
         spinner: 'dots',
     })
 }
@@ -22,11 +23,11 @@ export function warn(message: string) {
 }
 
 export function info(message: string) {
-    console.log(chalk.blue('  i') + ' ' + message)
+    console.log(brandDim('  i') + ' ' + message)
 }
 
 export function header(text: string) {
     console.log()
-    console.log(chalk.bold.cyan('  Preflight') + chalk.dim(' - App Store Review Scanner'))
+    console.log(brand('  Preflight') + chalk.dim(' - App Store Review Scanner'))
     console.log()
 }

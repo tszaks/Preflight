@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 
 // Brand colors — consistent visual language across all output
-export const brand = chalk.bold.cyan
-export const brandDim = chalk.cyan
+export const brand = chalk.bold.hex('#E8700A')
+export const brandDim = chalk.hex('#E8700A')
 export const heading = chalk.bold.white
 export const subtext = chalk.dim
 export const muted = chalk.gray
@@ -14,8 +14,8 @@ export const warning = chalk.yellow
 export const warningBold = chalk.bold.yellow
 export const critical = chalk.red
 export const criticalBold = chalk.bold.red
-export const info = chalk.blue
-export const infoBold = chalk.bold.blue
+export const info = chalk.hex('#E8700A')
+export const infoBold = chalk.bold.hex('#E8700A')
 
 // Icons
 export const icons = {
