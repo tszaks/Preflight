@@ -340,15 +340,7 @@ export async function collectAgeRating(): Promise<{ answers: AgeRatingAnswers; r
 
     if (!hasMatureContent) {
         const rating = calculateAgeRating(defaultAnswers)
-        ui.log.success(`Age Rating: ${rating} (no mature content)`)
-
-        const looksRight = await ui.confirm('Does that look right?', true)
-        if (looksRight === null) return null
-        if (!looksRight) {
-            // Let them go through the detailed flow
-            return collectAgeRatingDetailed(defaultAnswers)
-        }
-
+        ui.log.success(`Age Rating: ${rating}`)
         return { answers: defaultAnswers, rating }
     }
 
