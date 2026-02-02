@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts'
 import chalk from 'chalk'
-import { brand, subtext, APP_VERSION, APP_NAME, APP_TAGLINE } from './theme.js'
+import { brand, subtext, APP_VERSION, APP_NAME, APP_TAGLINE, getLogo } from './theme.js'
 
 // Branded intro header -- used at start of interactive flows
 export function intro(title?: string) {
@@ -31,7 +31,18 @@ export function tip(message: string) {
 export function renderHeader(email?: string, credits?: number) {
     clearScreen()
     console.log()
-    console.log(brand(`           ${APP_NAME.split('').map(c => c.toUpperCase()).join(' ')}`))
+
+    // Rocket logo
+
+    // Main Logo
+    for (const line of getLogo()) {
+        console.log(line)
+    }
+    console.log()
+    console.log()
+
+
+    // Info bar: email · credits · version
     const creditDisplay = credits !== undefined
         ? (credits < 100 ? chalk.yellow(`${credits} credits`) : `${credits} credits`)
         : ''
