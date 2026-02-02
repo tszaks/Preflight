@@ -24,7 +24,7 @@ const program = new Command()
 program
     .name('preflight')
     .description('Preflight - App Store Review Scanner')
-    .version('0.2.9')
+    .version('0.2.10')
 
 // Auth commands
 program
