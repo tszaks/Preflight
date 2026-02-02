@@ -3,6 +3,15 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+function isValidCLIRedirect(url: string): boolean {
+    try {
+        const parsed = new URL(url)
+        return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+    } catch {
+        return false
+    }
+}
+
 export default function CLIOAuthRedirect() {
     const [error, setError] = useState<string | null>(null)
 
@@ -11,8 +20,8 @@ export default function CLIOAuthRedirect() {
             const cliRedirectTo = sessionStorage.getItem('cli_redirect_to')
             sessionStorage.removeItem('cli_redirect_to')
 
-            if (!cliRedirectTo) {
-                setError('No CLI redirect URL found. Please start the login flow from the Preflight CLI.')
+            if (!cliRedirectTo || !isValidCLIRedirect(cliRedirectTo)) {
+                setError('No valid CLI redirect URL found. Please start the login flow from the Preflight CLI.')
                 return
             }
 
