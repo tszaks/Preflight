@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Copy, Check, Terminal } from "lucide-react";
+import { Copy, Check, Terminal, ChevronRight } from "lucide-react";
 
 export function TerminalBanner() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -24,15 +24,16 @@ export function TerminalBanner() {
 
   if (isHome) {
     return (
-      <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-6 pointer-events-none">
+      <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4 md:px-6 pointer-events-none">
         <a
           href="#install"
-          className="pointer-events-auto inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 cursor-pointer"
+          className="pointer-events-auto inline-flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-2 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 cursor-pointer"
         >
           <Terminal className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-          <span className="text-xs text-gray-500 font-medium">Install the CLI</span>
-          <span className="w-px h-3 bg-white/10" />
-          <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium whitespace-nowrap">Install the CLI</span>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-500 shrink-0 md:hidden" />
+          <span className="hidden md:block w-px h-3 bg-white/10" />
+          <div className="hidden md:flex items-center gap-2">
             {commands.map((cmd, i) => (
               <span key={i} className="inline-flex items-center gap-1.5">
                 {i > 0 && <span className="text-gray-600 text-xs mx-1">or</span>}
