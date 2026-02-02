@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext, brandDim } from '../ui/theme.js'
-import { config } from '../lib/config.js'
 
 // Small delay for visual feedback
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
@@ -156,11 +155,6 @@ const messages = {
 export async function updateCommand() {
     const current = getCurrentVersion()
 
-    // Seed previousVersion on first run after feature was added (chicken-and-egg fix)
-    if (!config.get('previousVersion')) {
-        config.set('previousVersion', current)
-    }
-
     const s = ui.spinner()
 
     // Step 1: Show current version
@@ -180,15 +174,10 @@ export async function updateCommand() {
     }
 
     if (compareSemver(current, latest) >= 0) {
-        const prev = config.get('previousVersion')
         s.stop(`Latest: ${brand(`v${latest}`)}`)
         await wait(400)
         console.log()
-        if (prev && prev !== current) {
-            console.log(`  ${brand('Preflight')} is up to date. ${subtext(`Updated from v${prev} --> v${current}`)}`)
-        } else {
-            console.log(`  ${brand('Preflight')} is up to date. ${subtext(pick(messages.upToDate))}`)
-        }
+        console.log(`  ${brand('Preflight')} is up to date. ${subtext(pick(messages.upToDate))}`)
         console.log()
         return
     }
@@ -215,9 +204,6 @@ export async function updateCommand() {
         })
         await wait(1000)
         s.stop(pick(messages.done))
-
-        // Save the version we updated from
-        config.set('previousVersion', current)
 
         // Step 5: Done
         await wait(400)

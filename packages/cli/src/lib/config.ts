@@ -10,7 +10,6 @@ interface PreflightConfig {
     hasRunBefore?: boolean
     lastScannedPath?: string
     ascConnected?: boolean
-    previousVersion?: string
 }
 
 const config = new Conf<PreflightConfig>({
@@ -24,7 +23,6 @@ const config = new Conf<PreflightConfig>({
         hasRunBefore: { type: 'boolean', default: false },
         lastScannedPath: { type: 'string' },
         ascConnected: { type: 'boolean', default: false },
-        previousVersion: { type: 'string' },
     },
 })
 
