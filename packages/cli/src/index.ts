@@ -11,6 +11,7 @@ import { historyCommand, interactiveHistory } from './commands/history.js'
 import { setupCommand } from './commands/setup.js'
 import { showWelcomeScreen, showAuthScreen } from './commands/onboarding.js'
 import { ascConnectCommand, ascStatusCommand, ascDisconnectCommand, ascRefreshCommand, ascInteractiveMenu } from './commands/asc.js'
+import { updateCommand } from './commands/update.js'
 import { handleUnknownCommand } from './ui/errors.js'
 import { isLoggedIn, hasRunBefore, getConfig } from './lib/config.js'
 import { clearAuth } from './lib/config.js'
@@ -23,7 +24,7 @@ const program = new Command()
 program
     .name('preflight')
     .description('Preflight - App Store Review Scanner')
-    .version('0.2.3')
+    .version('0.2.4')
 
 // Auth commands
 program
@@ -88,6 +89,11 @@ program
     .command('setup')
     .description('Run guided setup (can be re-run anytime)')
     .action(setupCommand)
+
+program
+    .command('update')
+    .description('Update Preflight to the latest version')
+    .action(updateCommand)
 
 // App Store Connect commands
 const ascCmd = program
