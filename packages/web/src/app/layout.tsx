@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
-import { TerminalBanner } from "@/components/TerminalBanner";
+// import { TerminalBanner } from "@/components/TerminalBanner"; // WAITLIST MODE
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +43,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Navbar />
-        <TerminalBanner />
+        {/* <TerminalBanner /> */}{/* WAITLIST MODE */}
         <div className="pt-16 min-h-screen">
           {children}
         </div>
