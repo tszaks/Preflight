@@ -78,7 +78,7 @@ export function formatBytes(bytes: number): string {
 }
 
 // App version string
-export const APP_VERSION = '0.2.11'
+export const APP_VERSION = '0.2.12'
 export const APP_NAME = 'Preflight'
 export const APP_TAGLINE = 'App Store Review Scanner'
 
@@ -86,7 +86,8 @@ export const APP_TAGLINE = 'App Store Review Scanner'
 export const gold = chalk.hex('#C9A84C')
 
 // Main PreFlight Logo (ASCII Art)
-// "PREFLIGHT" in ANSI Shadow (Filled) with rocket as 'I'
+// Main PreFlight Logo (ASCII Art)
+// "PREFLIGHT" in ANSI Shadow (Filled) with chunkier (7-wide), taller rocket
 export function getLogo(): string[] {
     const w = chalk.white.bold
     const o = brand          // orange for rocket body
@@ -94,12 +95,13 @@ export function getLogo(): string[] {
     const white = chalk.white // white for rocket eye
 
     return [
-        w('██████╗ ██████╗ ███████╗███████╗██╗     ') + o(' ▲ ') + w('     ██████╗ ██╗  ██╗████████╗'),
-        w('██╔══██╗██╔══██╗██╔════╝██╔════╝██║     ') + o('▐█▌') + w('    ██╔════╝ ██║  ██║╚══██╔══╝'),
-        w('██████╔╝██████╔╝█████╗  █████╗  ██║     ') + o('▐') + white('●') + o('▌') + w('    ██║  ███╗███████║   ██║   '),
-        w('██╔═══╝ ██╔══██╗██╔══╝  ██╔══╝  ██║     ') + o('▐█▌') + w('    ██║   ██║██╔══██║   ██║   '),
-        w('██║     ██║  ██║███████╗██║     ███████╗') + o('▀█▀') + w('    ███████║██║  ██║   ██║   '),
-        w('╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝') + g(' ▼ ') + w('    ╚══════╝╚═╝  ╚═╝   ╚═╝   '),
-        w('                                        ') + w('   ') + w('                         '),
+        w('                                              ') + o('      ▲      ') + w('                                     '),
+        w('      ██████╗ ██████╗ ███████╗███████╗██╗     ') + o('     ▐█▌     ') + w(' ██████╗ ██╗  ██╗████████╗'),
+        w('      ██╔══██╗██╔══██╗██╔════╝██╔════╝██║     ') + o('    ▐███▌    ') + w('██╔════╝ ██║  ██║╚══██╔══╝'),
+        w('      ██████╔╝██████╔╝█████╗  █████╗  ██║     ') + o('    ▐█') + white('●') + o('█▌    ') + w('██║  ███╗███████║   ██║   '),
+        w('      ██╔═══╝ ██╔══██╗██╔══╝  ██╔══╝  ██║     ') + o('   ▐█████▌   ') + w('██║   ██║██╔══██║   ██║   '),
+        w('      ██║     ██║  ██║███████╗██║     ███████╗') + o('  ▟███████▙  ') + w('╚██████╔╝██║  ██║   ██║   '),
+        w('      ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝') + o('     ▀█▀     ') + w(' ╚═════╝ ╚═╝  ╚═╝   ╚═╝   '),
+        w('                                              ') + g('      ▼      ') + w('                                     '),
     ]
 }
