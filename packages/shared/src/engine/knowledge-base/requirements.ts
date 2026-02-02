@@ -19,6 +19,15 @@ export const SCREENSHOT_LIMITS = {
     allowed_formats: ['image/jpeg', 'image/png'] as const,
 } as const;
 
+export const PRIMARY_SCREENSHOT_DIMENSIONS = {
+    'iPhone_6_9': { width: 1320, height: 2868, label: '6.9" iPhone (iPhone 16 Pro Max)' },
+    'iPhone_6_7': { width: 1290, height: 2796, label: '6.7" iPhone (iPhone 16 Plus / 15 Pro Max)' },
+    'iPhone_6_5': { width: 1284, height: 2778, label: '6.5" iPhone (iPhone 14 Plus / 13 Pro Max)' },
+    'iPhone_5_5': { width: 1242, height: 2208, label: '5.5" iPhone (iPhone 8 Plus)' },
+    'iPad_13': { width: 2064, height: 2752, label: '13" iPad Pro (M4)' },
+    'iPad_12_9': { width: 2048, height: 2732, label: '12.9" iPad Pro' },
+} as const;
+
 export const URL_REQUIREMENTS = {
     timeout_ms: 5000,
     must_be_https: true,
@@ -80,7 +89,7 @@ export const APP_CATEGORIES = [
     'Travel', 'Utilities', 'Weather',
 ] as const;
 
-export const AGE_RATINGS = ['4+', '9+', '12+', '17+'] as const;
+export const AGE_RATINGS = ['4+', '9+', '12+', '13+', '16+', '17+', '18+'] as const;
 
 // Common placeholder/test strings to flag
 export const PLACEHOLDER_PATTERNS = [
@@ -96,3 +105,11 @@ export const PLACEHOLDER_PATTERNS = [
     /https?:\/\/127\.0\.0\.1/i,
     /https?:\/\/192\.168\./i,
 ] as const;
+
+export const SDK_REQUIREMENTS = {
+    minimum_xcode: '16.0',
+    minimum_sdk: 'iOS 18 SDK',
+    minimum_deployment_target: 'iOS 16.0',
+    deadline: '2026-04-01',
+    note: 'Starting April 2026, all apps must be built with Xcode 16+ and iOS 18 SDK. Apps targeting iOS below 16.0 may be flagged.',
+} as const;
