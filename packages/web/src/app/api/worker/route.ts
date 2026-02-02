@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
             has_health_disclaimers: cl.healthDisclaimers,
             generates_ai_content: cl.aiContent,
             has_ai_content_filtering: cl.aiContentFiltering,
+            has_creator_age_gate: cl.creatorAgeGate,
 
             // Authentication & Accounts
             sign_in_required: submission.sign_in_required ?? cl.login,
@@ -89,6 +90,14 @@ export async function POST(req: NextRequest) {
             tested_ipv6: cl.testedIpv6,
             contextual_permissions: cl.contextualPermissions,
             has_alternate_icons: cl.alternateIcons,
+
+            // November 2025 + 2026 Policy Updates
+            has_mini_apps: cl.miniApps,
+            mini_apps_reviewed: cl.miniAppsReviewed,
+            distributes_in_eu: cl.euDistribution,
+            eu_trader_declared: cl.euTraderDeclared,
+            has_external_payment_link: cl.externalPayments,
+            external_link_compliant: cl.externalLinkCompliant,
 
             // === Privacy Declarations → data_collection ===
             data_collection: Object.keys(dataCollection).length > 0 ? dataCollection : undefined,

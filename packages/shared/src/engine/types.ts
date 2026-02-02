@@ -71,6 +71,15 @@ export interface HardRulesInput {
     tested_ipv6?: boolean | null;
     contextual_permissions?: boolean | null;
     has_alternate_icons?: boolean | null;
+
+    // === Self-Report: November 2025 + 2026 Policy Updates ===
+    has_creator_age_gate?: boolean | null;
+    has_mini_apps?: boolean | null;
+    mini_apps_reviewed?: boolean | null;
+    distributes_in_eu?: boolean | null;
+    eu_trader_declared?: boolean | null;
+    has_external_payment_link?: boolean | null;
+    external_link_compliant?: boolean | null;
 }
 
 /**
