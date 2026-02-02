@@ -156,6 +156,11 @@ const messages = {
 export async function updateCommand() {
     const current = getCurrentVersion()
 
+    // Seed previousVersion on first run after feature was added (chicken-and-egg fix)
+    if (!config.get('previousVersion')) {
+        config.set('previousVersion', current)
+    }
+
     const s = ui.spinner()
 
     // Step 1: Show current version
