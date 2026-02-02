@@ -1,12 +1,16 @@
 import { execFileSync } from 'node:child_process'
-import { createRequire } from 'node:module'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext, brandDim } from '../ui/theme.js'
 
 // Get current installed version from package.json
 function getCurrentVersion(): string {
-    const require = createRequire(import.meta.url)
-    const pkg = require('../../package.json')
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = dirname(__filename)
+    const pkgPath = resolve(__dirname, '..', 'package.json')
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
     return pkg.version
 }
 
