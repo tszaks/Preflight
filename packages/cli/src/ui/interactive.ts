@@ -36,7 +36,8 @@ export function renderHeader(email?: string, credits?: number) {
         const creditDisplay = credits !== undefined
             ? (credits < 100 ? chalk.yellow(`${credits} credits`) : `${credits} credits`)
             : ''
-        console.log(subtext(`       ${email}${creditDisplay ? ` · ${creditDisplay}` : ''}`))
+        const infoParts = [email, creditDisplay, `v${APP_VERSION}`].filter(Boolean)
+        console.log(subtext(`       ${infoParts.join(' · ')}`))
     } else {
         console.log(subtext(`       ${APP_TAGLINE}`))
     }
