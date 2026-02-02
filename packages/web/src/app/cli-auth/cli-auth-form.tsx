@@ -176,7 +176,7 @@ export default function CLIAuthForm() {
 
                             <OAuthButtons
                                 cliRedirectTo={redirectTo}
-                                redirectAfterAuth="/auth/callback?next=/cli-auth/oauth-redirect"
+                                redirectAfterAuth="/cli-auth/callback"
                             />
                         </>
                     )}
