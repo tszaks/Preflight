@@ -13,7 +13,7 @@ import { showWelcomeScreen, showAuthScreen } from './commands/onboarding.js'
 import { ascConnectCommand, ascStatusCommand, ascDisconnectCommand, ascRefreshCommand, ascInteractiveMenu } from './commands/asc.js'
 import { updateCommand } from './commands/update.js'
 import { handleUnknownCommand } from './ui/errors.js'
-import { isLoggedIn, hasRunBefore, getConfig } from './lib/config.js'
+import { isLoggedIn, hasRunBefore, getConfig, setUser } from './lib/config.js'
 import { clearAuth } from './lib/config.js'
 import { apiRequest } from './lib/api-client.js'
 import * as ui from './ui/interactive.js'
@@ -161,6 +161,19 @@ async function interactiveMenu() {
     if (!isLoggedIn()) {
         const authenticated = await showAuthScreen()
         if (!authenticated) return
+    }
+
+    // Backfill email if missing (users who logged in with older CLI versions)
+    if (!getConfig().email) {
+        try {
+            const res = await apiRequest('/api/me')
+            if (res.ok) {
+                const data = await res.json()
+                if (data.user?.email) {
+                    setUser(data.user.id, data.user.email)
+                }
+            }
+        } catch {}
     }
 
     // Screen 2: Main Menu (loops until Esc or Log Out)

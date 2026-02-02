@@ -32,11 +32,11 @@ export function renderHeader(email?: string, credits?: number) {
     clearScreen()
     console.log()
     console.log(brand(`           ${APP_NAME.split('').map(c => c.toUpperCase()).join(' ')}`))
-    if (email) {
-        const creditDisplay = credits !== undefined
-            ? (credits < 100 ? chalk.yellow(`${credits} credits`) : `${credits} credits`)
-            : ''
-        const infoParts = [email, creditDisplay, `v${APP_VERSION}`].filter(Boolean)
+    const creditDisplay = credits !== undefined
+        ? (credits < 100 ? chalk.yellow(`${credits} credits`) : `${credits} credits`)
+        : ''
+    const infoParts = [email, creditDisplay, `v${APP_VERSION}`].filter(Boolean)
+    if (infoParts.length > 0) {
         console.log(subtext(`       ${infoParts.join(' · ')}`))
     } else {
         console.log(subtext(`       ${APP_TAGLINE}`))
