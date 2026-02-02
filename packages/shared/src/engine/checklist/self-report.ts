@@ -176,6 +176,15 @@ function shouldShowInformationalRule(ruleId: string, input: HardRulesInput): boo
         case 'info_b2b_distribution':
             return /\b(enterprise|business|b2b|corporate|internal)\b/.test(desc) || category === 'business';
 
+        case 'info_age_rating_questionnaire':
+            return true; // Universal — all apps need the updated questionnaire
+
+        case 'info_sdk_minimum_2026':
+            return true; // Universal — all apps need Xcode 16 by April 2026
+
+        case 'info_privacy_manifest_deadline':
+            return true; // Universal — all apps using third-party SDKs
+
         default:
             return true; // Unknown rules default to showing
     }

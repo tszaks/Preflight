@@ -59,6 +59,24 @@ const ITEMS = [
         label: 'Crypto / NFTs',
         desc: 'Does your app let users buy, sell, or trade cryptocurrency or NFTs?',
         icon: ShieldAlert
+    },
+    {
+        id: 'miniApps',
+        label: 'Mini Apps / Plugins',
+        desc: 'Does your app host mini games, chatbots, HTML5 games, or plugins?',
+        icon: ShieldAlert
+    },
+    {
+        id: 'euDistribution',
+        label: 'Available in the EU',
+        desc: 'Is your app distributed on the EU App Store?',
+        icon: ShieldAlert
+    },
+    {
+        id: 'externalPayments',
+        label: 'External Payment Links (US)',
+        desc: 'Do you link users to pay for digital goods outside of Apple?',
+        icon: ShoppingCart
     }
 ]
 
@@ -77,6 +95,34 @@ const CONDITIONAL_ITEMS = [
         desc: 'Apple requires this! Is there a "Restore Purchases" button for returning users?',
         icon: ShoppingCart,
         showWhen: (v: any) => v.iap === true || v.subscriptions === true
+    },
+    {
+        id: 'creatorAgeGate',
+        label: 'Creator Age Verification',
+        desc: 'Do you verify content creators are at least 13 years old?',
+        icon: Users,
+        showWhen: (v: any) => v.ugc === true
+    },
+    {
+        id: 'miniAppsReviewed',
+        label: 'Mini Apps Individually Reviewed',
+        desc: 'Have all mini apps/plugins been submitted for individual Apple review?',
+        icon: ShieldAlert,
+        showWhen: (v: any) => v.miniApps === true
+    },
+    {
+        id: 'euTraderDeclared',
+        label: 'EU Trader Status Declared',
+        desc: 'Have you declared your trader status in App Store Connect? (EU DSA)',
+        icon: ShieldAlert,
+        showWhen: (v: any) => v.euDistribution === true
+    },
+    {
+        id: 'externalLinkCompliant',
+        label: 'External Link API Compliance',
+        desc: 'Do you use StoreKit External Link Account API with Apple\'s disclosure?',
+        icon: ShoppingCart,
+        showWhen: (v: any) => v.externalPayments === true
     }
 ]
 
