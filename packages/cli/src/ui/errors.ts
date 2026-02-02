@@ -15,6 +15,7 @@ const KNOWN_COMMANDS = [
     { name: 'history', description: 'List past submissions' },
     { name: 'setup', description: 'Run guided setup' },
     { name: 'asc', description: 'App Store Connect integration' },
+    { name: 'update', description: 'Update to the latest version' },
 ]
 
 // Levenshtein distance for fuzzy matching

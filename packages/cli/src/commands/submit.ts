@@ -285,54 +285,39 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         return
     }
 
-    // Review depth gate (only in interactive/menu mode)
+    // Collect app details and compliance
     let appDetails: AppDetails | null = null
     let compliance: ComplianceData | null = null
 
     if (fromMenu) {
-        const reviewType = await ui.select<'quick' | 'full'>({
-            message: 'What would you like to include in your review?',
-            options: [
-                { value: 'quick', label: 'Quick review (just analyze my project files)', hint: 'Fastest option' },
-                { value: 'full', label: 'Full review (add app details + compliance info)', hint: 'More thorough' },
-            ],
-        })
-
-        if (reviewType === null) {
-            if (fromMenu) await offerDraftSave(draftState)
+        // App Details
+        appDetails = await collectAppDetails(projectName)
+        if (appDetails === null) {
+            await offerDraftSave(draftState)
             return
         }
+        appName = appDetails.appName
+        draftState.appName = appName
+        draftState.description = appDetails.description
+        draftState.keywords = appDetails.keywords
+        draftState.category = appDetails.category
+        draftState.supportUrl = appDetails.supportUrl
+        draftState.promotionalText = appDetails.promotionalText
+        draftState.marketingUrl = appDetails.marketingUrl
+        draftState.signInRequired = appDetails.signInRequired
+        draftState.demoUsername = appDetails.demoUsername
+        draftState.demoPassword = appDetails.demoPassword
 
-        if (reviewType === 'full') {
-            // App Details
-            appDetails = await collectAppDetails(projectName)
-            if (appDetails === null) {
-                if (fromMenu) await offerDraftSave(draftState)
-                return
-            }
-            appName = appDetails.appName
-            draftState.appName = appName
-            draftState.description = appDetails.description
-            draftState.keywords = appDetails.keywords
-            draftState.category = appDetails.category
-            draftState.supportUrl = appDetails.supportUrl
-            draftState.promotionalText = appDetails.promotionalText
-            draftState.marketingUrl = appDetails.marketingUrl
-            draftState.signInRequired = appDetails.signInRequired
-            draftState.demoUsername = appDetails.demoUsername
-            draftState.demoPassword = appDetails.demoPassword
+        // ASC Autofill — offer after collecting details
+        appDetails = await offerAscAutofill(appDetails)
 
-            // ASC Autofill (Phase 3) — offer after collecting details
-            appDetails = await offerAscAutofill(appDetails)
-
-            // Compliance
-            compliance = await collectCompliance()
-            if (compliance === null) {
-                if (fromMenu) await offerDraftSave(draftState)
-                return
-            }
-            draftState.compliance = compliance
+        // Compliance
+        compliance = await collectCompliance()
+        if (compliance === null) {
+            await offerDraftSave(draftState)
+            return
         }
+        draftState.compliance = compliance
     }
 
     // Summary confirmation

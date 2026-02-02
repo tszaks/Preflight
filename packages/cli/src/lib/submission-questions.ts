@@ -192,25 +192,6 @@ export function calculateAgeRating(answers: AgeRatingAnswers): string {
 // ─── Collect App Details ─────────────────────────────────────────────────
 
 export async function collectAppDetails(projectName: string, defaults?: Partial<AppDetails>): Promise<AppDetails | null> {
-    // When resuming a draft, skip the gate question and go straight to filling
-    if (!defaults) {
-        const skipGate = await ui.select<'fill' | 'skip'>({
-            message: 'App Details (you can always add these later on the web)',
-            options: [
-                { value: 'fill', label: 'Fill in now', hint: 'Name, description, keywords, category' },
-                { value: 'skip', label: 'Skip for now', hint: 'Just use the project name' },
-            ],
-        })
-
-        if (skipGate === null) return null
-        if (skipGate === 'skip') {
-            return {
-                appName: projectName,
-                signInRequired: false,
-            }
-        }
-    }
-
     const defaultName = defaults?.appName || projectName
 
     // App Name (required, pre-filled from project or draft)
