@@ -164,6 +164,58 @@ export async function ascStatusCommand() {
     }
 }
 
+// ─── Refresh ASC Data ──────────────────────────────────────────────
+
+export async function ascRefreshCommand() {
+    const s = ui.spinner()
+    s.start('Checking App Store Connect...')
+
+    try {
+        // First check if connected
+        const statusRes = await apiRequest('/api/asc/connect')
+        const statusData = await statusRes.json()
+
+        if (!statusRes.ok || !statusData.connected) {
+            s.stop('Not connected')
+            ui.log.warning('App Store Connect is not connected.')
+            console.log(subtext(`  Run ${brand('preflight asc connect')} to set up.`))
+            console.log()
+            return
+        }
+
+        s.message = 'Pulling latest data from App Store Connect...'
+
+        // Call autofill to refresh metadata
+        const res = await apiRequest('/api/asc/autofill', {
+            method: 'POST',
+            body: JSON.stringify({ appId: statusData.appId }),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+            s.stop('Refresh failed')
+            ui.log.error(data.message || 'Could not refresh data from App Store Connect')
+            return
+        }
+
+        s.stop('Data refreshed!')
+        console.log()
+
+        // Show what was pulled
+        if (data.app_name) console.log(`  App:          ${brand(data.app_name)}`)
+        if (data.description) console.log(`  Description:  ${subtext(data.description.slice(0, 60) + (data.description.length > 60 ? '...' : ''))}`)
+        if (data.keywords) console.log(`  Keywords:     ${subtext(data.keywords.slice(0, 60) + (data.keywords.length > 60 ? '...' : ''))}`)
+        if (data.category) console.log(`  Category:     ${subtext(data.category)}`)
+        if (data.support_url) console.log(`  Support URL:  ${subtext(data.support_url)}`)
+        console.log()
+        ui.log.success('This data will autofill your next submission.')
+        console.log()
+    } catch (err) {
+        s.stop('Refresh failed')
+        ui.log.error(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    }
+}
+
 // ─── Disconnect ASC ─────────────────────────────────────────────────────
 
 export async function ascDisconnectCommand() {
@@ -197,10 +249,11 @@ export async function ascDisconnectCommand() {
 
 export async function ascInteractiveMenu() {
     while (true) {
-        const choice = await ui.select<'connect' | 'status' | 'disconnect' | 'back'>({
+        const choice = await ui.select<'connect' | 'refresh' | 'status' | 'disconnect' | 'back'>({
             message: 'App Store Connect',
             options: [
                 { value: 'connect', label: 'Connect', hint: 'Set up API key' },
+                { value: 'refresh', label: 'Refresh', hint: 'Pull latest data from ASC' },
                 { value: 'status', label: 'View Status', hint: 'Check connection' },
                 { value: 'disconnect', label: 'Disconnect', hint: 'Remove API key' },
                 { value: 'back', label: 'Back to menu' },
@@ -212,6 +265,9 @@ export async function ascInteractiveMenu() {
         switch (choice) {
             case 'connect':
                 await ascConnectCommand()
+                break
+            case 'refresh':
+                await ascRefreshCommand()
                 break
             case 'status':
                 await ascStatusCommand()
