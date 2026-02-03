@@ -1,4 +1,7 @@
 import { Command } from 'commander'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 import { loginCommand } from './commands/login.js'
 import { logoutCommand } from './commands/logout.js'
 import { whoamiCommand } from './commands/whoami.js'
@@ -19,12 +22,17 @@ import { apiRequest } from './lib/api-client.js'
 import * as ui from './ui/interactive.js'
 import { subtext } from './ui/theme.js'
 
+// Get version from package.json dynamically
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'))
+
 const program = new Command()
 
 program
     .name('preflight')
     .description('Preflight - App Store Review Scanner')
-    .version('0.2.14')
+    .version(pkg.version)
 
 // Auth commands
 program
@@ -173,7 +181,7 @@ async function interactiveMenu() {
                     setUser(data.user.id, data.user.email)
                 }
             }
-        } catch {}
+        } catch { }
     }
 
     // Screen 2: Main Menu (loops until Esc or Log Out)
