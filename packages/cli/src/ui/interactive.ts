@@ -151,3 +151,7 @@ export function note(message: string, title?: string) {
 
 // Check if user cancelled
 export { isCancel } from '@clack/prompts'
+
+// Path input prompt (with optional Finder browser on macOS)
+// Re-export from file-picker for convenience
+export { promptForPath } from '../lib/file-picker.js'

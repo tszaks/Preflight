@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { join, basename, dirname, resolve } from 'node:path'
 import { homedir, platform } from 'node:os'
 import { getLastScannedPath } from './config.js'
+import { browseForFolder, shortenPath, promptForPath } from './file-picker.js'
 import * as ui from '../ui/interactive.js'
 
 export interface FoundProject {
@@ -153,23 +154,7 @@ export function findProjectInDir(dir: string): FoundProject | null {
     return null
 }
 
-// Open native macOS Finder folder picker
-export function browseWithFinder(): string | null {
-    if (platform() !== 'darwin') return null
 
-    try {
-        const result = execFileSync('osascript', [
-            '-e', 'POSIX path of (choose folder with prompt "Select your Xcode project folder")',
-        ], { encoding: 'utf-8', timeout: 120000 })
-
-        const path = result.trim()
-        // Remove trailing slash if present
-        return path.endsWith('/') ? path.slice(0, -1) : path
-    } catch {
-        // User cancelled or osascript failed
-        return null
-    }
-}
 
 // Build a list of project choices for interactive selection
 export function buildProjectChoices(
@@ -256,7 +241,7 @@ export async function interactiveProjectSelect(): Promise<string | null> {
     if (selected === null) return null
 
     if (selected === '__finder__') {
-        const finderPath = browseWithFinder()
+        const finderPath = browseForFolder('Select your Xcode project folder')
         if (!finderPath) return null
         return finderPath
     }
@@ -278,11 +263,3 @@ async function promptForManualPath(): Promise<string | null> {
     })
 }
 
-// Shorten path for display (replace home dir with ~)
-function shortenPath(p: string): string {
-    const home = homedir()
-    if (p.startsWith(home)) {
-        return '~' + p.slice(home.length)
-    }
-    return p
-}
