@@ -166,3 +166,21 @@ export { isCancel } from '@clack/prompts'
 // Path input prompt (with optional Finder browser on macOS)
 // Re-export from file-picker for convenience
 export { promptForPath } from '../lib/file-picker.js'
+
+// Wait for any keypress to continue
+export async function keypress(message = 'Press Enter to continue...'): Promise<void> {
+    console.log(subtext(`  ${message}`))
+    return new Promise((resolve) => {
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode(true)
+            process.stdin.resume()
+            process.stdin.once('data', () => {
+                process.stdin.setRawMode(false)
+                process.stdin.pause()
+                resolve()
+            })
+        } else {
+            resolve()
+        }
+    })
+}
