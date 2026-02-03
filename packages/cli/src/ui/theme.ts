@@ -78,7 +78,7 @@ export function formatBytes(bytes: number): string {
 }
 
 // App version string
-export const APP_VERSION = '0.2.13'
+export const APP_VERSION = '2.14.0'
 export const APP_NAME = 'Preflight'
 export const APP_TAGLINE = 'App Store Review Scanner'
 
