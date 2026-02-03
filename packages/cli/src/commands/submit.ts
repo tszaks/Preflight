@@ -8,6 +8,7 @@ import { loginWithBrowser } from '../lib/auth.js'
 import { createSpinner } from '../ui/spinner.js'
 import { renderReport } from '../ui/report.js'
 import { interactiveProjectSelect } from '../lib/project-finder.js'
+import { promptForPath } from '../lib/file-picker.js'
 import { promptLogin } from '../ui/errors.js'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext, formatBytes, icons } from '../ui/theme.js'
@@ -280,15 +281,17 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
     // If no screenshots found, ask user for a path
     if (detected.screenshots.length === 0 && fromMenu) {
-        const screenshotPath = await ui.text({
-            message: 'Screenshots folder path (press Enter to skip)',
+        const screenshotPath = await promptForPath({
+            message: 'Where are your screenshots?',
+            type: 'folder',
+            allowSkip: true,
             placeholder: 'e.g. ~/Desktop/screenshots',
         })
         if (screenshotPath === null) {
             await offerDraftSave(draftState)
             return
         }
-        if (screenshotPath.trim()) {
+        if (typeof screenshotPath === 'string' && screenshotPath.trim()) {
             const resolved = resolve(screenshotPath.trim().replace(/^~/, process.env.HOME || ''))
             if (existsSync(resolved)) {
                 const imageExts = ['.png', '.jpg', '.jpeg']
