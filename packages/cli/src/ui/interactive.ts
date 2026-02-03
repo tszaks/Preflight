@@ -63,13 +63,16 @@ export function keyboardHints(hints: string) {
 }
 
 // Select menu with cancel detection
+// Select menu with cancel detection
 export async function select<T extends string>(opts: {
     message: string
     options: Array<{ value: T; label: string; hint?: string }>
+    initialValue?: T
 }): Promise<T | null> {
     const result = await p.select({
         message: opts.message,
         options: opts.options as Array<{ value: string; label?: string; hint?: string }>,
+        initialValue: opts.initialValue,
     })
     if (p.isCancel(result)) {
         return null
@@ -78,15 +81,18 @@ export async function select<T extends string>(opts: {
 }
 
 // Multiselect with cancel detection
+// Multiselect with cancel detection
 export async function multiselect<T extends string>(opts: {
     message: string
     options: Array<{ value: T; label: string; hint?: string }>
     required?: boolean
+    initialValue?: T[]
 }): Promise<T[] | null> {
     const result = await p.multiselect({
         message: opts.message,
         options: opts.options as Array<{ value: string; label?: string; hint?: string }>,
         required: opts.required ?? false,
+        initialValue: opts.initialValue,
     })
     if (p.isCancel(result)) {
         return null
@@ -118,11 +124,17 @@ export async function text(opts: {
 }
 
 // Password input with cancel detection
+// Password input with cancel detection
 export async function password(opts: {
     message: string
+    defaultValue?: string
     validate?: (value: string | undefined) => string | Error | undefined
 }): Promise<string | null> {
-    const result = await p.password({ message: opts.message, validate: opts.validate })
+    const result = await p.password({
+        message: opts.message,
+        defaultValue: opts.defaultValue,
+        validate: opts.validate,
+    })
     if (p.isCancel(result)) {
         return null
     }
