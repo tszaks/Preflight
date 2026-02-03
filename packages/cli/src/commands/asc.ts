@@ -183,7 +183,7 @@ export async function ascRefreshCommand() {
             return
         }
 
-        s.message = 'Pulling latest data from App Store Connect...'
+        s.message('Pulling latest data from App Store Connect...')
 
         // Call autofill to refresh metadata
         const res = await apiRequest('/api/asc/autofill', {

@@ -92,7 +92,7 @@ export async function multiselect<T extends string>(opts: {
         message: opts.message,
         options: opts.options as Array<{ value: string; label?: string; hint?: string }>,
         required: opts.required ?? false,
-        initialValue: opts.initialValue,
+        initialValues: opts.initialValue,
     })
     if (p.isCancel(result)) {
         return null
@@ -132,7 +132,6 @@ export async function password(opts: {
 }): Promise<string | null> {
     const result = await p.password({
         message: opts.message,
-        defaultValue: opts.defaultValue,
         validate: opts.validate,
     })
     if (p.isCancel(result)) {
