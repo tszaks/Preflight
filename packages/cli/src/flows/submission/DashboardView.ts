@@ -94,6 +94,19 @@ export class DashboardView {
         console.log(brand(`  ◆ Submission: ${projectName}`))
         console.log()
 
+        // Contextual guidance message
+        if (completedCount === 0) {
+            console.log(chalk.cyan('    ℹ Complete the steps below to get an AI review of your app.'))
+            console.log(chalk.dim('      We\'ll check for App Store guideline issues before you submit to Apple.'))
+            console.log()
+        } else if (!requiredComplete) {
+            console.log(chalk.cyan(`    ℹ Complete the required steps to continue.`))
+            console.log()
+        } else {
+            console.log(chalk.green('    ✓ Ready to submit! All required steps complete.'))
+            console.log()
+        }
+
         // Progress indicator
         const progressBar = sections.map(s => s.complete ? chalk.green('●') : chalk.dim('○')).join(' ')
         console.log(`    Progress: ${progressBar}  ${chalk.dim(`(${completedCount}/${sections.length})`)}`)
