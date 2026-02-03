@@ -283,41 +283,57 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     if (detected.screenshots.length === 0 && fromMenu) {
         const screenshotPath = await promptForPath({
             message: 'Where are your screenshots?',
-            type: 'folder',
+            type: 'files',
+            fileTypes: ['public.png', 'public.jpeg'],
             allowSkip: true,
-            placeholder: 'e.g. ~/Desktop/screenshots',
+            placeholder: 'e.g. ~/Desktop/screenshots or select individual .png files',
         })
         if (screenshotPath === null) {
             await offerDraftSave(draftState)
             return
         }
-        if (typeof screenshotPath === 'string' && screenshotPath.trim()) {
+
+        let filesToProcess: string[] = []
+
+        // Handle array response (from file browser)
+        if (Array.isArray(screenshotPath)) {
+            filesToProcess = screenshotPath
+        }
+        // Handle string response (manual folder path entry)
+        else if (typeof screenshotPath === 'string' && screenshotPath.trim()) {
             const resolved = resolve(screenshotPath.trim().replace(/^~/, process.env.HOME || ''))
             if (existsSync(resolved)) {
-                const imageExts = ['.png', '.jpg', '.jpeg']
-                try {
-                    const files = readdirSync(resolved)
-                        .filter(f => imageExts.includes(extname(f).toLowerCase()))
-                        .map(f => join(resolved, f))
-                    for (let i = 0; i < Math.min(files.length, 10); i++) {
-                        filesToUpload.push({
-                            type: 'screenshot',
-                            index: i,
-                            filename: basename(files[i]),
-                            path: files[i],
-                        })
+                const stats = statSync(resolved)
+                // If it's a directory, read images from it
+                if (stats.isDirectory()) {
+                    const imageExts = ['.png', '.jpg', '.jpeg']
+                    try {
+                        filesToProcess = readdirSync(resolved)
+                            .filter(f => imageExts.includes(extname(f).toLowerCase()))
+                            .map(f => join(resolved, f))
+                    } catch {
+                        ui.log.warning('Could not read that directory.')
                     }
-                    if (files.length > 0) {
-                        ui.log.success(`Found ${files.length} screenshot${files.length === 1 ? '' : 's'}`)
-                    } else {
-                        ui.log.info('No images found in that folder.')
-                    }
-                } catch {
-                    ui.log.warning('Could not read that directory.')
+                } else if (imageExts.includes(extname(resolved).toLowerCase())) {
+                    // If it's a single file, add it
+                    filesToProcess = [resolved]
                 }
             } else {
-                ui.log.warning('Folder not found. Continuing without screenshots.')
+                ui.log.warning('Folder/file not found. Continuing without screenshots.')
             }
+        }
+
+        // Add files to upload (max 10)
+        for (let i = 0; i < Math.min(filesToProcess.length, 10); i++) {
+            filesToUpload.push({
+                type: 'screenshot',
+                index: i,
+                filename: basename(filesToProcess[i]),
+                path: filesToProcess[i],
+            })
+        }
+        if (filesToProcess.length > 0) {
+            ui.log.success(`Found ${filesToProcess.length} screenshot${filesToProcess.length === 1 ? '' : 's'}`)
         }
     }
 

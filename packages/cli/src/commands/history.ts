@@ -223,7 +223,26 @@ export async function interactiveHistory(): Promise<void> {
                 reportSpinner.stop('Failed to load report')
             }
 
-            // After viewing, loop back to list
+            // Offer actions after viewing report
+            const { reportRejection } = await import('./rejection.js')
+            const action = await ui.select<'rejection' | 'back'>(
+                {
+                    message: 'What would you like to do?',
+                    options: [
+                        {
+                            value: 'rejection',
+                            label: 'Report Apple rejection',
+                            hint: 'Get 100 credits refunded',
+                        },
+                        { value: 'back', label: 'Back to list', hint: '' },
+                    ],
+                }
+            )
+
+            if (action === 'rejection') {
+                await reportRejection(sub.id)
+            }
+            // After action or back, loop back to list
         }
     } catch (err) {
         s.stop('Failed to load reviews')

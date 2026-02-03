@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      apple_rejections: {
+        Row: {
+          id: string
+          submission_id: string
+          user_id: string
+          rejection_date: string
+          rejection_reason: string
+          guideline_violated: string | null
+          apple_message: string | null
+          reported_at: string
+          credits_refunded: number
+          pattern_feedback_processed: boolean
+        }
+        Insert: {
+          id?: string
+          submission_id: string
+          user_id: string
+          rejection_date: string
+          rejection_reason: string
+          guideline_violated?: string | null
+          apple_message?: string | null
+          reported_at?: string
+          credits_refunded?: number
+          pattern_feedback_processed?: boolean
+        }
+        Update: {
+          id?: string
+          submission_id?: string
+          user_id?: string
+          rejection_date?: string
+          rejection_reason?: string
+          guideline_violated?: string | null
+          apple_message?: string | null
+          reported_at?: string
+          credits_refunded?: number
+          pattern_feedback_processed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apple_rejections_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apple_rejections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asc_connections: {
         Row: {
           id: string
