@@ -23,18 +23,22 @@ When CLI code changes are committed and pushed:
    git push origin main
    ```
 
-3. **Publish to npm (from terminal — requires biometric auth):**
+3. **Publish to npm (from terminal — ALWAYS requires biometric login):**
    ```bash
    cd ~/Projects/Preflight/packages/cli
    npm publish --access public
    ```
-   Browser will prompt for fingerprint/Face ID. You must run this from your terminal, not Claude Code.
+   **CRITICAL:** There is NO OTP. NPM requires you to LOGIN with biometric auth (Face ID/fingerprint) EVERY SINGLE TIME. You must run this from your terminal—Claude Code cannot complete this step. Wait for the browser login prompt and authenticate with your device.
 
 ### Version Bump Strategy
 
-- **Patch (0.x.Y):** Bug fixes, small enhancements, dependency updates
-- **Minor (0.X.0):** New features (like file picker integration)
-- **Major (X.0.0):** Breaking changes
+⚠️ **CRITICAL CONSTRAINT:** **ONLY bump PATCH versions (X.Y.Z → X.Y.Z+1) UNLESS Tyler explicitly grants permission.**
+
+- **Patch (X.Y.Z+1):** Bug fixes, small UX improvements, minor enhancements — DEFAULT, always allowed
+- **Minor (X.Y+1.0):** New features — **REQUIRES explicit Tyler approval** ("you can bump minor" or "update to X.Y+1")
+- **Major (X+1.0.0):** Breaking changes — **REQUIRES explicit Tyler approval** ("update major version")
+
+**If uncertain:** Ask Tyler first. Do not assume permission to bump minor/major.
 
 ### Verify Publication
 
