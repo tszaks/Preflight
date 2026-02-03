@@ -396,8 +396,9 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         })
     }
 
-    // If no screenshots found, ask user to choose how to provide them
-    if (detected.screenshots.length === 0 && fromMenu) {
+    // If no screenshots found and NOT from menu, ask user to choose how to provide them
+    // When fromMenu is true, ScreenshotsStep will handle this interactively
+    if (detected.screenshots.length === 0 && !fromMenu) {
         const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip'>({
             message: 'How do you want to provide screenshots?',
             options: [
