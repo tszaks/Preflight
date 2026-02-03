@@ -70,14 +70,17 @@ export async function updateCommand() {
     if (!latest) {
         s.stop(messages.noRegistry)
         ui.log.error('Failed to reach npm registry. Check your internet connection.')
+        console.log()
+        await ui.keypress('Press Enter to continue...')
         return
     }
 
     if (compareSemver(current, latest) >= 0) {
         s.stop(`Latest: ${brand(`v${latest}`)}`)
         console.log()
-        console.log(`  ${brand('Preflight')} is up to date.`)
+        ui.log.success('Preflight is up to date.')
         console.log()
+        await ui.keypress('Press Enter to continue...')
         return
     }
 
@@ -86,6 +89,14 @@ export async function updateCommand() {
     console.log()
     console.log(`  ${brandDim(`v${current}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
     console.log()
+
+    const shouldInstall = await ui.confirm('Install update now?')
+    if (!shouldInstall) {
+        console.log()
+        console.log(subtext(`  Run later: npm install -g preflightlaunch@latest`))
+        console.log()
+        return
+    }
 
     // Step 3: Install
     s.start(messages.installing)
