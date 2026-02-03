@@ -6,7 +6,13 @@ export type StepResult =
     | { action: 'cancel' }
     | { action: 'save_draft' }
 
+export interface FlowContext {
+    email?: string
+    credits?: number
+}
+
 export interface SubmissionStep {
     name: string
-    run(state: DraftState): Promise<StepResult>
+    run(state: DraftState, context?: FlowContext): Promise<StepResult>
 }
+

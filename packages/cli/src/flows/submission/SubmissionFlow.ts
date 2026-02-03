@@ -1,10 +1,11 @@
 import * as ui from '../../ui/interactive.js'
-import { SubmissionStep, StepResult } from './BaseStep.js'
+import { SubmissionStep, StepResult, FlowContext } from './BaseStep.js'
 import { DraftState, FileToUpload } from './types.js'
 import { DashboardView, DashboardAction } from './DashboardView.js'
 
 export class SubmissionFlow {
     private steps: Map<string, SubmissionStep> = new Map()
+    private context: FlowContext
 
     constructor(
         private state: DraftState,
@@ -12,8 +13,11 @@ export class SubmissionFlow {
         private projectName: string,
         private ascEmail: string | undefined,
         private credits: number | undefined,
-        private saveDraftCallback: (state: DraftState) => Promise<void>
-    ) { }
+        private saveDraftCallback: (state: DraftState) => Promise<void>,
+        private userEmail?: string
+    ) {
+        this.context = { email: userEmail, credits }
+    }
 
     addStep(id: string, step: SubmissionStep) {
         this.steps.set(id, step)
@@ -23,7 +27,7 @@ export class SubmissionFlow {
         const dashboard = new DashboardView(this.state, this.filesToUpload, this.ascEmail)
 
         while (true) {
-            const action = await dashboard.render(this.projectName, this.ascEmail, this.credits)
+            const action = await dashboard.render(this.projectName, this.context.email, this.context.credits)
 
             switch (action) {
                 case 'save_draft':
@@ -32,10 +36,11 @@ export class SubmissionFlow {
                     return 'cancelled'
 
                 case 'review':
-                    // Run review step
+                    // Run review step with header
                     const reviewStep = this.steps.get('review')
                     if (reviewStep) {
-                        const result = await reviewStep.run(this.state)
+                        ui.renderHeader(this.context.email, this.context.credits)
+                        const result = await reviewStep.run(this.state, this.context)
                         if (result.action === 'next') {
                             return 'completed' // Submit!
                         }
@@ -64,11 +69,13 @@ export class SubmissionFlow {
             return
         }
 
+        // Render header before each section
+        ui.renderHeader(this.context.email, this.context.credits)
         console.log()
         ui.log.step(step.name)
         console.log()
 
-        const result = await step.run(this.state)
+        const result = await step.run(this.state, this.context)
 
         switch (result.action) {
             case 'next':
@@ -88,3 +95,4 @@ export class SubmissionFlow {
         // All paths return to dashboard
     }
 }
+
