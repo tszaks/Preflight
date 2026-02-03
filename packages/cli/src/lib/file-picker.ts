@@ -76,21 +76,29 @@ export function browseForFiles(
     if (!isPickerAvailable()) return null
 
     try {
-        let command = `POSIX path of (choose file with prompt "${escapeAppleScript(prompt)}" with multiple selections allowed`
+        // Build AppleScript with proper list iteration
+        let command = `set theFiles to (choose file with prompt "${escapeAppleScript(prompt)}" with multiple selections allowed`
 
         if (fileTypes && fileTypes.length > 0) {
             const typeList = fileTypes.map(t => `"${t}"`).join(', ')
             command += ` of type {${typeList}}`
         }
 
-        command += ')'
+        command += `)\n`
+        command += `set theResult to {}\n`
+        command += `repeat with aFile in theFiles\n`
+        command += `    set end of theResult to POSIX path of aFile\n`
+        command += `end repeat\n`
+        command += `set AppleScript's text item delimiters to linefeed\n`
+        command += `theResult as text`
 
         const result = execFileSync('osascript', ['-e', command], {
             encoding: 'utf-8',
             timeout: 120000,
         })
 
-        return result.trim().split(', ')
+        // Split by newlines instead of commas
+        return result.trim().split('\n').filter(line => line.length > 0)
     } catch {
         // User cancelled or osascript failed
         return null
