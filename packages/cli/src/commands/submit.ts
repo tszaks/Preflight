@@ -296,11 +296,11 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
     // If no screenshots found, ask user to choose how to provide them
     if (detected.screenshots.length === 0 && fromMenu) {
-        const screenshotChoice = await ui.select<'files' | 'folder' | 'skip'>({
+        const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip'>({
             message: 'How do you want to provide screenshots?',
             options: [
-                { value: 'files', label: 'Select individual files...', hint: 'Pick specific screenshots' },
-                { value: 'folder', label: 'Select a folder...', hint: 'All images in a folder' },
+                { value: 'manual', label: 'Enter path manually', hint: 'Type or paste file/folder path' },
+                { value: 'browse', label: 'Browse with Finder...', hint: 'Choose files or folder' },
                 { value: 'skip', label: 'Skip', hint: 'Continue without screenshots' },
             ],
         })
@@ -311,64 +311,134 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 return
             }
             // Skip mode - continue without screenshots
-        } else if (screenshotChoice === 'folder') {
-            // Folder selection mode
-            const folderPath = await promptForPath({
-                message: 'Select folder containing screenshots',
-                type: 'folder',
-                allowSkip: false,
+        } else if (screenshotChoice === 'manual') {
+            // Manual path entry
+            const manualPath = await ui.text({
+                message: 'Enter screenshot path (file or folder)',
+                placeholder: '/path/to/screenshots',
+                validate: (val) => {
+                    if (!val?.trim()) return 'Path is required'
+                    const resolved = resolve(val.replace(/^~/, process.env.HOME || ''))
+                    if (!existsSync(resolved)) return 'Path does not exist'
+                    return true
+                },
             })
 
-            if (folderPath && typeof folderPath === 'string') {
-                const resolved = resolve(folderPath.replace(/^~/, process.env.HOME || ''))
-                if (existsSync(resolved)) {
-                    const imageExts = ['.png', '.jpg', '.jpeg']
-                    try {
-                        const foundFiles = readdirSync(resolved)
-                            .filter(f => imageExts.includes(extname(f).toLowerCase()))
-                            .map(f => join(resolved, f))
-
-                        // Add files to upload (max 10)
-                        for (let i = 0; i < Math.min(foundFiles.length, 10); i++) {
-                            filesToUpload.push({
-                                type: 'screenshot',
-                                index: i,
-                                filename: basename(foundFiles[i]),
-                                path: foundFiles[i],
-                            })
-                        }
-                        if (foundFiles.length > 0) {
-                            ui.log.success(`Found ${foundFiles.length} screenshot${foundFiles.length === 1 ? '' : 's'}`)
-                        } else {
-                            ui.log.warning('No images found in that folder.')
-                        }
-                    } catch {
-                        ui.log.warning('Could not read that folder.')
-                    }
-                } else {
-                    ui.log.warning('Folder not found.')
-                }
+            if (manualPath === null) {
+                await offerDraftSave(draftState)
+                return
             }
-        } else {
-            // File selection mode
-            const screenshotPath = await promptForPath({
-                message: 'Select screenshot files',
-                type: 'files',
-                fileTypes: ['public.png', 'public.jpeg'],
-                allowSkip: false,
-            })
 
-            if (screenshotPath && Array.isArray(screenshotPath)) {
-                // Add files to upload (max 10)
-                for (let i = 0; i < Math.min(screenshotPath.length, 10); i++) {
+            const resolved = resolve(manualPath.replace(/^~/, process.env.HOME || ''))
+            const stats = statSync(resolved)
+
+            if (stats.isDirectory()) {
+                // Handle as folder
+                const imageExts = ['.png', '.jpg', '.jpeg']
+                const foundFiles = readdirSync(resolved)
+                    .filter(f => imageExts.includes(extname(f).toLowerCase()))
+                    .map(f => join(resolved, f))
+
+                for (let i = 0; i < Math.min(foundFiles.length, 10); i++) {
                     filesToUpload.push({
                         type: 'screenshot',
                         index: i,
-                        filename: basename(screenshotPath[i]),
-                        path: screenshotPath[i],
+                        filename: basename(foundFiles[i]),
+                        path: foundFiles[i],
                     })
                 }
-                ui.log.success(`Found ${screenshotPath.length} screenshot${screenshotPath.length === 1 ? '' : 's'}`)
+
+                if (foundFiles.length > 0) {
+                    ui.log.success(`Found ${foundFiles.length} screenshot${foundFiles.length === 1 ? '' : 's'}`)
+                } else {
+                    ui.log.warning('No images found in that folder.')
+                }
+            } else {
+                // Handle as single file
+                if (['.png', '.jpg', '.jpeg'].includes(extname(resolved).toLowerCase())) {
+                    filesToUpload.push({
+                        type: 'screenshot',
+                        index: 0,
+                        filename: basename(resolved),
+                        path: resolved,
+                    })
+                    ui.log.success('Added 1 screenshot')
+                } else {
+                    ui.log.warning('File is not an image (must be PNG/JPEG)')
+                }
+            }
+        } else if (screenshotChoice === 'browse') {
+            // Browse sub-menu
+            const browseChoice = await ui.select<'files' | 'folder' | 'back'>({
+                message: 'Browse for screenshots',
+                options: [
+                    { value: 'files', label: 'Select files...', hint: 'Pick specific screenshots' },
+                    { value: 'folder', label: 'Select folder...', hint: 'All images in a folder' },
+                    { value: 'back', label: 'Back', hint: 'Return to main menu' },
+                ],
+            })
+
+            if (browseChoice === null || browseChoice === 'back') {
+                // User cancelled or went back - fall through to empty check
+            } else if (browseChoice === 'folder') {
+                // Folder selection mode
+                const folderPath = await promptForPath({
+                    message: 'Select folder containing screenshots',
+                    type: 'folder',
+                    allowSkip: false,
+                })
+
+                if (folderPath && typeof folderPath === 'string') {
+                    const resolved = resolve(folderPath.replace(/^~/, process.env.HOME || ''))
+                    if (existsSync(resolved)) {
+                        const imageExts = ['.png', '.jpg', '.jpeg']
+                        try {
+                            const foundFiles = readdirSync(resolved)
+                                .filter(f => imageExts.includes(extname(f).toLowerCase()))
+                                .map(f => join(resolved, f))
+
+                            // Add files to upload (max 10)
+                            for (let i = 0; i < Math.min(foundFiles.length, 10); i++) {
+                                filesToUpload.push({
+                                    type: 'screenshot',
+                                    index: i,
+                                    filename: basename(foundFiles[i]),
+                                    path: foundFiles[i],
+                                })
+                            }
+                            if (foundFiles.length > 0) {
+                                ui.log.success(`Found ${foundFiles.length} screenshot${foundFiles.length === 1 ? '' : 's'}`)
+                            } else {
+                                ui.log.warning('No images found in that folder.')
+                            }
+                        } catch {
+                            ui.log.warning('Could not read that folder.')
+                        }
+                    } else {
+                        ui.log.warning('Folder not found.')
+                    }
+                }
+            } else {
+                // File selection mode
+                const screenshotPath = await promptForPath({
+                    message: 'Select screenshot files',
+                    type: 'files',
+                    fileTypes: ['public.png', 'public.jpeg'],
+                    allowSkip: false,
+                })
+
+                if (screenshotPath && Array.isArray(screenshotPath)) {
+                    // Add files to upload (max 10)
+                    for (let i = 0; i < Math.min(screenshotPath.length, 10); i++) {
+                        filesToUpload.push({
+                            type: 'screenshot',
+                            index: i,
+                            filename: basename(screenshotPath[i]),
+                            path: screenshotPath[i],
+                        })
+                    }
+                    ui.log.success(`Found ${screenshotPath.length} screenshot${screenshotPath.length === 1 ? '' : 's'}`)
+                }
             }
         }
     }
