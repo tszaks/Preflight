@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAuthClient } from '@/lib/supabase/auth'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
     getLatestVersion,
@@ -13,7 +13,7 @@ import { decryptPrivateKey } from '@/lib/asc-credential-store'
 import { getEncryptionKey } from '@/lib/asc-encryption'
 
 export async function POST(request: Request) {
-    const supabase = await createClient()
+    const supabase = await createAuthClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
