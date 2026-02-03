@@ -2,6 +2,8 @@ import * as ui from '../../../ui/interactive.js'
 import { apiRequest } from '../../../lib/api-client.js'
 import { SubmissionStep, StepResult } from '../BaseStep.js'
 import { DraftState } from '../types.js'
+import chalk from 'chalk'
+import { subtext, brand } from '../../../ui/theme.js'
 
 export class AscStep implements SubmissionStep {
     name = 'App Store Connect'
@@ -23,15 +25,35 @@ export class AscStep implements SubmissionStep {
                         shouldConnect = await this.askToAutofill(statusData.appName, hasManualEntries)
 
                         if (shouldConnect) {
-                            const success = await this.performAutofill(statusData.appId, state)
-                            if (success) {
-                                ui.log.success('App details pre-filled from App Store Connect')
+                            const result = await this.performAutofill(statusData.appId, state)
+                            if (result.success) {
+                                console.log()
+                                ui.log.success('Connected to App Store Connect')
+                                console.log()
+
+                                // Show what was imported
+                                if (result.appName) console.log(`  ${chalk.green('✓')} App Name: ${brand(result.appName)}`)
+                                if (result.description) console.log(`  ${chalk.green('✓')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
+                                if (result.keywords) console.log(`  ${chalk.green('✓')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
+                                if (result.category) console.log(`  ${chalk.green('✓')} Category: ${result.category}`)
+                                if (result.supportUrl) console.log(`  ${chalk.green('✓')} Support URL: ${subtext(result.supportUrl)}`)
+                                console.log()
+
+                                await ui.keypress('Press Enter to continue...')
                             }
+                        } else {
+                            ui.log.info('Skipped autofill. Continuing with manual entry.')
                         }
+                    } else {
+                        ui.log.warning('No app selected in App Store Connect.')
+                        ui.log.info('Configure your ASC connection from the main menu first.')
+                        console.log()
+                        await ui.keypress('Press Enter to continue...')
                     }
                 }
             } catch {
-                // Ignore errors
+                ui.log.error('Could not reach App Store Connect.')
+                await ui.keypress('Press Enter to continue...')
             }
         } else {
             const wantsToConnect = await ui.confirm(
@@ -40,8 +62,9 @@ export class AscStep implements SubmissionStep {
             )
             if (wantsToConnect === null) return { action: 'cancel' }
             if (wantsToConnect) {
-                ui.log.info('Opening browser to connect App Store Connect...')
-                ui.log.info('ASC connection flow not yet implemented. Continuing with manual entry.')
+                ui.log.info('Configure ASC connection from the main menu first.')
+                console.log()
+                await ui.keypress('Press Enter to continue...')
             }
         }
 
@@ -49,12 +72,6 @@ export class AscStep implements SubmissionStep {
     }
 
     private async getAscStatus(): Promise<boolean> {
-        // We can check config or just rely on API. 
-        // For CLI parity we'll assume the helper `getAscConnected` from config was used, 
-        // but here we can just check with a quick API ping or passed in state if needed.
-        // For now, let's implement a quick check or use the previous logic.
-        // The original code used `getAscConnected()` from `../lib/config.js` but 
-        // we can also trust the API returns 401/404 if not connected.
         return true // Validation happens in the run loop logic mostly
     }
 
@@ -75,7 +92,14 @@ export class AscStep implements SubmissionStep {
         }
     }
 
-    private async performAutofill(appId: string, state: DraftState): Promise<boolean> {
+    private async performAutofill(appId: string, state: DraftState): Promise<{
+        success: boolean
+        appName?: string
+        description?: string
+        keywords?: string
+        category?: string
+        supportUrl?: string
+    }> {
         const s = ui.spinner()
         s.start('Fetching from App Store Connect...')
 
@@ -86,22 +110,32 @@ export class AscStep implements SubmissionStep {
             })
             const autofillData = await autofillRes.json()
 
-            s.stop(autofillRes.ok ? 'Autofill complete' : 'Autofill failed')
+            s.stop(autofillRes.ok ? 'Data received' : 'Autofill failed')
 
-            if (autofillRes.ok && autofillData) {
-                state.appName = autofillData.app_name || state.appName
-                state.description = autofillData.description || state.description
-                state.keywords = autofillData.keywords || state.keywords
-                state.category = autofillData.category || state.category
-                state.supportUrl = autofillData.support_url || state.supportUrl
-                state.promotionalText = autofillData.promotional_text || state.promotionalText
-                state.marketingUrl = autofillData.marketing_url || state.marketingUrl
+            if (autofillRes.ok && autofillData?.data) {
+                const data = autofillData.data
+                state.appName = data.app_name || state.appName
+                state.description = data.description || state.description
+                state.keywords = data.keywords || state.keywords
+                state.category = data.category || state.category
+                state.supportUrl = data.support_url || state.supportUrl
+                state.promotionalText = data.promotional_text || state.promotionalText
+                state.marketingUrl = data.marketing_url || state.marketingUrl
                 state._ascConnected = true
-                return true
+
+                return {
+                    success: true,
+                    appName: data.app_name,
+                    description: data.description,
+                    keywords: data.keywords,
+                    category: data.category,
+                    supportUrl: data.support_url,
+                }
             }
         } catch {
             s.stop('Autofill failed')
         }
-        return false
+        return { success: false }
     }
 }
+
