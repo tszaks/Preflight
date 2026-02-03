@@ -1,69 +1,90 @@
 import * as ui from '../../ui/interactive.js'
 import { SubmissionStep, StepResult } from './BaseStep.js'
-import { DraftState } from './types.js'
+import { DraftState, FileToUpload } from './types.js'
+import { DashboardView, DashboardAction } from './DashboardView.js'
 
 export class SubmissionFlow {
-    private steps: SubmissionStep[] = []
-    private currentStepIndex = 0
+    private steps: Map<string, SubmissionStep> = new Map()
 
     constructor(
         private state: DraftState,
+        private filesToUpload: FileToUpload[],
+        private projectName: string,
+        private ascEmail: string | undefined,
         private saveDraftCallback: (state: DraftState) => Promise<void>
     ) { }
 
-    addStep(step: SubmissionStep) {
-        this.steps.push(step)
+    addStep(id: string, step: SubmissionStep) {
+        this.steps.set(id, step)
     }
 
     async start(): Promise<'completed' | 'cancelled'> {
-        // Hydrate step based on state if possible
-        if (this.state._flowPosition) {
-            // We could map _flowPosition string to index, but for simplicity let's just 
-            // stick to 0 unless we implement robust mapping.
-            // The original code tried to track this string.
-            // We can iterate steps and find one matching the name/id if we want.
-        }
+        const dashboard = new DashboardView(this.state, this.filesToUpload, this.ascEmail)
 
-        while (this.currentStepIndex < this.steps.length) {
-            if (this.currentStepIndex < 0) {
-                // Should not happen, but if back is pressed on first step
-                return 'cancelled'
-            }
+        while (true) {
+            ui.clearScreen()
+            const action = await dashboard.render(this.projectName)
 
-            const step = this.steps[this.currentStepIndex]
-
-            // Print Step Header
-            console.log()
-            ui.log.step(`Step ${this.currentStepIndex + 1} of ${this.steps.length}: ${step.name}`)
-            console.log()
-
-            const result = await step.run(this.state)
-
-            switch (result.action) {
-                case 'next':
-                    this.currentStepIndex++
-                    // Update flow position in state (approximate)
-                    this.updateFlowMetadata()
-                    break
-                case 'back':
-                    this.currentStepIndex--
-                    break
-                case 'cancel':
+            switch (action) {
                 case 'save_draft':
                     await this.saveDraftCallback(this.state)
+                    ui.log.success('Draft saved!')
                     return 'cancelled'
+
+                case 'review':
+                    // Run review step
+                    const reviewStep = this.steps.get('review')
+                    if (reviewStep) {
+                        const result = await reviewStep.run(this.state)
+                        if (result.action === 'next') {
+                            return 'completed' // Submit!
+                        }
+                        if (result.action === 'save_draft') {
+                            await this.saveDraftCallback(this.state)
+                            return 'cancelled'
+                        }
+                        // 'back' returns to dashboard
+                    }
+                    break
+
+                case 'asc':
+                case 'screenshots':
+                case 'app_details':
+                case 'compliance':
+                    await this.runSection(action)
+                    break
             }
         }
-
-        return 'completed'
     }
 
-    private updateFlowMetadata() {
-        // Map index to the string types expected by the backend
-        // This is a bit loose but maintains backward compatibility with the DraftState interface
-        const mapping = ['asc', 'screenshots', 'appDetails', 'compliance', 'review']
-        if (this.currentStepIndex < mapping.length) {
-            this.state._flowPosition = mapping[this.currentStepIndex] as any
+    private async runSection(sectionId: DashboardAction): Promise<void> {
+        const step = this.steps.get(sectionId)
+        if (!step) {
+            ui.log.warning(`Section ${sectionId} not configured`)
+            return
         }
+
+        console.log()
+        ui.log.step(step.name)
+        console.log()
+
+        const result = await step.run(this.state)
+
+        switch (result.action) {
+            case 'next':
+                // Section complete, return to dashboard
+                break
+            case 'back':
+                // User wants to go back - return to dashboard
+                break
+            case 'save_draft':
+                // Will be handled in main loop after returning
+                break
+            case 'cancel':
+                // Same as save_draft for sections
+                break
+        }
+
+        // All paths return to dashboard
     }
 }
