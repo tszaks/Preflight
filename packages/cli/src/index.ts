@@ -236,7 +236,7 @@ async function interactiveMenu() {
 
         // Show update banner if available
         if (updateInfo?.available) {
-            console.log(brand(`  🚀 Update available: v${updateInfo.current} → v${updateInfo.latest}`))
+            console.log(brand(`  Update available: v${updateInfo.current} -> v${updateInfo.latest}`))
             console.log(subtext(`     Run: npm install -g preflightlaunch@latest`))
             console.log()
         }

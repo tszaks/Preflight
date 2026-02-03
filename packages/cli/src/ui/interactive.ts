@@ -32,28 +32,34 @@ export function renderHeader(email?: string, credits?: number) {
     clearScreen()
     console.log()
 
-    // Rocket logo
-
     // Main Logo
     for (const line of getLogo()) {
         console.log(line)
     }
     console.log()
-    console.log()
 
+    // Info bar - clean layout with visual hierarchy
+    if (email || credits !== undefined) {
+        const parts: string[] = []
 
-    // Info bar: email · credits · version
-    const creditDisplay = credits !== undefined
-        ? (credits < 100 ? chalk.yellow(`${credits} credits`) : `${credits} credits`)
-        : ''
-    const infoParts = [email, creditDisplay, `v${APP_VERSION}`].filter(Boolean)
-    if (infoParts.length > 0) {
-        console.log(subtext(`       ${infoParts.join(' · ')}`))
+        if (email) {
+            parts.push(chalk.white(email))
+        }
+
+        if (credits !== undefined) {
+            const creditColor = credits < 100 ? chalk.yellow : chalk.green
+            parts.push(creditColor(`${credits.toLocaleString()} credits`))
+        }
+
+        parts.push(chalk.dim(`v${APP_VERSION}`))
+
+        console.log(`       ${parts.join(chalk.dim('  |  '))}`)
     } else {
         console.log(subtext(`       ${APP_TAGLINE}`))
     }
     console.log()
 }
+
 
 // Keyboard hint footer -- dimmed text at bottom of screens
 export function keyboardHints(hints: string) {
