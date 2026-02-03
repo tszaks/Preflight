@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAuthClient } from '@/lib/supabase/auth'
 import { createServiceClient } from '@/lib/supabase/service'
 import { validateCredentials, listApps } from '@/lib/app-store-connect'
 import { encryptPrivateKey } from '@/lib/asc-credential-store'
 import { getEncryptionKey } from '@/lib/asc-encryption'
 
 export async function POST(request: Request) {
-    const supabase = await createClient()
+    const supabase = await createAuthClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-    const supabase = await createClient()
+    const supabase = await createAuthClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -86,7 +86,7 @@ export async function GET() {
 }
 
 export async function DELETE() {
-    const supabase = await createClient()
+    const supabase = await createAuthClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
