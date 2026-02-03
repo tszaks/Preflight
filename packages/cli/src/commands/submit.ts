@@ -3,7 +3,7 @@ import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs'
 import { basename, resolve, extname, join } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
-import { isLoggedIn, setLastScannedPath, getAscConnected } from '../lib/config.js'
+import { isLoggedIn, setLastScannedPath, getAscConnected, getConfig } from '../lib/config.js'
 import { loginWithBrowser } from '../lib/auth.js'
 import { createSpinner } from '../ui/spinner.js'
 import { renderReport } from '../ui/report.js'
@@ -585,7 +585,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             }
         } catch { /* ignore */ }
 
-        const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, userCredits, offerDraftSave)
+        const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, userCredits, offerDraftSave, getConfig().email)
 
         flow.addStep('asc', new AscStep())
         flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
@@ -944,7 +944,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         }
     } catch { /* ignore */ }
 
-    const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, userCredits, offerDraftSave)
+    const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, userCredits, offerDraftSave, getConfig().email)
 
     flow.addStep('asc', new AscStep())
     flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))

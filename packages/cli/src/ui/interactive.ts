@@ -38,20 +38,20 @@ export function renderHeader(email?: string, credits?: number) {
     }
     console.log()
 
-    // Premium segmented status bar - each piece in its own box
+    // Premium outlined status bar segments
     if (email || credits !== undefined) {
         const segments: string[] = []
 
         if (email) {
-            segments.push(chalk.dim('[ ') + chalk.white(email) + chalk.dim(' ]'))
+            segments.push(chalk.dim('┌─') + chalk.white(` ${email} `) + chalk.dim('─┐'))
         }
 
         if (credits !== undefined) {
             const creditColor = credits < 100 ? chalk.yellow : chalk.green
-            segments.push(chalk.dim('[ ') + creditColor(`${credits.toLocaleString()} credits`) + chalk.dim(' ]'))
+            segments.push(chalk.dim('┌─') + creditColor(` ${credits.toLocaleString()} credits `) + chalk.dim('─┐'))
         }
 
-        segments.push(chalk.dim('[ ') + chalk.dim(`v${APP_VERSION}`) + chalk.dim(' ]'))
+        segments.push(chalk.dim('┌─') + chalk.dim(` v${APP_VERSION} `) + chalk.dim('─┐'))
 
         console.log(`       ${segments.join('  ')}`)
     } else {
