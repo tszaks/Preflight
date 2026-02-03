@@ -149,10 +149,10 @@ export async function promptForPath(opts: {
 
     // Show Browse vs Manual options
     const browseLabel = opts.type === 'folder'
-        ? '📁 Browse with Finder...'
+        ? 'Browse with Finder...'
         : opts.type === 'file'
-            ? '📄 Browse for file...'
-            : '📚 Browse for files...'
+            ? 'Browse for file...'
+            : 'Browse for files...'
 
     const selectOptions: Array<{ value: 'browse' | 'manual' | 'skip'; label: string; hint?: string }> = [
         {
@@ -162,7 +162,7 @@ export async function promptForPath(opts: {
         },
         {
             value: 'manual',
-            label: '⌨️  Enter path manually...',
+            label: 'Enter path manually...',
             hint: 'Type the path',
         },
     ]
@@ -170,7 +170,7 @@ export async function promptForPath(opts: {
     if (opts.allowSkip) {
         selectOptions.push({
             value: 'skip',
-            label: '⏭️  Skip',
+            label: 'Skip',
             hint: 'Continue without this',
         })
     }
