@@ -38,22 +38,22 @@ export function renderHeader(email?: string, credits?: number) {
     }
     console.log()
 
-    // Info bar - clean layout with visual hierarchy
+    // Premium segmented status bar - each piece in its own box
     if (email || credits !== undefined) {
-        const parts: string[] = []
+        const segments: string[] = []
 
         if (email) {
-            parts.push(chalk.white(email))
+            segments.push(chalk.dim('[ ') + chalk.white(email) + chalk.dim(' ]'))
         }
 
         if (credits !== undefined) {
             const creditColor = credits < 100 ? chalk.yellow : chalk.green
-            parts.push(creditColor(`${credits.toLocaleString()} credits`))
+            segments.push(chalk.dim('[ ') + creditColor(`${credits.toLocaleString()} credits`) + chalk.dim(' ]'))
         }
 
-        parts.push(chalk.dim(`v${APP_VERSION}`))
+        segments.push(chalk.dim('[ ') + chalk.dim(`v${APP_VERSION}`) + chalk.dim(' ]'))
 
-        console.log(`       ${parts.join(chalk.dim('  |  '))}`)
+        console.log(`       ${segments.join('  ')}`)
     } else {
         console.log(subtext(`       ${APP_TAGLINE}`))
     }
