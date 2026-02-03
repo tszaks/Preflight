@@ -1,5 +1,6 @@
 import * as ui from '../ui/interactive.js'
 import { subtext } from '../ui/theme.js'
+import chalk from 'chalk'
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -741,17 +742,17 @@ export async function collectCompliance(defaults?: Partial<ComplianceData>): Pro
         const options: Array<{ value: string; label: string; hint: string }> = [
             {
                 value: 'age',
-                label: `1. Age Rating ${state.ageRating ? '✓' : ''}`,
+                label: `1. Age Rating ${state.ageRating ? chalk.green('✓') : ''}`,
                 hint: state.ageRating ? `Rated ${state.ageRating.rating}` : 'Not completed',
             },
             {
                 value: 'privacy',
-                label: `2. Privacy & Data ${state.privacy ? '✓' : ''}`,
+                label: `2. Privacy & Data ${state.privacy ? chalk.green('✓') : ''}`,
                 hint: state.privacy ? 'Completed' : 'Not completed',
             },
             {
                 value: 'features',
-                label: `3. Features ${state.checklist ? '✓' : ''}`,
+                label: `3. Features ${state.checklist ? chalk.green('✓') : ''}`,
                 hint: state.checklist ? 'Completed' : 'Not completed',
             },
         ]
