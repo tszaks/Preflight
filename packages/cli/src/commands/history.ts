@@ -92,18 +92,55 @@ export async function interactiveHistory(): Promise<void> {
         const res = await apiRequest('/api/submissions')
         const data = await res.json()
 
+        // Debug logging to diagnose issues
+        if (process.env.DEBUG) {
+            console.log('🐛 DEBUG: API Response:', {
+                ok: res.ok,
+                status: res.status,
+                hasData: !!data.data,
+                dataLength: data.data?.length,
+                keys: Object.keys(data),
+            })
+        }
+
         s.stop('Reviews loaded')
 
+        // Validate response structure first
+        if (!data || typeof data !== 'object') {
+            s.stop('Invalid response')
+            ui.log.error('Server returned invalid data format')
+            console.log()
+            await ui.confirm('Press Enter to return to menu', true)
+            return
+        }
+
+        // Check if API call failed FIRST (before validating success structure)
         if (!res.ok) {
-            ui.log.error(data.message || 'Failed to load reviews')
+            s.stop('Failed to load reviews')
+            ui.log.error(data.message || `Server returned error (HTTP ${res.status})`)
+            console.log()
+            await ui.confirm('Press Enter to return to menu', true)
+            return
+        }
+
+        // Only check for data field if response was successful
+        if (!('data' in data)) {
+            s.stop('Invalid response')
+            ui.log.error('Server response missing expected data field')
+            if (process.env.DEBUG) {
+                console.log('Response keys:', Object.keys(data))
+            }
+            console.log()
+            await ui.confirm('Press Enter to return to menu', true)
             return
         }
 
         if (!data.data || data.data.length === 0) {
-            ui.log.info('No reviews yet. Start your first review from the main menu.')
+            ui.log.info('No reviews found in your history.')
             console.log()
-            // Brief pause so user can read the message
-            await ui.confirm('Back to menu?', true)
+            ui.log.step('Start your first review from the main menu!')
+            console.log()
+            await ui.confirm('Press Enter to return to menu', true)
             return
         }
 
@@ -118,9 +155,12 @@ export async function interactiveHistory(): Promise<void> {
 
         while (true) {
             const options = submissions.map((sub) => {
-                const date = new Date(sub.created_at).toLocaleDateString('en-US', {
+                const date = new Date(sub.created_at).toLocaleString('en-US', {
                     month: 'short',
                     day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
                 })
                 const statusLabel =
                     sub.status === 'complete' ? 'Ready'
@@ -247,5 +287,8 @@ export async function interactiveHistory(): Promise<void> {
     } catch (err) {
         s.stop('Failed to load reviews')
         ui.log.error(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        console.log()
+        await ui.confirm('Press Enter to return to menu', true)
+        return
     }
 }
