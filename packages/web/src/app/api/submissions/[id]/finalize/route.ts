@@ -112,6 +112,7 @@ export async function POST(
                 plist_path: plistPath,
                 manifest_path: manifestPath,
                 ipa_path: ipaPath,
+                credits_used: creditCost,
                 status: 'analyzing',
             })
             .eq('id', submissionId)
