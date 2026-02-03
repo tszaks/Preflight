@@ -8,9 +8,6 @@ import { brand, subtext, brandDim } from '../ui/theme.js'
 // Small delay for visual feedback
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-// Pick a random item from an array
-const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
-
 // Get current installed version from package.json
 function getCurrentVersion(): string {
     const __filename = fileURLToPath(import.meta.url)
@@ -43,113 +40,17 @@ function compareSemver(a: string, b: string): number {
     return 0
 }
 
-// Witty messages for each step (rocket-themed)
+// Simple messages for each step
 const messages = {
-    checking: [
-        'Running pre-launch diagnostics...',
-        'Checking the flight manifest...',
-        'Inspecting the landing gear...',
-        'Running systems check...',
-        'Calibrating the altimeter...',
-        'Reviewing the flight plan...',
-        'Consulting the tower...',
-        'Checking fuel levels...',
-        'Scanning the instrument panel...',
-        'Warming up the engines...',
-    ],
-    scanning: [
-        'Scanning mission control for new firmware...',
-        'Pinging the mothership...',
-        'Checking if the future has arrived...',
-        'Asking the internet nicely...',
-        'Phoning home...',
-        'Intercepting transmissions from npm...',
-        'Decoding signals from the registry...',
-        'Searching the cosmos for updates...',
-        'Tuning into mission control...',
-        'Receiving satellite data...',
-    ],
-    upToDate: [
-        'Your rocket is already top-shelf.',
-        'Nothing to see here. Already running the latest.',
-        'Ahead of the curve. No update needed.',
-        'All caught up. Go build something.',
-        'Running the newest gear. You are cleared for takeoff.',
-        'Peak performance. No upgrades available.',
-        'Already on the bleeding edge.',
-        'The latest and greatest is already onboard.',
-        'Your firmware is fresh. Carry on.',
-        'Mission control confirms: you are current.',
-    ],
-    downloading: [
-        'Fueling the rocket...',
-        'Loading cargo into the bay...',
-        'Downloading fresh payload...',
-        'Grabbing the goods from npm...',
-        'Fetching the new hotness...',
-        'Pulling packages from orbit...',
-        'Syncing with the mothership...',
-        'Transferring new firmware...',
-        'Beaming down the update...',
-        'Acquiring new modules...',
-    ],
-    installing: [
-        'Strapping in for launch...',
-        'Bolting on the upgrades...',
-        'Swapping out the old parts...',
-        'Welding the new bits into place...',
-        'Running final assembly...',
-        'Tightening the bolts...',
-        'Locking in the payload...',
-        'Configuring the new thrusters...',
-        'Applying the finishing touches...',
-        'Wiring up the cockpit...',
-    ],
-    done: [
-        'All systems go',
-        'Green across the board',
-        'Ready for takeoff',
-        'Locked and loaded',
-        'Ship shape',
-        'Good to go',
-        'Systems nominal',
-        'Flight ready',
-        'Cleared for launch',
-        'In the green',
-    ],
-    liftoff: [
-        'Liftoff.',
-        'We have liftoff.',
-        '3... 2... 1... Updated.',
-        'The eagle has landed.',
-        'Mission complete.',
-        'Smooth landing.',
-        'Touchdown.',
-        'New firmware online.',
-        'Upgrade successful.',
-        'Roger that. Update complete.',
-    ],
-    restart: [
-        'Restart your terminal to fly the new version.',
-        'Open a new terminal to take the new version for a spin.',
-        'Close and reopen your terminal to activate.',
-        'New terminal session needed to use the update.',
-        'Pop open a fresh terminal to ride the new version.',
-    ],
-    failed: [
-        'Launch aborted',
-        'Mission scrubbed',
-        'Abort, abort, abort',
-        'We have a problem',
-        'Engines stalled',
-    ],
-    noRegistry: [
-        'Houston, we have a problem',
-        'Lost contact with mission control',
-        'Radio silence from npm',
-        'Signal lost',
-        'Transmission failed',
-    ],
+    checking: 'Checking current version...',
+    scanning: 'Checking for updates...',
+    upToDate: 'Already up to date.',
+    downloading: 'Downloading...',
+    installing: 'Installing...',
+    done: 'Done',
+    restart: 'Restart your terminal to use the new version.',
+    failed: 'Update failed',
+    noRegistry: 'Could not reach npm registry',
 }
 
 export async function updateCommand() {
@@ -158,61 +59,51 @@ export async function updateCommand() {
     const s = ui.spinner()
 
     // Step 1: Show current version
-    s.start(pick(messages.checking))
-    await wait(1000)
+    s.start(messages.checking)
+    await wait(500)
     s.stop(`Current: ${brand(`v${current}`)}`)
 
     // Step 2: Check registry
-    s.start(pick(messages.scanning))
+    s.start(messages.scanning)
     const latest = await getLatestVersion()
-    await wait(800)
 
     if (!latest) {
-        s.stop(pick(messages.noRegistry))
+        s.stop(messages.noRegistry)
         ui.log.error('Failed to reach npm registry. Check your internet connection.')
         return
     }
 
     if (compareSemver(current, latest) >= 0) {
         s.stop(`Latest: ${brand(`v${latest}`)}`)
-        await wait(400)
         console.log()
-        console.log(`  ${brand('Preflight')} is up to date. ${subtext(pick(messages.upToDate))}`)
+        console.log(`  ${brand('Preflight')} is up to date.`)
         console.log()
         return
     }
 
     // Update available
-    s.stop(`New payload detected: ${brand(`v${latest}`)}`)
+    s.stop(`Update available: ${brand(`v${latest}`)}`)
     console.log()
-    console.log(`  ${brandDim(`v${current}`)} ${subtext('-->')} ${brand(`v${latest}`)}`)
+    console.log(`  ${brandDim(`v${current}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
     console.log()
-    await wait(500)
 
-    // Step 3: Download
-    s.start(pick(messages.downloading))
-    await wait(1500)
-    s.stop('Downloaded')
-
-    // Step 4: Install
-    s.start(pick(messages.installing))
+    // Step 3: Install
+    s.start(messages.installing)
 
     try {
         execFileSync('npm', ['install', '-g', 'preflightlaunch@latest'], {
             stdio: 'pipe',
             timeout: 60000,
         })
-        await wait(1000)
-        s.stop(pick(messages.done))
+        s.stop(messages.done)
 
-        // Step 5: Done
-        await wait(400)
+        // Step 4: Done
         console.log()
-        console.log(`  ${brand(pick(messages.liftoff))} ${brandDim(`v${current}`)} ${subtext('-->')} ${brand(`v${latest}`)}`)
-        console.log(subtext(`  ${pick(messages.restart)}`))
+        console.log(`  Updated: ${brandDim(`v${current}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
+        console.log(subtext(`  ${messages.restart}`))
         console.log()
     } catch (err) {
-        s.stop(pick(messages.failed))
+        s.stop(messages.failed)
 
         // Common failure: permissions
         const msg = err instanceof Error ? err.message : ''

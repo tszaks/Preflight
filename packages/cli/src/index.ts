@@ -20,7 +20,7 @@ import { isLoggedIn, hasRunBefore, getConfig, setUser } from './lib/config.js'
 import { clearAuth } from './lib/config.js'
 import { apiRequest } from './lib/api-client.js'
 import * as ui from './ui/interactive.js'
-import { subtext } from './ui/theme.js'
+import { subtext, brand } from './ui/theme.js'
 
 // Get version from package.json dynamically
 const __filename = fileURLToPath(import.meta.url)
@@ -158,6 +158,40 @@ async function openUrl(url: string): Promise<void> {
     }
 }
 
+// Check for updates in background (non-blocking)
+interface UpdateInfo {
+    available: boolean
+    current: string
+    latest: string
+}
+
+async function checkForUpdates(): Promise<UpdateInfo | null> {
+    try {
+        const current = pkg.version
+        const res = await fetch('https://registry.npmjs.org/preflightlaunch/latest')
+        if (!res.ok) return null
+        const data = await res.json()
+        const latest = data.version
+        if (!latest) return null
+
+        // Compare versions
+        const currentParts = current.split('.').map(Number)
+        const latestParts = latest.split('.').map(Number)
+        let updateAvailable = false
+        for (let i = 0; i < 3; i++) {
+            if ((latestParts[i] ?? 0) > (currentParts[i] ?? 0)) {
+                updateAvailable = true
+                break
+            }
+            if ((latestParts[i] ?? 0) < (currentParts[i] ?? 0)) break
+        }
+
+        return { available: updateAvailable, current, latest }
+    } catch {
+        return null
+    }
+}
+
 async function interactiveMenu() {
     // Screen 0: Welcome (first run only)
     if (!hasRunBefore()) {
@@ -186,13 +220,26 @@ async function interactiveMenu() {
 
     // Screen 2: Main Menu (loops until Esc or Log Out)
     let cachedCredits: number | undefined
+    let updateInfo: UpdateInfo | null = null
 
-    // Initial credit fetch
-    cachedCredits = await fetchCredits()
+    // Initial credit fetch and background update check
+    const [credits, update] = await Promise.all([
+        fetchCredits(),
+        checkForUpdates()
+    ])
+    cachedCredits = credits
+    updateInfo = update
 
     while (true) {
         const { email } = getConfig()
         ui.renderHeader(email, cachedCredits)
+
+        // Show update banner if available
+        if (updateInfo?.available) {
+            console.log(brand(`  🚀 Update available: v${updateInfo.current} → v${updateInfo.latest}`))
+            console.log(subtext(`     Run: npm install -g preflightlaunch@latest`))
+            console.log()
+        }
 
         const choice = await ui.select<'review' | 'history' | 'buy' | 'asc' | 'update' | 'logout'>({
             message: 'What would you like to do?',
