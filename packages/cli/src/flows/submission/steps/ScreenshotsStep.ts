@@ -11,19 +11,12 @@ export class ScreenshotsStep implements SubmissionStep {
     constructor(private filesToUpload: FileToUpload[]) { }
 
     async run(state: DraftState): Promise<StepResult> {
-        let continuingFlow = state._screenshotPaths && state._screenshotPaths.length > 0
-
-        // If we are re-entering this step and have paths, make sure they are in the file list
-        if (state._screenshotPaths && state._screenshotPaths.length > 0) {
-            // Re-hydration logic if needed, though filesToUpload is likely shared reference
-            // For now, we assume filesToUpload is kept in sync by the flow manager or passed in
-        }
-
         while (true) {
             const screenshotCount = this.filesToUpload.filter((f) => f.type === 'screenshot').length
 
-            if (continuingFlow && screenshotCount > 0) {
-                // Show navigation menu after initial load
+            // If we already have screenshots (from auto-detection or previous selection), 
+            // show the continue/change/back menu
+            if (screenshotCount > 0) {
                 const action = await ui.select<'continue' | 'change' | 'back'>({
                     message: `Screenshots (${screenshotCount} added)`,
                     options: [
@@ -36,12 +29,12 @@ export class ScreenshotsStep implements SubmissionStep {
                 if (action === null) return { action: 'save_draft' }
                 if (action === 'back') return { action: 'back' }
                 if (action === 'continue') return { action: 'next' }
-                // else action === 'change', continue loop to re-select
+                // action === 'change', fall through to re-select
             }
 
             // Screenshot selection menu
             const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip' | 'back'>({
-                message: continuingFlow ? 'Select screenshots' : 'How do you want to provide screenshots?',
+                message: 'How do you want to provide screenshots?',
                 options: [
                     { value: 'manual', label: 'Enter path manually', hint: 'Type or paste file/folder path' },
                     { value: 'browse', label: 'Browse with Finder...', hint: 'Choose files or folder' },
@@ -58,19 +51,16 @@ export class ScreenshotsStep implements SubmissionStep {
             }
 
             if (screenshotChoice === 'skip') {
-                if (continuingFlow && screenshotCount > 0) {
-                    // Already have screenshots, don't skip, just continue loop which will trigger the "continue" prompt
-                    continue
-                }
+                // No screenshots, skip to next step
                 return { action: 'next' }
             }
 
             if (screenshotChoice === 'manual') {
                 await this.handleManualEntry()
-                continuingFlow = true // show the "continue" menu next time
+                // Loop continues - if screenshots were added, screenshotCount check will show continue menu
             } else if (screenshotChoice === 'browse') {
                 await this.handleBrowse(state)
-                continuingFlow = true
+                // Loop continues - if screenshots were added, screenshotCount check will show continue menu
             }
         }
     }
