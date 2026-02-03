@@ -110,13 +110,10 @@ interface DraftState {
     demoUsername?: string
     demoPassword?: string
     compliance?: ComplianceData
-    // Phase 2: Flow position tracking for draft resumption
-    _flowPosition?: 'appDetails' | 'compliance' | 'confirmation'
-    _complianceProgress?: {
-        ageRatingComplete: boolean
-        privacyComplete: boolean
-        checklistComplete: boolean
-    }
+    // Flow position tracking for draft resumption
+    _flowPosition?: 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'confirmation'
+    _ascConnected?: boolean // Track if ASC was used for autofill
+    _screenshotPaths?: string[] // Track screenshot paths for reference
 }
 
 async function offerDraftSave(state: DraftState): Promise<void> {
@@ -142,12 +139,9 @@ async function offerDraftSave(state: DraftState): Promise<void> {
         if (state.demoPassword) body.demo_password = state.demoPassword
         if (state.compliance) Object.assign(body, formatComplianceForApi(state.compliance))
 
-        // Phase 2: Include flow position metadata
+        // Include flow position metadata for resuming
         if (state._flowPosition) {
             body._flowPosition = state._flowPosition
-        }
-        if (state._complianceProgress) {
-            body._complianceProgress = state._complianceProgress
         }
 
         const res = await apiRequest('/api/submissions', {
@@ -215,6 +209,376 @@ async function offerAscAutofill(appDetails: AppDetails): Promise<AppDetails> {
     }
 
     return appDetails
+}
+
+
+// ─── ASC Connection Step (Phase 1: New First Step) ──────────────────────────
+
+async function offerAscConnection(draftState: DraftState): Promise<'forward' | 'skip' | 'cancel'> {
+    // Check if we already fetched from ASC on this navigation pass
+    if (draftState._ascConnected && draftState.appName && draftState.description) {
+        // Already fetched ASC data - skip re-fetching to avoid duplicate API calls
+        return 'forward'
+    }
+
+    const ascConnected = getAscConnected()
+
+    // Check if we have manual entries that would be overwritten
+    const hasManualEntries = !!(
+        draftState.description ||
+        draftState.keywords ||
+        draftState.category ||
+        draftState.supportUrl
+    )
+
+    let shouldConnect = false
+
+    if (ascConnected) {
+        try {
+            const statusRes = await apiRequest('/api/asc/connect')
+            if (statusRes.ok) {
+                const statusData = await statusRes.json()
+                if (statusData.connected && statusData.appId) {
+                    // Warn if we'd overwrite manual entries
+                    if (hasManualEntries) {
+                        ui.log.warning('You have manually entered app details.')
+                        const overwrite = await ui.confirm(
+                            `Autofill from App Store Connect? This will overwrite your entries. (${statusData.appName || 'Connected app'})`,
+                            false,
+                        )
+                        if (overwrite === null) return 'cancel'
+                        shouldConnect = overwrite
+                    } else {
+                        const useAutofill = await ui.confirm(
+                            `Autofill from App Store Connect? (${statusData.appName || 'Connected app'})`,
+                            true,
+                        )
+                        if (useAutofill === null) return 'cancel'
+                        shouldConnect = useAutofill
+                    }
+
+                    if (shouldConnect) {
+                        const s = ui.spinner()
+                        s.start('Fetching from App Store Connect...')
+
+                        const autofillRes = await apiRequest('/api/asc/autofill', {
+                            method: 'POST',
+                            body: JSON.stringify({ appId: statusData.appId }),
+                        })
+                        const autofillData = await autofillRes.json()
+
+                        s.stop(autofillRes.ok ? 'Autofill complete' : 'Autofill failed')
+
+                        if (autofillRes.ok && autofillData) {
+                            // Merge ASC data into draftState
+                            draftState.appName = autofillData.app_name || draftState.appName
+                            draftState.description = autofillData.description || draftState.description
+                            draftState.keywords = autofillData.keywords || draftState.keywords
+                            draftState.category = autofillData.category || draftState.category
+                            draftState.supportUrl = autofillData.support_url || draftState.supportUrl
+                            draftState.promotionalText =
+                                autofillData.promotional_text || draftState.promotionalText
+                            draftState.marketingUrl = autofillData.marketing_url || draftState.marketingUrl
+                            draftState._ascConnected = true
+
+                            ui.log.success('App details pre-filled from App Store Connect')
+                        }
+                    }
+                }
+            }
+        } catch {
+            // ASC is best-effort
+        }
+    } else {
+        // Not connected - offer to connect now
+        const wantsToConnect = await ui.confirm(
+            'Connect to App Store Connect to auto-fill app details?',
+            false,
+        )
+        if (wantsToConnect === null) return 'cancel'
+        if (wantsToConnect) {
+            ui.log.info('Opening browser to connect App Store Connect...')
+            // TODO: Implement browser OAuth flow (similar to loginWithBrowser)
+            // For now, just skip
+            ui.log.info('ASC connection flow not yet implemented. Continuing with manual entry.')
+        }
+    }
+
+    return shouldConnect || ascConnected ? 'forward' : 'skip'
+}
+
+// ─── Screenshot Collection with Navigation (Phase 2) ──────────────────────
+
+async function collectScreenshotsWithNav(
+    filesToUpload: Array<{ type: string; index?: number; filename: string; path: string }>,
+    draftState: DraftState,
+): Promise<'forward' | 'back' | 'cancel'> {
+    // Helper to load screenshots from a path
+    const loadScreenshotsFromPath = (pathStr: string): number => {
+        try {
+            const resolved = resolve(pathStr.replace(/^\~/, process.env.HOME || ''))
+            const stats = statSync(resolved)
+
+            if (stats.isDirectory()) {
+                // Handle as folder
+                const imageExts = ['.png', '.jpg', '.jpeg']
+                const foundFiles = readdirSync(resolved)
+                    .filter((f) => imageExts.includes(extname(f).toLowerCase()))
+                    .map((f) => join(resolved, f))
+
+                // Remove existing screenshots
+                const screenshotIndices = filesToUpload
+                    .map((f, i) => (f.type === 'screenshot' ? i : -1))
+                    .filter((i) => i !== -1)
+                    .reverse()
+                for (const idx of screenshotIndices) {
+                    filesToUpload.splice(idx, 1)
+                }
+
+                for (let i = 0; i < Math.min(foundFiles.length, 10); i++) {
+                    filesToUpload.push({
+                        type: 'screenshot',
+                        index: i,
+                        filename: basename(foundFiles[i]),
+                        path: foundFiles[i],
+                    })
+                }
+
+                // Track screenshot paths in draft state
+                draftState._screenshotPaths = filesToUpload
+                    .filter((f) => f.type === 'screenshot')
+                    .map((f) => f.path)
+
+                return foundFiles.length
+            } else {
+                // Handle as single file
+                if (['.png', '.jpg', '.jpeg'].includes(extname(resolved).toLowerCase())) {
+                    // Remove existing screenshots
+                    const screenshotIndices = filesToUpload
+                        .map((f, i) => (f.type === 'screenshot' ? i : -1))
+                        .filter((i) => i !== -1)
+                        .reverse()
+                    for (const idx of screenshotIndices) {
+                        filesToUpload.splice(idx, 1)
+                    }
+
+                    filesToUpload.push({
+                        type: 'screenshot',
+                        index: 0,
+                        filename: basename(resolved),
+                        path: resolved,
+                    })
+
+                    // Track screenshot path in draft state
+                    draftState._screenshotPaths = [resolved]
+
+                    return 1
+                }
+            }
+        } catch {
+            return 0
+        }
+        return 0
+    }
+
+    let continuingFlow = false
+
+    while (true) {
+        const screenshotCount = filesToUpload.filter((f) => f.type === 'screenshot').length
+
+        if (continuingFlow && screenshotCount > 0) {
+            // Show navigation menu after initial load
+            const action = await ui.select<'continue' | 'change' | 'back'>({
+                message: `Screenshots (${screenshotCount} added)`,
+                options: [
+                    { value: 'continue', label: 'Continue', hint: 'Proceed to app details' },
+                    { value: 'change', label: 'Change screenshots', hint: 'Select different screenshots' },
+                    { value: 'back', label: 'Back', hint: 'Return to previous step' },
+                ],
+            })
+
+            if (action === null) return 'cancel'
+            if (action === 'back') return 'back'
+            if (action === 'continue') return 'forward'
+            // else action === 'change', continue loop to re-select
+        }
+
+        // Screenshot selection menu
+        const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip' | 'none'>({
+            message: continuingFlow ? 'Select screenshots' : 'How do you want to provide screenshots?',
+            options: [
+                { value: 'manual', label: 'Enter path manually', hint: 'Type or paste file/folder path' },
+                { value: 'browse', label: 'Browse with Finder...', hint: 'Choose files or folder' },
+                { value: 'skip', label: 'Skip', hint: 'Continue without screenshots' },
+            ],
+        })
+
+        if (screenshotChoice === null) return 'cancel'
+
+        if (screenshotChoice === 'skip') {
+            if (continuingFlow && screenshotCount > 0) {
+                // Already have screenshots, don't skip
+                continue
+            }
+            return 'forward'
+        }
+
+        if (screenshotChoice === 'manual') {
+            const manualPath = await ui.text({
+                message: 'Enter screenshot path (file or folder)',
+                placeholder: '/path/to/screenshots',
+                validate: (val) => {
+                    if (!val?.trim()) return 'Path is required'
+                    const resolved = resolve(val.replace(/^~/, process.env.HOME || ''))
+                    if (!existsSync(resolved)) return 'Path does not exist'
+                    return true
+                },
+            })
+
+            if (manualPath === null) return 'cancel'
+
+            const count = loadScreenshotsFromPath(manualPath)
+            if (count > 0) {
+                ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
+                continuingFlow = true
+            } else {
+                ui.log.warning('No images found. Try another path.')
+            }
+        } else if (screenshotChoice === 'browse') {
+            // Browse sub-menu
+            const browseChoice = await ui.select<'files' | 'folder' | 'back'>({
+                message: 'Browse for screenshots',
+                options: [
+                    { value: 'files', label: 'Select files...', hint: 'Pick specific screenshots' },
+                    { value: 'folder', label: 'Select folder...', hint: 'All images in a folder' },
+                    { value: 'back', label: 'Back', hint: 'Return to previous menu' },
+                ],
+            })
+
+            if (browseChoice === null || browseChoice === 'back') {
+                // Continue to next iteration of outer loop
+                continue
+            } else if (browseChoice === 'folder') {
+                const folderPath = await promptForPath({
+                    message: 'Select folder containing screenshots',
+                    type: 'folder',
+                    allowSkip: false,
+                })
+
+                if (folderPath && typeof folderPath === 'string') {
+                    const count = loadScreenshotsFromPath(folderPath)
+                    if (count > 0) {
+                        ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
+                        continuingFlow = true
+                    } else {
+                        ui.log.warning('No images found in that folder.')
+                    }
+                }
+            } else {
+                // File selection mode
+                const screenshotPath = await promptForPath({
+                    message: 'Select screenshot files',
+                    type: 'files',
+                    fileTypes: ['public.png', 'public.jpeg'],
+                    allowSkip: false,
+                })
+
+                if (screenshotPath && Array.isArray(screenshotPath)) {
+                    // Remove existing screenshots
+                    const screenshotIndices = filesToUpload
+                        .map((f, i) => (f.type === 'screenshot' ? i : -1))
+                        .filter((i) => i !== -1)
+                        .reverse()
+                    for (const idx of screenshotIndices) {
+                        filesToUpload.splice(idx, 1)
+                    }
+
+                    for (let i = 0; i < Math.min(screenshotPath.length, 10); i++) {
+                        filesToUpload.push({
+                            type: 'screenshot',
+                            index: i,
+                            filename: basename(screenshotPath[i]),
+                            path: screenshotPath[i],
+                        })
+                    }
+
+                    // Track screenshot paths in draft state
+                    draftState._screenshotPaths = screenshotPath.slice(0, 10)
+
+                    ui.log.success(`Found ${screenshotPath.length} screenshot${screenshotPath.length === 1 ? '' : 's'}`)
+                    continuingFlow = true
+                }
+            }
+        }
+    }
+}
+
+// ─── App Details Collection with Navigation (Phase 3) ──────────────────────
+
+async function collectAppDetailsWithNav(
+    projectName: string,
+    draftState: DraftState,
+): Promise<AppDetails | 'back' | 'cancel'> {
+    const defaults: Partial<AppDetails> = {
+        appName: draftState.appName,
+        description: draftState.description,
+        keywords: draftState.keywords,
+        category: draftState.category,
+        supportUrl: draftState.supportUrl,
+        promotionalText: draftState.promotionalText,
+        marketingUrl: draftState.marketingUrl,
+        signInRequired: draftState.signInRequired,
+        demoUsername: draftState.demoUsername,
+        demoPassword: draftState.demoPassword,
+    }
+
+    const appDetails = await collectAppDetails(projectName, defaults)
+
+    if (appDetails === null) {
+        // User pressed Escape - ask what they want to do
+        const action = await ui.select<'back' | 'cancel'>({
+            message: 'App details cancelled',
+            options: [
+                { value: 'back', label: 'Go back', hint: 'Return to previous step' },
+                { value: 'cancel', label: 'Save draft & exit', hint: 'Save progress and exit' },
+            ],
+        })
+
+        if (action === null || action === 'cancel') return 'cancel'
+        return 'back'
+    }
+
+    // Merge into draftState
+    draftState.appName = appDetails.appName
+    draftState.description = appDetails.description
+    draftState.keywords = appDetails.keywords
+    draftState.category = appDetails.category
+    draftState.supportUrl = appDetails.supportUrl
+    draftState.promotionalText = appDetails.promotionalText
+    draftState.marketingUrl = appDetails.marketingUrl
+    draftState.signInRequired = appDetails.signInRequired
+    draftState.demoUsername = appDetails.demoUsername
+    draftState.demoPassword = appDetails.demoPassword
+
+    return appDetails
+}
+
+// ─── Compliance Collection with Navigation (Phase 4) ──────────────────────
+
+async function collectComplianceWithNav(draftState: DraftState): Promise<ComplianceData | 'back' | 'cancel'> {
+    const defaults: Partial<ComplianceData> | undefined = draftState.compliance
+
+    const compliance = await collectCompliance(defaults)
+
+    if (compliance === null) {
+        // User chose "Back" in compliance menu
+        return 'back'
+    }
+
+    // Merge into draftState
+    draftState.compliance = compliance
+
+    return compliance
 }
 
 export async function submitCommand(path?: string, options: SubmitOptions = {}, fromMenu = false) {
@@ -450,79 +814,117 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         return
     }
 
-    // Collect app details and compliance
+    // ─── Navigation Loop for Submission Flow (Phase 5) ─────────────────────
+    // Implements backward navigation while preserving data in DraftState
+
     let appDetails: AppDetails | null = null
     let compliance: ComplianceData | null = null
 
     if (fromMenu) {
-        // App Details
-        appDetails = await collectAppDetails(projectName)
-        if (appDetails === null) {
-            draftState._flowPosition = 'appDetails'
-            await offerDraftSave(draftState)
-            return
-        }
-        appName = appDetails.appName
-        draftState.appName = appName
-        draftState.description = appDetails.description
-        draftState.keywords = appDetails.keywords
-        draftState.category = appDetails.category
-        draftState.supportUrl = appDetails.supportUrl
-        draftState.promotionalText = appDetails.promotionalText
-        draftState.marketingUrl = appDetails.marketingUrl
-        draftState.signInRequired = appDetails.signInRequired
-        draftState.demoUsername = appDetails.demoUsername
-        draftState.demoPassword = appDetails.demoPassword
+        type Step = 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'review'
+        const steps: Step[] = ['asc', 'screenshots', 'appDetails', 'compliance', 'review']
+        let currentStepIndex = 0
 
-        // ASC Autofill — offer after collecting details
-        appDetails = await offerAscAutofill(appDetails)
+        while (currentStepIndex < steps.length) {
+            const step = steps[currentStepIndex]
 
-        // Compliance
-        draftState._flowPosition = 'compliance'
-        compliance = await collectCompliance()
-        if (compliance === null) {
-            await offerDraftSave(draftState)
-            return
+            console.log()
+            ui.log.step(`Step ${currentStepIndex + 1} of ${steps.length}: ${step}`)
+            console.log()
+
+            if (step === 'asc') {
+                const result = await offerAscConnection(draftState)
+                if (result === 'cancel') {
+                    await offerDraftSave(draftState)
+                    return
+                }
+                // No "back" option on first step
+                draftState._flowPosition = 'asc'  // Track position before advancing
+                currentStepIndex++
+            } else if (step === 'screenshots') {
+                const result = await collectScreenshotsWithNav(filesToUpload, draftState)
+                if (result === 'cancel') {
+                    draftState._flowPosition = 'screenshots'  // Save position before exiting
+                    await offerDraftSave(draftState)
+                    return
+                } else if (result === 'back') {
+                    currentStepIndex--
+                } else {
+                    draftState._flowPosition = 'screenshots'  // Track position before advancing
+                    currentStepIndex++
+                }
+            } else if (step === 'appDetails') {
+                const result = await collectAppDetailsWithNav(projectName, draftState)
+                if (result === 'cancel') {
+                    draftState._flowPosition = 'appDetails'  // Save position before exiting
+                    await offerDraftSave(draftState)
+                    return
+                } else if (result === 'back') {
+                    currentStepIndex--
+                } else {
+                    appDetails = result
+                    appName = appDetails.appName
+                    draftState._flowPosition = 'appDetails'  // Track position before advancing
+                    currentStepIndex++
+                }
+            } else if (step === 'compliance') {
+                const result = await collectComplianceWithNav(draftState)
+                if (result === 'cancel') {
+                    draftState._flowPosition = 'compliance'  // Save position before exiting
+                    await offerDraftSave(draftState)
+                    return
+                } else if (result === 'back') {
+                    currentStepIndex--
+                } else {
+                    compliance = result
+                    draftState._flowPosition = 'compliance'  // Track position before advancing
+                    currentStepIndex++
+                }
+            } else if (step === 'review') {
+                console.log()
+                ui.note(buildSummary(appName, dir, filesToUpload, compliance), 'Review Summary')
+                console.log()
+
+                const action = await ui.select<'submit' | 'back' | 'cancel'>({
+                    message: `Submit review? (100 credits)`,
+                    options: [
+                        { value: 'submit', label: 'Submit review', hint: '100 credits will be deducted' },
+                        { value: 'back', label: 'Go back to edit', hint: 'Change app details or compliance' },
+                        { value: 'cancel', label: 'Save draft & exit', hint: 'Save progress and exit' },
+                    ],
+                })
+
+                if (action === null || action === 'cancel') {
+                    draftState._flowPosition = 'review'  // Save position before exiting
+                    await offerDraftSave(draftState)
+                    return
+                } else if (action === 'back') {
+                    currentStepIndex--
+                } else {
+                    // Proceed to submission
+                    draftState._flowPosition = 'confirmation'  // Mark as moving to submission
+                    currentStepIndex++
+                }
+            }
         }
-        draftState.compliance = compliance
-        draftState._flowPosition = 'confirmation'
     }
 
-    // Summary confirmation
-    if (fromMenu) {
-        console.log()
-        ui.note(buildSummary(appName, dir, filesToUpload, compliance), 'Review Summary')
+    // Summary confirmation (only in direct CLI mode - fromMenu already showed it in navigation loop)
+    if (!fromMenu) {
+        ui.intro(`Submit ${appName} for analysis`)
 
-        const action = await ui.select<'submit' | 'cancel'>({
-            message: `Submit review? (100 credits)`,
-            options: [
-                { value: 'submit', label: 'Submit review', hint: '100 credits will be deducted' },
-                { value: 'cancel', label: 'Cancel', hint: 'Back to menu' },
-            ],
+        const fileLines = filesToUpload.map((f) => {
+            const size = getFileSize(f.path)
+            const icon = f.type === 'screenshot' ? icons.image : icons.file
+            return `  ${icon} ${f.filename} ${subtext(`(${formatBytes(size)})`)}`
         })
 
-        if (action === null || action === 'cancel') {
-            if (fromMenu) await offerDraftSave(draftState)
+        ui.log.message(chalk.bold('Files to upload:') + '\n' + fileLines.join('\n'))
+
+        const shouldContinue = await ui.confirm('This will use 100 credits. Continue?')
+        if (shouldContinue === null || !shouldContinue) {
+            ui.outro('Submission cancelled.')
             return
-        }
-    } else {
-        // Direct CLI mode -- simple confirmation
-        if (!fromMenu) {
-            ui.intro(`Submit ${appName} for analysis`)
-
-            const fileLines = filesToUpload.map((f) => {
-                const size = getFileSize(f.path)
-                const icon = f.type === 'screenshot' ? icons.image : icons.file
-                return `  ${icon} ${f.filename} ${subtext(`(${formatBytes(size)})`)}`
-            })
-
-            ui.log.message(chalk.bold('Files to upload:') + '\n' + fileLines.join('\n'))
-
-            const shouldContinue = await ui.confirm('This will use 100 credits. Continue?')
-            if (shouldContinue === null || !shouldContinue) {
-                ui.outro('Submission cancelled.')
-                return
-            }
         }
     }
 
@@ -802,31 +1204,108 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         demoPassword: draft.demo_password,
     }
 
+    const draftState: DraftState = {
+        appName: draft.app_name,
+        description: draft.description,
+        keywords: draft.keywords,
+        category: draft.category,
+        supportUrl: draft.support_url,
+        promotionalText: draft.promotional_text,
+        marketingUrl: draft.marketing_url,
+        signInRequired: draft.sign_in_required ?? false,
+        demoUsername: draft.demo_username,
+        demoPassword: draft.demo_password,
+        _flowPosition: draft._flowPosition,
+    }
+
     let appDetails: AppDetails
     let appName: string
     let compliance: ComplianceData
 
-    // Phase 2: Check if user was in compliance phase when they saved
-    if (draft._flowPosition === 'compliance') {
+    // Determine resume point based on flow position
+    const flowPosition = draft._flowPosition || 'appDetails'
+
+    if (flowPosition === 'asc' || flowPosition === 'screenshots') {
+        // User was in early steps - resume from app details (screenshots are auto-detected)
+        ui.log.step(`Resuming from app details...`)
+        console.log()
+
+        const collectedDetails = await collectAppDetailsWithNav(projectName, draftState)
+        if (collectedDetails === 'cancel' || collectedDetails === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
+        appDetails = collectedDetails
+        appName = collectedDetails.appName
+
+        // Collect compliance
+        const collectedCompliance = await collectComplianceWithNav(draftState)
+        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
+        compliance = collectedCompliance
+    } else if (flowPosition === 'appDetails') {
+        // User was in app details - resume from app details
+        ui.log.step(`Resuming from app details...`)
+        console.log()
+
+        const collectedDetails = await collectAppDetailsWithNav(projectName, draftState)
+        if (collectedDetails === 'cancel' || collectedDetails === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
+        appDetails = collectedDetails
+        appName = collectedDetails.appName
+
+        // Collect compliance
+        const collectedCompliance = await collectComplianceWithNav(draftState)
+        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
+        compliance = collectedCompliance
+    } else if (flowPosition === 'compliance') {
         // Jump directly to compliance, skipping app details
-        ui.log.step('Resuming from Compliance section...')
+        ui.log.step('Resuming from compliance section...')
         console.log()
 
         appDetails = draftDefaults as AppDetails
         appName = appDetails.appName
 
-        compliance = await collectCompliance()
-        if (compliance === null) return
+        const collectedCompliance = await collectComplianceWithNav(draftState)
+        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
+        compliance = collectedCompliance
+    } else if (flowPosition === 'review' || flowPosition === 'confirmation') {
+        // User was at review/final step - use saved details and show review
+        ui.log.step('Resuming from review step...')
+        console.log()
+
+        appDetails = draftDefaults as AppDetails
+        appName = appDetails.appName
+        compliance = draftState.compliance || null
     } else {
-        // User was in app details or earlier - collect from start
-        const collectedDetails = await collectAppDetails(projectName, draftDefaults)
-        if (collectedDetails === null) return
+        // Fallback to app details for any unknown position
+        ui.log.step(`Resuming from app details...`)
+        console.log()
+
+        const collectedDetails = await collectAppDetailsWithNav(projectName, draftState)
+        if (collectedDetails === 'cancel' || collectedDetails === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
         appDetails = collectedDetails
         appName = collectedDetails.appName
 
-        // Collect compliance
-        compliance = await collectCompliance()
-        if (compliance === null) return
+        const collectedCompliance = await collectComplianceWithNav(draftState)
+        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
+            await offerDraftSave(draftState)
+            return
+        }
+        compliance = collectedCompliance
     }
 
     // Summary confirmation
@@ -1042,13 +1521,12 @@ async function pollForReport(
         }
     }
 
-    if (process.stdin.isTTY) {
-        process.stdin.setRawMode(true)
-        process.stdin.resume()
-        process.stdin.on('data', onKeypress)
-    }
-
     try {
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode(true)
+            process.stdin.resume()
+            process.stdin.on('data', onKeypress)
+        }
         for (let i = 0; i < maxAttempts; i++) {
             // Cancellable sleep: check every 500ms
             for (let w = 0; w < interval / 500; w++) {
