@@ -1,5 +1,5 @@
 import * as ui from '../../ui/interactive.js'
-import { brand, subtext, icons } from '../../ui/theme.js'
+import { brand, subtext } from '../../ui/theme.js'
 import { DraftState, FileToUpload } from './types.js'
 import chalk from 'chalk'
 
@@ -68,10 +68,12 @@ export class DashboardView {
         return sections.filter(s => s.required).every(s => s.complete)
     }
 
-    async render(projectName: string): Promise<DashboardAction> {
+    async render(projectName: string, email?: string, credits?: number): Promise<DashboardAction> {
         const sections = this.getSections()
 
-        console.log()
+        // Show the giant ASCII logo header
+        ui.renderHeader(email, credits)
+
         console.log(brand(`  ◆ Submission Dashboard: ${projectName}`))
         console.log()
 

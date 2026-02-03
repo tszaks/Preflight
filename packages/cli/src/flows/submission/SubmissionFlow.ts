@@ -11,6 +11,7 @@ export class SubmissionFlow {
         private filesToUpload: FileToUpload[],
         private projectName: string,
         private ascEmail: string | undefined,
+        private credits: number | undefined,
         private saveDraftCallback: (state: DraftState) => Promise<void>
     ) { }
 
@@ -22,8 +23,7 @@ export class SubmissionFlow {
         const dashboard = new DashboardView(this.state, this.filesToUpload, this.ascEmail)
 
         while (true) {
-            ui.clearScreen()
-            const action = await dashboard.render(this.projectName)
+            const action = await dashboard.render(this.projectName, this.ascEmail, this.credits)
 
             switch (action) {
                 case 'save_draft':
