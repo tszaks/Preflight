@@ -565,6 +565,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         // Check ASC connection for dashboard display
         let ascEmail: string | undefined
+        let userCredits: number | undefined
         try {
             const ascRes = await apiRequest('/api/asc/connect')
             if (ascRes.ok) {
@@ -575,7 +576,16 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             }
         } catch { /* ignore */ }
 
-        const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, offerDraftSave)
+        // Fetch credits for dashboard display
+        try {
+            const creditsRes = await apiRequest('/api/credits')
+            if (creditsRes.ok) {
+                const creditsData = await creditsRes.json()
+                userCredits = creditsData.credits
+            }
+        } catch { /* ignore */ }
+
+        const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, userCredits, offerDraftSave)
 
         flow.addStep('asc', new AscStep())
         flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
@@ -914,6 +924,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
 
     // Check ASC connection for dashboard display
     let ascEmail: string | undefined
+    let userCredits: number | undefined
     try {
         const ascRes = await apiRequest('/api/asc/connect')
         if (ascRes.ok) {
@@ -924,7 +935,16 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         }
     } catch { /* ignore */ }
 
-    const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, offerDraftSave)
+    // Fetch credits for dashboard display
+    try {
+        const creditsRes = await apiRequest('/api/credits')
+        if (creditsRes.ok) {
+            const creditsData = await creditsRes.json()
+            userCredits = creditsData.credits
+        }
+    } catch { /* ignore */ }
+
+    const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, userCredits, offerDraftSave)
 
     flow.addStep('asc', new AscStep())
     flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
