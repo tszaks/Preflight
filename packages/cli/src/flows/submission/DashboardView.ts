@@ -17,6 +17,7 @@ interface SectionStatus {
     complete: boolean
     summary: string
     required: boolean
+    stepNumber: number
 }
 
 export class DashboardView {
@@ -33,32 +34,36 @@ export class DashboardView {
 
         return [
             {
-                id: 'asc',
-                name: 'ASC Account',
-                complete: !!this.ascEmail,
-                summary: this.ascEmail || 'Not connected',
-                required: false,
-            },
-            {
-                id: 'screenshots',
-                name: 'Screenshots',
-                complete: screenshotCount > 0,
-                summary: screenshotCount > 0 ? `${screenshotCount} images ready` : 'None selected',
-                required: false,
-            },
-            {
                 id: 'app_details',
                 name: 'App Details',
                 complete: hasAppDetails,
-                summary: hasAppDetails ? this.state.appName! : 'Required',
+                summary: hasAppDetails ? this.state.appName! : 'Name, description, keywords...',
                 required: true,
+                stepNumber: 1,
             },
             {
                 id: 'compliance',
                 name: 'Compliance',
                 complete: hasCompliance,
-                summary: hasCompliance ? `Age ${this.state.compliance!.ageRating}` : 'Required',
+                summary: hasCompliance ? `Age ${this.state.compliance!.ageRating}` : 'Age rating, privacy info...',
                 required: true,
+                stepNumber: 2,
+            },
+            {
+                id: 'screenshots',
+                name: 'Screenshots',
+                complete: screenshotCount > 0,
+                summary: screenshotCount > 0 ? `${screenshotCount} images ready` : 'Add app screenshots',
+                required: false,
+                stepNumber: 3,
+            },
+            {
+                id: 'asc',
+                name: 'App Store Connect',
+                complete: !!this.ascEmail,
+                summary: this.ascEmail || 'Auto-fill from ASC',
+                required: false,
+                stepNumber: 4,
             },
         ]
     }
@@ -68,59 +73,88 @@ export class DashboardView {
         return sections.filter(s => s.required).every(s => s.complete)
     }
 
+    private getNextStep(): SectionStatus | null {
+        const sections = this.getSections()
+        // Find first incomplete required step
+        const incompleteRequired = sections.find(s => s.required && !s.complete)
+        if (incompleteRequired) return incompleteRequired
+        // If all required done, find first incomplete optional
+        return sections.find(s => !s.complete) || null
+    }
+
     async render(projectName: string, email?: string, credits?: number): Promise<DashboardAction> {
         const sections = this.getSections()
+        const nextStep = this.getNextStep()
+        const completedCount = sections.filter(s => s.complete).length
+        const requiredComplete = sections.filter(s => s.required).every(s => s.complete)
 
         // Show the giant ASCII logo header
         ui.renderHeader(email, credits)
 
-        console.log(brand(`  ◆ Submission Dashboard: ${projectName}`))
+        console.log(brand(`  ◆ Submission: ${projectName}`))
         console.log()
 
-        // Render section status
+        // Progress indicator
+        const progressBar = sections.map(s => s.complete ? chalk.green('●') : chalk.dim('○')).join(' ')
+        console.log(`    Progress: ${progressBar}  ${chalk.dim(`(${completedCount}/${sections.length})`)}`)
+        console.log()
+
+        // Render section status with step numbers
         for (const section of sections) {
-            const icon = section.complete ? chalk.green('✓') : chalk.dim('○')
-            const name = section.complete ? section.name : chalk.dim(section.name)
+            const stepNum = chalk.dim(`${section.stepNumber}.`)
+            const icon = section.complete ? chalk.green('✓') : (section.required ? chalk.yellow('○') : chalk.dim('○'))
+            const name = section.complete ? chalk.green(section.name) : (section.required ? chalk.white(section.name) : chalk.dim(section.name))
+            const tag = section.required ? chalk.yellow('required') : chalk.dim('optional')
             const summary = section.complete
                 ? subtext(section.summary)
-                : (section.required ? chalk.yellow(section.summary) : subtext(section.summary))
+                : chalk.dim(section.summary)
 
-            console.log(`    ${icon} ${name.padEnd(18)} ${summary}`)
+            // Highlight next step
+            const isNext = nextStep?.id === section.id
+            const pointer = isNext ? chalk.cyan('→ ') : '  '
+
+            console.log(`  ${pointer}${stepNum} ${icon} ${name.padEnd(22)} ${section.complete ? '' : `[${tag}]`}`)
+            console.log(`       ${summary}`)
         }
         console.log()
 
-        // Build options
+        // Build options with clear guidance
         const options: { value: DashboardAction; label: string; hint?: string }[] = []
 
-        // Add incomplete required sections first
-        const incompleteRequired = sections.filter(s => s.required && !s.complete)
-        if (incompleteRequired.length > 0) {
-            for (const section of incompleteRequired) {
-                options.push({
-                    value: section.id,
-                    label: `Configure ${section.name}`,
-                    hint: 'Required',
-                })
-            }
+        // Show next recommended action prominently
+        if (nextStep && !nextStep.complete) {
+            options.push({
+                value: nextStep.id,
+                label: `Start Step ${nextStep.stepNumber}: ${nextStep.name}`,
+                hint: nextStep.required ? 'Required' : 'Recommended',
+            })
         }
 
-        // Add edit options for complete sections
+        // Add other sections
         for (const section of sections) {
-            if (section.complete || !section.required) {
-                options.push({
-                    value: section.id,
-                    label: section.complete ? `Edit ${section.name}` : `Configure ${section.name}`,
-                    hint: section.complete ? section.summary : 'Optional',
-                })
+            if (section.id !== nextStep?.id) {
+                if (section.complete) {
+                    options.push({
+                        value: section.id,
+                        label: `Edit ${section.name}`,
+                        hint: section.summary,
+                    })
+                } else {
+                    options.push({
+                        value: section.id,
+                        label: `Configure ${section.name}`,
+                        hint: section.required ? 'Required' : 'Optional',
+                    })
+                }
             }
         }
 
         // Review & Submit (only if can submit)
-        if (this.canSubmit()) {
+        if (requiredComplete) {
             options.push({
                 value: 'review',
-                label: 'Review & Submit',
-                hint: '100 credits',
+                label: '✔ Review & Submit',
+                hint: 'Ready! (100 credits)',
             })
         }
 
@@ -132,7 +166,7 @@ export class DashboardView {
         })
 
         const choice = await ui.select<DashboardAction>({
-            message: 'What would you like to do?',
+            message: requiredComplete ? 'Ready to submit! Or continue editing:' : 'What would you like to do?',
             options,
         })
 
@@ -143,3 +177,4 @@ export class DashboardView {
         return choice
     }
 }
+
