@@ -563,13 +563,25 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         const { ComplianceStep } = await import('../flows/submission/steps/ComplianceStep.js')
         const { ReviewStep } = await import('../flows/submission/steps/ReviewStep.js')
 
-        const flow = new SubmissionFlow(draftState, offerDraftSave)
+        // Check ASC connection for dashboard display
+        let ascEmail: string | undefined
+        try {
+            const ascRes = await apiRequest('/api/asc/connect')
+            if (ascRes.ok) {
+                const ascData = await ascRes.json()
+                if (ascData.connected && ascData.email) {
+                    ascEmail = ascData.email
+                }
+            }
+        } catch { /* ignore */ }
 
-        flow.addStep(new AscStep())
-        flow.addStep(new ScreenshotsStep(filesToUpload))
-        flow.addStep(new AppDetailsStep(projectName))
-        flow.addStep(new ComplianceStep())
-        flow.addStep(new ReviewStep(appName, dir, filesToUpload))
+        const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, offerDraftSave)
+
+        flow.addStep('asc', new AscStep())
+        flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
+        flow.addStep('app_details', new AppDetailsStep(projectName))
+        flow.addStep('compliance', new ComplianceStep())
+        flow.addStep('review', new ReviewStep(appName, dir, filesToUpload))
 
         const result = await flow.start()
 
@@ -900,13 +912,25 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
     const { ComplianceStep } = await import('../flows/submission/steps/ComplianceStep.js')
     const { ReviewStep } = await import('../flows/submission/steps/ReviewStep.js')
 
-    const flow = new SubmissionFlow(draftState, offerDraftSave)
+    // Check ASC connection for dashboard display
+    let ascEmail: string | undefined
+    try {
+        const ascRes = await apiRequest('/api/asc/connect')
+        if (ascRes.ok) {
+            const ascData = await ascRes.json()
+            if (ascData.connected && ascData.email) {
+                ascEmail = ascData.email
+            }
+        }
+    } catch { /* ignore */ }
 
-    flow.addStep(new AscStep())
-    flow.addStep(new ScreenshotsStep(filesToUpload))
-    flow.addStep(new AppDetailsStep(projectName))
-    flow.addStep(new ComplianceStep())
-    flow.addStep(new ReviewStep(draftState.appName || projectName, dir, filesToUpload))
+    const flow = new SubmissionFlow(draftState, filesToUpload, projectName, ascEmail, offerDraftSave)
+
+    flow.addStep('asc', new AscStep())
+    flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
+    flow.addStep('app_details', new AppDetailsStep(projectName))
+    flow.addStep('compliance', new ComplianceStep())
+    flow.addStep('review', new ReviewStep(draftState.appName || projectName, dir, filesToUpload))
 
     const result = await flow.start()
 
