@@ -1,4 +1,12 @@
 import chalk from 'chalk'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+// Read version from package.json dynamically
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', '..', 'package.json'), 'utf-8'))
 
 // Brand colors — consistent visual language across all output
 export const brand = chalk.bold.hex('#E8700A')
@@ -78,7 +86,7 @@ export function formatBytes(bytes: number): string {
 }
 
 // App version string
-export const APP_VERSION = '0.2.14'
+export const APP_VERSION = pkg.version
 export const APP_NAME = 'Preflight'
 export const APP_TAGLINE = 'App Store Review Scanner'
 
