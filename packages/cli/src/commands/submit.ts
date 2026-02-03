@@ -110,6 +110,13 @@ interface DraftState {
     demoUsername?: string
     demoPassword?: string
     compliance?: ComplianceData
+    // Phase 2: Flow position tracking for draft resumption
+    _flowPosition?: 'appDetails' | 'compliance' | 'confirmation'
+    _complianceProgress?: {
+        ageRatingComplete: boolean
+        privacyComplete: boolean
+        checklistComplete: boolean
+    }
 }
 
 async function offerDraftSave(state: DraftState): Promise<void> {
@@ -134,6 +141,14 @@ async function offerDraftSave(state: DraftState): Promise<void> {
         if (state.demoUsername) body.demo_username = state.demoUsername
         if (state.demoPassword) body.demo_password = state.demoPassword
         if (state.compliance) Object.assign(body, formatComplianceForApi(state.compliance))
+
+        // Phase 2: Include flow position metadata
+        if (state._flowPosition) {
+            body._flowPosition = state._flowPosition
+        }
+        if (state._complianceProgress) {
+            body._complianceProgress = state._complianceProgress
+        }
 
         const res = await apiRequest('/api/submissions', {
             method: 'POST',
@@ -373,6 +388,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         // App Details
         appDetails = await collectAppDetails(projectName)
         if (appDetails === null) {
+            draftState._flowPosition = 'appDetails'
             await offerDraftSave(draftState)
             return
         }
@@ -392,12 +408,14 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         appDetails = await offerAscAutofill(appDetails)
 
         // Compliance
+        draftState._flowPosition = 'compliance'
         compliance = await collectCompliance()
         if (compliance === null) {
             await offerDraftSave(draftState)
             return
         }
         draftState.compliance = compliance
+        draftState._flowPosition = 'confirmation'
     }
 
     // Summary confirmation
@@ -714,14 +732,32 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         demoPassword: draft.demo_password,
     }
 
-    // Collect app details (pre-filled with draft data)
-    const appDetails = await collectAppDetails(projectName, draftDefaults)
-    if (appDetails === null) return
-    const appName = appDetails.appName
+    let appDetails: AppDetails
+    let appName: string
+    let compliance: ComplianceData
 
-    // Collect compliance (fresh — compliance data is too complex to partially restore)
-    const compliance = await collectCompliance()
-    if (compliance === null) return
+    // Phase 2: Check if user was in compliance phase when they saved
+    if (draft._flowPosition === 'compliance') {
+        // Jump directly to compliance, skipping app details
+        ui.log.step('Resuming from Compliance section...')
+        console.log()
+
+        appDetails = draftDefaults as AppDetails
+        appName = appDetails.appName
+
+        compliance = await collectCompliance()
+        if (compliance === null) return
+    } else {
+        // User was in app details or earlier - collect from start
+        const collectedDetails = await collectAppDetails(projectName, draftDefaults)
+        if (collectedDetails === null) return
+        appDetails = collectedDetails
+        appName = collectedDetails.appName
+
+        // Collect compliance
+        compliance = await collectCompliance()
+        if (compliance === null) return
+    }
 
     // Summary confirmation
     console.log()

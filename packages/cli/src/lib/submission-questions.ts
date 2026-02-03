@@ -194,119 +194,282 @@ export function calculateAgeRating(answers: AgeRatingAnswers): string {
 export async function collectAppDetails(projectName: string, defaults?: Partial<AppDetails>): Promise<AppDetails | null> {
     const defaultName = defaults?.appName || projectName
 
-    // App Name (required, pre-filled from project or draft)
-    const appName = await ui.text({
-        message: 'App Name',
-        placeholder: defaultName,
-        defaultValue: defaultName,
-        validate: (val) => {
-            if (!val?.trim()) return 'App name is required'
-        },
-    })
-    if (appName === null) return null
+    let details: AppDetails | null = null
+    let confirmed = false
 
-    // Description (optional)
-    const description = await ui.text({
-        message: 'Description (press Enter to skip)',
-        placeholder: 'Describe your app as it appears in the App Store',
-        ...(defaults?.description ? { defaultValue: defaults.description } : {}),
-    })
-    if (description === null) return null
-
-    // Keywords (optional)
-    const keywords = await ui.text({
-        message: 'Keywords (press Enter to skip)',
-        placeholder: 'Comma-separated, 100 chars max',
-        ...(defaults?.keywords ? { defaultValue: defaults.keywords } : {}),
-        validate: (val) => {
-            if (val && val.length > 100) return 'Keywords must be 100 characters or less'
-        },
-    })
-    if (keywords === null) return null
-
-    // Promotional Text (optional)
-    const promotionalText = await ui.text({
-        message: 'Promotional Text (press Enter to skip)',
-        placeholder: 'Short promotional text, 170 chars max',
-        ...(defaults?.promotionalText ? { defaultValue: defaults.promotionalText } : {}),
-        validate: (val) => {
-            if (val && val.length > 170) return 'Promotional text must be 170 characters or less'
-        },
-    })
-    if (promotionalText === null) return null
-
-    // Category (optional)
-    const categoryOptions = [
-        { value: '__skip__' as const, label: 'Skip', hint: 'Choose later' },
-        ...CATEGORIES.map(c => ({ value: c, label: c })),
-    ]
-    const category = await ui.select<string>({
-        message: 'Primary Category',
-        options: categoryOptions,
-        ...(defaults?.category ? { initialValue: defaults.category } : {}),
-    })
-    if (category === null) return null
-
-    // Support URL (optional)
-    const supportUrl = await ui.text({
-        message: 'Support URL (press Enter to skip)',
-        placeholder: 'https://example.com/support',
-        ...(defaults?.supportUrl ? { defaultValue: defaults.supportUrl } : {}),
-    })
-    if (supportUrl === null) return null
-
-    // Marketing URL (optional)
-    const marketingUrl = await ui.text({
-        message: 'Marketing URL (press Enter to skip)',
-        placeholder: 'https://example.com',
-        ...(defaults?.marketingUrl ? { defaultValue: defaults.marketingUrl } : {}),
-    })
-    if (marketingUrl === null) return null
-
-    // Sign-in Required?
-    const signInRequired = await ui.confirm(
-        'Does your app require sign-in for review?',
-        defaults?.signInRequired ?? false,
-    )
-    if (signInRequired === null) return null
-
-    let demoUsername: string | undefined
-    let demoPassword: string | undefined
-
-    if (signInRequired) {
-        const email = await ui.text({
-            message: 'Demo Email',
-            placeholder: 'test@example.com',
-            ...(defaults?.demoUsername ? { defaultValue: defaults.demoUsername } : {}),
+    while (!confirmed) {
+        // App Name (required, pre-filled from project or draft)
+        const appName = await ui.text({
+            message: 'App Name',
+            placeholder: defaultName,
+            defaultValue: details?.appName || defaultName,
             validate: (val) => {
-                if (!val?.trim()) return 'Demo email is required when sign-in is required'
+                if (!val?.trim()) return 'App name is required'
             },
         })
-        if (email === null) return null
-        demoUsername = email
+        if (appName === null) return null
 
-        const pass = await ui.password({
-            message: 'Demo Password',
+        // Description (optional)
+        const description = await ui.text({
+            message: 'Description (press Enter to skip)',
+            placeholder: 'Describe your app as it appears in the App Store',
+            defaultValue: details?.description || (defaults?.description ? defaults.description : ''),
+        })
+        if (description === null) return null
+
+        // Keywords (optional)
+        const keywords = await ui.text({
+            message: 'Keywords (press Enter to skip)',
+            placeholder: 'Comma-separated, 100 chars max',
+            defaultValue: details?.keywords || (defaults?.keywords ? defaults.keywords : ''),
             validate: (val) => {
-                if (!val?.trim()) return 'Demo password is required when sign-in is required'
+                if (val && val.length > 100) return 'Keywords must be 100 characters or less'
             },
         })
-        if (pass === null) return null
-        demoPassword = pass
+        if (keywords === null) return null
+
+        // Promotional Text (optional)
+        const promotionalText = await ui.text({
+            message: 'Promotional Text (press Enter to skip)',
+            placeholder: 'Short promotional text, 170 chars max',
+            defaultValue: details?.promotionalText || (defaults?.promotionalText ? defaults.promotionalText : ''),
+            validate: (val) => {
+                if (val && val.length > 170) return 'Promotional text must be 170 characters or less'
+            },
+        })
+        if (promotionalText === null) return null
+
+        // Category (optional)
+        const categoryOptions = [
+            { value: '__skip__' as const, label: 'Skip', hint: 'Choose later' },
+            ...CATEGORIES.map(c => ({ value: c, label: c })),
+        ]
+        const category = await ui.select<string>({
+            message: 'Primary Category',
+            options: categoryOptions,
+            initialValue: details?.category || (defaults?.category ? defaults.category : '__skip__'),
+        })
+        if (category === null) return null
+
+        // Support URL (optional)
+        const supportUrl = await ui.text({
+            message: 'Support URL (press Enter to skip)',
+            placeholder: 'https://example.com/support',
+            defaultValue: details?.supportUrl || (defaults?.supportUrl ? defaults.supportUrl : ''),
+        })
+        if (supportUrl === null) return null
+
+        // Marketing URL (optional)
+        const marketingUrl = await ui.text({
+            message: 'Marketing URL (press Enter to skip)',
+            placeholder: 'https://example.com',
+            defaultValue: details?.marketingUrl || (defaults?.marketingUrl ? defaults.marketingUrl : ''),
+        })
+        if (marketingUrl === null) return null
+
+        // Sign-in Required?
+        const signInRequired = await ui.confirm(
+            'Does your app require sign-in for review?',
+            details?.signInRequired ?? (defaults?.signInRequired ?? false),
+        )
+        if (signInRequired === null) return null
+
+        let demoUsername: string | undefined
+        let demoPassword: string | undefined
+
+        if (signInRequired) {
+            const email = await ui.text({
+                message: 'Demo Email',
+                placeholder: 'test@example.com',
+                defaultValue: details?.demoUsername || (defaults?.demoUsername ? defaults.demoUsername : ''),
+                validate: (val) => {
+                    if (!val?.trim()) return 'Demo email is required when sign-in is required'
+                },
+            })
+            if (email === null) return null
+            demoUsername = email
+
+            const pass = await ui.password({
+                message: 'Demo Password',
+                defaultValue: details?.demoPassword || (defaults?.demoPassword ? defaults.demoPassword : ''),
+                validate: (val) => {
+                    if (!val?.trim()) return 'Demo password is required when sign-in is required'
+                },
+            })
+            if (pass === null) return null
+            demoPassword = pass
+        }
+
+        details = {
+            appName: appName.trim(),
+            description: description?.trim() || undefined,
+            keywords: keywords?.trim() || undefined,
+            category: category === '__skip__' ? undefined : category,
+            supportUrl: supportUrl?.trim() || undefined,
+            promotionalText: promotionalText?.trim() || undefined,
+            marketingUrl: marketingUrl?.trim() || undefined,
+            signInRequired,
+            demoUsername,
+            demoPassword,
+        }
+
+        // Show summary and ask to confirm or edit
+        console.log()
+        const summaryLines = [
+            `App Name: ${details.appName}`,
+            `Description: ${details.description || '[empty]'}`,
+            `Keywords: ${details.keywords || '[empty]'}`,
+            `Promotional Text: ${details.promotionalText || '[empty]'}`,
+            `Category: ${details.category || '[empty]'}`,
+            `Support URL: ${details.supportUrl || '[empty]'}`,
+            `Marketing URL: ${details.marketingUrl || '[empty]'}`,
+            `Sign-in Required: ${details.signInRequired ? 'Yes' : 'No'}`,
+            ...(details.signInRequired ? [`Demo Email: ${details.demoUsername || '[empty]'}`] : []),
+        ]
+        ui.note(summaryLines.join('\n'), 'App Details Summary')
+
+        const action = await ui.select<'continue' | 'edit'>({
+            message: 'Review app details',
+            options: [
+                { value: 'continue', label: 'Continue to Compliance', hint: 'Looks good' },
+                { value: 'edit', label: 'Edit a field', hint: 'Make changes' },
+            ],
+        })
+
+        if (action === null) return null
+        if (action === 'continue') {
+            confirmed = true
+        } else {
+            // Show field selector
+            const fieldOptions = [
+                { value: 'appName', label: `App Name: ${details.appName}` },
+                { value: 'description', label: `Description: ${details.description || '[empty]'}` },
+                { value: 'keywords', label: `Keywords: ${details.keywords || '[empty]'}` },
+                { value: 'promotionalText', label: `Promotional Text: ${details.promotionalText || '[empty]'}` },
+                { value: 'category', label: `Category: ${details.category || '[empty]'}` },
+                { value: 'supportUrl', label: `Support URL: ${details.supportUrl || '[empty]'}` },
+                { value: 'marketingUrl', label: `Marketing URL: ${details.marketingUrl || '[empty]'}` },
+                { value: 'signInRequired', label: `Sign-in Required: ${details.signInRequired ? 'Yes' : 'No'}` },
+                ...(details.signInRequired ? [
+                    { value: 'demoUsername', label: `Demo Email: ${details.demoUsername || '[empty]'}` },
+                    { value: 'demoPassword', label: 'Demo Password: [hidden]' },
+                ] : []),
+                { value: 'back', label: 'Back to summary' },
+            ]
+
+            const fieldToEdit = await ui.select<string>({
+                message: 'Which field to edit?',
+                options: fieldOptions,
+            })
+
+            if (fieldToEdit === null || fieldToEdit === 'back') continue
+
+            // Re-prompt just that field
+            console.log()
+            switch (fieldToEdit) {
+                case 'appName':
+                    const newName = await ui.text({
+                        message: 'App Name',
+                        defaultValue: details.appName,
+                        validate: (val) => {
+                            if (!val?.trim()) return 'App name is required'
+                        },
+                    })
+                    if (newName !== null) details.appName = newName.trim()
+                    break
+                case 'description':
+                    const newDesc = await ui.text({
+                        message: 'Description',
+                        defaultValue: details.description || '',
+                    })
+                    if (newDesc !== null) details.description = newDesc.trim() || undefined
+                    break
+                case 'keywords':
+                    const newKeywords = await ui.text({
+                        message: 'Keywords',
+                        defaultValue: details.keywords || '',
+                        validate: (val) => {
+                            if (val && val.length > 100) return 'Keywords must be 100 characters or less'
+                        },
+                    })
+                    if (newKeywords !== null) details.keywords = newKeywords.trim() || undefined
+                    break
+                case 'promotionalText':
+                    const newPromo = await ui.text({
+                        message: 'Promotional Text',
+                        defaultValue: details.promotionalText || '',
+                        validate: (val) => {
+                            if (val && val.length > 170) return 'Promotional text must be 170 characters or less'
+                        },
+                    })
+                    if (newPromo !== null) details.promotionalText = newPromo.trim() || undefined
+                    break
+                case 'category':
+                    const newCategory = await ui.select<string>({
+                        message: 'Primary Category',
+                        options: [
+                            { value: '__skip__', label: 'Skip', hint: 'Choose later' },
+                            ...CATEGORIES.map(c => ({ value: c, label: c })),
+                        ],
+                        initialValue: details.category || '__skip__',
+                    })
+                    if (newCategory !== null) {
+                        details.category = newCategory === '__skip__' ? undefined : newCategory
+                    }
+                    break
+                case 'supportUrl':
+                    const newSupport = await ui.text({
+                        message: 'Support URL',
+                        defaultValue: details.supportUrl || '',
+                    })
+                    if (newSupport !== null) details.supportUrl = newSupport.trim() || undefined
+                    break
+                case 'marketingUrl':
+                    const newMarketing = await ui.text({
+                        message: 'Marketing URL',
+                        defaultValue: details.marketingUrl || '',
+                    })
+                    if (newMarketing !== null) details.marketingUrl = newMarketing.trim() || undefined
+                    break
+                case 'signInRequired':
+                    const newSignIn = await ui.confirm(
+                        'Does your app require sign-in for review?',
+                        details.signInRequired,
+                    )
+                    if (newSignIn !== null) {
+                        details.signInRequired = newSignIn
+                        // Clear credentials if turning off sign-in
+                        if (!newSignIn) {
+                            details.demoUsername = undefined
+                            details.demoPassword = undefined
+                        }
+                    }
+                    break
+                case 'demoUsername':
+                    const newEmail = await ui.text({
+                        message: 'Demo Email',
+                        defaultValue: details.demoUsername || '',
+                        validate: (val) => {
+                            if (!val?.trim()) return 'Demo email is required'
+                        },
+                    })
+                    if (newEmail !== null) details.demoUsername = newEmail.trim()
+                    break
+                case 'demoPassword':
+                    const newPass = await ui.password({
+                        message: 'Demo Password',
+                        validate: (val) => {
+                            if (!val?.trim()) return 'Demo password is required'
+                        },
+                    })
+                    if (newPass !== null) details.demoPassword = newPass
+                    break
+            }
+            console.log()
+        }
     }
 
-    return {
-        appName: appName.trim(),
-        description: description?.trim() || undefined,
-        keywords: keywords?.trim() || undefined,
-        category: category === '__skip__' ? undefined : category,
-        supportUrl: supportUrl?.trim() || undefined,
-        promotionalText: promotionalText?.trim() || undefined,
-        marketingUrl: marketingUrl?.trim() || undefined,
-        signInRequired,
-        demoUsername,
-        demoPassword,
-    }
+    return details
 }
 
 // ─── Collect Age Rating ──────────────────────────────────────────────────
@@ -444,26 +607,61 @@ export async function collectPrivacyData(): Promise<PrivacyDeclarations | null> 
 export async function collectFeatureChecklist(): Promise<FeatureChecklist | null> {
     ui.log.step(subtext('Step 3 of 3: Features'))
 
-    const selectedFeatures = await ui.multiselect<string>({
-        message: 'Which features does your app include? (Space to select, Enter to confirm)',
-        options: FEATURE_ITEMS,
-    })
-    if (selectedFeatures === null) return null
+    let selectedFeatures: string[] = []
+    let checklist: FeatureChecklist | null = null
+    let confirmed = false
 
-    const checklist: FeatureChecklist = {
-        ugc: selectedFeatures.includes('ugc'),
-        login: selectedFeatures.includes('login'),
-        iap: selectedFeatures.includes('iap'),
-        subscriptions: selectedFeatures.includes('subscriptions'),
-        ads: selectedFeatures.includes('ads'),
-        thirdPartyLogin: selectedFeatures.includes('thirdPartyLogin'),
-        aiContent: selectedFeatures.includes('aiContent'),
-        healthClaims: selectedFeatures.includes('healthClaims'),
-        crypto: selectedFeatures.includes('crypto'),
-        miniApps: selectedFeatures.includes('miniApps'),
-        euDistribution: selectedFeatures.includes('euDistribution'),
-        externalPayments: selectedFeatures.includes('externalPayments'),
+    while (!confirmed) {
+        const result = await ui.multiselect<string>({
+            message: 'Which features does your app include? (Space to select, Enter to confirm)',
+            options: FEATURE_ITEMS,
+            initialValue: selectedFeatures,
+        })
+        if (result === null) return null
+
+        selectedFeatures = result
+
+        // Build checklist from selection
+        checklist = {
+            ugc: selectedFeatures.includes('ugc'),
+            login: selectedFeatures.includes('login'),
+            iap: selectedFeatures.includes('iap'),
+            subscriptions: selectedFeatures.includes('subscriptions'),
+            ads: selectedFeatures.includes('ads'),
+            thirdPartyLogin: selectedFeatures.includes('thirdPartyLogin'),
+            aiContent: selectedFeatures.includes('aiContent'),
+            healthClaims: selectedFeatures.includes('healthClaims'),
+            crypto: selectedFeatures.includes('crypto'),
+            miniApps: selectedFeatures.includes('miniApps'),
+            euDistribution: selectedFeatures.includes('euDistribution'),
+            externalPayments: selectedFeatures.includes('externalPayments'),
+        }
+
+        // Show summary of selected features
+        console.log()
+        const selectedLabels = selectedFeatures
+            .map(f => FEATURE_ITEMS.find(i => i.value === f)?.label || f)
+            .join(', ')
+        ui.log.info(`Selected: ${selectedLabels || 'None'}`)
+
+        // Confirm or edit
+        const action = await ui.select<'continue' | 'edit'>({
+            message: 'Continue with these features?',
+            options: [
+                { value: 'continue', label: 'Continue', hint: 'Proceed to follow-up questions' },
+                { value: 'edit', label: 'Edit selection', hint: 'Go back and modify' },
+            ],
+        })
+
+        if (action === null) return null
+        if (action === 'continue') {
+            confirmed = true
+            break
+        }
+        console.log()
     }
+
+    if (!checklist) return null
 
     // Conditional follow-ups
     if (checklist.login) {
@@ -497,7 +695,7 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
     // Mini apps individually reviewed (conditional on miniApps)
     if (checklist.miniApps) {
         const miniAppsReviewed = await ui.confirm(
-            'Have all mini apps/plugins been individually submitted for Apple review?',
+            'Have all mini app/plugins been individually submitted for Apple review?',
             false,
         )
         if (miniAppsReviewed === null) return null
@@ -530,23 +728,78 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
 // ─── Orchestrate All Compliance ──────────────────────────────────────────
 
 export async function collectCompliance(defaults?: Partial<ComplianceData>): Promise<ComplianceData | null> {
-    // Age Rating (use defaults if resuming a draft)
-    const ageResult = await collectAgeRating()
-    if (ageResult === null) return null
+    // Track completion of each phase
+    const state: {
+        ageRating?: { answers: AgeRatingAnswers; rating: string }
+        privacy?: PrivacyDeclarations
+        checklist?: FeatureChecklist
+    } = {}
 
-    // Privacy Data
-    const privacyResult = await collectPrivacyData()
-    if (privacyResult === null) return null
+    while (true) {
+        // Show phase selector with progress indicators
+        const options: Array<{ value: string; label: string; hint: string }> = [
+            {
+                value: 'age',
+                label: `1. Age Rating ${state.ageRating ? '✓' : ''}`,
+                hint: state.ageRating ? `Rated ${state.ageRating.rating}` : 'Not completed',
+            },
+            {
+                value: 'privacy',
+                label: `2. Privacy & Data ${state.privacy ? '✓' : ''}`,
+                hint: state.privacy ? 'Completed' : 'Not completed',
+            },
+            {
+                value: 'features',
+                label: `3. Features ${state.checklist ? '✓' : ''}`,
+                hint: state.checklist ? 'Completed' : 'Not completed',
+            },
+        ]
 
-    // Feature Checklist
-    const checklistResult = await collectFeatureChecklist()
-    if (checklistResult === null) return null
+        // Only show Continue when ALL complete
+        if (state.ageRating && state.privacy && state.checklist) {
+            options.push({
+                value: 'continue',
+                label: 'Continue to Review',
+                hint: 'All sections complete',
+            })
+        }
 
-    return {
-        ageRatingAnswers: ageResult.answers,
-        ageRating: ageResult.rating,
-        privacyDeclarations: privacyResult,
-        checklist: checklistResult,
+        options.push({ value: 'back', label: 'Back', hint: 'Return to app details' })
+
+        const choice = await ui.select<string>({
+            message: 'Compliance Information',
+            options,
+        })
+
+        if (choice === null || choice === 'back') return null
+        if (choice === 'continue') {
+            return {
+                ageRatingAnswers: state.ageRating!.answers,
+                ageRating: state.ageRating!.rating,
+                privacyDeclarations: state.privacy!,
+                checklist: state.checklist!,
+            }
+        }
+
+        // Call appropriate phase function
+        console.log()
+        switch (choice) {
+            case 'age':
+                const ageResult = await collectAgeRating()
+                if (ageResult !== null) state.ageRating = ageResult
+                console.log()
+                break
+            case 'privacy':
+                const privacyResult = await collectPrivacyData()
+                if (privacyResult !== null) state.privacy = privacyResult
+                console.log()
+                break
+            case 'features':
+                const featuresResult = await collectFeatureChecklist()
+                if (featuresResult !== null) state.checklist = featuresResult
+                console.log()
+                break
+        }
     }
 }
 
