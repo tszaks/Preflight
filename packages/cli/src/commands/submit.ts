@@ -309,277 +309,15 @@ async function offerAscConnection(draftState: DraftState): Promise<'forward' | '
 
 // ─── Screenshot Collection with Navigation (Phase 2) ──────────────────────
 
-async function collectScreenshotsWithNav(
-    filesToUpload: Array<{ type: string; index?: number; filename: string; path: string }>,
-    draftState: DraftState,
-): Promise<'forward' | 'back' | 'cancel'> {
-    // Helper to load screenshots from a path
-    const loadScreenshotsFromPath = (pathStr: string): number => {
-        try {
-            const resolved = resolve(pathStr.replace(/^\~/, process.env.HOME || ''))
-            const stats = statSync(resolved)
-
-            if (stats.isDirectory()) {
-                // Handle as folder
-                const imageExts = ['.png', '.jpg', '.jpeg']
-                const foundFiles = readdirSync(resolved)
-                    .filter((f) => imageExts.includes(extname(f).toLowerCase()))
-                    .map((f) => join(resolved, f))
-
-                // Remove existing screenshots
-                const screenshotIndices = filesToUpload
-                    .map((f, i) => (f.type === 'screenshot' ? i : -1))
-                    .filter((i) => i !== -1)
-                    .reverse()
-                for (const idx of screenshotIndices) {
-                    filesToUpload.splice(idx, 1)
-                }
-
-                for (let i = 0; i < Math.min(foundFiles.length, 10); i++) {
-                    filesToUpload.push({
-                        type: 'screenshot',
-                        index: i,
-                        filename: basename(foundFiles[i]),
-                        path: foundFiles[i],
-                    })
-                }
-
-                // Track screenshot paths in draft state
-                draftState._screenshotPaths = filesToUpload
-                    .filter((f) => f.type === 'screenshot')
-                    .map((f) => f.path)
-
-                return foundFiles.length
-            } else {
-                // Handle as single file
-                if (['.png', '.jpg', '.jpeg'].includes(extname(resolved).toLowerCase())) {
-                    // Remove existing screenshots
-                    const screenshotIndices = filesToUpload
-                        .map((f, i) => (f.type === 'screenshot' ? i : -1))
-                        .filter((i) => i !== -1)
-                        .reverse()
-                    for (const idx of screenshotIndices) {
-                        filesToUpload.splice(idx, 1)
-                    }
-
-                    filesToUpload.push({
-                        type: 'screenshot',
-                        index: 0,
-                        filename: basename(resolved),
-                        path: resolved,
-                    })
-
-                    // Track screenshot path in draft state
-                    draftState._screenshotPaths = [resolved]
-
-                    return 1
-                }
-            }
-        } catch {
-            return 0
-        }
-        return 0
-    }
-
-    let continuingFlow = false
-
-    while (true) {
-        const screenshotCount = filesToUpload.filter((f) => f.type === 'screenshot').length
-
-        if (continuingFlow && screenshotCount > 0) {
-            // Show navigation menu after initial load
-            const action = await ui.select<'continue' | 'change' | 'back'>({
-                message: `Screenshots (${screenshotCount} added)`,
-                options: [
-                    { value: 'continue', label: 'Continue', hint: 'Proceed to app details' },
-                    { value: 'change', label: 'Change screenshots', hint: 'Select different screenshots' },
-                    { value: 'back', label: 'Back', hint: 'Return to previous step' },
-                ],
-            })
-
-            if (action === null) return 'cancel'
-            if (action === 'back') return 'back'
-            if (action === 'continue') return 'forward'
-            // else action === 'change', continue loop to re-select
-        }
-
-        // Screenshot selection menu
-        const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip' | 'none'>({
-            message: continuingFlow ? 'Select screenshots' : 'How do you want to provide screenshots?',
-            options: [
-                { value: 'manual', label: 'Enter path manually', hint: 'Type or paste file/folder path' },
-                { value: 'browse', label: 'Browse with Finder...', hint: 'Choose files or folder' },
-                { value: 'skip', label: 'Skip', hint: 'Continue without screenshots' },
-            ],
-        })
-
-        if (screenshotChoice === null) return 'cancel'
-
-        if (screenshotChoice === 'skip') {
-            if (continuingFlow && screenshotCount > 0) {
-                // Already have screenshots, don't skip
-                continue
-            }
-            return 'forward'
-        }
-
-        if (screenshotChoice === 'manual') {
-            const manualPath = await ui.text({
-                message: 'Enter screenshot path (file or folder)',
-                placeholder: '/path/to/screenshots',
-                validate: (val) => {
-                    if (!val?.trim()) return 'Path is required'
-                    const resolved = resolve(val.replace(/^~/, process.env.HOME || ''))
-                    if (!existsSync(resolved)) return 'Path does not exist'
-                    return true
-                },
-            })
-
-            if (manualPath === null) return 'cancel'
-
-            const count = loadScreenshotsFromPath(manualPath)
-            if (count > 0) {
-                ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
-                continuingFlow = true
-            } else {
-                ui.log.warning('No images found. Try another path.')
-            }
-        } else if (screenshotChoice === 'browse') {
-            // Browse sub-menu
-            const browseChoice = await ui.select<'files' | 'folder' | 'back'>({
-                message: 'Browse for screenshots',
-                options: [
-                    { value: 'files', label: 'Select files...', hint: 'Pick specific screenshots' },
-                    { value: 'folder', label: 'Select folder...', hint: 'All images in a folder' },
-                    { value: 'back', label: 'Back', hint: 'Return to previous menu' },
-                ],
-            })
-
-            if (browseChoice === null || browseChoice === 'back') {
-                // Continue to next iteration of outer loop
-                continue
-            } else if (browseChoice === 'folder') {
-                const folderPath = await promptForPath({
-                    message: 'Select folder containing screenshots',
-                    type: 'folder',
-                    allowSkip: false,
-                })
-
-                if (folderPath && typeof folderPath === 'string') {
-                    const count = loadScreenshotsFromPath(folderPath)
-                    if (count > 0) {
-                        ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
-                        continuingFlow = true
-                    } else {
-                        ui.log.warning('No images found in that folder.')
-                    }
-                }
-            } else {
-                // File selection mode
-                const screenshotPath = await promptForPath({
-                    message: 'Select screenshot files',
-                    type: 'files',
-                    fileTypes: ['public.png', 'public.jpeg'],
-                    allowSkip: false,
-                })
-
-                if (screenshotPath && Array.isArray(screenshotPath)) {
-                    // Remove existing screenshots
-                    const screenshotIndices = filesToUpload
-                        .map((f, i) => (f.type === 'screenshot' ? i : -1))
-                        .filter((i) => i !== -1)
-                        .reverse()
-                    for (const idx of screenshotIndices) {
-                        filesToUpload.splice(idx, 1)
-                    }
-
-                    for (let i = 0; i < Math.min(screenshotPath.length, 10); i++) {
-                        filesToUpload.push({
-                            type: 'screenshot',
-                            index: i,
-                            filename: basename(screenshotPath[i]),
-                            path: screenshotPath[i],
-                        })
-                    }
-
-                    // Track screenshot paths in draft state
-                    draftState._screenshotPaths = screenshotPath.slice(0, 10)
-
-                    ui.log.success(`Found ${screenshotPath.length} screenshot${screenshotPath.length === 1 ? '' : 's'}`)
-                    continuingFlow = true
-                }
-            }
-        }
-    }
-}
+// collectScreenshotsWithNav moved to ScreenshotsStep.ts
 
 // ─── App Details Collection with Navigation (Phase 3) ──────────────────────
 
-async function collectAppDetailsWithNav(
-    projectName: string,
-    draftState: DraftState,
-): Promise<AppDetails | 'back' | 'cancel'> {
-    const defaults: Partial<AppDetails> = {
-        appName: draftState.appName,
-        description: draftState.description,
-        keywords: draftState.keywords,
-        category: draftState.category,
-        supportUrl: draftState.supportUrl,
-        promotionalText: draftState.promotionalText,
-        marketingUrl: draftState.marketingUrl,
-        signInRequired: draftState.signInRequired,
-        demoUsername: draftState.demoUsername,
-        demoPassword: draftState.demoPassword,
-    }
-
-    const appDetails = await collectAppDetails(projectName, defaults)
-
-    if (appDetails === null) {
-        // User pressed Escape - ask what they want to do
-        const action = await ui.select<'back' | 'cancel'>({
-            message: 'App details cancelled',
-            options: [
-                { value: 'back', label: 'Go back', hint: 'Return to previous step' },
-                { value: 'cancel', label: 'Save draft & exit', hint: 'Save progress and exit' },
-            ],
-        })
-
-        if (action === null || action === 'cancel') return 'cancel'
-        return 'back'
-    }
-
-    // Merge into draftState
-    draftState.appName = appDetails.appName
-    draftState.description = appDetails.description
-    draftState.keywords = appDetails.keywords
-    draftState.category = appDetails.category
-    draftState.supportUrl = appDetails.supportUrl
-    draftState.promotionalText = appDetails.promotionalText
-    draftState.marketingUrl = appDetails.marketingUrl
-    draftState.signInRequired = appDetails.signInRequired
-    draftState.demoUsername = appDetails.demoUsername
-    draftState.demoPassword = appDetails.demoPassword
-
-    return appDetails
-}
+// collectAppDetailsWithNav moved to AppDetailsStep.ts
 
 // ─── Compliance Collection with Navigation (Phase 4) ──────────────────────
 
-async function collectComplianceWithNav(draftState: DraftState): Promise<ComplianceData | 'back' | 'cancel'> {
-    const defaults: Partial<ComplianceData> | undefined = draftState.compliance
-
-    const compliance = await collectCompliance(defaults)
-
-    if (compliance === null) {
-        // User chose "Back" in compliance menu
-        return 'back'
-    }
-
-    // Merge into draftState
-    draftState.compliance = compliance
-
-    return compliance
-}
+// collectComplianceWithNav moved to ComplianceStep.ts
 
 export async function submitCommand(path?: string, options: SubmitOptions = {}, fromMenu = false) {
     // Track draft state for auto-save on cancel (Phase 4)
@@ -684,7 +422,6 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                     if (!val?.trim()) return 'Path is required'
                     const resolved = resolve(val.replace(/^~/, process.env.HOME || ''))
                     if (!existsSync(resolved)) return 'Path does not exist'
-                    return true
                 },
             })
 
@@ -817,99 +554,35 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     // ─── Navigation Loop for Submission Flow (Phase 5) ─────────────────────
     // Implements backward navigation while preserving data in DraftState
 
-    let appDetails: AppDetails | null = null
-    let compliance: ComplianceData | null = null
-
     if (fromMenu) {
-        type Step = 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'review'
-        const steps: Step[] = ['asc', 'screenshots', 'appDetails', 'compliance', 'review']
-        let currentStepIndex = 0
+        const { SubmissionFlow } = await import('../flows/submission/SubmissionFlow.js')
+        const { AscStep } = await import('../flows/submission/steps/AscStep.js')
+        const { ScreenshotsStep } = await import('../flows/submission/steps/ScreenshotsStep.js')
+        const { AppDetailsStep } = await import('../flows/submission/steps/AppDetailsStep.js')
+        const { ComplianceStep } = await import('../flows/submission/steps/ComplianceStep.js')
+        const { ReviewStep } = await import('../flows/submission/steps/ReviewStep.js')
 
-        while (currentStepIndex < steps.length) {
-            const step = steps[currentStepIndex]
+        const flow = new SubmissionFlow(draftState, offerDraftSave)
 
-            console.log()
-            ui.log.step(`Step ${currentStepIndex + 1} of ${steps.length}: ${step}`)
-            console.log()
+        flow.addStep(new AscStep())
+        flow.addStep(new ScreenshotsStep(filesToUpload))
+        flow.addStep(new AppDetailsStep(projectName))
+        flow.addStep(new ComplianceStep())
+        flow.addStep(new ReviewStep(appName, dir, filesToUpload))
 
-            if (step === 'asc') {
-                const result = await offerAscConnection(draftState)
-                if (result === 'cancel') {
-                    await offerDraftSave(draftState)
-                    return
-                }
-                // No "back" option on first step
-                draftState._flowPosition = 'asc'  // Track position before advancing
-                currentStepIndex++
-            } else if (step === 'screenshots') {
-                const result = await collectScreenshotsWithNav(filesToUpload, draftState)
-                if (result === 'cancel') {
-                    draftState._flowPosition = 'screenshots'  // Save position before exiting
-                    await offerDraftSave(draftState)
-                    return
-                } else if (result === 'back') {
-                    currentStepIndex--
-                } else {
-                    draftState._flowPosition = 'screenshots'  // Track position before advancing
-                    currentStepIndex++
-                }
-            } else if (step === 'appDetails') {
-                const result = await collectAppDetailsWithNav(projectName, draftState)
-                if (result === 'cancel') {
-                    draftState._flowPosition = 'appDetails'  // Save position before exiting
-                    await offerDraftSave(draftState)
-                    return
-                } else if (result === 'back') {
-                    currentStepIndex--
-                } else {
-                    appDetails = result
-                    appName = appDetails.appName
-                    draftState._flowPosition = 'appDetails'  // Track position before advancing
-                    currentStepIndex++
-                }
-            } else if (step === 'compliance') {
-                const result = await collectComplianceWithNav(draftState)
-                if (result === 'cancel') {
-                    draftState._flowPosition = 'compliance'  // Save position before exiting
-                    await offerDraftSave(draftState)
-                    return
-                } else if (result === 'back') {
-                    currentStepIndex--
-                } else {
-                    compliance = result
-                    draftState._flowPosition = 'compliance'  // Track position before advancing
-                    currentStepIndex++
-                }
-            } else if (step === 'review') {
-                console.log()
-                ui.note(buildSummary(appName, dir, filesToUpload, compliance), 'Review Summary')
-                console.log()
+        const result = await flow.start()
 
-                const action = await ui.select<'submit' | 'back' | 'cancel'>({
-                    message: `Submit review? (100 credits)`,
-                    options: [
-                        { value: 'submit', label: 'Submit review', hint: '100 credits will be deducted' },
-                        { value: 'back', label: 'Go back to edit', hint: 'Change app details or compliance' },
-                        { value: 'cancel', label: 'Save draft & exit', hint: 'Save progress and exit' },
-                    ],
-                })
-
-                if (action === null || action === 'cancel') {
-                    draftState._flowPosition = 'review'  // Save position before exiting
-                    await offerDraftSave(draftState)
-                    return
-                } else if (action === 'back') {
-                    currentStepIndex--
-                } else {
-                    // Proceed to submission
-                    draftState._flowPosition = 'confirmation'  // Mark as moving to submission
-                    currentStepIndex++
-                }
-            }
+        if (result === 'cancelled') {
+            return
         }
+
+        // If completed, we proceed to specific logic below which handles the actual API submission
+    } else {
+        // Non-interactive mode (from flags), ensure data is prepared
+        // Logic for this falls through to below
     }
 
-    // Summary confirmation (only in direct CLI mode - fromMenu already showed it in navigation loop)
+    // Summary confirmation (only in direct CLI mode - fromMenu already showed it in navigation loop via ReviewStep)
     if (!fromMenu) {
         ui.intro(`Submit ${appName} for analysis`)
 
@@ -939,22 +612,20 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
     try {
         // Build submission body
-        const submissionBody: Record<string, any> = { app_name: appName }
+        const submissionBody: Record<string, any> = { app_name: draftState.appName }
 
-        if (appDetails) {
-            if (appDetails.description) submissionBody.description = appDetails.description
-            if (appDetails.keywords) submissionBody.keywords = appDetails.keywords
-            if (appDetails.category) submissionBody.category = appDetails.category
-            if (appDetails.supportUrl) submissionBody.support_url = appDetails.supportUrl
-            if (appDetails.promotionalText) submissionBody.promotional_text = appDetails.promotionalText
-            if (appDetails.marketingUrl) submissionBody.marketing_url = appDetails.marketingUrl
-            submissionBody.sign_in_required = appDetails.signInRequired
-            if (appDetails.demoUsername) submissionBody.demo_username = appDetails.demoUsername
-            if (appDetails.demoPassword) submissionBody.demo_password = appDetails.demoPassword
-        }
+        if (draftState.description) submissionBody.description = draftState.description
+        if (draftState.keywords) submissionBody.keywords = draftState.keywords
+        if (draftState.category) submissionBody.category = draftState.category
+        if (draftState.supportUrl) submissionBody.support_url = draftState.supportUrl
+        if (draftState.promotionalText) submissionBody.promotional_text = draftState.promotionalText
+        if (draftState.marketingUrl) submissionBody.marketing_url = draftState.marketingUrl
+        submissionBody.sign_in_required = draftState.signInRequired
+        if (draftState.demoUsername) submissionBody.demo_username = draftState.demoUsername
+        if (draftState.demoPassword) submissionBody.demo_password = draftState.demoPassword
 
-        if (compliance) {
-            Object.assign(submissionBody, formatComplianceForApi(compliance))
+        if (draftState.compliance) {
+            Object.assign(submissionBody, formatComplianceForApi(draftState.compliance))
         }
 
         const createRes = await apiRequest('/api/submissions', {
@@ -1034,6 +705,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         }
 
         let finalizeSuccess = false
+
         let maxFinalizeRetries = 3
 
         while (!finalizeSuccess && maxFinalizeRetries > 0) {
@@ -1176,34 +848,33 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
     if (detected.ipa) {
         filesToUpload.push({ type: 'ipa', filename: basename(detected.ipa), path: detected.ipa })
     }
-    for (let i = 0; i < Math.min(detected.screenshots.length, 10); i++) {
-        filesToUpload.push({
-            type: 'screenshot',
-            index: i,
-            filename: basename(detected.screenshots[i]),
-            path: detected.screenshots[i],
-        })
+
+    // Attempt to recover screenshot paths from draft or re-scan
+    if (draft._screenshotPaths && Array.isArray(draft._screenshotPaths)) {
+        for (let i = 0; i < Math.min(draft._screenshotPaths.length, 10); i++) {
+            const p = draft._screenshotPaths[i]
+            if (existsSync(p)) {
+                filesToUpload.push({
+                    type: 'screenshot',
+                    index: i,
+                    filename: basename(p),
+                    path: p,
+                })
+            }
+        }
+    } else {
+        // Fallback to auto-detect
+        for (let i = 0; i < Math.min(detected.screenshots.length, 10); i++) {
+            filesToUpload.push({
+                type: 'screenshot',
+                index: i,
+                filename: basename(detected.screenshots[i]),
+                path: detected.screenshots[i],
+            })
+        }
     }
 
-    if (filesToUpload.length === 0) {
-        ui.log.warning('No files found. Make sure you\'re pointing to an Xcode project directory.')
-        return
-    }
-
-    // Pre-fill app details from draft
-    const draftDefaults: Partial<AppDetails> = {
-        appName: draft.app_name || projectName,
-        description: draft.description,
-        keywords: draft.keywords,
-        category: draft.category,
-        supportUrl: draft.support_url,
-        promotionalText: draft.promotional_text,
-        marketingUrl: draft.marketing_url,
-        signInRequired: draft.sign_in_required ?? false,
-        demoUsername: draft.demo_username,
-        demoPassword: draft.demo_password,
-    }
-
+    // Initialize DraftState
     const draftState: DraftState = {
         appName: draft.app_name,
         description: draft.description,
@@ -1212,118 +883,35 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         supportUrl: draft.support_url,
         promotionalText: draft.promotional_text,
         marketingUrl: draft.marketing_url,
-        signInRequired: draft.sign_in_required ?? false,
+        signInRequired: draft.sign_in_required,
         demoUsername: draft.demo_username,
         demoPassword: draft.demo_password,
-        _flowPosition: draft._flowPosition,
+        compliance: draft.compliance,
+        _flowPosition: draft.flow_position,
+        _screenshotPaths: filesToUpload.filter(f => f.type === 'screenshot').map(f => f.path)
     }
 
-    let appDetails: AppDetails
-    let appName: string
-    let compliance: ComplianceData
+    // Start Flow
+    const { SubmissionFlow } = await import('../flows/submission/SubmissionFlow.js')
+    const { AscStep } = await import('../flows/submission/steps/AscStep.js')
+    const { ScreenshotsStep } = await import('../flows/submission/steps/ScreenshotsStep.js')
+    const { AppDetailsStep } = await import('../flows/submission/steps/AppDetailsStep.js')
+    const { ComplianceStep } = await import('../flows/submission/steps/ComplianceStep.js')
+    const { ReviewStep } = await import('../flows/submission/steps/ReviewStep.js')
 
-    // Determine resume point based on flow position
-    const flowPosition = draft._flowPosition || 'appDetails'
+    const flow = new SubmissionFlow(draftState, offerDraftSave)
 
-    if (flowPosition === 'asc' || flowPosition === 'screenshots') {
-        // User was in early steps - resume from app details (screenshots are auto-detected)
-        ui.log.step(`Resuming from app details...`)
-        console.log()
+    flow.addStep(new AscStep())
+    flow.addStep(new ScreenshotsStep(filesToUpload))
+    flow.addStep(new AppDetailsStep(projectName))
+    flow.addStep(new ComplianceStep())
+    flow.addStep(new ReviewStep(draftState.appName || projectName, dir, filesToUpload))
 
-        const collectedDetails = await collectAppDetailsWithNav(projectName, draftState)
-        if (collectedDetails === 'cancel' || collectedDetails === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        appDetails = collectedDetails
-        appName = collectedDetails.appName
+    const result = await flow.start()
 
-        // Collect compliance
-        const collectedCompliance = await collectComplianceWithNav(draftState)
-        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        compliance = collectedCompliance
-    } else if (flowPosition === 'appDetails') {
-        // User was in app details - resume from app details
-        ui.log.step(`Resuming from app details...`)
-        console.log()
+    if (result === 'cancelled') return
 
-        const collectedDetails = await collectAppDetailsWithNav(projectName, draftState)
-        if (collectedDetails === 'cancel' || collectedDetails === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        appDetails = collectedDetails
-        appName = collectedDetails.appName
-
-        // Collect compliance
-        const collectedCompliance = await collectComplianceWithNav(draftState)
-        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        compliance = collectedCompliance
-    } else if (flowPosition === 'compliance') {
-        // Jump directly to compliance, skipping app details
-        ui.log.step('Resuming from compliance section...')
-        console.log()
-
-        appDetails = draftDefaults as AppDetails
-        appName = appDetails.appName
-
-        const collectedCompliance = await collectComplianceWithNav(draftState)
-        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        compliance = collectedCompliance
-    } else if (flowPosition === 'review' || flowPosition === 'confirmation') {
-        // User was at review/final step - use saved details and show review
-        ui.log.step('Resuming from review step...')
-        console.log()
-
-        appDetails = draftDefaults as AppDetails
-        appName = appDetails.appName
-        compliance = draftState.compliance || null
-    } else {
-        // Fallback to app details for any unknown position
-        ui.log.step(`Resuming from app details...`)
-        console.log()
-
-        const collectedDetails = await collectAppDetailsWithNav(projectName, draftState)
-        if (collectedDetails === 'cancel' || collectedDetails === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        appDetails = collectedDetails
-        appName = collectedDetails.appName
-
-        const collectedCompliance = await collectComplianceWithNav(draftState)
-        if (collectedCompliance === 'cancel' || collectedCompliance === 'back') {
-            await offerDraftSave(draftState)
-            return
-        }
-        compliance = collectedCompliance
-    }
-
-    // Summary confirmation
-    console.log()
-    ui.note(buildSummary(appName, dir, filesToUpload, compliance), 'Review Summary')
-
-    const action = await ui.select<'submit' | 'cancel'>({
-        message: `Submit review? (100 credits)`,
-        options: [
-            { value: 'submit', label: 'Submit review', hint: '100 credits will be deducted' },
-            { value: 'cancel', label: 'Cancel', hint: 'Back to menu' },
-        ],
-    })
-
-    if (action === null || action === 'cancel') return
-
-    // ─── Upload & Finalize (reuse existing submission ID) ──────────────
-
+    // Proceed to UPDATE submission
     ui.log.info(subtext('Reviews usually take 1-3 minutes.'))
     console.log()
 
@@ -1332,24 +920,23 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
     let activeSpinner = spinner
 
     try {
-        // Update existing submission with new data
         const submissionBody: Record<string, any> = {
             submission_id: submissionId,
-            app_name: appName,
+            app_name: draftState.appName,
         }
 
-        if (appDetails.description) submissionBody.description = appDetails.description
-        if (appDetails.keywords) submissionBody.keywords = appDetails.keywords
-        if (appDetails.category) submissionBody.category = appDetails.category
-        if (appDetails.supportUrl) submissionBody.support_url = appDetails.supportUrl
-        if (appDetails.promotionalText) submissionBody.promotional_text = appDetails.promotionalText
-        if (appDetails.marketingUrl) submissionBody.marketing_url = appDetails.marketingUrl
-        submissionBody.sign_in_required = appDetails.signInRequired
-        if (appDetails.demoUsername) submissionBody.demo_username = appDetails.demoUsername
-        if (appDetails.demoPassword) submissionBody.demo_password = appDetails.demoPassword
+        if (draftState.description) submissionBody.description = draftState.description
+        if (draftState.keywords) submissionBody.keywords = draftState.keywords
+        if (draftState.category) submissionBody.category = draftState.category
+        if (draftState.supportUrl) submissionBody.support_url = draftState.supportUrl
+        if (draftState.promotionalText) submissionBody.promotional_text = draftState.promotionalText
+        if (draftState.marketingUrl) submissionBody.marketing_url = draftState.marketingUrl
+        submissionBody.sign_in_required = draftState.signInRequired
+        if (draftState.demoUsername) submissionBody.demo_username = draftState.demoUsername
+        if (draftState.demoPassword) submissionBody.demo_password = draftState.demoPassword
 
-        if (compliance) {
-            Object.assign(submissionBody, formatComplianceForApi(compliance))
+        if (draftState.compliance) {
+            Object.assign(submissionBody, formatComplianceForApi(draftState.compliance))
         }
 
         const createRes = await apiRequest('/api/submissions', {
@@ -1413,34 +1000,61 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         }
         uploadSpinner.succeed('Files uploaded')
 
-        // Finalize
+        // Finalize logic (with Retry)
         const analyzeSpinner = createSpinner('Starting analysis...')
         analyzeSpinner.start()
         activeSpinner = analyzeSpinner
 
-        const finalizeRes = await apiRequest(`/api/submissions/${finalId}/finalize`, {
-            method: 'POST',
-            body: JSON.stringify({
-                files: filesToUpload.map((f) => ({ type: f.type, index: f.index })),
-            }),
-        })
-        const finalizeData = await finalizeRes.json()
+        const finalizePayload = {
+            files: filesToUpload.map((f) => ({
+                type: f.type,
+                index: f.index,
+            })),
+        }
 
-        if (!finalizeRes.ok) {
+        let finalizeSuccess = false
+        let maxFinalizeRetries = 3
+
+        while (!finalizeSuccess && maxFinalizeRetries > 0) {
+            const finalizeRes = await apiRequest(`/api/submissions/${finalId}/finalize`, {
+                method: 'POST',
+                body: JSON.stringify(finalizePayload),
+            })
+            const finalizeData = await finalizeRes.json()
+
+            if (finalizeRes.ok) {
+                finalizeSuccess = true
+            } else if (finalizeRes.status === 402) {
+                analyzeSpinner.stop()
+                ui.log.warning(`Not enough credits. Need ${finalizeData.required ?? 100}, have ${finalizeData.credits ?? 0}.`)
+                const wantsBuy = await ui.confirm('Would you like to buy more credits?')
+                if (wantsBuy === null || !wantsBuy) return
+                await openUrl('https://preflightlaunch.com/pricing')
+                ui.log.info('Opened pricing page. Press Enter when purchased.')
+                await ui.confirm('Ready to continue?')
+                await new Promise(r => setTimeout(r, 3000))
+                analyzeSpinner.start()
+                activeSpinner = analyzeSpinner
+                maxFinalizeRetries--
+            } else {
+                analyzeSpinner.stop()
+                ui.log.error(finalizeData.message || 'Failed to finalize')
+                return
+            }
+        }
+
+        if (!finalizeSuccess) {
             analyzeSpinner.stop()
-            ui.log.error(finalizeData.message || 'Failed to start analysis')
+            ui.log.error('Could not finalize after multiple attempts.')
             return
         }
 
-        analyzeSpinner.text = 'AI review in progress... (press Esc to stop waiting)'
-
+        analyzeSpinner.text = 'AI review in progress...'
         const reportData = await pollForReport(finalId, analyzeSpinner)
 
         if (reportData.status === 'cancelled') {
             analyzeSpinner.stop()
-            ui.log.info('Analysis continues in the background.')
-            console.log(subtext(`  Check status with ${brand(`preflight status ${finalId}`)} or from View Reviews.`))
-            console.log()
+            ui.log.info('Analysis continues in background.')
             return
         }
 
@@ -1449,52 +1063,36 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         if (reportData.status === 'complete' && reportData.data) {
             renderReport(reportData.data.report, reportData.data.items)
             console.log(subtext(`  Full report: https://preflightlaunch.com/report/${reportData.data.report.id}`))
-            console.log()
-        } else if (reportData.status === 'failed') {
-            ui.log.error('Analysis failed. Please try submitting again or contact support.')
+
+            const next = await ui.select<'open' | 'done'>({
+                message: 'What next?',
+                options: [
+                    { value: 'open', label: 'Open full report in browser' },
+                    { value: 'done', label: 'Done' },
+                ],
+            })
+
+            if (next === 'open') {
+                await openUrl(`https://preflightlaunch.com/report/${reportData.data.report.id}`)
+            }
         } else {
-            ui.log.warning('Analysis is still running. Check status with:')
-            console.log(subtext(`  preflight status ${finalId}`))
+            ui.log.error('Analysis failed.')
         }
+
     } catch (err) {
         activeSpinner.stop()
-        ui.log.error(`Resume failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        ui.log.error(`Submit failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────
-
-function buildSummary(
-    appName: string,
-    dir: string,
-    files: Array<{ type: string; filename: string }>,
-    compliance: ComplianceData | null,
-): string {
-    const home = require('node:os').homedir()
-    const shortDir = dir.startsWith(home) ? '~' + dir.slice(home.length) : dir
-
-    const fileTypes = files.map(f => f.filename).join(', ')
-    const screenshotCount = files.filter(f => f.type === 'screenshot').length
-
-    let summary = `App:        ${appName}\n`
-    summary += `Project:    ${shortDir}\n`
-    summary += `Files:      ${fileTypes}${screenshotCount > 0 ? ` (${screenshotCount} screenshots)` : ''}\n`
-
-    if (compliance) {
-        const complianceLines = formatComplianceSummary(compliance)
-        summary += complianceLines.map(l => l.trim()).join('\n')
-    }
-
-    return summary
-}
-
-function getFileSize(filePath: string): number {
+export function getFileSize(filePath: string): number {
     try {
         return statSync(filePath).size
     } catch {
         return 0
     }
 }
+
 
 // ─── Polling (Phase 5: Cancel Support) ──────────────────────────────────
 

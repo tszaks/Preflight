@@ -244,10 +244,11 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
             { value: '__skip__' as const, label: 'Skip', hint: 'Choose later' },
             ...CATEGORIES.map(c => ({ value: c, label: c })),
         ]
-        const category = await ui.select<string>({
+        const defaultCategory: string = details?.category || (defaults?.category ? defaults.category : '__skip__')
+        const category: string | null = await ui.select<string>({
             message: 'Primary Category',
             options: categoryOptions,
-            initialValue: details?.category || (defaults?.category ? defaults.category : '__skip__'),
+            initialValue: defaultCategory,
         })
         if (category === null) return null
 
@@ -536,7 +537,7 @@ async function collectAgeRatingDetailed(
         })
         if (severity === null) return null
 
-        ;(updatedAnswers as any)[typeKey] = parseInt(severity)
+            ; (updatedAnswers as any)[typeKey] = parseInt(severity)
     }
 
     // Boolean flags
@@ -589,7 +590,7 @@ export async function collectPrivacyData(): Promise<PrivacyDeclarations | null> 
             false,
         )
         if (linked === null) return null
-        ;(data as any)[typeKey].linked = linked
+            ; (data as any)[typeKey].linked = linked
     }
 
     // Tracking question
