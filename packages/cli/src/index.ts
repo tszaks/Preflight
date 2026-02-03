@@ -24,7 +24,7 @@ const program = new Command()
 program
     .name('preflight')
     .description('Preflight - App Store Review Scanner')
-    .version('0.2.13')
+    .version('2.14.0')
 
 // Auth commands
 program
@@ -186,13 +186,14 @@ async function interactiveMenu() {
         const { email } = getConfig()
         ui.renderHeader(email, cachedCredits)
 
-        const choice = await ui.select<'review' | 'history' | 'buy' | 'asc' | 'logout'>({
+        const choice = await ui.select<'review' | 'history' | 'buy' | 'asc' | 'update' | 'logout'>({
             message: 'What would you like to do?',
             options: [
                 { value: 'review', label: 'New Review', hint: 'Scan your app for App Store issues' },
                 { value: 'history', label: 'View Reviews', hint: 'See your past review reports' },
                 { value: 'buy', label: 'Buy Credits', hint: 'Get more credits at preflightlaunch.com' },
                 { value: 'asc', label: 'App Store Connect', hint: 'Connect your ASC account for autofill' },
+                { value: 'update', label: 'Check for Updates', hint: 'Update Preflight to the latest version' },
                 { value: 'logout', label: 'Log Out' },
             ],
         })
@@ -226,6 +227,10 @@ async function interactiveMenu() {
 
             case 'asc':
                 await ascInteractiveMenu()
+                break
+
+            case 'update':
+                await updateCommand()
                 break
 
             case 'logout':
