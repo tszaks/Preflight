@@ -20,9 +20,16 @@ export class SubmissionFlow {
     ) {
         this.context = { email: userEmail, credits }
 
-        // If we have a flow position, we're resuming a draft
-        // or have already completed initial setup. Bypass the setup choice.
-        if (this.state._flowPosition) {
+        // If we have any of these, we've clearly moved past the initial setup choice.
+        const setupDone = !!(
+            this.state._flowPosition ||
+            this.state.description ||
+            this.state.category ||
+            this.state.keywords ||
+            this.state._ascConnected
+        )
+
+        if (setupDone) {
             this.setupComplete = true
         }
     }
@@ -81,16 +88,18 @@ export class SubmissionFlow {
                     // Successfully connected
                     this.state._flowPosition = 'appDetails'
                     this.setupComplete = true
+                    return true
                 }
-                // If they cancelled/went back, they'll see dashboard anyway
+                // If they cancelled/went back, we stay in setup phase
+                return this.showSetupChoice() // recursive retry or they can pick manual/cancel
             }
         } else if (choice === 'manual') {
             this.state._flowPosition = 'appDetails'
             this.setupComplete = true
+            return true
         }
 
-        this.setupComplete = true
-        return true
+        return false
     }
 
     async start(): Promise<'completed' | 'cancelled'> {
