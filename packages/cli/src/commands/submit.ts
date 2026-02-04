@@ -667,6 +667,10 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             Object.assign(submissionBody, formatComplianceForApi(draftState.compliance))
         }
 
+        if (draftState._projectPath) {
+            submissionBody.project_path = draftState._projectPath
+        }
+
         const createRes = await apiRequest('/api/submissions', {
             method: 'POST',
             body: JSON.stringify(submissionBody),
@@ -1003,6 +1007,10 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
 
         if (draftState.compliance) {
             Object.assign(submissionBody, formatComplianceForApi(draftState.compliance))
+        }
+
+        if (draftState._projectPath) {
+            submissionBody.project_path = draftState._projectPath
         }
 
         const createRes = await apiRequest('/api/submissions', {
