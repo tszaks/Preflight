@@ -57,14 +57,6 @@ export class DashboardView {
                 required: false,
                 stepNumber: 3,
             },
-            {
-                id: 'asc',
-                name: 'App Store Connect',
-                complete: !!this.ascEmail,
-                summary: this.ascEmail || 'Auto-fill from ASC',
-                required: false,
-                stepNumber: 4,
-            },
         ]
     }
 
@@ -170,6 +162,13 @@ export class DashboardView {
                 hint: 'Ready! (100 credits)',
             })
         }
+
+        // ASC option (edit or connect)
+        options.push({
+            value: 'asc',
+            label: this.ascEmail ? 'Edit ASC Connection' : 'Connect App Store Connect',
+            hint: this.ascEmail || 'Auto-fill app info',
+        })
 
         // Always allow save draft
         options.push({

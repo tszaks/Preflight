@@ -2,10 +2,12 @@ import * as ui from '../../ui/interactive.js'
 import { SubmissionStep, StepResult, FlowContext } from './BaseStep.js'
 import { DraftState, FileToUpload } from './types.js'
 import { DashboardView, DashboardAction } from './DashboardView.js'
+import chalk from 'chalk'
 
 export class SubmissionFlow {
     private steps: Map<string, SubmissionStep> = new Map()
     private context: FlowContext
+    private setupComplete: boolean = false
 
     constructor(
         private state: DraftState,
@@ -23,7 +25,78 @@ export class SubmissionFlow {
         this.steps.set(id, step)
     }
 
+    /**
+     * Show setup choice - Easy (ASC) vs Manual
+     * Returns true if user wants to continue, false if cancelled
+     */
+    async showSetupChoice(): Promise<boolean> {
+        // Skip if already connected to ASC or has app details
+        if (this.ascEmail || this.state.appName) {
+            this.setupComplete = true
+            return true
+        }
+
+        ui.renderHeader(this.context.email, this.context.credits)
+        console.log()
+        console.log(chalk.cyan('    ℹ Let\'s get your app ready for review.'))
+        console.log(chalk.dim('      Choose how you\'d like to set up:'))
+        console.log()
+
+        const choice = await ui.select<'easy' | 'manual' | 'cancel'>({
+            message: 'Setup Method',
+            options: [
+                {
+                    value: 'easy',
+                    label: '⚡ Easy Setup',
+                    hint: 'Connect to App Store Connect and auto-fill your app info',
+                },
+                {
+                    value: 'manual',
+                    label: '✏️  Manual Setup',
+                    hint: 'Enter app details yourself',
+                },
+                {
+                    value: 'cancel',
+                    label: 'Cancel',
+                    hint: 'Exit without saving',
+                },
+            ],
+        })
+
+        if (choice === null || choice === 'cancel') {
+            return false
+        }
+
+        if (choice === 'easy') {
+            // Run ASC step immediately
+            const ascStep = this.steps.get('asc')
+            if (ascStep) {
+                ui.renderHeader(this.context.email, this.context.credits)
+                console.log()
+                ui.log.step('App Store Connect Setup')
+                console.log()
+                const result = await ascStep.run(this.state, this.context)
+                if (result.action === 'next') {
+                    // Successfully connected, update ascEmail
+                    this.setupComplete = true
+                }
+                // If they cancelled/went back, they'll see dashboard anyway
+            }
+        }
+
+        this.setupComplete = true
+        return true
+    }
+
     async start(): Promise<'completed' | 'cancelled'> {
+        // Show setup choice if not already done
+        if (!this.setupComplete) {
+            const shouldContinue = await this.showSetupChoice()
+            if (!shouldContinue) {
+                return 'cancelled'
+            }
+        }
+
         const dashboard = new DashboardView(this.state, this.filesToUpload, this.ascEmail)
 
         while (true) {
@@ -95,4 +168,3 @@ export class SubmissionFlow {
         // All paths return to dashboard
     }
 }
-
