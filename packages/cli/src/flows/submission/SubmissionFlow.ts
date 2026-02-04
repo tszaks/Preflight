@@ -19,6 +19,12 @@ export class SubmissionFlow {
         private userEmail?: string
     ) {
         this.context = { email: userEmail, credits }
+
+        // If we have an app name or flow position, we're resuming a draft
+        // or have already completed initial setup. Bypass the setup choice.
+        if (this.state.appName || this.state._flowPosition) {
+            this.setupComplete = true
+        }
     }
 
     addStep(id: string, step: SubmissionStep) {
