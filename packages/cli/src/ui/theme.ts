@@ -1,12 +1,14 @@
 import chalk from 'chalk'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync, readdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { dirname, resolve, basename, extname, join } from 'node:path'
 
 // Read version from package.json dynamically
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'))
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const pkgPath = existsSync(resolve(__dirname, '..', 'package.json'))
+    ? resolve(__dirname, '..', 'package.json')
+    : resolve(__dirname, '..', '..', 'package.json')
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
 
 // Brand colors — consistent visual language across all output
 export const brand = chalk.bold.hex('#E8700A')
@@ -25,33 +27,29 @@ export const criticalBold = chalk.bold.red
 export const info = chalk.hex('#E8700A')
 export const infoBold = chalk.bold.hex('#E8700A')
 
-// Icons
+// Icons - Restored circles per user preference, but kept emoji-free
 export const icons = {
-    check: ok('\u2714'),
-    cross: critical('\u2716'),
-    warn: warning('!'),
-    info: info('i'),
-    bullet: '\u25CF',
-    circle: '\u25CB',
-    arrow: '\u2192',
-    block: '\u2588',
-    blockDim: chalk.dim('\u2591'),
-    file: '\uD83D\uDCC4',
-    image: '\uD83D\uDDBC',
-    plane: '\uD83D\uDEEB',
+    bullet: '●',
+    circle: '○',
+    arrow: '->',
+    block: '#',
+    blockDim: chalk.dim('.'),
+    file: '',
+    image: '',
+    plane: '',
 } as const
 
-// Severity badge formatting
+// Severity badge formatting - No emojis
 export function severityBadge(severity: string): string {
     switch (severity) {
         case 'critical':
-            return criticalBold(`\uD83D\uDD34 ${severity.toUpperCase()}`)
+            return criticalBold(`CRITICAL`)
         case 'warning':
-            return warningBold(`\uD83D\uDFE1 ${severity.toUpperCase()}`)
+            return warningBold(`WARNING`)
         case 'info':
-            return infoBold(`\u2139\uFE0F  ${severity.toUpperCase()}`)
+            return infoBold(`INFO`)
         case 'pass':
-            return okBold(`\uD83D\uDFE2 ${severity.toUpperCase()}`)
+            return okBold(`PASSED`)
         default:
             return severity.toUpperCase()
     }
@@ -94,8 +92,6 @@ export const APP_TAGLINE = 'App Store Review Scanner'
 export const gold = chalk.hex('#C9A84C')
 
 // Main PreFlight Logo (ASCII Art)
-// Main PreFlight Logo (ASCII Art)
-// "PREFLIGHT" in ANSI Shadow (Filled) with chunkier (7-wide), taller rocket
 export function getLogo(): string[] {
     const w = chalk.white.bold
     const o = brand          // orange for rocket body
@@ -103,13 +99,12 @@ export function getLogo(): string[] {
     const white = chalk.white // white for rocket eye
 
     return [
-        w('                                              ') + o('      ▲      ') + w('                                     '),
-        w('      ██████╗ ██████╗ ███████╗███████╗██╗     ') + o('     ▐█▌     ') + w(' ██████╗ ██╗  ██╗████████╗'),
-        w('      ██╔══██╗██╔══██╗██╔════╝██╔════╝██║     ') + o('    ▐███▌    ') + w('██╔════╝ ██║  ██║╚══██╔══╝'),
-        w('      ██████╔╝██████╔╝█████╗  █████╗  ██║     ') + o('    ▐█') + white('●') + o('█▌    ') + w('██║  ███╗███████║   ██║   '),
-        w('      ██╔═══╝ ██╔══██╗██╔══╝  ██╔══╝  ██║     ') + o('   ▐█████▌   ') + w('██║   ██║██╔══██║   ██║   '),
-        w('      ██║     ██║  ██║███████╗██║     ███████╗') + o('  ▟███████▙  ') + w('╚██████╔╝██║  ██║   ██║   '),
-        w('      ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝') + o('     ▀█▀     ') + w(' ╚═════╝ ╚═╝  ╚═╝   ╚═╝   '),
-        w('                                              ') + g('      ▼      ') + w('                                     '),
+        w('                                     ') + o('  ▲  ') + w('                             '),
+        w(' ██████╗ ██████╗ ███████╗███████╗██╗ ') + o('  █  ') + w(' ██████╗ ██╗  ██╗████████╗   '),
+        w(' ██╔══██╗██╔══██╗██╔════╝██╔════╝██║ ') + o('  █  ') + w(' ██╔════╝ ██║  ██║╚══██╔══╝   '),
+        w(' ██████╔╝██████╔╝█████╗  █████╗  ██║ ') + white('  ●  ') + w(' ██║  ███╗███████║   ██║      '),
+        w(' ██╔═══╝ ██╔══██╗██╔══╝  ██╔══╝  ██║ ') + o('  █  ') + w(' ██║   ██║██╔══██║   ██║      '),
+        w(' ██║     ██║  ██║███████╗██║     ███████╗') + o(' ▟█▙ ') + w(' ╚██████╔╝██║  ██║   ██║      '),
+        w(' ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝') + g('  ▼  ') + w('  ╚═════╝ ╚═╝  ╚═╝   ╚═╝      '),
     ]
 }

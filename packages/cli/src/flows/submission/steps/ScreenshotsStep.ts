@@ -36,10 +36,9 @@ export class ScreenshotsStep implements SubmissionStep {
             const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip' | 'back'>({
                 message: 'How do you want to provide screenshots?',
                 options: [
+                    { value: 'browse', label: 'Browse with Finder', hint: 'Select files or a folder' },
                     { value: 'manual', label: 'Enter path manually', hint: 'Type or paste file/folder path' },
-                    { value: 'browse', label: 'Browse with Finder...', hint: 'Choose files or folder' },
                     { value: 'skip', label: 'Skip', hint: 'Continue without screenshots' },
-                    // Fix: Add consistent Back option
                     { value: 'back', label: 'Back', hint: 'Return to previous step' }
                 ],
             })
@@ -56,7 +55,7 @@ export class ScreenshotsStep implements SubmissionStep {
             }
 
             if (screenshotChoice === 'manual') {
-                await this.handleManualEntry()
+                await this.handleManualEntry(state)
                 // Loop continues - if screenshots were added, screenshotCount check will show continue menu
             } else if (screenshotChoice === 'browse') {
                 await this.handleBrowse(state)
@@ -65,7 +64,7 @@ export class ScreenshotsStep implements SubmissionStep {
         }
     }
 
-    private async handleManualEntry() {
+    private async handleManualEntry(state: DraftState) {
         const manualPath = await ui.text({
             message: 'Enter screenshot path (file or folder)',
             placeholder: '/path/to/screenshots',
@@ -78,7 +77,7 @@ export class ScreenshotsStep implements SubmissionStep {
 
         if (manualPath === null) return // Cancel handled by loop re-entry or outer undefined check
 
-        const count = this.loadScreenshotsFromPath(manualPath)
+        const count = this.loadScreenshotsFromPath(manualPath, state)
         if (count > 0) {
             ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
         } else {
@@ -90,8 +89,8 @@ export class ScreenshotsStep implements SubmissionStep {
         const browseChoice = await ui.select<'files' | 'folder' | 'back'>({
             message: 'Browse for screenshots',
             options: [
-                { value: 'files', label: 'Select files...', hint: 'Pick specific screenshots' },
-                { value: 'folder', label: 'Select folder...', hint: 'All images in a folder' },
+                { value: 'files', label: 'Select files', hint: 'Pick specific images' },
+                { value: 'folder', label: 'Select folder', hint: 'All images in a directory' },
                 { value: 'back', label: 'Back', hint: 'Return to previous menu' },
             ],
         })
@@ -103,10 +102,11 @@ export class ScreenshotsStep implements SubmissionStep {
                 message: 'Select folder containing screenshots',
                 type: 'folder',
                 allowSkip: false,
+                mode: 'browse',
             })
 
             if (folderPath && typeof folderPath === 'string') {
-                const count = this.loadScreenshotsFromPath(folderPath)
+                const count = this.loadScreenshotsFromPath(folderPath, state)
                 if (count > 0) {
                     ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
                 } else {
@@ -120,17 +120,17 @@ export class ScreenshotsStep implements SubmissionStep {
                 type: 'files',
                 fileTypes: ['public.png', 'public.jpeg'],
                 allowSkip: false,
+                mode: 'browse',
             })
 
             if (screenshotPath && Array.isArray(screenshotPath)) {
-                this.updateFiles(screenshotPath)
-                state._screenshotPaths = screenshotPath.slice(0, 10)
+                this.updateFiles(screenshotPath, state)
                 ui.log.success(`Found ${screenshotPath.length} screenshot${screenshotPath.length === 1 ? '' : 's'}`)
             }
         }
     }
 
-    private loadScreenshotsFromPath(pathStr: string): number {
+    private loadScreenshotsFromPath(pathStr: string, state: DraftState): number {
         try {
             const resolved = resolve(pathStr.replace(/^\~/, process.env.HOME || ''))
             const stats = statSync(resolved)
@@ -141,11 +141,11 @@ export class ScreenshotsStep implements SubmissionStep {
                     .filter((f) => imageExts.includes(extname(f).toLowerCase()))
                     .map((f) => join(resolved, f))
 
-                this.updateFiles(foundFiles)
+                this.updateFiles(foundFiles, state)
                 return foundFiles.length
             } else {
                 if (['.png', '.jpg', '.jpeg'].includes(extname(resolved).toLowerCase())) {
-                    this.updateFiles([resolved])
+                    this.updateFiles([resolved], state)
                     return 1
                 }
             }
@@ -155,7 +155,7 @@ export class ScreenshotsStep implements SubmissionStep {
         return 0
     }
 
-    private updateFiles(newPaths: string[]) {
+    private updateFiles(newPaths: string[], state?: DraftState) {
         // Remove existing screenshots
         const screenshotIndices = this.filesToUpload
             .map((f, i) => (f.type === 'screenshot' ? i : -1))
@@ -167,6 +167,7 @@ export class ScreenshotsStep implements SubmissionStep {
         }
 
         // Add new ones (max 10)
+        const pathsToStore: string[] = []
         for (let i = 0; i < Math.min(newPaths.length, 10); i++) {
             this.filesToUpload.push({
                 type: 'screenshot',
@@ -174,6 +175,12 @@ export class ScreenshotsStep implements SubmissionStep {
                 filename: basename(newPaths[i]),
                 path: newPaths[i],
             })
+            pathsToStore.push(newPaths[i])
+        }
+
+        // Update draft state for persistence
+        if (state) {
+            state._screenshotPaths = pathsToStore
         }
     }
 }

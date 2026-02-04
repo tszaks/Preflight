@@ -6,7 +6,7 @@ import chalk from 'chalk'
 export type DashboardAction =
     | 'asc'
     | 'screenshots'
-    | 'app_details'
+    | 'appDetails'
     | 'compliance'
     | 'review'
     | 'save_draft'
@@ -37,7 +37,7 @@ export class DashboardView {
 
         return [
             {
-                id: 'app_details',
+                id: 'appDetails',
                 name: 'App Details',
                 complete: hasAppDetails,
                 summary: hasAppDetails ? this.state.appName! : 'Name, description, keywords...',
@@ -46,7 +46,7 @@ export class DashboardView {
             },
             {
                 id: 'screenshots',
-                name: 'Screenshots (optional, but recommended)',
+                name: 'Screenshots',
                 complete: screenshotCount > 0,
                 summary: screenshotCount > 0 ? `${screenshotCount} images ready` : 'Add app screenshots',
                 required: false,
@@ -115,14 +115,14 @@ export class DashboardView {
             console.log(chalk.cyan(`    ℹ Complete the required steps to continue.`))
             console.log()
         } else {
-            console.log(chalk.green('    ✓ Ready to submit! All required steps complete.'))
+            console.log(chalk.green('    ● Ready to submit! All required steps complete.'))
             console.log()
         }
 
-        // Progress indicator - colors match step list (Green=Done, Cyan=Next, Dim=Future)
+        // Progress indicator - colors match step list (Green=Done, White=Current, Dim=Future)
         const progressBar = sections.map(s => {
             if (s.complete) return chalk.green('●')
-            if (nextStep?.id === s.id) return chalk.cyan('○')
+            if (nextStep?.id === s.id) return chalk.white('○')
             return chalk.dim('○')
         }).join(' ')
         console.log(`    Progress: ${progressBar}  ${chalk.dim(`(${completedCount}/${sections.length})`)}`)
@@ -135,20 +135,26 @@ export class DashboardView {
             // Highlight logical "Next Step"
             const isNext = nextStep?.id === section.id
 
-            let icon, name
+            let icon, nameText = section.name
 
+            // Add recommendation hint to name in THE LIST (not the menu)
+            if (!section.required) {
+                nameText += chalk.dim(' (optional, but recommended)')
+            }
+
+            let name
             if (section.complete) {
                 // Completed
-                icon = chalk.green('✓')
-                name = chalk.green(section.name)
+                icon = chalk.green('●')
+                name = chalk.green(nameText)
             } else if (isNext) {
                 // Current / Next Step (Active)
-                icon = chalk.cyan('○')
-                name = chalk.cyan(section.name) // Highlight the text too? Or keep white? Cyan is good for focus.
+                icon = chalk.white('○')
+                name = chalk.white(nameText)
             } else {
                 // Future / Skipped
                 icon = chalk.dim('○')
-                name = chalk.dim(section.name)
+                name = chalk.dim(nameText)
             }
 
             const summary = section.complete
@@ -174,7 +180,7 @@ export class DashboardView {
                     options.push({
                         value: section.id,
                         label: `Edit ${section.name}`,
-                        hint: section.complete ? 'Completed' : (section.required ? 'Required' : 'Optional'),
+                        hint: section.complete ? 'Completed' : (section.required ? 'Required' : 'Recommended'),
                     })
                 }
                 options.push({ value: 'back', label: 'Back' })
