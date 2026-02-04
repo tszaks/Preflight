@@ -190,8 +190,9 @@ export class DashboardView {
             options,
         })
 
+        // ESC pressed - stay in dashboard (will re-render)
         if (choice === null) {
-            return 'save_draft'
+            return null as unknown as DashboardAction
         }
 
         return choice
