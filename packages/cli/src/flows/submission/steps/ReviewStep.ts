@@ -15,6 +15,7 @@ export class ReviewStep implements SubmissionStep {
     ) { }
 
     async run(state: DraftState): Promise<StepResult> {
+        state._reviewCompleted = true
         console.log()
 
         // UX Intervention: Visual "Receipt" of files

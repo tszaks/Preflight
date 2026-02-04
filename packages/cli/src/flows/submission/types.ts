@@ -25,6 +25,7 @@ export interface DraftState {
     compliance?: ComplianceData
     // Flow position tracking for draft resumption
     _flowPosition?: 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'confirmation'
+    _reviewCompleted?: boolean // Track if the final review step was viewed
     _ascConnected?: boolean // Track if ASC was used for autofill
     _screenshotPaths?: string[] // Track screenshot paths for reference
 }
