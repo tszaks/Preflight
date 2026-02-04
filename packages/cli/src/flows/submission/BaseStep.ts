@@ -9,6 +9,7 @@ export type StepResult =
 export interface FlowContext {
     email?: string
     credits?: number
+    skipAutofillConfirm?: boolean // Skip ASC autofill confirmation (used by Easy Setup)
 }
 
 export interface SubmissionStep {
