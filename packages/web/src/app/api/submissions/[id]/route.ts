@@ -16,7 +16,7 @@ export async function GET(
 
     const { data, error } = await supabase
         .from('submissions')
-        .select('*')
+        .select('*, analysis_jobs(error_message)')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()

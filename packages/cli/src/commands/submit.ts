@@ -124,12 +124,14 @@ interface DraftState {
     _projectPath?: string // Track the Xcode project path for resumption
 }
 
-async function offerDraftSave(state: DraftState): Promise<boolean> {
+async function offerDraftSave(state: DraftState, skipConfirmation = false): Promise<boolean> {
     // Only offer if we have at least an app name
     if (!state.appName) return false
 
-    const save = await ui.confirm('Save your progress as a draft?', true)
-    if (save === null || !save) return false
+    if (!skipConfirmation) {
+        const save = await ui.confirm('Save your progress as a draft?', true)
+        if (save === null || !save) return false
+    }
 
     const s = ui.spinner()
     s.start('Saving draft...')
@@ -842,7 +844,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 }
             }
         } else if (reportData.status === 'failed') {
-            ui.log.error('Analysis failed. Please try submitting again or contact support.')
+            ui.log.error(reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed. Please try submitting again or contact support.')
             if (!fromMenu) process.exitCode = 1
         } else {
             ui.log.warning('Analysis is still running. Check status with:')
@@ -1150,7 +1152,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
                 await openUrl(`https://preflightlaunch.com/report/${reportData.data.report.id}`)
             }
         } else {
-            ui.log.error('Analysis failed.')
+            ui.log.error(reportData.status === 'failed' && reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed.')
         }
 
     } catch (err) {
@@ -1167,6 +1169,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
 interface PollResult {
     status: 'complete' | 'failed' | 'timeout' | 'cancelled'
     data?: { report: any; items: any[] }
+    error?: string
 }
 
 async function pollForReport(
@@ -1233,7 +1236,8 @@ async function pollForReport(
             }
 
             if (submission.status === 'failed') {
-                return { status: 'failed' }
+                const job = Array.isArray(submission.analysis_jobs) ? submission.analysis_jobs[0] : submission.analysis_jobs
+                return { status: 'failed', error: job?.error_message }
             }
         }
 
