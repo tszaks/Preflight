@@ -58,12 +58,21 @@ export class DashboardView {
                 required: false,
                 stepNumber: 3,
             },
+            {
+                id: 'review',
+                name: 'Final Review',
+                complete: false, // Always false until submitted (which exits flow)
+                summary: 'Sign off & submit',
+                required: true,
+                stepNumber: 4,
+            },
         ]
     }
 
     private canSubmit(): boolean {
         const sections = this.getSections()
-        return sections.filter(s => s.required).every(s => s.complete)
+        // Check all required EXCEPT review itself
+        return sections.filter(s => s.required && s.id !== 'review').every(s => s.complete)
     }
 
     private getNextStep(): SectionStatus | null {
@@ -79,7 +88,8 @@ export class DashboardView {
         const sections = this.getSections()
         const nextStep = this.getNextStep()
         const completedCount = sections.filter(s => s.complete).length
-        const requiredComplete = sections.filter(s => s.required).every(s => s.complete)
+        // Check requirement excluding 'review' step (since it's the final action)
+        const requiredComplete = sections.filter(s => s.required && s.id !== 'review').every(s => s.complete)
 
         // Show the giant ASCII logo header
         ui.renderHeader(email, credits)
@@ -110,92 +120,126 @@ export class DashboardView {
             const stepNum = chalk.dim(`${section.stepNumber}.`)
             const icon = section.complete ? chalk.green('✓') : (section.required ? chalk.yellow('○') : chalk.dim('○'))
             const name = section.complete ? chalk.green(section.name) : (section.required ? chalk.white(section.name) : chalk.dim(section.name))
-            const tag = section.required ? chalk.yellow('required') : chalk.dim('optional')
             const summary = section.complete
                 ? subtext(section.summary)
                 : chalk.dim(section.summary)
 
-            // Highlight next step
+            // Highlight next step (only if not done)
             const isNext = nextStep?.id === section.id
             const pointer = isNext ? chalk.cyan('→ ') : '  '
 
-            console.log(`  ${pointer}${stepNum} ${icon} ${name.padEnd(22)} ${section.complete ? '' : `[${tag}]`}`)
+            console.log(`  ${pointer}${stepNum} ${icon} ${name.padEnd(22)}`)
             console.log(`       ${summary}`)
         }
         console.log()
 
-        // Build options with clear guidance
-        const options: { value: DashboardAction; label: string; hint?: string }[] = []
+        // Internal menu loop
+        let currentMenu: 'main' | 'edit' = 'main'
 
-        // Show next recommended action prominently
-        if (nextStep && !nextStep.complete) {
-            options.push({
-                value: nextStep.id,
-                label: `Start Step ${nextStep.stepNumber}: ${nextStep.name}`,
-                hint: nextStep.required ? 'Required' : 'Recommended',
-            })
-        }
+        while (true) {
+            const options: { value: string; label: string; hint?: string }[] = []
 
-        // Add other sections
-        for (const section of sections) {
-            if (section.id !== nextStep?.id) {
-                if (section.complete) {
+            if (currentMenu === 'edit') {
+                // EDIT SUBMENU (Only accessible from Final Page)
+                for (const section of sections) {
                     options.push({
                         value: section.id,
                         label: `Edit ${section.name}`,
-                        hint: section.summary,
+                        hint: section.complete ? 'Completed' : (section.required ? 'Required' : 'Optional'),
                     })
-                } else {
+                }
+                options.push({ value: 'back', label: 'Back' })
+
+            } else {
+                // MAIN MENU
+                if (requiredComplete) {
+                    // --- FINAL PAGE LAYOUT ---
+                    // 1. Make changes submenu
                     options.push({
-                        value: section.id,
-                        label: `Configure ${section.name}`,
-                        hint: section.required ? 'Required' : 'Optional',
+                        value: 'edit_menu',
+                        label: 'Make changes to this review',
+                        hint: 'Edit details, compliance, or screenshots'
+                    })
+
+                    // 2. Approve and Submit
+                    options.push({
+                        value: 'review',
+                        label: 'Approve and Submit!',
+                        hint: '100 Credits',
+                    })
+
+                    // 3. Save Draft
+                    options.push({
+                        value: 'save_draft',
+                        label: 'Save Draft & Exit',
+                        hint: 'Resume later',
+                    })
+
+                    // 4. Exit
+                    options.push({
+                        value: 'exit',
+                        label: 'Exit Without Saving',
+                    })
+
+                } else {
+                    // --- PROGRESS LAYOUT (Original Style) ---
+
+                    // 1. Next Recommended Step
+                    if (nextStep && !nextStep.complete) {
+                        options.push({
+                            value: nextStep.id,
+                            label: `Start Step ${nextStep.stepNumber}: ${nextStep.name}`,
+                            hint: nextStep.required ? 'Required' : 'Recommended',
+                        })
+                    }
+
+                    // 2. Other Steps (Edit/Configure)
+                    for (const section of sections) {
+                        if (section.id !== nextStep?.id) {
+                            options.push({
+                                value: section.id,
+                                label: section.complete ? `Edit ${section.name}` : `Configure ${section.name}`,
+                                hint: section.summary,
+                            })
+                        }
+                    }
+
+                    // 3. Save Draft
+                    options.push({
+                        value: 'save_draft',
+                        label: 'Save Draft & Exit',
+                        hint: 'Resume later',
+                    })
+
+                    // 4. Exit
+                    options.push({
+                        value: 'exit',
+                        label: 'Exit Without Saving',
                     })
                 }
             }
-        }
 
-        // Review & Submit (only if can submit)
-        if (requiredComplete) {
-            options.push({
-                value: 'review',
-                label: '✔ Review & Submit',
-                hint: 'Ready! (100 credits)',
+            const choice = await ui.select<string>({
+                message: requiredComplete ? 'Ready to submit! Or continue editing:' : 'What would you like to do?',
+                options,
             })
+
+            // Navigation
+            if (choice === 'edit_menu') {
+                currentMenu = 'edit'
+                continue
+            }
+            if (choice === 'back') {
+                currentMenu = 'main'
+                continue
+            }
+
+            // ESC logic (null) handled by returning null (caller handles)
+            if (choice === null) {
+                return null as unknown as DashboardAction
+            }
+
+            return choice as DashboardAction
         }
-
-        // ASC option (edit or connect)
-        options.push({
-            value: 'asc',
-            label: this.ascEmail ? 'Edit ASC Connection' : 'Connect App Store Connect',
-            hint: this.ascEmail || 'Auto-fill app info',
-        })
-
-        // Save draft option
-        options.push({
-            value: 'save_draft',
-            label: 'Save Draft & Exit',
-            hint: 'Resume later',
-        })
-
-        // Exit without saving
-        options.push({
-            value: 'exit',
-            label: 'Exit',
-            hint: 'Exit without saving',
-        })
-
-        const choice = await ui.select<DashboardAction>({
-            message: requiredComplete ? 'Ready to submit! Or continue editing:' : 'What would you like to do?',
-            options,
-        })
-
-        // ESC pressed - stay in dashboard (will re-render)
-        if (choice === null) {
-            return null as unknown as DashboardAction
-        }
-
-        return choice
     }
 }
-
