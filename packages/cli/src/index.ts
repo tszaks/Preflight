@@ -22,8 +22,7 @@ import * as ui from './ui/interactive.js'
 import { subtext, brand } from './ui/theme.js'
 
 // Get version from package.json dynamically
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+const __dirname = dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'))
 
 const program = new Command()

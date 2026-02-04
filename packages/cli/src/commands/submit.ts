@@ -411,8 +411,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip'>({
             message: 'How do you want to provide screenshots?',
             options: [
+                { value: 'browse', label: 'Browse with Finder', hint: 'Select files or a folder' },
                 { value: 'manual', label: 'Enter path manually', hint: 'Type or paste file/folder path' },
-                { value: 'browse', label: 'Browse with Finder...', hint: 'Choose files or folder' },
                 { value: 'skip', label: 'Skip', hint: 'Continue without screenshots' },
             ],
         })
@@ -483,8 +483,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             const browseChoice = await ui.select<'files' | 'folder' | 'back'>({
                 message: 'Browse for screenshots',
                 options: [
-                    { value: 'files', label: 'Select files...', hint: 'Pick specific screenshots' },
-                    { value: 'folder', label: 'Select folder...', hint: 'All images in a folder' },
+                    { value: 'files', label: 'Select files', hint: 'Pick specific images' },
+                    { value: 'folder', label: 'Select folder', hint: 'All images in a directory' },
                     { value: 'back', label: 'Back', hint: 'Return to main menu' },
                 ],
             })
@@ -497,6 +497,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                     message: 'Select folder containing screenshots',
                     type: 'folder',
                     allowSkip: false,
+                    mode: 'browse',
                 })
 
                 if (folderPath && typeof folderPath === 'string') {
@@ -536,6 +537,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                     type: 'files',
                     fileTypes: ['public.png', 'public.jpeg'],
                     allowSkip: false,
+                    mode: 'browse',
                 })
 
                 if (screenshotPath && Array.isArray(screenshotPath)) {
@@ -598,7 +600,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         flow.addStep('asc', new AscStep())
         flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
-        flow.addStep('app_details', new AppDetailsStep(projectName))
+        flow.addStep('appDetails', new AppDetailsStep(projectName))
         flow.addStep('compliance', new ComplianceStep())
         flow.addStep('review', new ReviewStep(appName, dir, filesToUpload))
 

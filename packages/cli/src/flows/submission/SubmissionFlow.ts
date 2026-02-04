@@ -20,9 +20,9 @@ export class SubmissionFlow {
     ) {
         this.context = { email: userEmail, credits }
 
-        // If we have an app name or flow position, we're resuming a draft
+        // If we have a flow position, we're resuming a draft
         // or have already completed initial setup. Bypass the setup choice.
-        if (this.state.appName || this.state._flowPosition) {
+        if (this.state._flowPosition) {
             this.setupComplete = true
         }
     }
@@ -79,10 +79,14 @@ export class SubmissionFlow {
                 const result = await ascStep.run(this.state, this.context)
                 if (result.action === 'next') {
                     // Successfully connected
+                    this.state._flowPosition = 'appDetails'
                     this.setupComplete = true
                 }
                 // If they cancelled/went back, they'll see dashboard anyway
             }
+        } else if (choice === 'manual') {
+            this.state._flowPosition = 'appDetails'
+            this.setupComplete = true
         }
 
         this.setupComplete = true
@@ -149,7 +153,7 @@ export class SubmissionFlow {
 
                 case 'asc':
                 case 'screenshots':
-                case 'app_details':
+                case 'appDetails':
                 case 'compliance':
                     const result = await this.runSection(action)
                     if (result === 'save_draft') {
@@ -182,13 +186,15 @@ export class SubmissionFlow {
 
         switch (result.action) {
             case 'next':
-                // Section complete, return to dashboard
+                // Section complete, update flow position and return to dashboard
+                this.state._flowPosition = sectionId === 'asc' ? 'appDetails' : sectionId as any
                 return 'next'
             case 'back':
                 // User wants to go back - return to dashboard
                 return 'back'
             case 'save_draft':
-                // Propagate unique action
+                // Update flow position before saving
+                this.state._flowPosition = sectionId as any
                 return 'save_draft'
             case 'cancel':
                 // User cancelled the step. Return to dashboard.

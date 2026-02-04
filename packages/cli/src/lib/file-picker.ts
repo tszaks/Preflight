@@ -135,58 +135,50 @@ export async function promptForPath(opts: {
     allowSkip?: boolean
     placeholder?: string
     validate?: (value: string | undefined) => string | Error | undefined
+    mode?: 'browse' | 'manual'
 }): Promise<string | string[] | null> {
     const canBrowse = isPickerAvailable()
 
     // If browsing not available, go straight to text input
     if (!canBrowse) {
-        if (opts.allowSkip) {
-            return ui.text({
-                message: opts.message,
-                placeholder: opts.placeholder,
-                validate: opts.validate,
-            })
-        } else {
-            return ui.text({
-                message: opts.message,
-                placeholder: opts.placeholder,
-                validate: opts.validate,
-            })
-        }
-    }
-
-    // Show Browse vs Manual options
-    const browseLabel = opts.type === 'folder'
-        ? 'Browse with Finder...'
-        : opts.type === 'file'
-            ? 'Browse for file...'
-            : 'Browse for files...'
-
-    const selectOptions: Array<{ value: 'browse' | 'manual' | 'skip'; label: string; hint?: string }> = [
-        {
-            value: 'browse',
-            label: browseLabel,
-            hint: 'Use native macOS file picker',
-        },
-        {
-            value: 'manual',
-            label: 'Enter path manually...',
-            hint: 'Type the path',
-        },
-    ]
-
-    if (opts.allowSkip) {
-        selectOptions.push({
-            value: 'skip',
-            label: 'Skip',
-            hint: 'Continue without this',
+        return ui.text({
+            message: opts.message,
+            placeholder: opts.placeholder,
+            validate: opts.validate,
         })
     }
 
-    const action = await ui.select<'browse' | 'manual' | 'skip'>({
-        message: opts.message,
-        options: selectOptions,
-    })
+    let action: 'browse' | 'manual' | 'skip' | null = opts.mode || null
+
+    if (!action) {
+        const browseLabel = 'Browse with Finder'
+
+        const selectOptions: Array<{ value: 'browse' | 'manual' | 'skip'; label: string; hint?: string }> = [
+            {
+                value: 'browse',
+                label: browseLabel,
+                hint: 'Use native macOS file picker',
+            },
+            {
+                value: 'manual',
+                label: 'Enter path manually',
+                hint: 'Type or paste the path',
+            },
+        ]
+
+        if (opts.allowSkip) {
+            selectOptions.push({
+                value: 'skip',
+                label: 'Skip',
+                hint: 'Continue without this',
+            })
+        }
+
+        action = await ui.select<'browse' | 'manual' | 'skip'>({
+            message: opts.message,
+            options: selectOptions,
+        })
+    }
 
     if (action === null) return null
 

@@ -38,11 +38,11 @@ export class AscStep implements SubmissionStep {
                                 console.log()
 
                                 // Show what was imported
-                                if (result.appName) console.log(`  ${chalk.green('✓')} App Name: ${brand(result.appName)}`)
-                                if (result.description) console.log(`  ${chalk.green('✓')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
-                                if (result.keywords) console.log(`  ${chalk.green('✓')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
-                                if (result.category) console.log(`  ${chalk.green('✓')} Category: ${result.category}`)
-                                if (result.supportUrl) console.log(`  ${chalk.green('✓')} Support URL: ${subtext(result.supportUrl)}`)
+                                if (result.appName) console.log(`  ${chalk.green('●')} App Name: ${brand(result.appName)}`)
+                                if (result.description) console.log(`  ${chalk.green('●')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
+                                if (result.keywords) console.log(`  ${chalk.green('●')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
+                                if (result.category) console.log(`  ${chalk.green('●')} Category: ${result.category}`)
+                                if (result.supportUrl) console.log(`  ${chalk.green('●')} Support URL: ${subtext(result.supportUrl)}`)
                                 console.log()
 
                                 await ui.keypress('Press Enter to continue...')
