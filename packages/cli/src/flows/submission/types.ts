@@ -28,6 +28,7 @@ export interface DraftState {
     _reviewCompleted?: boolean // Track if the final review step was viewed
     _ascConnected?: boolean // Track if ASC was used for autofill
     _screenshotPaths?: string[] // Track screenshot paths for reference
+    _projectPath?: string // Track the Xcode project path for resumption
 }
 
 export interface FileToUpload {

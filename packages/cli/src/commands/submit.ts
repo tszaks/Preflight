@@ -115,6 +115,7 @@ interface DraftState {
     _flowPosition?: 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'confirmation'
     _ascConnected?: boolean // Track if ASC was used for autofill
     _screenshotPaths?: string[] // Track screenshot paths for reference
+    _projectPath?: string // Track the Xcode project path for resumption
 }
 
 async function offerDraftSave(state: DraftState): Promise<boolean> {
@@ -148,6 +149,10 @@ async function offerDraftSave(state: DraftState): Promise<boolean> {
         // Include flow position metadata for resuming
         if (state._flowPosition) {
             body.flow_position = state._flowPosition
+        }
+
+        if (state._projectPath) {
+            body.project_path = state._projectPath
         }
 
         const res = await apiRequest('/api/submissions', {
@@ -372,6 +377,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
     const dir = resolve(path)
     setLastScannedPath(dir)
+    draftState._projectPath = dir
 
     // 1. Detect files
     const detected = scanProject(dir)
@@ -854,6 +860,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
     if (lastPath) {
         if (existsSync(lastPath)) {
             path = lastPath
+            ui.log.success(`Using project path from draft: ${path}`)
         } else {
             // Path no longer exists, ask for a new one
             ui.log.warning(`Previous project path no longer exists: ${lastPath}`)
@@ -924,7 +931,8 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         demoPassword: draft.demo_password,
         compliance: parseComplianceFromApi(draft),
         _flowPosition: draft.flow_position,
-        _screenshotPaths: draft.screenshot_paths || filesToUpload.filter(f => f.type === 'screenshot').map(f => f.path)
+        _screenshotPaths: draft.screenshot_paths || filesToUpload.filter(f => f.type === 'screenshot').map(f => f.path),
+        _projectPath: dir
     }
 
     // Start Flow
