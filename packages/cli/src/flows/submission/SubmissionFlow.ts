@@ -104,7 +104,7 @@ export class SubmissionFlow {
 
             switch (action) {
                 case 'exit':
-                    const confirmExit = await ui.confirm('Exit without saving? Your progress will be lost.', false)
+                    const confirmExit = await ui.dangerConfirm('Exit without saving? Your progress will be lost.')
                     if (confirmExit) {
                         return 'cancelled'
                     }

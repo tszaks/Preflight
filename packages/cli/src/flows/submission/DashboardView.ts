@@ -117,10 +117,11 @@ export class DashboardView {
             console.log()
         }
 
-        // Progress indicator - colors match step list
+        // Progress indicator - colors match step list (Green=Done, Cyan=Next, Dim=Future)
         const progressBar = sections.map(s => {
             if (s.complete) return chalk.green('●')
-            return s.required ? chalk.red('○') : chalk.hex('#B5A642')('○')
+            if (nextStep?.id === s.id) return chalk.cyan('○')
+            return chalk.dim('○')
         }).join(' ')
         console.log(`    Progress: ${progressBar}  ${chalk.dim(`(${completedCount}/${sections.length})`)}`)
         console.log()
@@ -128,14 +129,26 @@ export class DashboardView {
         // Render section status with step numbers
         for (const section of sections) {
             const stepNum = chalk.dim(`${section.stepNumber}.`)
-            // Color coding: green = complete, red = required incomplete, muted yellow = optional
-            const mutedYellow = chalk.hex('#B5A642')
-            const icon = section.complete
-                ? chalk.green('✓')
-                : (section.required ? chalk.red('○') : mutedYellow('○'))
-            const name = section.complete
-                ? chalk.green(section.name)
-                : (section.required ? chalk.red(section.name) : mutedYellow(section.name))
+
+            // Highlight logical "Next Step"
+            const isNext = nextStep?.id === section.id
+
+            let icon, name
+
+            if (section.complete) {
+                // Completed
+                icon = chalk.green('✓')
+                name = chalk.green(section.name)
+            } else if (isNext) {
+                // Current / Next Step (Active)
+                icon = chalk.cyan('○')
+                name = chalk.cyan(section.name) // Highlight the text too? Or keep white? Cyan is good for focus.
+            } else {
+                // Future / Skipped
+                icon = chalk.dim('○')
+                name = chalk.dim(section.name)
+            }
+
             const summary = section.complete
                 ? subtext(section.summary)
                 : chalk.dim(section.summary)
@@ -198,9 +211,11 @@ export class DashboardView {
 
                     // 1. Next Sequential Step (Top Priority)
                     if (nextStep && !nextStep.complete) {
+                        // Clean name for button (remove parentheticals like "(optional)")
+                        const cleanName = nextStep.name.replace(/\s*\(.*\)/, '')
                         options.push({
                             value: nextStep.id,
-                            label: `Start Step ${nextStep.stepNumber}: ${nextStep.name}`,
+                            label: `Start Step ${nextStep.stepNumber}: ${cleanName}`,
                             hint: nextStep.required ? 'Required' : 'Recommended',
                         })
                     }

@@ -107,8 +107,23 @@ export async function multiselect<T extends string>(opts: {
 }
 
 // Confirm prompt with cancel detection
+// Standard confirmation
 export async function confirm(message: string, initialValue = true): Promise<boolean | null> {
     const result = await p.confirm({ message, initialValue })
+    if (p.isCancel(result)) {
+        return null
+    }
+    return result
+}
+
+// Destructive confirmation (Red Yes, Green No)
+export async function dangerConfirm(message: string, initialValue = false): Promise<boolean | null> {
+    const result = await p.confirm({
+        message,
+        initialValue,
+        active: chalk.red('Yes'),
+        inactive: chalk.green('No')
+    })
     if (p.isCancel(result)) {
         return null
     }
