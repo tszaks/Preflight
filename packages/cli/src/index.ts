@@ -193,23 +193,24 @@ async function checkForUpdates(): Promise<UpdateInfo | null> {
 
 // ─── Settings Menu ───────────────────────────────────────────────────────
 
-async function showSettingsMenu(): Promise<boolean> {
+async function showSettingsMenu(): Promise<'logout' | 'exit' | null> {
     while (true) {
         const ascConnected = getConfig().ascConnected
 
-        const choice = await ui.select<'asc' | 'update' | 'clear_data' | 'logout' | 'back'>({
+        const choice = await ui.select<'asc' | 'update' | 'clear_data' | 'logout' | 'exit' | 'back'>({
             message: 'Settings',
             options: [
                 { value: 'asc', label: 'App Store Connect', hint: ascConnected ? 'Connected' : 'Connect for autofill' },
                 { value: 'update', label: 'Check for Updates', hint: 'Update Preflight CLI' },
                 { value: 'clear_data', label: 'Clear Local Data', hint: 'Remove cached data and drafts' },
                 { value: 'logout', label: 'Log Out', hint: 'Sign out of your account' },
+                { value: 'exit', label: 'Exit Preflight', hint: 'Close the application' },
                 { value: 'back', label: 'Back' },
             ],
         })
 
         if (choice === null || choice === 'back') {
-            return false
+            return null
         }
 
         switch (choice) {
@@ -234,9 +235,15 @@ async function showSettingsMenu(): Promise<boolean> {
             case 'logout':
                 const confirmLogout = await ui.confirm('Log out of Preflight?', false)
                 if (confirmLogout) {
-                    return true // Signal to caller to handle logout
+                    return 'logout'
                 }
                 break
+
+            case 'exit':
+                console.log()
+                console.log('  🚀 Happy building!')
+                console.log()
+                return 'exit'
         }
     }
 }
@@ -301,11 +308,9 @@ async function interactiveMenu() {
         })
 
         if (choice === null) {
-            // Esc pressed -- quit
-            console.log()
-            console.log('  🚀 Happy building!')
-            console.log()
-            return
+            // ESC pressed - just re-render, don't exit
+            // User must go to Settings -> Exit to quit
+            continue
         }
 
         switch (choice) {
@@ -328,8 +333,11 @@ async function interactiveMenu() {
                 break
 
             case 'settings':
-                const shouldLogout = await showSettingsMenu()
-                if (shouldLogout) {
+                const settingsResult = await showSettingsMenu()
+                if (settingsResult === 'exit') {
+                    return // Exit the app
+                }
+                if (settingsResult === 'logout') {
                     clearAuth()
                     // Show auth screen again
                     const authenticated = await showAuthScreen()
