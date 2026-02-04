@@ -30,12 +30,6 @@ export class SubmissionFlow {
      * Returns true if user wants to continue, false if cancelled
      */
     async showSetupChoice(): Promise<boolean> {
-        // Skip if already connected to ASC or has app details
-        if (this.ascEmail || this.state.appName) {
-            this.setupComplete = true
-            return true
-        }
-
         ui.renderHeader(this.context.email, this.context.credits)
         console.log()
         console.log(chalk.cyan('    ℹ Let\'s get your app ready for review.'))
