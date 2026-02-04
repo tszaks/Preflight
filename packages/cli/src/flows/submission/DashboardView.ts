@@ -62,7 +62,7 @@ export class DashboardView {
                 id: 'review',
                 name: 'Final Review',
                 complete: false, // Always false until submitted (which exits flow)
-                summary: 'Sign off & submit',
+                summary: 'Review & submit',
                 required: true,
                 stepNumber: 4,
             },
