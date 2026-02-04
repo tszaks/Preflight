@@ -58,7 +58,8 @@ export async function updateCommand(currentRunningVersion?: string) {
     // Version loaded when process started (passed from index.ts usually, but we can rely on cached require if needed, 
     // strictly speaking we want the version the user sees in the header)
     const diskVersion = getCurrentVersion()
-    const runningVersion = currentRunningVersion || diskVersion
+    // Handle case where commander passes (options, command) instead of string
+    const runningVersion = (typeof currentRunningVersion === 'string' ? currentRunningVersion : undefined) || diskVersion
 
     const s = ui.spinner()
 
