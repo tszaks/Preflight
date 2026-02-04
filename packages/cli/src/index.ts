@@ -218,7 +218,7 @@ async function showSettingsMenu(): Promise<boolean> {
                 break
 
             case 'update':
-                await updateCommand()
+                await updateCommand(pkg.version)
                 break
 
             case 'clear_data':

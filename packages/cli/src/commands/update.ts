@@ -40,11 +40,12 @@ function compareSemver(a: string, b: string): number {
     return 0
 }
 
-// Simple messages for each step
+// Messages
 const messages = {
     checking: 'Checking current version...',
     scanning: 'Checking for updates...',
     upToDate: 'Already up to date.',
+    pendingRestart: 'Update already installed!',
     downloading: 'Downloading...',
     installing: 'Installing...',
     done: 'Done',
@@ -53,15 +54,31 @@ const messages = {
     noRegistry: 'Could not reach npm registry',
 }
 
-export async function updateCommand() {
-    const current = getCurrentVersion()
+export async function updateCommand(currentRunningVersion?: string) {
+    // Version loaded when process started (passed from index.ts usually, but we can rely on cached require if needed, 
+    // strictly speaking we want the version the user sees in the header)
+    const diskVersion = getCurrentVersion()
+    const runningVersion = currentRunningVersion || diskVersion
 
     const s = ui.spinner()
 
-    // Step 1: Show current version
+    // Step 1: Show versions
+    if (diskVersion !== runningVersion) {
+        // Zombie process case
+        console.log()
+        ui.log.warning(`Pending update detected!`)
+        console.log(subtext(`  Running: v${runningVersion}`))
+        console.log(subtext(`  Installed: v${diskVersion}`))
+        console.log()
+        console.log(brand('  Please exit and restart Preflight to apply changes.'))
+        console.log()
+        await ui.keypress('Press Enter to exit...')
+        process.exit(0)
+    }
+
     s.start(messages.checking)
     await wait(500)
-    s.stop(`Current: ${brand(`v${current}`)}`)
+    s.stop(`Current: ${brand(`v${runningVersion}`)}`)
 
     // Step 2: Check registry
     s.start(messages.scanning)
@@ -75,7 +92,7 @@ export async function updateCommand() {
         return
     }
 
-    if (compareSemver(current, latest) >= 0) {
+    if (compareSemver(runningVersion, latest) >= 0) {
         s.stop(`Latest: ${brand(`v${latest}`)}`)
         console.log()
         ui.log.success('Preflight is up to date.')
@@ -87,7 +104,7 @@ export async function updateCommand() {
     // Update available
     s.stop(`Update available: ${brand(`v${latest}`)}`)
     console.log()
-    console.log(`  ${brandDim(`v${current}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
+    console.log(`  ${brandDim(`v${runningVersion}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
     console.log()
 
     const shouldInstall = await ui.confirm('Install update now?')
@@ -110,9 +127,12 @@ export async function updateCommand() {
 
         // Step 4: Done
         console.log()
-        console.log(`  Updated: ${brandDim(`v${current}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
+        console.log(`  Updated: ${brandDim(`v${runningVersion}`)} ${subtext('→')} ${brand(`v${latest}`)}`)
         console.log(subtext(`  ${messages.restart}`))
         console.log()
+
+        await ui.keypress('Press Enter to exit...')
+        process.exit(0)
     } catch (err) {
         s.stop(messages.failed)
 
