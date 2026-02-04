@@ -116,12 +116,12 @@ interface DraftState {
     _screenshotPaths?: string[] // Track screenshot paths for reference
 }
 
-async function offerDraftSave(state: DraftState): Promise<void> {
+async function offerDraftSave(state: DraftState): Promise<boolean> {
     // Only offer if we have at least an app name
-    if (!state.appName) return
+    if (!state.appName) return false
 
     const save = await ui.confirm('Save your progress as a draft?', true)
-    if (save === null || !save) return
+    if (save === null || !save) return false
 
     const s = ui.spinner()
     s.start('Saving draft...')
@@ -153,9 +153,12 @@ async function offerDraftSave(state: DraftState): Promise<void> {
 
         if (res.ok) {
             ui.log.success('Draft saved. Resume it from View Reviews anytime.')
+            return true
         }
+        return false
     } catch {
         s.stop('Could not save draft')
+        return false
     }
 }
 

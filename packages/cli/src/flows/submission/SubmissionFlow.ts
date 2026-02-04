@@ -15,7 +15,7 @@ export class SubmissionFlow {
         private projectName: string,
         private ascEmail: string | undefined,
         private credits: number | undefined,
-        private saveDraftCallback: (state: DraftState) => Promise<void>,
+        private saveDraftCallback: (state: DraftState) => Promise<boolean>,
         private userEmail?: string
     ) {
         this.context = { email: userEmail, credits }
@@ -107,10 +107,13 @@ export class SubmissionFlow {
                     return 'cancelled'
 
                 case 'save_draft':
-                    await this.saveDraftCallback(this.state)
-                    ui.log.success('Draft saved!')
-                    await ui.keypress('Press Enter to exit...')
-                    return 'cancelled'
+                    const saved = await this.saveDraftCallback(this.state)
+                    if (saved) {
+                        await ui.keypress('Press Enter to exit...')
+                        return 'cancelled'
+                    }
+                    // User said No - return to dashboard
+                    break
 
                 case 'review':
                     // Run review step with header
@@ -122,10 +125,12 @@ export class SubmissionFlow {
                             return 'completed' // Submit!
                         }
                         if (result.action === 'save_draft') {
-                            await this.saveDraftCallback(this.state)
-                            ui.log.success('Draft saved!')
-                            await ui.keypress('Press Enter to exit...')
-                            return 'cancelled'
+                            const reviewSaved = await this.saveDraftCallback(this.state)
+                            if (reviewSaved) {
+                                await ui.keypress('Press Enter to exit...')
+                                return 'cancelled'
+                            }
+                            // User said No - return to dashboard
                         }
                         // 'back' returns to dashboard
                     }
@@ -137,10 +142,12 @@ export class SubmissionFlow {
                 case 'compliance':
                     const result = await this.runSection(action)
                     if (result === 'save_draft') {
-                        await this.saveDraftCallback(this.state)
-                        ui.log.success('Draft saved!')
-                        await ui.keypress('Press Enter to exit...')
-                        return 'cancelled'
+                        const sectionSaved = await this.saveDraftCallback(this.state)
+                        if (sectionSaved) {
+                            await ui.keypress('Press Enter to exit...')
+                            return 'cancelled'
+                        }
+                        // User said No - return to dashboard
                     }
                     break
             }

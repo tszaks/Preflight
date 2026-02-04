@@ -711,9 +711,14 @@ export async function collectPrivacyData(): Promise<PrivacyDeclarations | null> 
             }
 
             case 'linked': {
+                // Calculate position among linked steps for numbering
+                const linkedSteps = steps.filter(s => s.type === 'linked')
+                const linkedIndex = linkedSteps.findIndex(s => s.type === 'linked' && s.key === step.key)
+                const linkedTotal = linkedSteps.length
+
                 const typeObj = (state.data as any)[step.key]
                 const linked = await ui.confirm(
-                    `Can you tie ${step.label} to a specific person? (e.g., through their account)`,
+                    `(${linkedIndex + 1}/${linkedTotal}) Can you tie ${step.label} to a specific person?`,
                     typeObj.linked,
                 )
 
