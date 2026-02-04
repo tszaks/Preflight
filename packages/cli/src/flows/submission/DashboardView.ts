@@ -184,18 +184,19 @@ export class DashboardView {
                 if (requiredComplete) {
                     message = `\n  ${chalk.bold('Ready to submit! Or continue editing:')}`
                     // --- FINAL PAGE LAYOUT ---
-                    // 1. Make changes submenu
-                    options.push({
-                        value: 'edit_menu',
-                        label: chalk.dim('Edit review details'),
-                        hint: 'Modify completed steps'
-                    })
 
-                    // 2. Approve and Submit
+                    // 1. Approve and Submit
                     options.push({
                         value: 'review',
                         label: chalk.bold.green('Approve and Submit!'),
                         hint: '100 Credits',
+                    })
+
+                    // 2. Make changes submenu
+                    options.push({
+                        value: 'edit_menu',
+                        label: chalk.dim('Edit review details'),
+                        hint: 'Modify completed steps'
                     })
 
                     // 3. Save Draft
