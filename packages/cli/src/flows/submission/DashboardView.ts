@@ -43,19 +43,19 @@ export class DashboardView {
                 stepNumber: 1,
             },
             {
-                id: 'compliance',
-                name: 'Compliance',
-                complete: hasCompliance,
-                summary: hasCompliance ? `Age ${this.state.compliance!.ageRating}` : 'Age rating, privacy info...',
-                required: true,
-                stepNumber: 2,
-            },
-            {
                 id: 'screenshots',
                 name: 'Screenshots',
                 complete: screenshotCount > 0,
                 summary: screenshotCount > 0 ? `${screenshotCount} images ready` : 'Add app screenshots',
                 required: false,
+                stepNumber: 2,
+            },
+            {
+                id: 'compliance',
+                name: 'Compliance',
+                complete: hasCompliance,
+                summary: hasCompliance ? `Age ${this.state.compliance!.ageRating}` : 'Age rating, privacy info...',
+                required: true,
                 stepNumber: 3,
             },
             {
