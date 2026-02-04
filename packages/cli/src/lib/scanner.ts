@@ -94,7 +94,7 @@ export function scanProject(dir: string): DetectedFiles {
     return result
 }
 
-function findFiles(
+export function findFiles(
     dir: string,
     matcher: (filepath: string) => boolean,
     maxDepth: number,

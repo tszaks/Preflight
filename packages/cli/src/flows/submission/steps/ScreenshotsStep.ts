@@ -4,6 +4,8 @@ import * as ui from '../../../ui/interactive.js'
 import { promptForPath } from '../../../lib/file-picker.js'
 import { SubmissionStep, StepResult } from '../BaseStep.js'
 import { DraftState, FileToUpload } from '../types.js'
+import { findFiles } from '../../../lib/scanner.js'
+import { subtext } from '../../../ui/theme.js'
 
 export class ScreenshotsStep implements SubmissionStep {
     name = 'Screenshots'
@@ -108,7 +110,21 @@ export class ScreenshotsStep implements SubmissionStep {
             if (folderPath && typeof folderPath === 'string') {
                 const count = this.loadScreenshotsFromPath(folderPath, state)
                 if (count > 0) {
-                    ui.log.success(`Found ${count} screenshot${count === 1 ? '' : 's'}`)
+                    const sampleFiles = this.filesToUpload
+                        .slice(0, 3)
+                        .map(f => f.filename)
+                        .join(', ')
+
+                    const msg = count > 10
+                        ? `Found ${count} screenshots (using first 10)`
+                        : `Found ${count} screenshot${count === 1 ? '' : 's'}`
+
+                    ui.log.success(msg)
+                    if (count > 3) {
+                        ui.log.info(subtext(`  Files: ${sampleFiles}, ...`))
+                    } else {
+                        ui.log.info(subtext(`  Files: ${sampleFiles}`))
+                    }
                 } else {
                     ui.log.warning('No images found in that folder.')
                 }
@@ -125,7 +141,12 @@ export class ScreenshotsStep implements SubmissionStep {
 
             if (screenshotPath && Array.isArray(screenshotPath)) {
                 this.updateFiles(screenshotPath, state)
-                ui.log.success(`Found ${screenshotPath.length} screenshot${screenshotPath.length === 1 ? '' : 's'}`)
+                const count = screenshotPath.length
+                const msg = count > 10
+                    ? `Found ${count} screenshots (using first 10)`
+                    : `Found ${count} screenshot${count === 1 ? '' : 's'}`
+
+                ui.log.success(msg)
             }
         }
     }
@@ -137,9 +158,8 @@ export class ScreenshotsStep implements SubmissionStep {
 
             if (stats.isDirectory()) {
                 const imageExts = ['.png', '.jpg', '.jpeg']
-                const foundFiles = readdirSync(resolved)
-                    .filter((f) => imageExts.includes(extname(f).toLowerCase()))
-                    .map((f) => join(resolved, f))
+                const foundFiles = findFiles(resolved, (f) =>
+                    imageExts.includes(extname(f).toLowerCase()), 2)
 
                 this.updateFiles(foundFiles, state)
                 return foundFiles.length
