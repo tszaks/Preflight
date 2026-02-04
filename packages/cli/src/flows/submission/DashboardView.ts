@@ -110,16 +110,24 @@ export class DashboardView {
             console.log()
         }
 
-        // Progress indicator
-        const progressBar = sections.map(s => s.complete ? chalk.green('●') : chalk.dim('○')).join(' ')
+        // Progress indicator - colors match step list
+        const progressBar = sections.map(s => {
+            if (s.complete) return chalk.green('●')
+            return s.required ? chalk.red('○') : chalk.yellow('○')
+        }).join(' ')
         console.log(`    Progress: ${progressBar}  ${chalk.dim(`(${completedCount}/${sections.length})`)}`)
         console.log()
 
         // Render section status with step numbers
         for (const section of sections) {
             const stepNum = chalk.dim(`${section.stepNumber}.`)
-            const icon = section.complete ? chalk.green('✓') : (section.required ? chalk.yellow('○') : chalk.dim('○'))
-            const name = section.complete ? chalk.green(section.name) : (section.required ? chalk.white(section.name) : chalk.dim(section.name))
+            // Color coding: green = complete, red = required incomplete, yellow = optional incomplete
+            const icon = section.complete
+                ? chalk.green('✓')
+                : (section.required ? chalk.red('○') : chalk.yellow('○'))
+            const name = section.complete
+                ? chalk.green(section.name)
+                : (section.required ? chalk.red(section.name) : chalk.yellow(section.name))
             const summary = section.complete
                 ? subtext(section.summary)
                 : chalk.dim(section.summary)
