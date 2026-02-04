@@ -98,6 +98,9 @@ export class SubmissionFlow {
             const action = await dashboard.render(this.projectName, this.context.email, this.context.credits)
 
             switch (action) {
+                case 'exit':
+                    return 'cancelled'
+
                 case 'save_draft':
                     await this.saveDraftCallback(this.state)
                     ui.log.success('Draft saved!')
