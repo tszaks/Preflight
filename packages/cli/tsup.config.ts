@@ -7,6 +7,7 @@ export default defineConfig({
     outDir: 'dist',
     clean: true,
     sourcemap: true,
+    splitting: false,
     dts: false,
     shims: true,
     banner: {

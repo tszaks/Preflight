@@ -123,3 +123,11 @@ export function findFiles(
     }
     return results
 }
+
+export function getFileSize(filePath: string): number {
+    try {
+        return statSync(filePath).size
+    } catch {
+        return 0
+    }
+}

@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs'
 import { basename, resolve, extname, join } from 'node:path'
-import { scanProject, findFiles } from '../lib/scanner.js'
+import { scanProject, findFiles, getFileSize } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
 import { isLoggedIn, setLastScannedPath, getAscConnected, getConfig } from '../lib/config.js'
 import { loginWithBrowser } from '../lib/auth.js'
@@ -21,6 +21,12 @@ import {
     type AppDetails,
     type ComplianceData,
 } from '../lib/submission-questions.js'
+import { SubmissionFlow } from '../flows/submission/SubmissionFlow.js'
+import { AscStep } from '../flows/submission/steps/AscStep.js'
+import { ScreenshotsStep } from '../flows/submission/steps/ScreenshotsStep.js'
+import { AppDetailsStep } from '../flows/submission/steps/AppDetailsStep.js'
+import { ComplianceStep } from '../flows/submission/steps/ComplianceStep.js'
+import { ReviewStep } from '../flows/submission/steps/ReviewStep.js'
 
 interface SubmitOptions {
     appName?: string
@@ -939,13 +945,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         _projectPath: dir
     }
 
-    // Start Flow
-    const { SubmissionFlow } = await import('../flows/submission/SubmissionFlow.js')
-    const { AscStep } = await import('../flows/submission/steps/AscStep.js')
-    const { ScreenshotsStep } = await import('../flows/submission/steps/ScreenshotsStep.js')
-    const { AppDetailsStep } = await import('../flows/submission/steps/AppDetailsStep.js')
-    const { ComplianceStep } = await import('../flows/submission/steps/ComplianceStep.js')
-    const { ReviewStep } = await import('../flows/submission/steps/ReviewStep.js')
+
 
     // Check ASC connection for dashboard display
     let ascEmail: string | undefined
@@ -1159,13 +1159,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
     }
 }
 
-export function getFileSize(filePath: string): number {
-    try {
-        return statSync(filePath).size
-    } catch {
-        return 0
-    }
-}
+
 
 
 // ─── Polling (Phase 5: Cancel Support) ──────────────────────────────────
