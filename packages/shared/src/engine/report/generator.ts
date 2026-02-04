@@ -78,6 +78,7 @@ export async function generateReport(
         .from('submissions')
         .update({
             status: 'complete',
+            report_id: report.id,
             completed_at: new Date().toISOString(),
         })
         .eq('id', submissionId);
