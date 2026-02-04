@@ -1008,6 +1008,25 @@ export function formatComplianceForApi(compliance: ComplianceData): Record<strin
     }
 }
 
+/**
+ * Reconstructs ComplianceData from flat API response
+ */
+export function parseComplianceFromApi(data: Record<string, any>): ComplianceData | undefined {
+    if (!data.age_rating || !data.privacy_declarations || !data.checklist) {
+        return undefined
+    }
+
+    return {
+        ageRatingAnswers: data.age_rating,
+        ageRating: data.age_rating_result || '4+',
+        privacyDeclarations: {
+            data: data.privacy_declarations.data,
+            tracking: data.privacy_declarations.tracking,
+        },
+        checklist: data.checklist,
+    }
+}
+
 // ─── Format for display in summary ───────────────────────────────────────
 
 export function formatComplianceSummary(compliance: ComplianceData): string[] {
