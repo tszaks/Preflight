@@ -63,8 +63,8 @@ export class DashboardView {
             {
                 id: 'review',
                 name: 'Final Review',
-                complete: false, // Always false until submitted (which exits flow)
-                summary: 'Review & submit',
+                complete: !!this.state._reviewCompleted,
+                summary: 'Review build assets & compliance',
                 required: true,
                 stepNumber: 4,
             },
@@ -73,8 +73,8 @@ export class DashboardView {
 
     private canSubmit(): boolean {
         const sections = this.getSections()
-        // Check all required EXCEPT review itself
-        return sections.filter(s => s.required && s.id !== 'review').every(s => s.complete)
+        // Check all required steps including review
+        return sections.filter(s => s.required).every(s => s.complete)
     }
 
     private getNextStep(): SectionStatus | null {
@@ -97,8 +97,8 @@ export class DashboardView {
         const sections = this.getSections()
         const nextStep = this.getNextStep()
         const completedCount = sections.filter(s => s.complete).length
-        // Check requirement excluding 'review' step (since it's the final action)
-        const requiredComplete = sections.filter(s => s.required && s.id !== 'review').every(s => s.complete)
+        const requiredComplete = this.canSubmit()
+        const prepStepsDone = sections.filter(s => s.required && s.id !== 'review').every(s => s.complete)
 
         // Show the giant ASCII logo header
         ui.renderHeader(email, credits)
@@ -111,11 +111,14 @@ export class DashboardView {
             console.log(chalk.cyan('    ℹ Complete the steps below to get an AI review of your app.'))
             console.log(chalk.dim('      We\'ll check for App Store guideline issues before you submit to Apple.'))
             console.log()
-        } else if (!requiredComplete) {
+        } else if (!prepStepsDone) {
             console.log(chalk.cyan(`    ℹ Complete the required steps to continue.`))
             console.log()
+        } else if (!requiredComplete) {
+            console.log(chalk.green('    ● Ready for Final Review! Almost there.'))
+            console.log()
         } else {
-            console.log(chalk.green('    ● Ready to submit! All required steps complete.'))
+            console.log(chalk.green('    ● Ready to submit! All steps complete.'))
             console.log()
         }
 
@@ -188,21 +191,21 @@ export class DashboardView {
             } else {
                 // MAIN MENU
                 if (requiredComplete) {
-                    message = `\n  ${chalk.bold('Ready to submit! Or continue editing:')}`
+                    message = `\n  ${chalk.bold('Ready to submit! All details look good.')}`
                     // --- FINAL PAGE LAYOUT ---
 
                     // 1. Approve and Submit
                     options.push({
                         value: 'review',
                         label: chalk.bold.green('Approve and Submit!'),
-                        hint: '100 Credits',
+                        hint: 'Final step - 100 Credits',
                     })
 
                     // 2. Make changes submenu
                     options.push({
                         value: 'edit_menu',
-                        label: chalk.dim('Edit review details'),
-                        hint: 'Modify completed steps'
+                        label: chalk.white('Edit submission details'),
+                        hint: 'Modify any previous step'
                     })
 
                     // 3. Save Draft
@@ -219,16 +222,21 @@ export class DashboardView {
                     })
 
                 } else {
-                    message = `\n  Continue with Step ${nextStep?.stepNumber || 1}:`
+                    message = requiredComplete
+                        ? chalk.bold('Ready to submit!')
+                        : (prepStepsDone ? chalk.bold('Ready for Final Review!') : `\n  Continue with Step ${nextStep?.stepNumber || 1}:`)
                     // --- PROGRESS LAYOUT (Simplified) ---
 
                     // 1. Next Sequential Step (Top Priority)
                     if (nextStep && !nextStep.complete) {
                         // Clean name for button (remove parentheticals like "(optional)")
                         const cleanName = nextStep.name.replace(/\s*\(.*\)/, '')
+                        const isFinalStep = nextStep.id === 'review'
                         options.push({
                             value: nextStep.id,
-                            label: chalk.bold.white(`Start Step ${nextStep.stepNumber}: ${cleanName}`),
+                            label: isFinalStep
+                                ? chalk.bold.white(`Start Step 4: ${cleanName}`)
+                                : chalk.bold.white(`Start Step ${nextStep.stepNumber}: ${cleanName}`),
                             hint: nextStep.required ? 'Required' : 'Recommended',
                         })
                     }
