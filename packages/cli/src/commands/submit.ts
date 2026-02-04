@@ -845,9 +845,12 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
     let path: string | undefined
 
     if (lastPath) {
-        const useLast = await ui.confirm(`Use previous project path? (${lastPath})`, true)
-        if (useLast === null) return
-        if (useLast) path = lastPath
+        if (existsSync(lastPath)) {
+            path = lastPath
+        } else {
+            // Path no longer exists, ask for a new one
+            ui.log.warning(`Previous project path no longer exists: ${lastPath}`)
+        }
     }
 
     if (!path) {
