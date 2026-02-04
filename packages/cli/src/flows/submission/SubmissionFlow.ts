@@ -97,6 +97,11 @@ export class SubmissionFlow {
         while (true) {
             const action = await dashboard.render(this.projectName, this.context.email, this.context.credits)
 
+            // ESC pressed - just re-render
+            if (action === null) {
+                continue
+            }
+
             switch (action) {
                 case 'exit':
                     return 'cancelled'
