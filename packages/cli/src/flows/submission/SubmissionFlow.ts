@@ -41,12 +41,12 @@ export class SubmissionFlow {
             options: [
                 {
                     value: 'easy',
-                    label: '⚡ Easy Setup',
+                    label: 'Easy Setup',
                     hint: 'Connect to App Store Connect and auto-fill your app info',
                 },
                 {
                     value: 'manual',
-                    label: '✏️  Manual Setup',
+                    label: 'Manual Setup',
                     hint: 'Enter app details yourself',
                 },
                 {
