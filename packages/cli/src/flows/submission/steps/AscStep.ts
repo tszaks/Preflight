@@ -1,6 +1,6 @@
 import * as ui from '../../../ui/interactive.js'
 import { apiRequest } from '../../../lib/api-client.js'
-import { SubmissionStep, StepResult } from '../BaseStep.js'
+import { SubmissionStep, StepResult, FlowContext } from '../BaseStep.js'
 import { DraftState } from '../types.js'
 import chalk from 'chalk'
 import { subtext, brand } from '../../../ui/theme.js'
@@ -8,7 +8,7 @@ import { subtext, brand } from '../../../ui/theme.js'
 export class AscStep implements SubmissionStep {
     name = 'App Store Connect'
 
-    async run(state: DraftState): Promise<StepResult> {
+    async run(state: DraftState, context?: FlowContext): Promise<StepResult> {
         // Checking existing connection
         const ascConnected = await this.getAscStatus()
 
@@ -22,7 +22,13 @@ export class AscStep implements SubmissionStep {
 
                     if (statusData.connected && statusData.appId) {
                         const hasManualEntries = !!(state.description || state.keywords || state.supportUrl)
-                        shouldConnect = await this.askToAutofill(statusData.appName, hasManualEntries)
+
+                        // Skip confirmation if coming from Easy Setup (or no manual entries to overwrite)
+                        if (context?.skipAutofillConfirm && !hasManualEntries) {
+                            shouldConnect = true
+                        } else {
+                            shouldConnect = await this.askToAutofill(statusData.appName, hasManualEntries)
+                        }
 
                         if (shouldConnect) {
                             const result = await this.performAutofill(statusData.appId, state)

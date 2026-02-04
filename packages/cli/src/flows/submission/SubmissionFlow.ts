@@ -62,7 +62,8 @@ export class SubmissionFlow {
         }
 
         if (choice === 'easy') {
-            // Run ASC step immediately
+            // Run ASC step immediately with skip confirmation flag
+            this.context.skipAutofillConfirm = true
             const ascStep = this.steps.get('asc')
             if (ascStep) {
                 ui.renderHeader(this.context.email, this.context.credits)
@@ -71,7 +72,7 @@ export class SubmissionFlow {
                 console.log()
                 const result = await ascStep.run(this.state, this.context)
                 if (result.action === 'next') {
-                    // Successfully connected, update ascEmail
+                    // Successfully connected
                     this.setupComplete = true
                 }
                 // If they cancelled/went back, they'll see dashboard anyway
