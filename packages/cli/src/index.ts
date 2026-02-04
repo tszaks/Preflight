@@ -16,8 +16,7 @@ import { showWelcomeScreen, showAuthScreen } from './commands/onboarding.js'
 import { ascConnectCommand, ascStatusCommand, ascDisconnectCommand, ascRefreshCommand, ascInteractiveMenu } from './commands/asc.js'
 import { updateCommand } from './commands/update.js'
 import { handleUnknownCommand } from './ui/errors.js'
-import { isLoggedIn, hasRunBefore, getConfig, setUser } from './lib/config.js'
-import { clearAuth } from './lib/config.js'
+import { isLoggedIn, hasRunBefore, getConfig, setUser, setAscConnected, setLastScannedPath, clearAuth } from './lib/config.js'
 import { apiRequest } from './lib/api-client.js'
 import * as ui from './ui/interactive.js'
 import { subtext, brand } from './ui/theme.js'
@@ -192,6 +191,56 @@ async function checkForUpdates(): Promise<UpdateInfo | null> {
     }
 }
 
+// ─── Settings Menu ───────────────────────────────────────────────────────
+
+async function showSettingsMenu(): Promise<boolean> {
+    while (true) {
+        const ascConnected = getConfig().ascConnected
+
+        const choice = await ui.select<'asc' | 'update' | 'clear_data' | 'logout' | 'back'>({
+            message: 'Settings',
+            options: [
+                { value: 'asc', label: 'App Store Connect', hint: ascConnected ? 'Connected' : 'Connect for autofill' },
+                { value: 'update', label: 'Check for Updates', hint: 'Update Preflight CLI' },
+                { value: 'clear_data', label: 'Clear Local Data', hint: 'Remove cached data and drafts' },
+                { value: 'logout', label: 'Log Out', hint: 'Sign out of your account' },
+                { value: 'back', label: 'Back' },
+            ],
+        })
+
+        if (choice === null || choice === 'back') {
+            return false
+        }
+
+        switch (choice) {
+            case 'asc':
+                await ascInteractiveMenu()
+                break
+
+            case 'update':
+                await updateCommand()
+                break
+
+            case 'clear_data':
+                const confirmed = await ui.confirm('Clear all local data? This removes drafts and cached info.', false)
+                if (confirmed) {
+                    // Clear non-auth data
+                    setAscConnected(false)
+                    setLastScannedPath('')
+                    ui.log.success('Local data cleared.')
+                }
+                break
+
+            case 'logout':
+                const confirmLogout = await ui.confirm('Log out of Preflight?', false)
+                if (confirmLogout) {
+                    return true // Signal to caller to handle logout
+                }
+                break
+        }
+    }
+}
+
 async function interactiveMenu() {
     // Screen 0: Welcome (first run only)
     if (!hasRunBefore()) {
@@ -241,15 +290,13 @@ async function interactiveMenu() {
             console.log()
         }
 
-        const choice = await ui.select<'review' | 'history' | 'buy' | 'asc' | 'update' | 'logout'>({
+        const choice = await ui.select<'review' | 'history' | 'buy' | 'settings'>({
             message: 'What would you like to do?',
             options: [
                 { value: 'review', label: 'New Review', hint: 'Scan your app for App Store issues' },
                 { value: 'history', label: 'View Reviews', hint: 'See your past review reports' },
                 { value: 'buy', label: 'Buy Credits', hint: 'Get more credits at preflightlaunch.com' },
-                { value: 'asc', label: 'App Store Connect', hint: 'Connect your ASC account for autofill' },
-                { value: 'update', label: 'Check for Updates', hint: 'Update Preflight to the latest version' },
-                { value: 'logout', label: 'Log Out' },
+                { value: 'settings', label: 'Settings', hint: 'Preferences and account' },
             ],
         })
 
@@ -280,21 +327,16 @@ async function interactiveMenu() {
                 cachedCredits = await fetchCredits()
                 break
 
-            case 'asc':
-                await ascInteractiveMenu()
-                break
-
-            case 'update':
-                await updateCommand()
-                break
-
-            case 'logout':
-                clearAuth()
-                // Show auth screen again
-                const authenticated = await showAuthScreen()
-                if (!authenticated) return
-                // Refresh credits for new user
-                cachedCredits = await fetchCredits()
+            case 'settings':
+                const shouldLogout = await showSettingsMenu()
+                if (shouldLogout) {
+                    clearAuth()
+                    // Show auth screen again
+                    const authenticated = await showAuthScreen()
+                    if (!authenticated) return
+                    // Refresh credits for new user
+                    cachedCredits = await fetchCredits()
+                }
                 break
         }
     }
