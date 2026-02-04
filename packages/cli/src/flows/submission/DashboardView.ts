@@ -11,6 +11,8 @@ export type DashboardAction =
     | 'review'
     | 'save_draft'
     | 'exit'
+    | 'edit_menu'
+    | 'back'
 
 interface SectionStatus {
     id: DashboardAction
@@ -162,10 +164,12 @@ export class DashboardView {
         let currentMenu: 'main' | 'edit' = 'main'
 
         while (true) {
-            const options: { value: string; label: string; hint?: string }[] = []
+            const options: Array<{ value: DashboardAction; label: string; hint?: string }> = []
+            let message = 'What would you like to do?'
 
             if (currentMenu === 'edit') {
                 // EDIT SUBMENU (Only accessible from Final Page)
+                message = chalk.bold('Select a section to edit:')
                 for (const section of sections) {
                     options.push({
                         value: section.id,
@@ -178,28 +182,26 @@ export class DashboardView {
             } else {
                 // MAIN MENU
                 if (requiredComplete) {
+                    message = `\n  ${chalk.bold('Ready to submit! Or continue editing:')}`
                     // --- FINAL PAGE LAYOUT ---
                     // 1. Make changes submenu
                     options.push({
                         value: 'edit_menu',
-                        label: 'Make changes to this review',
-                        hint: 'Edit details, compliance, or screenshots'
+                        label: chalk.dim('Edit review details'),
+                        hint: 'Modify completed steps'
                     })
 
                     // 2. Approve and Submit
                     options.push({
                         value: 'review',
-                        label: chalk.green('Approve and Submit!'),
+                        label: chalk.bold.green('Approve and Submit!'),
                         hint: '100 Credits',
                     })
-
-                    // Visual Separator
-                    options.push({ value: 'separator', label: chalk.dim('──────────────────────────────'), hint: '' })
 
                     // 3. Save Draft
                     options.push({
                         value: 'save_draft',
-                        label: 'Save Draft & Exit',
+                        label: chalk.dim('Save Draft & Exit'),
                         hint: 'Resume later',
                     })
 
@@ -210,6 +212,7 @@ export class DashboardView {
                     })
 
                 } else {
+                    message = `\n  Continue with Step ${nextStep?.stepNumber || 1}:`
                     // --- PROGRESS LAYOUT (Simplified) ---
 
                     // 1. Next Sequential Step (Top Priority)
@@ -218,26 +221,22 @@ export class DashboardView {
                         const cleanName = nextStep.name.replace(/\s*\(.*\)/, '')
                         options.push({
                             value: nextStep.id,
-                            label: chalk.cyan(`Start Step ${nextStep.stepNumber}: ${cleanName}`),
+                            label: chalk.bold.white(`Start Step ${nextStep.stepNumber}: ${cleanName}`),
                             hint: nextStep.required ? 'Required' : 'Recommended',
                         })
                     }
 
-                    // Visual Separator
-                    options.push({ value: 'separator', label: chalk.dim('──────────────────────────────'), hint: '' })
-
                     // 2. Edit Menu (Collapsed)
                     options.push({
                         value: 'edit_menu',
-                        label: 'Edit other steps...',
-                        hint: 'Modify completed or skipped steps'
+                        label: chalk.dim('Edit other steps...'),
+                        hint: 'Modify completed/skipped steps'
                     })
 
                     // 3. Save Draft
                     options.push({
                         value: 'save_draft',
-                        label: 'Save Draft & Exit',
-                        hint: 'Resume later',
+                        label: chalk.dim('Save Draft & Exit'),
                     })
 
                     // 4. Exit
@@ -248,15 +247,13 @@ export class DashboardView {
                 }
             }
 
-            const choice = await ui.select<string>({
-                message: requiredComplete ? 'Ready to submit! Or continue editing:' : 'What would you like to do?',
+            const choice = await ui.select<DashboardAction>({
+                message,
                 options,
+                initialValue: nextStep?.id || 'review'
             })
 
             // Navigation
-            if (choice === 'separator') {
-                continue
-            }
             if (choice === 'edit_menu') {
                 currentMenu = 'edit'
                 continue
