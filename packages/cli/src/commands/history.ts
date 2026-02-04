@@ -219,13 +219,20 @@ export async function interactiveHistory(): Promise<void> {
                     draftSpinner.stop('Draft loaded')
 
                     if (draftRes.ok && draftData.data) {
-                        await resumeSubmitCommand(draftData.data)
-                        return // Back to main menu after resume
+                        try {
+                            await resumeSubmitCommand(draftData.data)
+                            return // SUCCESS: Return to main menu
+                        } catch (err) {
+                            ui.log.error(`Failed to resume draft: ${err instanceof Error ? err.message : 'Unknown error'}`)
+                            console.log()
+                            await ui.confirm('Press Enter to return to list', true)
+                        }
                     } else {
                         ui.log.error('Could not load this draft.')
                     }
-                } catch {
+                } catch (err) {
                     draftSpinner.stop('Failed to load draft')
+                    ui.log.error(`Network error loading draft: ${err instanceof Error ? err.message : 'Unknown error'}`)
                 }
                 continue
             }
