@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs'
 import { basename, resolve, extname, join } from 'node:path'
-import { scanProject } from '../lib/scanner.js'
+import { scanProject, findFiles } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
 import { isLoggedIn, setLastScannedPath, getAscConnected, getConfig } from '../lib/config.js'
 import { loginWithBrowser } from '../lib/auth.js'
@@ -505,9 +505,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                     if (existsSync(resolved)) {
                         const imageExts = ['.png', '.jpg', '.jpeg']
                         try {
-                            const foundFiles = readdirSync(resolved)
-                                .filter(f => imageExts.includes(extname(f).toLowerCase()))
-                                .map(f => join(resolved, f))
+                            const foundFiles = findFiles(resolved, (f) =>
+                                imageExts.includes(extname(f).toLowerCase()), 2)
 
                             // Add files to upload (max 10)
                             for (let i = 0; i < Math.min(foundFiles.length, 10); i++) {
