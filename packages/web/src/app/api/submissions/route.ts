@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
             age_rating: body.age_rating || null,
             privacy_declarations: body.privacy_declarations || null,
             checklist: body.checklist || null,
-            project_path: body.project_path || null,
-            flow_position: body.flow_position || null,
+            // project_path: body.project_path || null,
+            // flow_position: body.flow_position || null,
             status: 'draft',
             review_type: 'full',
         }
