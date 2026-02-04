@@ -1,6 +1,6 @@
 import * as ui from '../../../ui/interactive.js'
 import { formatBytes, icons, subtext } from '../../../ui/theme.js'
-import { getFileSize } from '../../../commands/submit.js' // We might need to move this helper or duplicate it
+import { getFileSize } from '../../../lib/scanner.js'
 import { SubmissionStep, StepResult } from '../BaseStep.js'
 import { DraftState, FileToUpload } from '../types.js'
 import chalk from 'chalk'
