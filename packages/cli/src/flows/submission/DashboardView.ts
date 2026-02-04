@@ -10,6 +10,7 @@ export type DashboardAction =
     | 'compliance'
     | 'review'
     | 'save_draft'
+    | 'exit'
 
 interface SectionStatus {
     id: DashboardAction
@@ -170,11 +171,18 @@ export class DashboardView {
             hint: this.ascEmail || 'Auto-fill app info',
         })
 
-        // Always allow save draft
+        // Save draft option
         options.push({
             value: 'save_draft',
             label: 'Save Draft & Exit',
             hint: 'Resume later',
+        })
+
+        // Exit without saving
+        options.push({
+            value: 'exit',
+            label: 'Exit',
+            hint: 'Exit without saving',
         })
 
         const choice = await ui.select<DashboardAction>({
