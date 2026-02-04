@@ -256,7 +256,7 @@ async function interactiveMenu() {
         if (choice === null) {
             // Esc pressed -- quit
             console.log()
-            console.log(subtext('  See you next time!'))
+            console.log('  🚀 Happy building!')
             console.log()
             return
         }
