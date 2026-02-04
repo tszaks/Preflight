@@ -109,6 +109,7 @@ export class SubmissionFlow {
                 case 'save_draft':
                     await this.saveDraftCallback(this.state)
                     ui.log.success('Draft saved!')
+                    await ui.keypress('Press Enter to exit...')
                     return 'cancelled'
 
                 case 'review':
@@ -122,6 +123,8 @@ export class SubmissionFlow {
                         }
                         if (result.action === 'save_draft') {
                             await this.saveDraftCallback(this.state)
+                            ui.log.success('Draft saved!')
+                            await ui.keypress('Press Enter to exit...')
                             return 'cancelled'
                         }
                         // 'back' returns to dashboard
@@ -132,13 +135,19 @@ export class SubmissionFlow {
                 case 'screenshots':
                 case 'app_details':
                 case 'compliance':
-                    await this.runSection(action)
+                    const result = await this.runSection(action)
+                    if (result === 'save_draft') {
+                        await this.saveDraftCallback(this.state)
+                        ui.log.success('Draft saved!')
+                        await ui.keypress('Press Enter to exit...')
+                        return 'cancelled'
+                    }
                     break
             }
         }
     }
 
-    private async runSection(sectionId: DashboardAction): Promise<void> {
+    private async runSection(sectionId: DashboardAction): Promise<'save_draft' | 'back' | 'next' | void> {
         const step = this.steps.get(sectionId)
         if (!step) {
             ui.log.warning(`Section ${sectionId} not configured`)
@@ -156,18 +165,16 @@ export class SubmissionFlow {
         switch (result.action) {
             case 'next':
                 // Section complete, return to dashboard
-                break
+                return 'next'
             case 'back':
                 // User wants to go back - return to dashboard
-                break
+                return 'back'
             case 'save_draft':
-                // Will be handled in main loop after returning
-                break
+                // Propagate unique action
+                return 'save_draft'
             case 'cancel':
-                // Same as save_draft for sections
-                break
+                // User cancelled the step. Return to dashboard.
+                return 'back'
         }
-
-        // All paths return to dashboard
     }
 }
