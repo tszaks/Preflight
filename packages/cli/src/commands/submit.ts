@@ -16,6 +16,7 @@ import {
     collectAppDetails,
     collectCompliance,
     formatComplianceForApi,
+    parseComplianceFromApi,
     formatComplianceSummary,
     type AppDetails,
     type ComplianceData,
@@ -139,9 +140,14 @@ async function offerDraftSave(state: DraftState): Promise<boolean> {
         if (state.demoPassword) body.demo_password = state.demoPassword
         if (state.compliance) Object.assign(body, formatComplianceForApi(state.compliance))
 
+        // Include screenshot paths to restore them on resume
+        if (state._screenshotPaths && state._screenshotPaths.length > 0) {
+            body.screenshot_paths = state._screenshotPaths
+        }
+
         // Include flow position metadata for resuming
         if (state._flowPosition) {
-            body._flowPosition = state._flowPosition
+            body.flow_position = state._flowPosition
         }
 
         const res = await apiRequest('/api/submissions', {
@@ -915,9 +921,9 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         signInRequired: draft.sign_in_required,
         demoUsername: draft.demo_username,
         demoPassword: draft.demo_password,
-        compliance: draft.compliance,
+        compliance: parseComplianceFromApi(draft),
         _flowPosition: draft.flow_position,
-        _screenshotPaths: filesToUpload.filter(f => f.type === 'screenshot').map(f => f.path)
+        _screenshotPaths: draft.screenshot_paths || filesToUpload.filter(f => f.type === 'screenshot').map(f => f.path)
     }
 
     // Start Flow
