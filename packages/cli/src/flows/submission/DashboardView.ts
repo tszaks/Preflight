@@ -44,7 +44,7 @@ export class DashboardView {
             },
             {
                 id: 'screenshots',
-                name: 'Screenshots',
+                name: 'Screenshots (optional, but recommended)',
                 complete: screenshotCount > 0,
                 summary: screenshotCount > 0 ? `${screenshotCount} images ready` : 'Add app screenshots',
                 required: false,
@@ -77,11 +77,18 @@ export class DashboardView {
 
     private getNextStep(): SectionStatus | null {
         const sections = this.getSections()
-        // Find first incomplete required step
-        const incompleteRequired = sections.find(s => s.required && !s.complete)
-        if (incompleteRequired) return incompleteRequired
-        // If all required done, find first incomplete optional
-        return sections.find(s => !s.complete) || null
+        // Strictly follow order: 1 -> 2 -> 3 -> 4
+        // Find first incomplete step, regardless of required status
+        // Exception: 'review' (step 4) only if all REQUIRED steps are done
+        const firstIncomplete = sections.find(s => !s.complete)
+        if (!firstIncomplete) return null
+
+        // If next is review, make sure we are actually allowed to review
+        if (firstIncomplete.id === 'review' && !this.canSubmit()) {
+            return null
+        }
+
+        return firstIncomplete
     }
 
     async render(projectName: string, email?: string, credits?: number): Promise<DashboardAction> {
@@ -113,7 +120,7 @@ export class DashboardView {
         // Progress indicator - colors match step list
         const progressBar = sections.map(s => {
             if (s.complete) return chalk.green('●')
-            return s.required ? chalk.red('○') : chalk.yellow('○')
+            return s.required ? chalk.red('○') : chalk.hex('#B5A642')('○')
         }).join(' ')
         console.log(`    Progress: ${progressBar}  ${chalk.dim(`(${completedCount}/${sections.length})`)}`)
         console.log()
@@ -121,23 +128,20 @@ export class DashboardView {
         // Render section status with step numbers
         for (const section of sections) {
             const stepNum = chalk.dim(`${section.stepNumber}.`)
-            // Color coding: green = complete, red = required incomplete, yellow = optional incomplete
+            // Color coding: green = complete, red = required incomplete, muted yellow = optional
+            const mutedYellow = chalk.hex('#B5A642')
             const icon = section.complete
                 ? chalk.green('✓')
-                : (section.required ? chalk.red('○') : chalk.yellow('○'))
+                : (section.required ? chalk.red('○') : mutedYellow('○'))
             const name = section.complete
                 ? chalk.green(section.name)
-                : (section.required ? chalk.red(section.name) : chalk.yellow(section.name))
+                : (section.required ? chalk.red(section.name) : mutedYellow(section.name))
             const summary = section.complete
                 ? subtext(section.summary)
                 : chalk.dim(section.summary)
 
-            // Highlight next step (only if not done)
-            const isNext = nextStep?.id === section.id
-            const pointer = isNext ? chalk.cyan('→ ') : '  '
-
-            console.log(`  ${pointer}${stepNum} ${icon} ${name.padEnd(22)}`)
-            console.log(`       ${summary}`)
+            console.log(`  ${stepNum} ${icon} ${name.padEnd(22)}`)
+            console.log(`     ${summary}`)
         }
         console.log()
 
@@ -190,9 +194,9 @@ export class DashboardView {
                     })
 
                 } else {
-                    // --- PROGRESS LAYOUT (Original Style) ---
+                    // --- PROGRESS LAYOUT (Simplified) ---
 
-                    // 1. Next Recommended Step
+                    // 1. Next Sequential Step (Top Priority)
                     if (nextStep && !nextStep.complete) {
                         options.push({
                             value: nextStep.id,
@@ -201,16 +205,12 @@ export class DashboardView {
                         })
                     }
 
-                    // 2. Other Steps (Edit/Configure)
-                    for (const section of sections) {
-                        if (section.id !== nextStep?.id) {
-                            options.push({
-                                value: section.id,
-                                label: section.complete ? `Edit ${section.name}` : `Configure ${section.name}`,
-                                hint: section.summary,
-                            })
-                        }
-                    }
+                    // 2. Edit Menu (Collapsed)
+                    options.push({
+                        value: 'edit_menu',
+                        label: 'Edit other steps...',
+                        hint: 'Modify completed or skipped steps'
+                    })
 
                     // 3. Save Draft
                     options.push({
