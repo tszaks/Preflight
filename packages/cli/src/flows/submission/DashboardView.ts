@@ -189,9 +189,12 @@ export class DashboardView {
                     // 2. Approve and Submit
                     options.push({
                         value: 'review',
-                        label: 'Approve and Submit!',
+                        label: chalk.green('Approve and Submit!'),
                         hint: '100 Credits',
                     })
+
+                    // Visual Separator
+                    options.push({ value: 'separator', label: chalk.dim('──────────────────────────────'), hint: '' })
 
                     // 3. Save Draft
                     options.push({
@@ -203,7 +206,7 @@ export class DashboardView {
                     // 4. Exit
                     options.push({
                         value: 'exit',
-                        label: 'Exit Without Saving',
+                        label: chalk.red('Exit Without Saving'),
                     })
 
                 } else {
@@ -215,10 +218,13 @@ export class DashboardView {
                         const cleanName = nextStep.name.replace(/\s*\(.*\)/, '')
                         options.push({
                             value: nextStep.id,
-                            label: `Start Step ${nextStep.stepNumber}: ${cleanName}`,
+                            label: chalk.cyan(`Start Step ${nextStep.stepNumber}: ${cleanName}`),
                             hint: nextStep.required ? 'Required' : 'Recommended',
                         })
                     }
+
+                    // Visual Separator
+                    options.push({ value: 'separator', label: chalk.dim('──────────────────────────────'), hint: '' })
 
                     // 2. Edit Menu (Collapsed)
                     options.push({
@@ -237,7 +243,7 @@ export class DashboardView {
                     // 4. Exit
                     options.push({
                         value: 'exit',
-                        label: 'Exit Without Saving',
+                        label: chalk.red('Exit Without Saving'),
                     })
                 }
             }
@@ -248,6 +254,9 @@ export class DashboardView {
             })
 
             // Navigation
+            if (choice === 'separator') {
+                continue
+            }
             if (choice === 'edit_menu') {
                 currentMenu = 'edit'
                 continue

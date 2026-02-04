@@ -116,13 +116,13 @@ export async function confirm(message: string, initialValue = true): Promise<boo
     return result
 }
 
-// Destructive confirmation (Red Yes, Green No)
+// Destructive confirmation (Red Yes, White No)
 export async function dangerConfirm(message: string, initialValue = false): Promise<boolean | null> {
     const result = await p.confirm({
         message,
         initialValue,
         active: chalk.red('Yes'),
-        inactive: chalk.green('No')
+        inactive: chalk.white('No')
     })
     if (p.isCancel(result)) {
         return null
