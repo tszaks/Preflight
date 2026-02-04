@@ -104,7 +104,12 @@ export class SubmissionFlow {
 
             switch (action) {
                 case 'exit':
-                    return 'cancelled'
+                    const confirmExit = await ui.confirm('Exit without saving? Your progress will be lost.', false)
+                    if (confirmExit) {
+                        return 'cancelled'
+                    }
+                    // User said No - return to dashboard
+                    break
 
                 case 'save_draft':
                     const saved = await this.saveDraftCallback(this.state)
