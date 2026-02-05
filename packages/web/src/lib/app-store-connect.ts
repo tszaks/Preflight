@@ -209,13 +209,17 @@ export async function getAppInfoLocalization(
 
         const infoId = infos.data[0].id;
         const locs = await ascFetch(
-            `/appInfos/${infoId}/appInfoLocalizations?limit=1`,
+            `/appInfos/${infoId}/appInfoLocalizations?limit=10`,
             credentials,
         );
 
         if (!locs.data.length) return null;
 
-        const attr = locs.data[0].attributes;
+        // Find the first localization that has a privacy policy URL
+        // Preferably 'en-US' but any will do if that's missing
+        const validLoc = locs.data.find((l: any) => l.attributes?.privacyPolicyUrl) || locs.data[0];
+        const attr = validLoc.attributes;
+
         return {
             privacyPolicyUrl: attr.privacyPolicyUrl || null,
             privacyChoicesUrl: attr.privacyChoicesUrl || null,

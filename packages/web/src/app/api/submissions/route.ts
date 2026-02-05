@@ -5,9 +5,6 @@ export async function GET(req: NextRequest) {
     const supabase = await createClientFromRequest(req)
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Debug logging
-    console.log('📊 Submissions API: user_id =', user?.id)
-
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
     const { data, error } = await supabase
@@ -15,8 +12,6 @@ export async function GET(req: NextRequest) {
         .select('id, app_name, status, review_type, created_at, updated_at, report_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-
-    console.log('📊 Submissions API: found', data?.length || 0, 'submissions, error =', error?.message || 'none')
 
     if (error) return NextResponse.json({ message: error.message }, { status: 500 })
     return NextResponse.json({ data })
@@ -41,6 +36,7 @@ export async function POST(req: NextRequest) {
             description: body.description,
             keywords: body.keywords,
             category: body.category,
+            privacy_url: body.privacy_policy_url || body.privacy_url || null,
             support_url: body.support_url,
             marketing_url: body.marketing_url,
             sign_in_required: body.sign_in_required,

@@ -52,6 +52,20 @@ export class AscStep implements SubmissionStep {
                                     console.log(`  Screenshots: ${result.screenshotCount} uploaded ${icon}`)
                                 }
 
+                                // ─── Files ───────────────────────────────────────────────
+                                if (state._files) {
+                                    const files = state._files
+                                    const ipa = files.find(f => f.type === 'ipa')
+                                    const plist = files.find(f => f.type === 'plist')
+                                    const manifest = files.find(f => f.type === 'manifest')
+
+                                    console.log()
+                                    console.log(`  ${chalk.dim('Files:')}`)
+                                    console.log(`    IPA Binary: ${ipa ? chalk.green('✓') : chalk.red('X')}`)
+                                    console.log(`    Info.plist: ${plist ? chalk.green('✓') : chalk.red('X')}`)
+                                    console.log(`    Privacy Manifest: ${manifest ? chalk.green('✓') : chalk.red('X')}`)
+                                }
+
                                 // ─── Monetization ────────────────────────────────────────
                                 if (result.subscriptionCount !== undefined || result.iapCount !== undefined) {
                                     console.log()

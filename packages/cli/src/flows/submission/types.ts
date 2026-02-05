@@ -96,6 +96,7 @@ export interface DraftState {
     _screenshotPaths?: string[] // Track screenshot paths for reference
     _tempScreenshotPaths?: string[] // Track downloaded ASC screenshot paths
     _projectPath?: string // Track the Xcode project path for resumption
+    _files?: FileToUpload[] // Track detected files for display
 }
 
 export interface FileToUpload {
