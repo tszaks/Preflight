@@ -203,6 +203,54 @@ export class AscStep implements SubmissionStep {
                         deviceType: s.device_type,
                         count: s.count,
                     }))
+
+                    // Download screenshots for analysis
+                    const tempPaths: string[] = []
+                    const { tmpdir } = await import('node:os')
+                    const { join } = await import('node:path')
+                    const { writeFile, mkdir } = await import('node:fs/promises')
+
+                    const tempDir = join(tmpdir(), 'preflight-asc-screenshots')
+                    await mkdir(tempDir, { recursive: true })
+
+                    s.message('Downloading screenshots from App Store Connect...')
+
+                    try {
+                        for (const group of data.screenshots) {
+                            if (group.images && Array.isArray(group.images)) {
+                                for (const img of group.images) {
+                                    if (img.url) {
+                                        try {
+                                            const res = await fetch(img.url)
+                                            if (res.ok) {
+                                                const buffer = Buffer.from(await res.arrayBuffer())
+                                                const filename = `${group.device_type}_${img.file_name || 'screenshot.png'}`
+                                                const destPath = join(tempDir, filename)
+                                                await writeFile(destPath, buffer)
+                                                tempPaths.push(destPath)
+                                            }
+                                        } catch (err) {
+                                            // Ignore download failures for individual images
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        // Ignore general failure
+                    }
+
+                    if (tempPaths.length > 0) {
+                        state._tempScreenshotPaths = tempPaths
+                        state._screenshotPaths = tempPaths
+                        ui.log.success(`Downloaded ${tempPaths.length} screenshots from ASC`)
+                    }
+
+                    if (tempPaths.length > 0) {
+                        state._tempScreenshotPaths = tempPaths
+                        state._screenshotPaths = tempPaths // Also update persistent paths so ScreenshotsStep sees them as "selected"
+                        ui.log.success(`Downloaded ${tempPaths.length} screenshots from ASC`)
+                    }
                 }
 
                 // ─── Subscriptions (for analysis) ────────────────────────────

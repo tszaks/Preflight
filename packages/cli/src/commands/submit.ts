@@ -829,21 +829,34 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 console.log(JSON.stringify(reportData.data, null, 2))
             } else {
                 renderReport(reportData.data.report, reportData.data.items)
-                console.log(subtext(`  Full report: https://preflightlaunch.com/report/${reportData.data.report.id}`))
+                console.log(subtext(`  Full report: https://preflightlaunch.com/report/${submissionId}`))
                 console.log()
 
-                // In menu mode, we just return to menu. In direct mode, offer options.
-                if (!fromMenu) {
-                    const next = await ui.select<'open' | 'done'>({
+                // Loop until user chooses to be done
+                while (true) {
+                    const next = await ui.select<'open' | 'copy' | 'done'>({
                         message: 'What next?',
                         options: [
                             { value: 'open', label: 'Open full report in browser' },
-                            { value: 'done', label: 'Done' },
+                            { value: 'copy', label: 'Copy for AI context', hint: 'Optimized for Claude/ChatGPT' },
+                            { value: 'done', label: fromMenu ? 'Return to main menu' : 'Done' },
                         ],
                     })
 
                     if (next === 'open') {
-                        await openUrl(`https://preflightlaunch.com/report/${reportData.data.report.id}`)
+                        await openUrl(`https://preflightlaunch.com/report/${submissionId}`)
+                    } else if (next === 'copy') {
+                        try {
+                            const aiText = formatForAi(reportData.data.report, reportData.data.items)
+                            // Use pbcopy on Mac
+                            const { execSync } = await import('child_process')
+                            execSync('pbcopy', { input: aiText })
+                            ui.log.success('Copied to clipboard!')
+                        } catch (err) {
+                            ui.log.error('Failed to copy to clipboard (pbcopy not available?)')
+                        }
+                    } else {
+                        break
                     }
                 }
             }
@@ -1144,18 +1157,34 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
 
         if (reportData.status === 'complete' && reportData.data) {
             renderReport(reportData.data.report, reportData.data.items)
-            console.log(subtext(`  Full report: https://preflightlaunch.com/report/${reportData.data.report.id}`))
+            console.log(subtext(`  Full report: https://preflightlaunch.com/report/${finalId}`))
 
-            const next = await ui.select<'open' | 'done'>({
-                message: 'What next?',
-                options: [
-                    { value: 'open', label: 'Open full report in browser' },
-                    { value: 'done', label: 'Done' },
-                ],
-            })
 
-            if (next === 'open') {
-                await openUrl(`https://preflightlaunch.com/report/${reportData.data.report.id}`)
+            // Loop until user chooses to be done
+            while (true) {
+                const next = await ui.select<'open' | 'copy' | 'done'>({
+                    message: 'What next?',
+                    options: [
+                        { value: 'open', label: 'Open full report in browser' },
+                        { value: 'copy', label: 'Copy for AI context', hint: 'Optimized for Claude/ChatGPT' },
+                        { value: 'done', label: 'Done' },
+                    ],
+                })
+
+                if (next === 'open') {
+                    await openUrl(`https://preflightlaunch.com/report/${finalId}`)
+                } else if (next === 'copy') {
+                    try {
+                        const aiText = formatForAi(reportData.data.report, reportData.data.items)
+                        const { execSync } = await import('child_process')
+                        execSync('pbcopy', { input: aiText })
+                        ui.log.success('Copied to clipboard!')
+                    } catch (err) {
+                        ui.log.error('Failed to copy to clipboard')
+                    }
+                } else {
+                    break
+                }
             }
         } else {
             ui.log.error(reportData.status === 'failed' && reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed.')
@@ -1256,4 +1285,48 @@ async function pollForReport(
             process.stdin.pause()
         }
     }
+}
+
+function formatForAi(report: any, items: any[]): string {
+    const lines: string[] = []
+
+    lines.push('# Preflight App Store Review Report')
+    lines.push('')
+
+    if (report.score) {
+        lines.push(`Approval Chance: ${report.score}/100`)
+        lines.push('')
+    }
+
+    if (report.summary) {
+        lines.push('## Summary')
+        lines.push(report.summary)
+        lines.push('')
+    }
+
+    if (items && items.length > 0) {
+        lines.push('## Potential Issues')
+        lines.push('')
+        items.forEach((item: any, i: number) => {
+            lines.push(`${i + 1}. ${item.title || 'Issue'}`)
+            if (item.guidelines && item.guidelines.length) {
+                lines.push(`   Guideline: ${item.guidelines.join(', ')}`)
+            }
+            if (item.explanation) {
+                lines.push(`   Details: ${item.explanation}`)
+            }
+            if (item.fix_suggestion) {
+                lines.push(`   Fix: ${item.fix_suggestion}`)
+            }
+            lines.push('')
+        })
+    }
+
+    if (report.improved_version) {
+        lines.push('## Improved App Description')
+        lines.push(report.improved_version)
+        lines.push('')
+    }
+
+    return lines.join('\n')
 }

@@ -93,17 +93,50 @@ export const gold = chalk.hex('#C9A84C')
 
 // Main PreFlight Logo (ASCII Art)
 export function getLogo(): string[] {
-    const w = chalk.white.bold
-    const o = brand          // orange for rocket body
-    const g = gold           // gold for flame
-    const white = chalk.white // white for rocket eye
+    const w = chalk.white // Face color
+    const o = brand       // Outline/Rocket color
+    const g = gold        // Exhaust
 
+    // Rocket parts (Orange with Gold exhaust)
+    const rocket = [
+        o('      ▲      '),
+        o('     ▐█▌     '),
+        o('    ▐███▌    '),
+        o('    ▐█') + chalk.white('●') + o('█▌    '),
+        o('   ▐█████▌   '),
+        o('  ▟███████▙  '),
+        o('     ▀█▀     '),
+        g('      ▼      '),
+    ]
+
+    // Raw text strings (ANSI Shadow font)
+    const textLines = [
+        '██████╗ ██████╗ ███████╗███████╗██╗     ██╗ ██████╗ ██╗  ██╗████████╗',
+        '██╔══██╗██╔══██╗██╔════╝██╔════╝██║     ██║██╔════╝ ██║  ██║╚══██╔══╝',
+        '██████╔╝██████╔╝█████╗  █████╗  ██║     ██║██║  ███╗███████║   ██║   ',
+        '██╔═══╝ ██╔══██╗██╔══╝  ██╔══╝  ██║     ██║██║   ██║██╔══██║   ██║   ',
+        '██║     ██║  ██║███████╗██║     ███████╗██║╚██████╔╝██║  ██║   ██║   ',
+        '╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ',
+    ]
+
+    // Colorize text: White face (█), Orange outline (others)
+    const coloredText = textLines.map(line => {
+        return line.split('').map(char => {
+            if (char === '█') return w(char)
+            if (char === ' ') return ' '
+            return o(char)
+        }).join('')
+    })
+
+    // Combine: Rocket on left, Text centered vertically (padded with 1 line top/bottom)
     return [
-        w(' ') + o('██████') + w('╗ ') + o('██████') + w('╗ ') + o('███████') + w('╗') + o('███████') + w('╗') + o('██') + w('╗     ') + o('██') + w('╗ ') + o('██████') + w('╗ ') + o('██') + w('╗  ') + o('██') + w('╗') + o('████████') + w('╗'),
-        w(' ') + o('██') + w('╔══') + o('██') + w('╗') + o('██') + w('╔══') + o('██') + w('╗') + o('██') + w('╔════╝') + o('██') + w('╔════╝') + o('██') + w('║     ') + o('██') + w('║') + o('██') + w('╔════╝ ') + o('██') + w('║  ') + o('██') + w('║╚══') + o('██') + w('╔══╝'),
-        w(' ') + o('██████') + w('╔╝') + o('██████') + w('╔╝') + o('█████') + w('╗  ') + o('█████') + w('╗  ') + o('██') + w('║     ') + o('██') + w('║') + o('██') + w('║  ') + o('███') + w('╗') + o('███████') + w('║   ') + o('██') + w('║   '),
-        w(' ') + o('██') + w('╔═══╝ ') + o('██') + w('╔══') + o('██') + w('╗') + o('██') + w('╔══╝  ') + o('██') + w('╔══╝  ') + o('██') + w('║     ') + o('██') + w('║') + o('██') + w('║   ') + o('██') + w('║') + o('██') + w('╔══') + o('██') + w('║   ') + o('██') + w('║   '),
-        w(' ') + o('██') + w('║     ') + o('██') + w('║  ') + o('██') + w('║') + o('███████') + w('╗') + o('██') + w('║     ') + o('███████') + w('╗') + o('██') + w('║╚') + o('██████') + w('╔╝') + o('██') + w('║  ') + o('██') + w('║   ') + o('██') + w('║   '),
-        w(' ╚═╝     ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   '),
+        rocket[0] + '  ',
+        rocket[1] + '  ' + coloredText[0],
+        rocket[2] + '  ' + coloredText[1],
+        rocket[3] + '  ' + coloredText[2],
+        rocket[4] + '  ' + coloredText[3],
+        rocket[5] + '  ' + coloredText[4],
+        rocket[6] + '  ' + coloredText[5],
+        rocket[7] + '  ',
     ]
 }
