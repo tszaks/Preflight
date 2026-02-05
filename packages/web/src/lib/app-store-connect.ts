@@ -220,6 +220,14 @@ export async function getAppInfoLocalization(
             credentials,
         );
 
+        console.log('getAppInfoLocalization - debug:', {
+            appId,
+            infoId,
+            locsCount: locs.data.length,
+            firstLocAttrs: locs.data.length > 0 ? Object.keys(locs.data[0].attributes || {}) : [],
+            privacyPolicyUrl: locs.data.length > 0 ? locs.data[0].attributes?.privacyPolicyUrl : 'NO_LOCS',
+        });
+
         if (!locs.data.length) return null;
 
         const attr = locs.data[0].attributes;
