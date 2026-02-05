@@ -84,6 +84,10 @@ export interface DraftState {
     subscriptions?: SubscriptionInfo[]
     inAppPurchases?: InAppPurchaseInfo[]
     ageRating?: AgeRatingInfo
+    privacyStatus?: {
+        configured: boolean
+        updateDate: string | null
+    }
 
     // Flow position tracking for draft resumption
     _flowPosition?: 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'confirmation'

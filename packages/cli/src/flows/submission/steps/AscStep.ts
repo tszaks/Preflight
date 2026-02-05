@@ -71,6 +71,13 @@ export class AscStep implements SubmissionStep {
                                     console.log(`  ${chalk.green('●')} Age Rating: ${result.ageRating}`)
                                 }
 
+                                // ─── App Privacy Status ───────────────────────────────────
+                                if (result.privacyConfigured !== undefined) {
+                                    const icon = result.privacyConfigured ? chalk.green('●') : chalk.dim('○')
+                                    const status = result.privacyConfigured ? 'Configured' : 'Not configured'
+                                    console.log(`  ${icon} App Privacy: ${status}`)
+                                }
+
                                 // ─── Review Contact ──────────────────────────────────────
                                 if (result.reviewContact) {
                                     console.log(`  ${chalk.green('●')} Review Contact: ${result.reviewContact}`)
@@ -142,6 +149,7 @@ export class AscStep implements SubmissionStep {
         subscriptionCount?: number
         iapCount?: number
         ageRating?: string
+        privacyConfigured?: boolean
         reviewContact?: string
     }> {
         const s = ui.spinner()
@@ -230,6 +238,14 @@ export class AscStep implements SubmissionStep {
                     }
                 }
 
+                // ─── App Privacy Status ───────────────────────────────────────
+                if (data.privacy_status) {
+                    state.privacyStatus = {
+                        configured: data.privacy_status.configured || false,
+                        updateDate: data.privacy_status.update_date || null,
+                    }
+                }
+
                 state._ascConnected = true
 
                 // Calculate totals for display
@@ -258,6 +274,7 @@ export class AscStep implements SubmissionStep {
                     subscriptionCount,
                     iapCount,
                     ageRating: state.ageRating?.rating || undefined,
+                    privacyConfigured: state.privacyStatus?.configured,
                     reviewContact,
                 }
             }
