@@ -15,7 +15,7 @@ export class SubmissionFlow {
         private projectName: string,
         private ascEmail: string | undefined,
         private credits: number | undefined,
-        private saveDraftCallback: (state: DraftState) => Promise<boolean>,
+        private saveDraftCallback: (state: DraftState, skipConfirmation?: boolean) => Promise<boolean>,
         private userEmail?: string
     ) {
         this.context = { email: userEmail, credits }
@@ -131,7 +131,7 @@ export class SubmissionFlow {
                     break
 
                 case 'save_draft':
-                    const saved = await this.saveDraftCallback(this.state)
+                    const saved = await this.saveDraftCallback(this.state, true)
                     if (saved) {
                         await ui.keypress('Press Enter to exit...')
                         return 'cancelled'
@@ -149,7 +149,7 @@ export class SubmissionFlow {
                             return 'completed' // Submit!
                         }
                         if (result.action === 'save_draft') {
-                            const reviewSaved = await this.saveDraftCallback(this.state)
+                            const reviewSaved = await this.saveDraftCallback(this.state, true)
                             if (reviewSaved) {
                                 await ui.keypress('Press Enter to exit...')
                                 return 'cancelled'
@@ -166,7 +166,7 @@ export class SubmissionFlow {
                 case 'compliance':
                     const result = await this.runSection(action)
                     if (result === 'save_draft') {
-                        const sectionSaved = await this.saveDraftCallback(this.state)
+                        const sectionSaved = await this.saveDraftCallback(this.state, true)
                         if (sectionSaved) {
                             await ui.keypress('Press Enter to exit...')
                             return 'cancelled'

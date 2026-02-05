@@ -17,14 +17,14 @@ interface ReportItem {
 
 interface ReportData {
     id?: string
-    metadata_score: number
-    screenshots_score: number
-    privacy_score: number
-    info_plist_score: number
-    urls_score: number
-    content_score: number
-    ipa_binary_score: number
-    overall_score: number
+    score_metadata: number
+    score_screenshots: number
+    score_privacy: number
+    score_plist: number
+    score_urls: number
+    score_content: number
+    score_ipa_binary: number
+    score_overall: number
     summary?: string
 }
 
@@ -36,7 +36,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
     console.log()
     p.log.step(heading('Analysis Complete'))
     console.log()
-    console.log(`  ${chalk.bold('Overall Score:')} ${scoreBar(report.overall_score)}`)
+    console.log(`  ${chalk.bold('Overall Score:')} ${scoreBar(report.score_overall)}`)
     console.log()
 
     if (report.summary) {
@@ -94,20 +94,20 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         console.log(`  ${okBold(`\uD83D\uDFE2 ${passes.length} Passed`)}`)
         console.log(subtext(`  ${'─'.repeat(40)}`))
         for (const item of passes) {
-            console.log(`  ${icons.check} ${ok(item.title)}`)
+            console.log(`  ✔ ${ok(item.title)}`)
         }
         console.log()
     }
 
     // Category breakdown
     const categories = [
-        ['Metadata', report.metadata_score],
-        ['Screenshots', report.screenshots_score],
-        ['Privacy', report.privacy_score],
-        ['Info.plist', report.info_plist_score],
-        ['URLs', report.urls_score],
-        ['Content', report.content_score],
-        ['IPA Binary', report.ipa_binary_score],
+        ['Metadata', report.score_metadata],
+        ['Screenshots', report.score_screenshots],
+        ['Privacy', report.score_privacy],
+        ['Info.plist', report.score_plist],
+        ['URLs', report.score_urls],
+        ['Content', report.score_content],
+        ['IPA Binary', report.score_ipa_binary],
     ] as const
 
     const validCategories = categories.filter(([, score]) => score != null)

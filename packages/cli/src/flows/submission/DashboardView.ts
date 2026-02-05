@@ -85,9 +85,10 @@ export class DashboardView {
         const firstIncomplete = sections.find(s => !s.complete)
         if (!firstIncomplete) return null
 
-        // If next is review, make sure we are actually allowed to review
-        if (firstIncomplete.id === 'review' && !this.canSubmit()) {
-            return null
+        // If next is review, make sure prerequisites are done
+        if (firstIncomplete.id === 'review') {
+            const prepStepsDone = sections.filter(s => s.required && s.id !== 'review').every(s => s.complete)
+            if (!prepStepsDone) return null
         }
 
         return firstIncomplete

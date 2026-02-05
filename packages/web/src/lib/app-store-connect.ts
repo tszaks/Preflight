@@ -176,6 +176,37 @@ export async function getAppInfo(
     }
 }
 
+export async function getAppInfoLocalization(
+    credentials: ASCCredentials,
+    appId: string
+): Promise<{ privacyPolicyUrl: string | null; privacyChoicesUrl: string | null; privacyPolicyText: string | null } | null> {
+    try {
+        const infos = await ascFetch(
+            `/apps/${appId}/appInfos?limit=1&sort=-state`,
+            credentials,
+        );
+
+        if (!infos.data.length) return null;
+
+        const infoId = infos.data[0].id;
+        const locs = await ascFetch(
+            `/appInfos/${infoId}/appInfoLocalizations?limit=1`,
+            credentials,
+        );
+
+        if (!locs.data.length) return null;
+
+        const attr = locs.data[0].attributes;
+        return {
+            privacyPolicyUrl: attr.privacyPolicyUrl || null,
+            privacyChoicesUrl: attr.privacyChoicesUrl || null,
+            privacyPolicyText: attr.privacyPolicyText || null,
+        };
+    } catch {
+        return null;
+    }
+}
+
 export async function getAppMetadata(
     credentials: ASCCredentials,
     versionId: string,
@@ -233,6 +264,261 @@ export async function getReviewDetail(
             contactEmail: detail.contactEmail || null,
             contactPhone: detail.contactPhone || null,
             notes: detail.notes || null,
+        };
+    } catch {
+        return null;
+    }
+}
+
+// ─── Version Details (Copyright) ─────────────────────────────────────────
+
+export interface ASCVersionDetails {
+    versionString: string;
+    copyright: string | null;
+    releaseType: string | null;
+    earliestReleaseDate: string | null;
+    appStoreState: string;
+}
+
+export async function getVersionDetails(
+    credentials: ASCCredentials,
+    versionId: string,
+): Promise<ASCVersionDetails | null> {
+    try {
+        const data = await ascFetch(
+            `/appStoreVersions/${versionId}`,
+            credentials,
+        );
+
+        if (!data.data) return null;
+
+        const attr = data.data.attributes;
+        return {
+            versionString: attr.versionString || '',
+            copyright: attr.copyright || null,
+            releaseType: attr.releaseType || null,
+            earliestReleaseDate: attr.earliestReleaseDate || null,
+            appStoreState: attr.appStoreState || '',
+        };
+    } catch {
+        return null;
+    }
+}
+
+// ─── Screenshot Status ───────────────────────────────────────────────────
+
+export interface ASCScreenshotStatus {
+    deviceType: string;
+    count: number;
+}
+
+export async function getScreenshotStatus(
+    credentials: ASCCredentials,
+    versionId: string,
+): Promise<ASCScreenshotStatus[]> {
+    try {
+        // First get the localizations for this version
+        const locs = await ascFetch(
+            `/appStoreVersions/${versionId}/appStoreVersionLocalizations`,
+            credentials,
+        );
+
+        if (!locs.data?.length) return [];
+
+        const locId = locs.data[0].id;
+
+        // Then get screenshot sets for the localization
+        const sets = await ascFetch(
+            `/appStoreVersionLocalizations/${locId}/appScreenshotSets`,
+            credentials,
+        );
+
+        if (!sets.data?.length) return [];
+
+        // For each set, get the count of screenshots
+        const results: ASCScreenshotStatus[] = [];
+        for (const set of sets.data) {
+            const deviceType = set.attributes?.screenshotDisplayType || 'UNKNOWN';
+
+            // Get screenshots in this set
+            const screenshots = await ascFetch(
+                `/appScreenshotSets/${set.id}/appScreenshots`,
+                credentials,
+            );
+
+            results.push({
+                deviceType,
+                count: screenshots.data?.length || 0,
+            });
+        }
+
+        return results;
+    } catch {
+        return [];
+    }
+}
+
+// ─── Subscription Groups & Subscriptions ─────────────────────────────────
+
+export interface ASCSubscriptionGroup {
+    id: string;
+    name: string;
+}
+
+export interface ASCSubscription {
+    id: string;
+    name: string;
+    productId: string;
+    state: string;
+    groupId: string;
+    groupName?: string;
+}
+
+export async function getSubscriptionGroups(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<ASCSubscriptionGroup[]> {
+    try {
+        const data = await ascFetch(
+            `/apps/${appId}/subscriptionGroups`,
+            credentials,
+        );
+
+        if (!data.data?.length) return [];
+
+        return data.data.map((group: any) => ({
+            id: group.id,
+            name: group.attributes?.referenceName || 'Unnamed Group',
+        }));
+    } catch {
+        return [];
+    }
+}
+
+export async function getSubscriptions(
+    credentials: ASCCredentials,
+    groupId: string,
+    groupName: string,
+): Promise<ASCSubscription[]> {
+    try {
+        const data = await ascFetch(
+            `/subscriptionGroups/${groupId}/subscriptions`,
+            credentials,
+        );
+
+        if (!data.data?.length) return [];
+
+        return data.data.map((sub: any) => ({
+            id: sub.id,
+            name: sub.attributes?.name || 'Unnamed',
+            productId: sub.attributes?.productId || '',
+            state: sub.attributes?.state || 'UNKNOWN',
+            groupId,
+            groupName,
+        }));
+    } catch {
+        return [];
+    }
+}
+
+// ─── In-App Purchases ────────────────────────────────────────────────────
+
+export interface ASCInAppPurchase {
+    id: string;
+    name: string;
+    productId: string;
+    inAppPurchaseType: string;
+    state: string;
+}
+
+export async function getInAppPurchases(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<ASCInAppPurchase[]> {
+    try {
+        const data = await ascFetch(
+            `/apps/${appId}/inAppPurchasesV2`,
+            credentials,
+        );
+
+        if (!data.data?.length) return [];
+
+        return data.data.map((iap: any) => ({
+            id: iap.id,
+            name: iap.attributes?.name || 'Unnamed',
+            productId: iap.attributes?.productId || '',
+            inAppPurchaseType: iap.attributes?.inAppPurchaseType || 'UNKNOWN',
+            state: iap.attributes?.state || 'UNKNOWN',
+        }));
+    } catch {
+        return [];
+    }
+}
+
+// ─── Age Rating Declaration ──────────────────────────────────────────────
+
+export interface ASCAgeRating {
+    rating: string | null;
+    alcoholTobaccoOrDrugUseOrReferences: string | null;
+    contests: string | null;
+    gamblingSimulated: string | null;
+    horrorOrFearThemes: string | null;
+    matureOrSuggestiveThemes: string | null;
+    medicalOrTreatmentInformation: string | null;
+    profanityOrCrudeHumor: string | null;
+    sexualContentGraphicAndNudity: string | null;
+    sexualContentOrNudity: string | null;
+    violenceCartoonOrFantasy: string | null;
+    violenceRealistic: string | null;
+    violenceRealisticProlongedGraphicOrSadistic: string | null;
+    gambling: boolean;
+    unrestrictedWebAccess: boolean;
+    kidsAgeBand: string | null;
+    seventeenPlus: boolean;
+}
+
+export async function getAgeRatingDeclaration(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<ASCAgeRating | null> {
+    try {
+        // First get the latest appInfo
+        const infos = await ascFetch(
+            `/apps/${appId}/appInfos?limit=1&sort=-state`,
+            credentials,
+        );
+
+        if (!infos.data?.length) return null;
+
+        const infoId = infos.data[0].id;
+
+        // Then get the age rating declaration
+        const data = await ascFetch(
+            `/appInfos/${infoId}/ageRatingDeclaration`,
+            credentials,
+        );
+
+        if (!data.data) return null;
+
+        const attr = data.data.attributes;
+        return {
+            rating: attr.rating || null,
+            alcoholTobaccoOrDrugUseOrReferences: attr.alcoholTobaccoOrDrugUseOrReferences || null,
+            contests: attr.contests || null,
+            gamblingSimulated: attr.gamblingSimulated || null,
+            horrorOrFearThemes: attr.horrorOrFearThemes || null,
+            matureOrSuggestiveThemes: attr.matureOrSuggestiveThemes || null,
+            medicalOrTreatmentInformation: attr.medicalOrTreatmentInformation || null,
+            profanityOrCrudeHumor: attr.profanityOrCrudeHumor || null,
+            sexualContentGraphicAndNudity: attr.sexualContentGraphicAndNudity || null,
+            sexualContentOrNudity: attr.sexualContentOrNudity || null,
+            violenceCartoonOrFantasy: attr.violenceCartoonOrFantasy || null,
+            violenceRealistic: attr.violenceRealistic || null,
+            violenceRealisticProlongedGraphicOrSadistic: attr.violenceRealisticProlongedGraphicOrSadistic || null,
+            gambling: attr.gambling || false,
+            unrestrictedWebAccess: attr.unrestrictedWebAccess || false,
+            kidsAgeBand: attr.kidsAgeBand || null,
+            seventeenPlus: attr.seventeenPlus || false,
         };
     } catch {
         return null;

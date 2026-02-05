@@ -152,6 +152,60 @@ export interface SoftRulesInput extends HardRulesInput {
     privacy_policy_text?: string;
     /** IPA binary as ArrayBuffer (fetched from storage) */
     ipa_buffer?: ArrayBuffer;
+
+    // ─── ASC-Fetched Data ────────────────────────────────────────────────────
+    /** Screenshot status from ASC (per device type) */
+    asc_screenshots?: AscScreenshotStatus[];
+    /** Subscriptions configured in ASC */
+    asc_subscriptions?: AscSubscription[];
+    /** In-app purchases configured in ASC */
+    asc_in_app_purchases?: AscInAppPurchase[];
+    /** Age rating declaration from ASC */
+    asc_age_rating?: AscAgeRating;
+    /** Review contact info from ASC */
+    asc_review_contact?: AscReviewContact;
+    /** Copyright string from ASC version */
+    asc_copyright?: string;
+    /** App Store state of current version */
+    asc_app_store_state?: string;
+}
+
+// ─── ASC Data Types ──────────────────────────────────────────────────────────
+
+export interface AscScreenshotStatus {
+    deviceType: string;
+    count: number;
+}
+
+export interface AscSubscription {
+    id: string;
+    name: string;
+    productId: string;
+    state: string;
+    groupName?: string;
+}
+
+export interface AscInAppPurchase {
+    id: string;
+    name: string;
+    productId: string;
+    type: string;
+    state: string;
+}
+
+export interface AscAgeRating {
+    rating: string | null;
+    gambling: boolean;
+    unrestrictedWebAccess: boolean;
+    kidsAgeBand: string | null;
+    seventeenPlus: boolean;
+}
+
+export interface AscReviewContact {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
 }
 
 export interface ScreenshotData {

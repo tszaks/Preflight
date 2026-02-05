@@ -9,6 +9,7 @@ export interface AppDetails {
     description?: string
     keywords?: string
     category?: string
+    privacyPolicyUrl?: string
     supportUrl?: string
     promotionalText?: string
     marketingUrl?: string
@@ -202,6 +203,7 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
         keywords: defaults?.keywords,
         promotionalText: defaults?.promotionalText,
         category: defaults?.category,
+        privacyPolicyUrl: defaults?.privacyPolicyUrl,
         supportUrl: defaults?.supportUrl,
         marketingUrl: defaults?.marketingUrl,
         signInRequired: defaults?.signInRequired ?? false,
@@ -288,7 +290,18 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                 step++
                 break
             }
-            case 5: { // Support URL
+            case 5: { // Privacy Policy URL
+                const res = await ui.text({
+                    message: 'Privacy Policy URL (press Enter to skip)',
+                    placeholder: 'https://example.com/privacy',
+                    defaultValue: state.privacyPolicyUrl || '',
+                })
+                if (res === null) { step--; break }
+                state.privacyPolicyUrl = res.trim() || undefined
+                step++
+                break
+            }
+            case 6: { // Support URL
                 const res = await ui.text({
                     message: 'Support URL (press Enter to skip)',
                     placeholder: 'https://example.com/support',
@@ -299,7 +312,7 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                 step++
                 break
             }
-            case 6: { // Marketing URL
+            case 7: { // Marketing URL
                 const res = await ui.text({
                     message: 'Marketing URL (press Enter to skip)',
                     placeholder: 'https://example.com',
@@ -310,24 +323,24 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                 step++
                 break
             }
-            case 7: { // Sign-in Required
+            case 8: { // Sign-in Required
                 const res = await ui.confirm(
                     'Does your app require sign-in for review?',
                     state.signInRequired ?? false,
                 )
                 if (res === null) { step--; break }
                 state.signInRequired = res
-                // If false, skip demo creds (steps 8 & 9)
+                // If false, skip demo creds (steps 9 & 10)
                 if (!res) {
                     state.demoUsername = undefined
                     state.demoPassword = undefined
-                    step = 10
+                    step = 11
                 } else {
                     step++
                 }
                 break
             }
-            case 8: { // Demo Email
+            case 9: { // Demo Email
                 const res = await ui.text({
                     message: 'Demo Email',
                     placeholder: 'test@example.com',
@@ -339,7 +352,7 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                 step++
                 break
             }
-            case 9: { // Demo Password
+            case 10: { // Demo Password
                 const res = await ui.password({
                     message: 'Demo Password',
                     defaultValue: state.demoPassword || '',
@@ -350,8 +363,8 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                 step++
                 break
             }
-            // 10: Summary Confirmation
-            case 10: {
+            // 11: Summary Confirmation
+            case 11: {
                 console.log()
                 const summaryLines = [
                     `App Name: ${state.appName}`,
@@ -359,6 +372,7 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                     `Keywords: ${state.keywords || '[empty]'}`,
                     `Promotional Text: ${state.promotionalText || '[empty]'}`,
                     `Category: ${state.category || '[empty]'}`,
+                    `Privacy Policy: ${state.privacyPolicyUrl || '[empty]'}`,
                     `Support URL: ${state.supportUrl || '[empty]'}`,
                     `Marketing URL: ${state.marketingUrl || '[empty]'}`,
                     `Sign-in Required: ${state.signInRequired ? 'Yes' : 'No'}`,
@@ -376,8 +390,8 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
 
                 if (action === null) {
                     // Logic: Back from summary goes to last active step
-                    if (state.signInRequired) step = 9
-                    else step = 7 // Go back to sign-in toggle (skip demo creds)
+                    if (state.signInRequired) step = 10
+                    else step = 8 // Go back to sign-in toggle (skip demo creds)
                     break
                 }
                 if (action === 'continue') {
@@ -391,6 +405,7 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                         { value: 'keywords', label: `Keywords: ${state.keywords || '[empty]'}` },
                         { value: 'promotionalText', label: `Promotional Text: ${state.promotionalText || '[empty]'}` },
                         { value: 'category', label: `Category: ${state.category || '[empty]'}` },
+                        { value: 'privacyPolicyUrl', label: `Privacy Policy: ${state.privacyPolicyUrl || '[empty]'}` },
                         { value: 'supportUrl', label: `Support URL: ${state.supportUrl || '[empty]'}` },
                         { value: 'marketingUrl', label: `Marketing URL: ${state.marketingUrl || '[empty]'}` },
                         { value: 'signInRequired', label: `Sign-in Required: ${state.signInRequired ? 'Yes' : 'No'}` },
@@ -418,11 +433,12 @@ export async function collectAppDetails(projectName: string, defaults?: Partial<
                         case 'keywords': step = 2; break
                         case 'promotionalText': step = 3; break
                         case 'category': step = 4; break
-                        case 'supportUrl': step = 5; break
-                        case 'marketingUrl': step = 6; break
-                        case 'signInRequired': step = 7; break
-                        case 'demoUsername': step = 8; break
-                        case 'demoPassword': step = 9; break
+                        case 'privacyPolicyUrl': step = 5; break
+                        case 'supportUrl': step = 6; break
+                        case 'marketingUrl': step = 7; break
+                        case 'signInRequired': step = 8; break
+                        case 'demoUsername': step = 9; break
+                        case 'demoPassword': step = 10; break
                     }
                     // After jumping, flow continues from that step
                     break
