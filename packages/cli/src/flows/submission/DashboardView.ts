@@ -120,7 +120,7 @@ export class DashboardView {
             console.log(chalk.dim('      We\'ll check for App Store guideline issues before you submit to Apple.'))
             console.log()
         } else if (!prepStepsDone) {
-            console.log(chalk.cyan(`    ℹ Complete the required steps to continue.`))
+            console.log(chalk.white(`    ℹ Complete the required steps to continue.`))
             console.log()
         } else if (!requiredComplete) {
             console.log(chalk.green('    ● Ready for Final Review! Almost there.'))
