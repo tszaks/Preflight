@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { StatusLight } from '@/components/ui/status'
-import { Check, AlertCircle, Info, ArrowLeft, Download, Copy } from 'lucide-react'
+import { Check, AlertCircle, Info, ArrowLeft, Download, Copy, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/components/ui/status'
 import { createClient } from '@/lib/supabase/client'
@@ -575,6 +575,34 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                             <span className="font-mono font-bold text-blue-500">{infoItems.length}</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* What We Analyzed */}
+            <div className="vercel-card p-6 mb-12">
+                <div className="flex items-center gap-3 mb-4">
+                    <Shield className="w-4 h-4 text-gray-400" />
+                    <h2 className="text-[10px] font-bold tracking-[0.2em] text-gray-500 uppercase">What We Analyzed</h2>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                        { label: 'App Metadata', detail: 'Name, description, keywords, URLs' },
+                        { label: 'Screenshots', detail: 'Dimensions, file size, compliance' },
+                        { label: 'Info.plist', detail: 'Permissions, build settings' },
+                        { label: 'Privacy Manifest', detail: 'API declarations, data usage' },
+                        { label: 'IPA Binary', detail: 'Frameworks, entitlements, symbols' },
+                        { label: 'Privacy Audit', detail: 'Manifest vs detected SDKs' },
+                        { label: 'URL Reachability', detail: 'Privacy policy, support URLs' },
+                        { label: 'Apple Guidelines', detail: 'Account deletion, SIWA, IAP' },
+                    ].map((check) => (
+                        <div key={check.label} className="bg-white/5 rounded-lg border border-white/5 p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Check className="w-3 h-3 text-green-500 shrink-0" />
+                                <span className="text-xs font-medium">{check.label}</span>
+                            </div>
+                            <span className="text-[10px] text-gray-500 leading-tight">{check.detail}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
 
