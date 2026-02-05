@@ -29,6 +29,7 @@
   "homepage": "https://preflightlaunch.com",
   "author": "Tyler Szakacs <tylerszakacs@gmail.com>",
   "dependencies": {
+    "@preflight/shared": "*",
     "@clack/prompts": "^1.0.0",
     "@supabase/supabase-js": "^2.93.3",
     "chalk": "^5.4.1",

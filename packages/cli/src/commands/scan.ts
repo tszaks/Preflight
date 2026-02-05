@@ -1,10 +1,16 @@
 import chalk from 'chalk'
 import { resolve } from 'node:path'
+import { readFileSync, statSync } from 'node:fs'
+import { extname } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { setLastScannedPath } from '../lib/config.js'
 import { interactiveProjectSelect } from '../lib/project-finder.js'
 import * as ui from '../ui/interactive.js'
-import { ok, critical, warning, subtext, brand, icons } from '../ui/theme.js'
+import { ok, okBold, critical, criticalBold, warning, warningBold, info, subtext, brand, icons, muted } from '../ui/theme.js'
+import { checkInfoPlist } from '@preflight/shared/engine/hard-rules/info-plist'
+import { checkPrivacyManifest } from '@preflight/shared/engine/hard-rules/privacy-manifest'
+import { checkScreenshots } from '@preflight/shared/engine/hard-rules/screenshots'
+import type { CheckResult, ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
 
 export async function scanCommand(path?: string) {
     // Interactive mode: no path provided
@@ -66,38 +72,124 @@ export async function scanCommand(path?: string) {
 
     ui.log.message(lines.join('\n'))
 
-    // Quick check summary
-    const issues: string[] = []
-    const warnings_list: string[] = []
-    const passed: string[] = []
+    // === Run local hard rules analysis ===
+    s.start('Running compliance checks...')
 
-    if (detected.infoPlist) passed.push('Info.plist present')
-    else issues.push('Missing Info.plist')
+    const allChecks: CheckResult[] = []
 
-    if (detected.privacyManifest) passed.push('PrivacyInfo.xcprivacy present')
-    else issues.push('Missing PrivacyInfo.xcprivacy')
-
-    if (detected.xcodeProject) passed.push('Xcode project detected')
-    else warnings_list.push('No Xcode project found')
-
-    if (detected.screenshots.length > 0) passed.push(`${detected.screenshots.length} screenshots found`)
-
-    const summaryLines: string[] = [chalk.bold('Quick Check')]
-
-    if (passed.length > 0) {
-        summaryLines.push(`  ${ok(`${passed.length} item${passed.length === 1 ? '' : 's'} look${passed.length === 1 ? 's' : ''} good`)}`)
+    // Read file contents for analysis
+    let plistContent: string | undefined
+    if (detected.infoPlist) {
+        try {
+            plistContent = readFileSync(detected.infoPlist, 'utf-8')
+        } catch { /* skip if unreadable */ }
     }
-    if (warnings_list.length > 0) {
-        summaryLines.push(`  ${warning(`${warnings_list.length} warning${warnings_list.length === 1 ? '' : 's'}`)} ${subtext('- ' + warnings_list.join(', '))}`)
+
+    let manifestContent: string | undefined
+    if (detected.privacyManifest) {
+        try {
+            manifestContent = readFileSync(detected.privacyManifest, 'utf-8')
+        } catch { /* skip if unreadable */ }
     }
-    if (issues.length > 0) {
-        summaryLines.push(`  ${critical(`${issues.length} issue${issues.length === 1 ? '' : 's'}`)} ${subtext('- ' + issues.join(', '))}`)
+
+    // Build screenshot data from local files
+    const screenshotData: ScreenshotData[] = []
+    for (const screenshotPath of detected.screenshots) {
+        try {
+            const stat = statSync(screenshotPath)
+            const ext = extname(screenshotPath).toLowerCase()
+            screenshotData.push({
+                path: screenshotPath,
+                base64: '', // Not needed for dimension/size checks
+                mime_type: ext === '.png' ? 'image/png' : 'image/jpeg',
+                size_bytes: stat.size,
+            })
+        } catch { /* skip */ }
+    }
+
+    // Run checks
+    const plistChecks = checkInfoPlist(plistContent)
+    allChecks.push(...plistChecks)
+
+    const manifestChecks = checkPrivacyManifest(manifestContent)
+    allChecks.push(...manifestChecks)
+
+    const screenshotInput: HardRulesInput = {
+        app_name: detected.projectName || '',
+        screenshot_paths: detected.screenshots,
+    }
+    const screenshotChecks = checkScreenshots(screenshotInput, screenshotData.length > 0 ? screenshotData : undefined)
+    allChecks.push(...screenshotChecks)
+
+    s.stop('Compliance checks complete')
+
+    // === Display findings by severity ===
+    const criticals = allChecks.filter(c => c.severity === 'critical')
+    const warnings = allChecks.filter(c => c.severity === 'warning')
+    const infos = allChecks.filter(c => c.severity === 'info')
+    const passes = allChecks.filter(c => c.severity === 'pass')
+
+    // Show findings
+    if (criticals.length > 0 || warnings.length > 0 || infos.length > 0) {
+        const findingsLines: string[] = []
+        findingsLines.push(chalk.bold('Compliance Findings'))
+
+        for (const check of criticals) {
+            findingsLines.push(`  ${criticalBold('CRITICAL')} ${check.title}`)
+            findingsLines.push(`  ${muted(check.description)}`)
+            if (check.fix_suggestion) {
+                findingsLines.push(`  ${muted('Fix:')} ${check.fix_suggestion}`)
+            }
+            findingsLines.push('')
+        }
+
+        for (const check of warnings) {
+            findingsLines.push(`  ${warningBold('WARNING')}  ${check.title}`)
+            findingsLines.push(`  ${muted(check.description)}`)
+            if (check.fix_suggestion) {
+                findingsLines.push(`  ${muted('Fix:')} ${check.fix_suggestion}`)
+            }
+            findingsLines.push('')
+        }
+
+        for (const check of infos) {
+            findingsLines.push(`  ${info('INFO')}     ${check.title}`)
+            findingsLines.push(`  ${muted(check.description)}`)
+            findingsLines.push('')
+        }
+
+        ui.log.message(findingsLines.join('\n'))
+    }
+
+    // Summary bar
+    const summaryLines: string[] = [chalk.bold('Summary')]
+    if (passes.length > 0) {
+        summaryLines.push(`  ${ok(`${passes.length} check${passes.length === 1 ? '' : 's'} passed`)}`)
+    }
+    if (criticals.length > 0) {
+        summaryLines.push(`  ${critical(`${criticals.length} critical issue${criticals.length === 1 ? '' : 's'}`)}`)
+    }
+    if (warnings.length > 0) {
+        summaryLines.push(`  ${warning(`${warnings.length} warning${warnings.length === 1 ? '' : 's'}`)}`)
+    }
+    if (infos.length > 0) {
+        summaryLines.push(`  ${subtext(`${infos.length} info`)}`)
     }
 
     ui.log.message(summaryLines.join('\n'))
 
-    // Upsell + what next
-    ui.log.info('This is a free preview. For detailed fix\ninstructions, submit for full AI analysis.')
+    // Upsell for full analysis
+    const upsellLines: string[] = []
+    upsellLines.push(chalk.bold('Unlock Full Analysis'))
+    upsellLines.push(`  ${muted('The free scan checks Info.plist, privacy manifest, and screenshots.')}`)
+    upsellLines.push(`  ${muted('Full AI-powered analysis adds:')}`)
+    upsellLines.push(`    ${brand(icons.arrow)} IPA binary scan ${subtext('(Mach-O, private APIs, SDK issues)')}`)
+    upsellLines.push(`    ${brand(icons.arrow)} Screenshot AI review ${subtext('(UI compliance, missing elements)')}`)
+    upsellLines.push(`    ${brand(icons.arrow)} Approval prediction ${subtext('(% chance of approval)')}`)
+    upsellLines.push(`    ${brand(icons.arrow)} Rejection pattern matching ${subtext('(historical Apple rejections)')}`)
+    upsellLines.push(`    ${brand(icons.arrow)} Detailed fix instructions ${subtext('(step-by-step remediation)')}`)
+
+    ui.log.message(upsellLines.join('\n'))
 
     const next = await ui.select<'submit' | 'done'>({
         message: 'What next?',
@@ -112,6 +204,6 @@ export async function scanCommand(path?: string) {
         const { submitCommand } = await import('./submit.js')
         await submitCommand(dir, {})
     } else {
-        ui.tip(`Run ${brand('preflight submit')} anytime to get AI-powered fix instructions.`)
+        ui.tip(`Run ${brand('preflight submit')} anytime for AI-powered analysis.`)
     }
 }
