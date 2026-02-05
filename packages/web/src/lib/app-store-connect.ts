@@ -159,19 +159,28 @@ export async function getLatestVersion(
 export async function getAppInfo(
     credentials: ASCCredentials,
     appId: string,
-): Promise<{ categoryId: string | null; subcategoryId: string | null } | null> {
+): Promise<{
+    categoryId: string | null;
+    subcategoryId: string | null;
+    privacyConfigured: boolean;
+    privacyUpdateDate: string | null;
+} | null> {
     try {
         const data = await ascFetch(
-            `/apps/${appId}/appInfos?limit=1&sort=-state`,
+            `/apps/${appId}/appInfos?limit=1`,
             credentials,
         );
 
         if (!data.data.length) return null;
 
         const info = data.data[0];
+        const privacyUpdateDate = info.attributes?.appPrivacyDetailsUpdateDate || null;
+
         return {
             categoryId: info.relationships?.primaryCategory?.data?.id || null,
             subcategoryId: info.relationships?.secondaryCategory?.data?.id || null,
+            privacyConfigured: privacyUpdateDate !== null,
+            privacyUpdateDate,
         };
     } catch {
         return null;

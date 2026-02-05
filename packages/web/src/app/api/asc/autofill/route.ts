@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         hasAppInfo: !!appInfo,
         hasAppDetails: !!appDetails,
         hasAgeRating: !!ageRating,
-        ageRatingData: ageRating, // Log full object to see what's there
+        privacyConfigured: appInfo?.privacyConfigured || false,
         subscriptionGroups: subscriptionGroups?.length || 0,
         inAppPurchases: inAppPurchases?.length || 0,
         versionId: version?.id
@@ -217,6 +217,12 @@ export async function POST(request: Request) {
                 kids_age_band: ageRating.kidsAgeBand,
                 seventeen_plus: ageRating.seventeenPlus,
             } : null,
+
+            // App Privacy status (whether user has filled out App Privacy in ASC)
+            privacy_status: {
+                configured: appInfo?.privacyConfigured || false,
+                update_date: appInfo?.privacyUpdateDate || null,
+            },
 
             // App Previews (videos) with URLs
             app_previews: appPreviewStatus.map((s: any) => ({
