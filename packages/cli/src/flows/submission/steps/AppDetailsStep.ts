@@ -46,6 +46,7 @@ export class AppDetailsStep implements SubmissionStep {
         state.supportUrl = appDetails.supportUrl
         state.promotionalText = appDetails.promotionalText
         state.marketingUrl = appDetails.marketingUrl
+        state.privacyPolicyUrl = appDetails.privacyPolicyUrl
         state.signInRequired = appDetails.signInRequired
         state.demoUsername = appDetails.demoUsername
         state.demoPassword = appDetails.demoPassword

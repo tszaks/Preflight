@@ -88,6 +88,10 @@ export class SubmissionFlow {
                     // Successfully connected
                     this.state._flowPosition = 'appDetails'
                     this.setupComplete = true
+
+                    // Wire up screenshots if downloaded
+                    await this.updateScreenshotsFromState()
+
                     return true
                 }
                 // If they cancelled/went back, we stay in setup phase
@@ -196,6 +200,11 @@ export class SubmissionFlow {
         switch (result.action) {
             case 'next':
                 // Section complete, update flow position and return to dashboard
+                // If we just finished ASC and have downloaded screenshots, add them to the upload list
+                if (sectionId === 'asc') {
+                    await this.updateScreenshotsFromState()
+                }
+
                 this.state._flowPosition = sectionId === 'asc' ? 'appDetails' : sectionId as any
                 return 'next'
             case 'back':
@@ -208,6 +217,33 @@ export class SubmissionFlow {
             case 'cancel':
                 // User cancelled the step. Return to dashboard.
                 return 'back'
+        }
+    }
+
+    private async updateScreenshotsFromState() {
+        if (this.state._tempScreenshotPaths && this.state._tempScreenshotPaths.length > 0) {
+            const { basename } = await import('node:path')
+
+            // Clear existing screenshots (prioritize ASC ones if user chose autofill)
+            // We reverse iterate to safely splice
+            for (let i = this.filesToUpload.length - 1; i >= 0; i--) {
+                if (this.filesToUpload[i].type === 'screenshot') {
+                    this.filesToUpload.splice(i, 1)
+                }
+            }
+
+            // Add new ones
+            this.state._tempScreenshotPaths.forEach((path, i) => {
+                // Only add up to 10
+                if (i < 10) {
+                    this.filesToUpload.push({
+                        type: 'screenshot',
+                        index: i,
+                        filename: basename(path),
+                        path: path
+                    })
+                }
+            })
         }
     }
 }
