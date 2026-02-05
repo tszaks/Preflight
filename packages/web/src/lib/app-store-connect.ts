@@ -541,8 +541,47 @@ export async function getAgeRatingDeclaration(
         if (!data.data) return null;
 
         const attr = data.data.attributes;
+
+        // Compute the rating if ASC doesn't return it directly
+        // This mirrors Apple's age rating logic
+        let computedRating = attr.rating;
+        if (!computedRating) {
+            // Check for 17+ conditions
+            if (
+                attr.violenceRealisticProlongedGraphicOrSadistic === 'FREQUENT_OR_INTENSE' ||
+                attr.sexualContentGraphicAndNudity === 'FREQUENT_OR_INTENSE' ||
+                attr.gambling === true ||
+                attr.seventeenPlus === true
+            ) {
+                computedRating = '17+';
+            }
+            // Check for 12+ conditions
+            else if (
+                attr.violenceRealistic === 'INFREQUENT_OR_MILD' || attr.violenceRealistic === 'FREQUENT_OR_INTENSE' ||
+                attr.sexualContentOrNudity === 'INFREQUENT_OR_MILD' || attr.sexualContentOrNudity === 'FREQUENT_OR_INTENSE' ||
+                attr.matureOrSuggestiveThemes === 'FREQUENT_OR_INTENSE' ||
+                attr.alcoholTobaccoOrDrugUseOrReferences === 'FREQUENT_OR_INTENSE' ||
+                attr.gamblingSimulated === 'INFREQUENT_OR_MILD' || attr.gamblingSimulated === 'FREQUENT_OR_INTENSE'
+            ) {
+                computedRating = '12+';
+            }
+            // Check for 9+ conditions
+            else if (
+                attr.violenceCartoonOrFantasy === 'FREQUENT_OR_INTENSE' ||
+                attr.matureOrSuggestiveThemes === 'INFREQUENT_OR_MILD' ||
+                attr.profanityOrCrudeHumor === 'FREQUENT_OR_INTENSE' ||
+                attr.horrorOrFearThemes === 'FREQUENT_OR_INTENSE'
+            ) {
+                computedRating = '9+';
+            }
+            // Default to 4+
+            else {
+                computedRating = '4+';
+            }
+        }
+
         return {
-            rating: attr.rating || null,
+            rating: computedRating,
             alcoholTobaccoOrDrugUseOrReferences: attr.alcoholTobaccoOrDrugUseOrReferences || null,
             contests: attr.contests || null,
             gamblingSimulated: attr.gamblingSimulated || null,
