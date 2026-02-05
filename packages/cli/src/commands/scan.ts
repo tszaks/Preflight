@@ -290,6 +290,35 @@ export async function scanCommand(path?: string) {
 
     s.stop('Compliance checks complete')
 
+    // === What We Checked section ===
+    const checkedLines: string[] = []
+    checkedLines.push(chalk.bold('What We Checked'))
+    checkedLines.push(`  ${icons.check} App metadata ${subtext('(name, description, keywords)')}`)
+    if (detected.screenshots.length > 0) {
+        checkedLines.push(`  ${icons.check} ${detected.screenshots.length} screenshot${detected.screenshots.length === 1 ? '' : 's'} ${subtext('(dimensions, file size)')}`)
+    } else {
+        checkedLines.push(`  ${chalk.dim('-')} Screenshots ${subtext('(none found)')}`)
+    }
+    if (plistContent) {
+        checkedLines.push(`  ${icons.check} Info.plist ${subtext('(permissions, build settings, usage descriptions)')}`)
+    } else {
+        checkedLines.push(`  ${chalk.dim('-')} Info.plist ${subtext('(not found)')}`)
+    }
+    if (manifestContent) {
+        checkedLines.push(`  ${icons.check} PrivacyInfo.xcprivacy ${subtext('(privacy manifest, API declarations)')}`)
+    } else {
+        checkedLines.push(`  ${chalk.dim('-')} Privacy manifest ${subtext('(not found)')}`)
+    }
+    if (ipaBuffer) {
+        checkedLines.push(`  ${icons.check} IPA binary ${subtext('(frameworks, entitlements, Mach-O symbols)')}`)
+        checkedLines.push(`  ${icons.check} Privacy cross-reference ${subtext('(manifest vs detected SDKs)')}`)
+    } else {
+        checkedLines.push(`  ${chalk.dim('-')} IPA binary analysis ${subtext('(no IPA found)')}`)
+    }
+    checkedLines.push(`  ${icons.check} URL reachability ${subtext('(privacy policy, support, marketing URLs)')}`)
+    checkedLines.push(`  ${icons.check} Apple guideline compliance ${subtext('(account deletion, restore purchases, SIWA, etc.)')}`)
+    ui.log.message(checkedLines.join('\n'))
+
     // === Display findings by severity ===
     const criticals = allChecks.filter(c => c.severity === 'critical')
     const warnings = allChecks.filter(c => c.severity === 'warning')

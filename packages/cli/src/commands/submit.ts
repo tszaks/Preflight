@@ -837,7 +837,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                         await openUrl(`https://preflightlaunch.com/report/${submissionId}`)
                     } else if (next === 'copy') {
                         try {
-                            const aiText = formatForAi(reportData.data.report, reportData.data.items)
+                            const aiText = formatForAi(reportData.data.report, reportData.data.items, filesToUpload.map(f => f.type))
                             // Use pbcopy on Mac
                             const { execSync } = await import('child_process')
                             execSync('pbcopy', { input: aiText })
@@ -1165,7 +1165,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
                     await openUrl(`https://preflightlaunch.com/report/${finalId}`)
                 } else if (next === 'copy') {
                     try {
-                        const aiText = formatForAi(reportData.data.report, reportData.data.items)
+                        const aiText = formatForAi(reportData.data.report, reportData.data.items, filesToUpload.map(f => f.type))
                         const { execSync } = await import('child_process')
                         execSync('pbcopy', { input: aiText })
                         ui.log.success('Copied to clipboard!')
@@ -1277,7 +1277,7 @@ async function pollForReport(
     }
 }
 
-function formatForAi(report: any, items: any[]): string {
+function formatForAi(report: any, items: any[], fileTypes?: string[]): string {
     const lines: string[] = []
 
     lines.push('# Preflight App Store Review Report')
@@ -1293,6 +1293,37 @@ function formatForAi(report: any, items: any[]): string {
         lines.push(report.summary)
         lines.push('')
     }
+
+    // What We Checked section
+    lines.push('## What We Checked')
+    lines.push('- App metadata (name, description, keywords, URLs)')
+    if (fileTypes) {
+        const hasIpa = fileTypes.includes('ipa')
+        const hasPlist = fileTypes.includes('plist')
+        const hasManifest = fileTypes.includes('manifest')
+        const screenshotCount = fileTypes.filter(t => t === 'screenshot').length
+
+        if (screenshotCount > 0) {
+            lines.push(`- ${screenshotCount} screenshot${screenshotCount === 1 ? '' : 's'} (dimensions, file size)`)
+        }
+        if (hasPlist) {
+            lines.push('- Info.plist (permissions, build settings, usage descriptions)')
+        }
+        if (hasManifest) {
+            lines.push('- PrivacyInfo.xcprivacy (privacy manifest, API declarations)')
+        }
+        if (hasIpa) {
+            lines.push('- IPA binary (frameworks, entitlements, Mach-O symbols, private APIs)')
+            lines.push('- Privacy cross-reference (manifest vs detected SDKs)')
+        }
+    } else {
+        lines.push('- Screenshots, Info.plist, privacy manifest')
+        lines.push('- IPA binary analysis (if provided)')
+    }
+    lines.push('- URL reachability (privacy policy, support, marketing URLs)')
+    lines.push('- Apple guideline compliance (account deletion, restore purchases, SIWA, subscriptions)')
+    lines.push('- AI content analysis (description, screenshots, privacy policy)')
+    lines.push('')
 
     if (items && items.length > 0) {
         lines.push('## Potential Issues')
