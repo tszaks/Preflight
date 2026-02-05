@@ -933,13 +933,41 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
 
 // ─── Orchestrate All Compliance ──────────────────────────────────────────
 
-export async function collectCompliance(defaults?: Partial<ComplianceData>): Promise<ComplianceData | null> {
+export async function collectCompliance(
+    defaults?: Partial<ComplianceData>,
+    ascAgeRating?: { rating: string | null; gambling: boolean; unrestrictedWebAccess: boolean; kidsAgeBand: string | null; seventeenPlus: boolean }
+): Promise<ComplianceData | null> {
     // Track completion of each phase
     const state: {
         ageRating?: { answers: AgeRatingAnswers; rating: string }
         privacy?: PrivacyDeclarations
         checklist?: FeatureChecklist
     } = {}
+
+    // Auto-populate age rating from ASC if available
+    if (ascAgeRating?.rating) {
+        // Convert ASC age rating to our format
+        const defaultAnswers: AgeRatingAnswers = {
+            cartoonViolence: 0,
+            realisticViolence: 0,
+            prolongedViolence: 0,
+            sexualContent: 0,
+            matureSuggestive: 0,
+            profanity: 0,
+            alcoholDrugs: 0,
+            gamblingSimulated: ascAgeRating.gambling ? 1 : 0,
+            horrorFear: 0,
+            medicalTreatment: 0,
+            gamblingContests: ascAgeRating.gambling ? 1 : 0,
+            unrestrictedWebAccess: ascAgeRating.unrestrictedWebAccess,
+            madeForKids: ascAgeRating.kidsAgeBand !== null,
+        }
+        state.ageRating = {
+            answers: defaultAnswers,
+            rating: ascAgeRating.rating
+        }
+        ui.log.success(`Age Rating: ${ascAgeRating.rating} (from App Store Connect)`)
+    }
 
     while (true) {
         // Show phase selector with progress indicators
