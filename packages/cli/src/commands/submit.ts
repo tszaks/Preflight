@@ -27,6 +27,7 @@ import { ScreenshotsStep } from '../flows/submission/steps/ScreenshotsStep.js'
 import { AppDetailsStep } from '../flows/submission/steps/AppDetailsStep.js'
 import { ComplianceStep } from '../flows/submission/steps/ComplianceStep.js'
 import { ReviewStep } from '../flows/submission/steps/ReviewStep.js'
+import type { DraftState } from '../flows/submission/types.js'
 
 interface SubmitOptions {
     appName?: string
@@ -105,25 +106,6 @@ async function creditPreCheck(): Promise<boolean> {
 
 // ─── Draft Save Helper (Phase 4) ──────────────────────────────────────────
 
-interface DraftState {
-    appName?: string
-    description?: string
-    keywords?: string
-    category?: string
-    privacyPolicyUrl?: string
-    supportUrl?: string
-    promotionalText?: string
-    marketingUrl?: string
-    signInRequired?: boolean
-    demoUsername?: string
-    demoPassword?: string
-    compliance?: ComplianceData
-    // Flow position tracking for draft resumption
-    _flowPosition?: 'asc' | 'screenshots' | 'appDetails' | 'compliance' | 'confirmation'
-    _ascConnected?: boolean // Track if ASC was used for autofill
-    _screenshotPaths?: string[] // Track screenshot paths for reference
-    _projectPath?: string // Track the Xcode project path for resumption
-}
 
 async function offerDraftSave(state: DraftState, skipConfirmation = false): Promise<boolean> {
     // Only offer if we have at least an app name
