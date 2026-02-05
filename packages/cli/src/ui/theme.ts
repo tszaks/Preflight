@@ -176,24 +176,10 @@ export function applyThemePatch() {
                 return orangeOpen + char
             })
 
-            // 4. Hide Clack's default cursor/bullet for select/multiselect
-            // Clack uses \x1b[36m❯ for cursor and various bullets.
-            // User wants NO checkmarks/dots on the left, only our custom ones in the label.
-
-            // Replace Cyan Arrow (❯) with space (active cursor)
-            patched = patched.replace(/(\x1b\[36m)([❯])/g, (_match, _color, _char) => {
-                return ' '
-            })
-
-            // Replace Green Bullet (●) with space (selected radio/checkbox)
-            // We are handling the checkmark in the label string itself now.
-            patched = patched.replace(/(\x1b\[32m)([●])/g, (_match, _color, _char) => {
-                return ' '
-            })
-
-            // Replace Dim Bullet (○ or similar) with space (unselected)
-            patched = patched.replace(/(\x1b\[2m)([○●])/g, (_match, _color, _char) => {
-                return ' '
+            // 4. Make selection bullet White (instead of Green)
+            // Clack uses \x1b[32m● for selected radio/checkbox
+            patched = patched.replace(/(\x1b\[32m)([●])/g, (_match, _color, char) => {
+                return whiteOpen + char
             })
 
             // 5. Make Green Diamond Orange (User request) - kept for other usages if any

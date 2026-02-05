@@ -39,17 +39,17 @@ export class AscStep implements SubmissionStep {
                                 console.log()
 
                                 // ─── Basic Info ──────────────────────────────────────────
-                                if (result.appName) console.log(`  ${chalk.green('✓')} App Name: ${brand(result.appName)}`)
-                                if (result.description) console.log(`  ${chalk.green('✓')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
-                                if (result.keywords) console.log(`  ${chalk.green('✓')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
-                                if (result.category) console.log(`  ${chalk.green('✓')} Category: ${result.category}`)
-                                if (result.supportUrl) console.log(`  ${chalk.green('✓')} Support URL: ${subtext(result.supportUrl)}`)
-                                if (result.copyright) console.log(`  ${chalk.green('✓')} Copyright: ${subtext(result.copyright)}`)
+                                if (result.appName) console.log(`  App Name: ${brand(result.appName)} ${chalk.green('✓')}`)
+                                if (result.description) console.log(`  Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))} ${chalk.green('✓')}`)
+                                if (result.keywords) console.log(`  Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))} ${chalk.green('✓')}`)
+                                if (result.category) console.log(`  Category: ${result.category} ${chalk.green('✓')}`)
+                                if (result.supportUrl) console.log(`  Support URL: ${subtext(result.supportUrl)} ${chalk.green('✓')}`)
+                                if (result.copyright) console.log(`  Copyright: ${subtext(result.copyright)} ${chalk.green('✓')}`)
 
                                 // ─── Screenshots ───────────────────────────────────────── (example usage)
                                 if (result.screenshotCount !== undefined) {
                                     const icon = result.screenshotCount > 0 ? chalk.green('✓') : chalk.yellow('○')
-                                    console.log(`  ${icon} Screenshots: ${result.screenshotCount} uploaded`)
+                                    console.log(`  Screenshots: ${result.screenshotCount} uploaded ${icon}`)
                                 }
 
                                 // ─── Monetization ────────────────────────────────────────
@@ -58,30 +58,30 @@ export class AscStep implements SubmissionStep {
                                     console.log(`  ${chalk.dim('Monetization:')}`)
                                     if (result.subscriptionCount !== undefined) {
                                         const icon = result.subscriptionCount > 0 ? chalk.green('✓') : chalk.dim('○')
-                                        console.log(`    ${icon} ${result.subscriptionCount} Subscription${result.subscriptionCount !== 1 ? 's' : ''}`)
+                                        console.log(`    ${result.subscriptionCount} Subscription${result.subscriptionCount !== 1 ? 's' : ''} ${icon}`)
                                     }
                                     if (result.iapCount !== undefined) {
                                         const icon = result.iapCount > 0 ? chalk.green('✓') : chalk.dim('○')
-                                        console.log(`    ${icon} ${result.iapCount} In-App Purchase${result.iapCount !== 1 ? 's' : ''}`)
+                                        console.log(`    ${result.iapCount} In-App Purchase${result.iapCount !== 1 ? 's' : ''} ${icon}`)
                                     }
                                 }
 
                                 // ─── Age Rating ──────────────────────────────────────────
                                 if (result.ageRating) {
                                     console.log()
-                                    console.log(`  ${chalk.green('✓')} Age Rating: ${result.ageRating}`)
+                                    console.log(`  Age Rating: ${result.ageRating} ${chalk.green('✓')}`)
                                 }
 
                                 // ─── App Privacy Status ───────────────────────────────────
                                 if (result.privacyConfigured !== undefined) {
                                     const icon = result.privacyConfigured ? chalk.green('✓') : chalk.dim('○')
                                     const status = result.privacyConfigured ? 'Configured' : 'Not configured'
-                                    console.log(`  ${icon} App Privacy: ${status}`)
+                                    console.log(`  App Privacy: ${status} ${icon}`)
                                 }
 
                                 // ─── Review Contact ──────────────────────────────────────
                                 if (result.reviewContact) {
-                                    console.log(`  ${chalk.green('✓')} Review Contact: ${result.reviewContact}`)
+                                    console.log(`  Review Contact: ${result.reviewContact} ${chalk.green('✓')}`)
                                 }
 
                                 console.log()
