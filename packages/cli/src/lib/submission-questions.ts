@@ -1004,17 +1004,17 @@ export async function collectCompliance(
         const options: Array<{ value: string; label: string; hint: string }> = [
             {
                 value: 'age',
-                label: state.ageRating ? chalk.green('1. Age Rating ✓') : '1. Age Rating',
+                label: state.ageRating ? `1. Age Rating ${chalk.green('✓')}` : '1. Age Rating',
                 hint: state.ageRating ? `Rated ${state.ageRating.rating}` : 'Required',
             },
             {
                 value: 'privacy',
-                label: state.privacy ? chalk.green('2. Privacy & Data ✓') : '2. Privacy & Data',
+                label: state.privacy ? `2. Privacy & Data ${chalk.green('✓')}` : '2. Privacy & Data',
                 hint: state.privacy ? 'Completed' : 'Required',
             },
             {
                 value: 'features',
-                label: state.checklist ? chalk.green('3. Features ✓') : '3. Features',
+                label: state.checklist ? `3. Features ${chalk.green('✓')}` : '3. Features',
                 hint: state.checklist ? 'Completed' : 'Required',
             },
         ]
