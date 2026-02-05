@@ -14,8 +14,13 @@ import {
     getSubscriptions,
     getInAppPurchases,
     getAgeRatingDeclaration,
+    getAppPreviewStatus,
+    getContentRights,
+    getAppAvailability,
     type ASCCredentials,
     type ASCSubscription,
+    type ASCScreenshot,
+    type ASCAppPreview,
 } from '@/lib/app-store-connect'
 import { decryptPrivateKey } from '@/lib/asc-credential-store'
 import { getEncryptionKey } from '@/lib/asc-encryption'
@@ -57,7 +62,7 @@ export async function POST(request: Request) {
     }
 
     // ─── Phase 1: Core App Data ──────────────────────────────────────────────
-    const [version, appInfo, appDetails, privacyInfo, ageRating, subscriptionGroups, inAppPurchases] = await Promise.all([
+    const [version, appInfo, appDetails, privacyInfo, ageRating, subscriptionGroups, inAppPurchases, contentRights, appAvailability] = await Promise.all([
         getLatestVersion(credentials, appId).catch(e => { console.error('getLatestVersion failed', e); return null }),
         getAppInfo(credentials, appId).catch(e => { console.error('getAppInfo failed', e); return null }),
         getAppDetails(credentials, appId).catch(e => { console.error('getAppDetails failed', e); return null }),
@@ -65,6 +70,8 @@ export async function POST(request: Request) {
         getAgeRatingDeclaration(credentials, appId).catch(e => { console.error('getAgeRatingDeclaration failed', e); return null }),
         getSubscriptionGroups(credentials, appId).catch(e => { console.error('getSubscriptionGroups failed', e); return [] }),
         getInAppPurchases(credentials, appId).catch(e => { console.error('getInAppPurchases failed', e); return [] }),
+        getContentRights(credentials, appId).catch(() => null),
+        getAppAvailability(credentials, appId).catch(() => null),
     ])
 
     console.log('ASC Autofill Debug:', {
@@ -82,14 +89,16 @@ export async function POST(request: Request) {
     let metadata = null
     let reviewDetail = null
     let versionDetails = null
-    let screenshotStatus: { deviceType: string; count: number }[] = []
+    let screenshotStatus: Awaited<ReturnType<typeof getScreenshotStatus>> = []
+    let appPreviewStatus: Awaited<ReturnType<typeof getAppPreviewStatus>> = []
 
     if (version) {
-        [metadata, reviewDetail, versionDetails, screenshotStatus] = await Promise.all([
+        [metadata, reviewDetail, versionDetails, screenshotStatus, appPreviewStatus] = await Promise.all([
             getAppMetadata(credentials, version.id).catch(() => null),
             getReviewDetail(credentials, version.id).catch(() => null),
             getVersionDetails(credentials, version.id).catch(() => null),
             getScreenshotStatus(credentials, version.id).catch(() => []),
+            getAppPreviewStatus(credentials, version.id).catch(() => []),
         ])
     }
 
@@ -171,10 +180,16 @@ export async function POST(request: Request) {
             contact_phone: reviewDetail?.contactPhone || '',
             review_notes: reviewDetail?.notes || '',
 
-            // Screenshots (for analysis: are they complete?)
+            // Screenshots (with URLs for auto-download)
             screenshots: screenshotStatus.map(s => ({
                 device_type: s.deviceType,
                 count: s.count,
+                images: s.screenshots.map((img: ASCScreenshot) => ({
+                    id: img.id,
+                    file_name: img.fileName,
+                    url: img.url,
+                    state: img.state,
+                })),
             })),
 
             // Monetization (for analysis: are subscriptions configured?)
@@ -201,6 +216,36 @@ export async function POST(request: Request) {
                 kids_age_band: ageRating.kidsAgeBand,
                 seventeen_plus: ageRating.seventeenPlus,
             } : null,
+
+            // App Previews (videos) with URLs
+            app_previews: appPreviewStatus.map((s: any) => ({
+                device_type: s.deviceType,
+                count: s.count,
+                videos: s.previews.map((p: ASCAppPreview) => ({
+                    id: p.id,
+                    file_name: p.fileName,
+                    url: p.url,
+                    state: p.state,
+                })),
+            })),
+
+            // Content rights declaration
+            content_rights: contentRights ? {
+                uses_third_party_content: contentRights.usesThirdPartyContent,
+                has_rights_to_content: contentRights.hasRightsToContent,
+            } : null,
+
+            // App availability
+            availability: appAvailability ? {
+                available_in_new_territories: appAvailability.availableInNewTerritories,
+            } : null,
+
+            // What's New (required for updates)
+            whats_new: metadata?.whatsNew || null,
+
+            // Version state detection
+            is_first_version: version?.appStoreState === 'PREPARE_FOR_SUBMISSION',
+            version_state: version?.appStoreState || null,
         }
     })
 }
