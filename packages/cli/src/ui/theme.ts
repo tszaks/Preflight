@@ -140,3 +140,44 @@ export function getLogo(): string[] {
         rocket[7] + '  ',
     ]
 }
+
+// Monkey-patch process.stdout to theme Clack (which uses hardcoded colors)
+// This applies the Preflight Orange brand to the Clack UI lines and White to diamonds
+export function applyThemePatch() {
+    const originalWrite = process.stdout.write.bind(process.stdout)
+    // Brand Orange: #E8700A -> R=232, G=112, B=10
+    const orangeOpen = '\x1b[38;2;232;112;10m'
+    const whiteOpen = '\x1b[37m'
+    const grayOpen = '\x1b[90m' // Clack uses 90m (bright black) for dim/lines
+    const cyanOpen = '\x1b[36m' // Clack uses 36m for active elements
+    const magentaOpen = '\x1b[35m' // Clack uses 35m for spinner
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    process.stdout.write = (chunk: any, ...args: any[]) => {
+        if (typeof chunk === 'string') {
+            // 1. Make vertical lines and corners Orange (instead of Gray)
+            // Clack sends \x1b[90m│  or \x1b[90m┌
+            // Regex matches: (gray color)(one of the box drawing chars)
+            let patched = chunk.replace(/(\x1b\[90m)([│┌└├])/g, (match, color, char) => {
+                return orangeOpen + char
+            })
+
+            // 2. Make Diamonds White (instead of Magenta/Cyan)
+            // Clack sends \x1b[35m◆ or \x1b[36m◆
+            // Regex matches: (magenta or cyan color)(diamond chars)
+            patched = patched.replace(/(\x1b\[3[56]m)([◆●])/g, (match, color, char) => {
+                return whiteOpen + char
+            })
+
+            // 3. Make active bar line Orange (often Cyan in Clack)
+            // Clack often uses cyan for the active left border of the current step
+            // We look for \x1b[36m│
+            patched = patched.replace(/(\x1b\[36m)([│])/g, (match, color, char) => {
+                return orangeOpen + char
+            })
+
+            return originalWrite(patched, ...args)
+        }
+        return originalWrite(chunk, ...args)
+    }
+}

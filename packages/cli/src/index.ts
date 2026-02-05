@@ -19,7 +19,10 @@ import { handleUnknownCommand } from './ui/errors.js'
 import { isLoggedIn, hasRunBefore, getConfig, setUser, setAscConnected, setLastScannedPath, clearAuth } from './lib/config.js'
 import { apiRequest } from './lib/api-client.js'
 import * as ui from './ui/interactive.js'
-import { subtext, brand } from './ui/theme.js'
+import { subtext, brand, applyThemePatch } from './ui/theme.js'
+
+// Apply branding patch to Clack UI
+applyThemePatch()
 
 // Get version from package.json dynamically
 const __dirname = dirname(fileURLToPath(import.meta.url))
