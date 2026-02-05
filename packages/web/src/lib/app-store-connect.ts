@@ -29,6 +29,7 @@ export interface ASCAppMetadata {
     privacyUrl: string | null;
     supportUrl: string | null;
     marketingUrl: string | null;
+    whatsNew: string | null;
 }
 
 const ASC_BASE_URL = 'https://api.appstoreconnect.apple.com/v1';
@@ -136,7 +137,7 @@ export async function getAppDetails(
 export async function getLatestVersion(
     credentials: ASCCredentials,
     appId: string,
-): Promise<{ id: string; versionString: string } | null> {
+): Promise<{ id: string; versionString: string; appStoreState: string } | null> {
     const data = await ascFetch(
         `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=5`,
         credentials,
@@ -151,6 +152,7 @@ export async function getLatestVersion(
     return {
         id: v.id,
         versionString: v.attributes.versionString,
+        appStoreState: v.attributes.appStoreState || 'UNKNOWN',
     };
 }
 
@@ -228,6 +230,7 @@ export async function getAppMetadata(
         privacyUrl: loc.privacyPolicyUrl || null,
         supportUrl: loc.supportUrl || null,
         marketingUrl: loc.marketingUrl || null,
+        whatsNew: loc.whatsNew || null,
     };
 }
 
@@ -310,6 +313,15 @@ export async function getVersionDetails(
 export interface ASCScreenshotStatus {
     deviceType: string;
     count: number;
+    screenshots: ASCScreenshot[];
+}
+
+export interface ASCScreenshot {
+    id: string;
+    fileName: string;
+    fileSize: number;
+    url: string | null;
+    state: string;
 }
 
 export async function getScreenshotStatus(
@@ -335,20 +347,46 @@ export async function getScreenshotStatus(
 
         if (!sets.data?.length) return [];
 
-        // For each set, get the count of screenshots
+        // For each set, get the screenshots with their URLs
         const results: ASCScreenshotStatus[] = [];
         for (const set of sets.data) {
             const deviceType = set.attributes?.screenshotDisplayType || 'UNKNOWN';
 
             // Get screenshots in this set
-            const screenshots = await ascFetch(
+            const screenshotsResp = await ascFetch(
                 `/appScreenshotSets/${set.id}/appScreenshots`,
                 credentials,
             );
 
+            const screenshots: ASCScreenshot[] = (screenshotsResp.data || []).map((s: any) => {
+                const attr = s.attributes || {};
+                // imageAsset contains the template URL and dimensions
+                const imageAsset = attr.imageAsset || {};
+
+                // Build the URL from template if available
+                let url: string | null = null;
+                if (imageAsset.templateUrl) {
+                    // Template format: {url}/{width}x{height}{extension}
+                    // We want the full resolution
+                    url = imageAsset.templateUrl
+                        .replace('{w}', imageAsset.width || '0')
+                        .replace('{h}', imageAsset.height || '0')
+                        .replace('{f}', 'png');
+                }
+
+                return {
+                    id: s.id,
+                    fileName: attr.fileName || '',
+                    fileSize: attr.fileSize || 0,
+                    url,
+                    state: attr.assetDeliveryState?.state || 'UNKNOWN',
+                };
+            });
+
             results.push({
                 deviceType,
-                count: screenshots.data?.length || 0,
+                count: screenshots.length,
+                screenshots,
             });
         }
 
@@ -372,6 +410,7 @@ export interface ASCSubscription {
     state: string;
     groupId: string;
     groupName?: string;
+    subscriptionPeriod: string | null;
 }
 
 export async function getSubscriptionGroups(
@@ -415,6 +454,7 @@ export async function getSubscriptions(
             state: sub.attributes?.state || 'UNKNOWN',
             groupId,
             groupName,
+            subscriptionPeriod: sub.attributes?.subscriptionPeriod || null,
         }));
     } catch {
         return [];
@@ -519,6 +559,216 @@ export async function getAgeRatingDeclaration(
             unrestrictedWebAccess: attr.unrestrictedWebAccess || false,
             kidsAgeBand: attr.kidsAgeBand || null,
             seventeenPlus: attr.seventeenPlus || false,
+        };
+    } catch {
+        return null;
+    }
+}
+
+// ─── App Previews (Videos) ───────────────────────────────────────────────
+
+export interface ASCAppPreview {
+    id: string;
+    fileName: string;
+    fileSize: number;
+    url: string | null;
+    previewFrameTimeCode: string | null;
+    mimeType: string | null;
+    state: string;
+}
+
+export interface ASCAppPreviewStatus {
+    deviceType: string;
+    count: number;
+    previews: ASCAppPreview[];
+}
+
+export async function getAppPreviewStatus(
+    credentials: ASCCredentials,
+    versionId: string,
+): Promise<ASCAppPreviewStatus[]> {
+    try {
+        // Get localizations for this version
+        const locs = await ascFetch(
+            `/appStoreVersions/${versionId}/appStoreVersionLocalizations`,
+            credentials,
+        );
+
+        if (!locs.data?.length) return [];
+
+        const locId = locs.data[0].id;
+
+        // Get app preview sets
+        const sets = await ascFetch(
+            `/appStoreVersionLocalizations/${locId}/appPreviewSets`,
+            credentials,
+        );
+
+        if (!sets.data?.length) return [];
+
+        const results: ASCAppPreviewStatus[] = [];
+        for (const set of sets.data) {
+            const deviceType = set.attributes?.previewType || 'UNKNOWN';
+
+            // Get previews in this set
+            const previewsResp = await ascFetch(
+                `/appPreviewSets/${set.id}/appPreviews`,
+                credentials,
+            );
+
+            const previews: ASCAppPreview[] = (previewsResp.data || []).map((p: any) => {
+                const attr = p.attributes || {};
+                const videoAsset = attr.videoAsset || {};
+
+                let url: string | null = null;
+                if (videoAsset.templateUrl) {
+                    url = videoAsset.templateUrl
+                        .replace('{w}', videoAsset.width || '0')
+                        .replace('{h}', videoAsset.height || '0')
+                        .replace('{f}', 'm3u8');
+                }
+
+                return {
+                    id: p.id,
+                    fileName: attr.fileName || '',
+                    fileSize: attr.fileSize || 0,
+                    url,
+                    previewFrameTimeCode: attr.previewFrameTimeCode || null,
+                    mimeType: attr.mimeType || null,
+                    state: attr.assetDeliveryState?.state || 'UNKNOWN',
+                };
+            });
+
+            results.push({
+                deviceType,
+                count: previews.length,
+                previews,
+            });
+        }
+
+        return results;
+    } catch {
+        return [];
+    }
+}
+
+// ─── Content Rights ──────────────────────────────────────────────────────
+
+export interface ASCContentRights {
+    usesThirdPartyContent: boolean;
+    hasRightsToContent: boolean;
+}
+
+export async function getContentRights(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<ASCContentRights | null> {
+    try {
+        const data = await ascFetch(
+            `/apps/${appId}?fields[apps]=contentRightsDeclaration`,
+            credentials,
+        );
+
+        if (!data.data?.attributes) return null;
+
+        const attr = data.data.attributes;
+        return {
+            usesThirdPartyContent: attr.contentRightsDeclaration === 'USES_THIRD_PARTY_CONTENT',
+            hasRightsToContent: attr.contentRightsDeclaration === 'DOES_NOT_USE_THIRD_PARTY_CONTENT' ||
+                attr.contentRightsDeclaration === 'USES_THIRD_PARTY_CONTENT',
+        };
+    } catch {
+        return null;
+    }
+}
+
+// ─── IAP Localization ────────────────────────────────────────────────────
+
+export interface ASCIAPLocalization {
+    iapId: string;
+    locale: string;
+    displayName: string;
+    description: string;
+}
+
+export async function getIAPLocalizations(
+    credentials: ASCCredentials,
+    iapId: string,
+): Promise<ASCIAPLocalization[]> {
+    try {
+        const data = await ascFetch(
+            `/inAppPurchases/${iapId}/inAppPurchaseLocalizations`,
+            credentials,
+        );
+
+        if (!data.data?.length) return [];
+
+        return data.data.map((loc: any) => ({
+            iapId,
+            locale: loc.attributes?.locale || 'en-US',
+            displayName: loc.attributes?.name || '',
+            description: loc.attributes?.description || '',
+        }));
+    } catch {
+        return [];
+    }
+}
+
+// ─── Subscription Localization ───────────────────────────────────────────
+
+export interface ASCSubscriptionLocalization {
+    subscriptionId: string;
+    locale: string;
+    displayName: string;
+    description: string;
+}
+
+export async function getSubscriptionLocalizations(
+    credentials: ASCCredentials,
+    subscriptionId: string,
+): Promise<ASCSubscriptionLocalization[]> {
+    try {
+        const data = await ascFetch(
+            `/subscriptions/${subscriptionId}/subscriptionLocalizations`,
+            credentials,
+        );
+
+        if (!data.data?.length) return [];
+
+        return data.data.map((loc: any) => ({
+            subscriptionId,
+            locale: loc.attributes?.locale || 'en-US',
+            displayName: loc.attributes?.name || '',
+            description: loc.attributes?.description || '',
+        }));
+    } catch {
+        return [];
+    }
+}
+
+// ─── App Availability & Pricing ──────────────────────────────────────────
+
+export interface ASCAppAvailability {
+    availableInNewTerritories: boolean;
+    territoryCount: number;
+}
+
+export async function getAppAvailability(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<ASCAppAvailability | null> {
+    try {
+        const data = await ascFetch(
+            `/apps/${appId}/appAvailabilityV2`,
+            credentials,
+        );
+
+        if (!data.data) return null;
+
+        const attr = data.data.attributes || {};
+        return {
+            availableInNewTerritories: attr.availableInNewTerritories || false,
+            territoryCount: 0, // Would need separate territories fetch
         };
     } catch {
         return null;
