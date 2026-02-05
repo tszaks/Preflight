@@ -31,7 +31,10 @@ export class DashboardView {
     ) { }
 
     private getSections(): SectionStatus[] {
-        const screenshotCount = this.filesToUpload.filter(f => f.type === 'screenshot').length
+        // Count local files + ASC screenshots
+        const localScreenshots = this.filesToUpload.filter(f => f.type === 'screenshot').length
+        const ascScreenshots = this.state.screenshots?.reduce((sum, s) => sum + s.count, 0) || 0
+        const screenshotCount = localScreenshots > 0 ? localScreenshots : ascScreenshots
         const hasAppDetails = !!(this.state.appName && this.state.description)
         const hasCompliance = !!this.state.compliance
 
@@ -48,7 +51,11 @@ export class DashboardView {
                 id: 'screenshots',
                 name: 'Screenshots',
                 complete: screenshotCount > 0,
-                summary: screenshotCount > 0 ? `${screenshotCount} images ready` : 'Add app screenshots',
+                summary: screenshotCount > 0
+                    ? (ascScreenshots > 0 && localScreenshots === 0
+                        ? `${ascScreenshots} in App Store Connect ✓`
+                        : `${localScreenshots} images ready`)
+                    : 'Add app screenshots',
                 required: false,
                 stepNumber: 2,
             },
