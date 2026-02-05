@@ -936,7 +936,7 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
 export async function collectCompliance(
     defaults?: Partial<ComplianceData>,
     ascAgeRating?: { rating: string | null; gambling: boolean; unrestrictedWebAccess: boolean; kidsAgeBand: string | null; seventeenPlus: boolean },
-    ascPrivacyStatus?: { configured: boolean; updateDate: string | null }
+    ascPrivacyStatus?: { configured: boolean; privacyPolicyUrl: string | null }
 ): Promise<ComplianceData | null> {
     // Track completion of each phase
     const state: {
