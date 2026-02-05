@@ -5,8 +5,11 @@
  * App Store rejection reasons that developers often miss.
  *
  * When developers explicitly confirm feature presence/absence, confidence
- * increases dramatically (30 → 90+), allowing severity to be upgraded
+ * increases dramatically (30 -> 90+), allowing severity to be upgraded
  * through the confidence-severity capping system.
+ *
+ * Auto-detected signals (from binary/entitlements/plist) further boost
+ * confidence when they corroborate user answers or stand alone.
  */
 
 import type { CheckResult } from '../types';
@@ -19,6 +22,17 @@ export interface ConditionalWarningsInput {
     // Explicit feature confirmations (null = not asked, true = exists, false = missing)
     has_account_deletion?: boolean | null;
     has_restore_purchases?: boolean | null;
+    // Self-report fields
+    subscription_terms_on_paywall?: boolean | null;
+    has_health_disclaimers?: boolean | null;
+    // Auto-detected signals (from binary/entitlements/plist)
+    detected_healthkit?: boolean;
+    detected_background_location?: boolean;
+    detected_sign_in_with_apple?: boolean;
+    detected_push_notifications?: boolean;
+    detected_vpn?: boolean;
+    detected_apple_pay?: boolean;
+    category?: string | null;
 }
 
 /**
@@ -28,11 +42,16 @@ export interface ConditionalWarningsInput {
  * 1. Account Deletion (Guideline 5.1.1) - Required if app has sign-in
  * 2. Restore Purchases (Guideline 3.1.1) - Required if app has IAP/subscriptions
  * 3. Sign in with Apple (Guideline 4.8) - Required if app has third-party login
+ * 4. Subscription terms (Guideline 3.1.2) - Required if app has subscriptions
+ * 5. HealthKit disclaimers (Guideline 1.4.1) - Required if app uses HealthKit
+ * 6. Background location justification (Guideline 2.5.4)
+ * 7. Category-specific scrutiny (Finance, Medical)
+ * 8. VPN additional review scrutiny
  *
  * Severity Logic (with explicit confirmations):
- * - Developer confirmed feature EXISTS (true)  → severity: 'pass' (verified)
- * - Developer confirmed feature MISSING (false) → severity: 'critical', confidence: 90
- * - Not asked / unknown (null)                  → severity: 'info', confidence: 30 (reminder only)
+ * - Developer confirmed feature EXISTS (true)  -> severity: 'pass' (verified)
+ * - Developer confirmed feature MISSING (false) -> severity: 'critical', confidence: 90
+ * - Not asked / unknown (null)                  -> severity: 'info', confidence: 30 (reminder only)
  */
 export function checkConditionalWarnings(input: ConditionalWarningsInput): CheckResult[] {
     const results: CheckResult[] = [];
@@ -42,7 +61,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
     // This became mandatory June 30, 2022
     if (input.sign_in_required) {
         if (input.has_account_deletion === true) {
-            // Developer confirmed the feature exists — pass
+            // Developer confirmed the feature exists - pass
             results.push({
                 category: 'content_policy',
                 severity: 'pass',
@@ -54,7 +73,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 confidence: 100,
             });
         } else if (input.has_account_deletion === false) {
-            // Developer confirmed the feature is MISSING — critical (high confidence)
+            // Developer confirmed the feature is MISSING - critical (high confidence)
             results.push({
                 category: 'content_policy',
                 severity: 'critical',
@@ -71,7 +90,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 confidence: 90,
             });
         } else {
-            // Not asked / unknown — low confidence reminder
+            // Not asked / unknown - low confidence reminder
             results.push({
                 category: 'content_policy',
                 severity: 'info',
@@ -79,7 +98,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 description:
                     'Your app requires sign-in, which means Apple requires you to provide a way for users ' +
                     'to delete their account from within the app. This has been a mandatory requirement since ' +
-                    'June 30, 2022. PreFlight cannot verify this from your submission files — please confirm ' +
+                    'June 30, 2022. PreFlight cannot verify this from your submission files -- please confirm ' +
                     'this feature exists in your app before submitting.',
                 guideline_ref: '5.1.1',
                 fix_suggestion:
@@ -96,7 +115,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
     // Apple Guideline 3.1.1: Apps with IAP must include a "Restore Purchases" button
     if (input.has_iap || input.has_subscriptions) {
         if (input.has_restore_purchases === true) {
-            // Developer confirmed the feature exists — pass
+            // Developer confirmed the feature exists - pass
             results.push({
                 category: 'content_policy',
                 severity: 'pass',
@@ -108,7 +127,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 confidence: 100,
             });
         } else if (input.has_restore_purchases === false) {
-            // Developer confirmed the feature is MISSING — critical (high confidence)
+            // Developer confirmed the feature is MISSING - critical (high confidence)
             results.push({
                 category: 'content_policy',
                 severity: 'critical',
@@ -125,7 +144,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 confidence: 90,
             });
         } else {
-            // Not asked / unknown — low confidence reminder
+            // Not asked / unknown - low confidence reminder
             results.push({
                 category: 'content_policy',
                 severity: 'info',
@@ -134,7 +153,7 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                     'Your app has in-app purchases or subscriptions. Apple requires a clearly visible ' +
                     '"Restore Purchases" button that allows users to restore previously purchased content ' +
                     'when they reinstall the app or switch devices. PreFlight cannot verify this from your ' +
-                    'submission files — please confirm this feature exists in your app before submitting.',
+                    'submission files -- please confirm this feature exists in your app before submitting.',
                 guideline_ref: '3.1.1',
                 fix_suggestion:
                     'Ensure your app has a "Restore Purchases" button in settings, subscription screen, ' +
@@ -147,42 +166,213 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
 
     // === 3. Subscription-specific warnings ===
     if (input.has_subscriptions) {
-        results.push({
-            category: 'content_policy',
-            severity: 'warning',
-            title: 'Subscription terms must be clearly displayed',
-            description:
-                'Apps with auto-renewable subscriptions must clearly display subscription terms ' +
-                'including price, duration, and that payment will be charged to iTunes Account. ' +
-                'Cancellation and renewal information must also be visible.',
-            guideline_ref: '3.1.2',
-            fix_suggestion:
-                'On your paywall/subscription screen, display: (1) Price per period, ' +
-                '(2) Subscription duration, (3) "Payment will be charged to your Apple ID account", ' +
-                '(4) "Subscription automatically renews unless canceled at least 24 hours before the end of the current period", ' +
-                '(5) Link to Terms of Service and Privacy Policy.',
-            confidence: 50,
-        });
+        if (input.subscription_terms_on_paywall === true) {
+            results.push({
+                category: 'content_policy',
+                severity: 'pass',
+                title: 'Subscription terms displayed on paywall',
+                description:
+                    'You confirmed subscription terms are displayed on your paywall, as required by Apple Guideline 3.1.2.',
+                guideline_ref: '3.1.2',
+                confidence: 100,
+            });
+        } else if (input.subscription_terms_on_paywall === false) {
+            results.push({
+                category: 'content_policy',
+                severity: 'critical',
+                title: 'Subscription terms missing from paywall',
+                description:
+                    'You indicated subscription terms are NOT displayed on your paywall. Apple requires all apps ' +
+                    'with auto-renewable subscriptions to clearly display terms including price, duration, and ' +
+                    'that payment will be charged to iTunes Account.',
+                guideline_ref: '3.1.2',
+                fix_suggestion:
+                    'On your paywall/subscription screen, display: (1) Price per period, ' +
+                    '(2) Subscription duration, (3) "Payment will be charged to your Apple ID account", ' +
+                    '(4) "Subscription automatically renews unless canceled at least 24 hours before the end of the current period", ' +
+                    '(5) Link to Terms of Service and Privacy Policy.',
+                confidence: 90,
+            });
+        } else {
+            results.push({
+                category: 'content_policy',
+                severity: 'warning',
+                title: 'Subscription terms must be clearly displayed',
+                description:
+                    'Apps with auto-renewable subscriptions must clearly display subscription terms ' +
+                    'including price, duration, and that payment will be charged to iTunes Account. ' +
+                    'Cancellation and renewal information must also be visible.',
+                guideline_ref: '3.1.2',
+                fix_suggestion:
+                    'On your paywall/subscription screen, display: (1) Price per period, ' +
+                    '(2) Subscription duration, (3) "Payment will be charged to your Apple ID account", ' +
+                    '(4) "Subscription automatically renews unless canceled at least 24 hours before the end of the current period", ' +
+                    '(5) Link to Terms of Service and Privacy Policy.',
+                confidence: 50,
+            });
+        }
     }
 
     // === 4. Sign in with Apple Requirement ===
     // Apple Guideline 4.8: If you offer third-party login (Google, Facebook, etc.),
     // you MUST also offer Sign in with Apple as an option
     if (input.has_third_party_login) {
+        // Confidence boost: if we detected SIWA framework is absent, this is near-certain
+        const siwaDetected = input.detected_sign_in_with_apple === true;
+
+        if (siwaDetected) {
+            // Third-party login + SIWA framework present = likely compliant
+            results.push({
+                category: 'content_policy',
+                severity: 'info',
+                title: 'Sign in with Apple framework detected alongside third-party login',
+                description:
+                    'Your app uses third-party login and AuthenticationServices framework was detected, ' +
+                    'which likely includes Sign in with Apple. Ensure the SIWA button is equally prominent ' +
+                    'as other login options.',
+                guideline_ref: '4.8',
+                confidence: 85,
+            });
+        } else {
+            // Third-party login + no SIWA framework = high confidence warning
+            results.push({
+                category: 'content_policy',
+                severity: 'critical',
+                title: 'Sign in with Apple likely missing',
+                description:
+                    'Your app uses third-party login services but the AuthenticationServices framework ' +
+                    'was not detected in the binary. Apple requires Sign in with Apple as an equally ' +
+                    'prominent option when offering third-party login (Guideline 4.8). ' +
+                    'This is a common rejection reason.',
+                guideline_ref: '4.8',
+                fix_suggestion:
+                    'Add Sign in with Apple button alongside your other social login options. ' +
+                    'It must be the same size and prominence as other login buttons. ' +
+                    'Use Apple\'s official Sign in with Apple button assets and follow their HIG.',
+                // Binary evidence of missing SIWA = high confidence (vs. 40 before)
+                confidence: 90,
+            });
+        }
+    }
+
+    // === 5. HealthKit + No Disclaimers ===
+    // Guideline 1.4.1: Apps using HealthKit must provide health disclaimers
+    if (input.detected_healthkit) {
+        if (input.has_health_disclaimers === true) {
+            results.push({
+                category: 'content_policy',
+                severity: 'pass',
+                title: 'Health disclaimers confirmed',
+                description:
+                    'HealthKit was detected in your app and you confirmed health disclaimers are present. ' +
+                    'Ensure disclaimers are visible before any health data is displayed.',
+                guideline_ref: '1.4.1',
+                confidence: 95,
+            });
+        } else if (input.has_health_disclaimers === false) {
+            results.push({
+                category: 'content_policy',
+                severity: 'critical',
+                title: 'HealthKit detected but health disclaimers missing',
+                description:
+                    'Your app uses HealthKit but you indicated health disclaimers are missing. ' +
+                    'Apple requires apps using health data to clearly state that the app is not intended ' +
+                    'to replace professional medical advice, diagnosis, or treatment.',
+                guideline_ref: '1.4.1',
+                fix_suggestion:
+                    'Add a health disclaimer stating: "This app is not intended to be a substitute for ' +
+                    'professional medical advice, diagnosis, or treatment." Display it before showing ' +
+                    'any health data and include it in your Terms of Service.',
+                confidence: 95,
+            });
+        } else {
+            // Not asked yet - reminder
+            results.push({
+                category: 'content_policy',
+                severity: 'warning',
+                title: 'HealthKit detected - verify health disclaimers exist',
+                description:
+                    'HealthKit framework was detected in your app binary. Apple requires apps that use health ' +
+                    'data to include appropriate disclaimers stating the app is not a replacement for ' +
+                    'professional medical advice (Guideline 1.4.1).',
+                guideline_ref: '1.4.1',
+                fix_suggestion:
+                    'Add a health disclaimer before displaying any health data. Include it in your ' +
+                    'Terms of Service as well.',
+                confidence: 70,
+            });
+        }
+    }
+
+    // === 6. Background Location Justification ===
+    // Guideline 2.5.4: Background location requires justification
+    if (input.detected_background_location) {
         results.push({
             category: 'content_policy',
-            severity: 'critical',
-            title: 'Sign in with Apple required',
+            severity: 'warning',
+            title: 'Background location detected - justification required',
             description:
-                'Your app uses third-party login services (like Google, Facebook, or Twitter). ' +
-                'Apple requires that you also offer Sign in with Apple as an equally prominent option. ' +
-                'This is a mandatory requirement since April 2020 and a common rejection reason.',
-            guideline_ref: '4.8',
+                'Your app declares background location in UIBackgroundModes. Apple requires a clear ' +
+                'justification for continuous background location access. Apps that use background location ' +
+                'without a compelling reason are frequently rejected.',
+            guideline_ref: '2.5.4',
             fix_suggestion:
-                'Add Sign in with Apple button alongside your other social login options. ' +
-                'It must be the same size and prominence as other login buttons. ' +
-                'Use Apple\'s official Sign in with Apple button assets and follow their HIG.',
-            confidence: 40,
+                'In your App Store review notes, explain specifically why your app needs background location. ' +
+                'Valid reasons: turn-by-turn navigation, fitness tracking during workouts, location-based ' +
+                'reminders. Apple will reject apps that use background location for analytics or advertising.',
+            confidence: 90,
+        });
+    }
+
+    // === 7. Category-Specific Warnings ===
+    if (input.category) {
+        const lowerCategory = input.category.toLowerCase();
+
+        if (lowerCategory.includes('finance') || lowerCategory.includes('banking')) {
+            results.push({
+                category: 'content_policy',
+                severity: 'info',
+                title: 'Finance category: additional privacy scrutiny expected',
+                description:
+                    'Finance and banking apps receive enhanced privacy review from Apple. Ensure your app ' +
+                    'clearly explains all data collection, has a comprehensive privacy policy, and uses ' +
+                    'appropriate encryption for financial data.',
+                guideline_ref: '5.1',
+                confidence: 80,
+            });
+        }
+
+        if (lowerCategory.includes('medical') || lowerCategory.includes('health')) {
+            results.push({
+                category: 'content_policy',
+                severity: 'info',
+                title: 'Health/Medical category: additional compliance requirements',
+                description:
+                    'Health and medical apps face stricter review. Ensure all health claims are substantiated, ' +
+                    'include appropriate disclaimers, and comply with applicable regulations (HIPAA in the US, ' +
+                    'GDPR health data provisions in the EU).',
+                guideline_ref: '1.4',
+                confidence: 80,
+            });
+        }
+    }
+
+    // === 8. VPN Additional Scrutiny ===
+    if (input.detected_vpn) {
+        results.push({
+            category: 'content_policy',
+            severity: 'info',
+            title: 'VPN capability detected - expect extended review',
+            description:
+                'Your app uses the VPN API entitlement. VPN apps undergo additional review scrutiny from Apple. ' +
+                'Ensure your app has a clear and comprehensive privacy policy explaining how network traffic ' +
+                'is handled, what data is logged, and your data retention policy.',
+            guideline_ref: '5.4',
+            fix_suggestion:
+                'Include a detailed privacy policy explaining: (1) What traffic data is logged, ' +
+                '(2) Data retention periods, (3) Third-party data sharing policies, ' +
+                '(4) Jurisdiction of data storage. Link this in both your app and App Store listing.',
+            confidence: 90,
         });
     }
 

@@ -80,6 +80,14 @@ export interface HardRulesInput {
     eu_trader_declared?: boolean | null;
     has_external_payment_link?: boolean | null;
     external_link_compliant?: boolean | null;
+
+    // === Auto-Detected Signals (from binary/entitlements/plist) ===
+    detected_healthkit?: boolean;
+    detected_background_location?: boolean;
+    detected_sign_in_with_apple?: boolean;
+    detected_push_notifications?: boolean;
+    detected_vpn?: boolean;
+    detected_apple_pay?: boolean;
 }
 
 /**
