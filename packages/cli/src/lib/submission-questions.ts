@@ -794,7 +794,7 @@ export async function collectFeatureChecklist(
     // Auto-populate features from binary detection
     const binaryPrefilled: string[] = []
     if (binaryDetections) {
-        for (const [key, evidence] of Object.entries(binaryDetections)) {
+        for (const key of Object.keys(binaryDetections)) {
             if (!ascPrefilled.includes(key)) {
                 binaryPrefilled.push(key)
                 ui.log.success(`${FEATURE_ITEMS.find(f => f.value === key)?.label || key} (detected from binary)`)

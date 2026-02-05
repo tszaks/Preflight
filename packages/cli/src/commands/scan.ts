@@ -10,7 +10,6 @@ import * as ui from '../ui/interactive.js'
 import { ok, okBold, critical, criticalBold, warning, warningBold, info, subtext, brand, icons, muted } from '../ui/theme.js'
 import { runHardRules } from '@preflight/shared/engine/hard-rules/index'
 import { autoDetect } from '@preflight/shared/engine/auto-detect/index'
-import type { AutoDetectResult, DetectionSource } from '@preflight/shared/engine/auto-detect/index'
 import type { CheckResult, ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
 
 /** Question labels for unresolved fields */
