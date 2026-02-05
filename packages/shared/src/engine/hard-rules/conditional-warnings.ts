@@ -90,19 +90,6 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
             });
         }
 
-        results.push({
-            category: 'content_policy',
-            severity: 'info',
-            title: 'Demo credentials provided for review',
-            description:
-                'Since your app requires sign-in, make sure your demo credentials work and the ' +
-                'test account has access to all features the reviewer needs to evaluate.',
-            guideline_ref: '2.1',
-            fix_suggestion:
-                'Test your demo credentials before submission. Ensure the account is not expired, ' +
-                'has premium features unlocked if applicable, and contains sample data to review.',
-            confidence: 100,
-        });
     }
 
     // === 2. Restore Purchases Requirement ===
