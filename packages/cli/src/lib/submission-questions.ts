@@ -153,6 +153,12 @@ const FEATURE_ITEMS = [
     { value: 'externalPayments' as const, label: 'External Payment Links (US)', hint: 'Links to pay outside Apple' },
 ]
 
+/** Map auto-detection fields to feature checklist values */
+export interface BinaryDetections {
+    /** Maps feature checklist value (e.g. 'thirdPartyLogin') to evidence string */
+    [featureKey: string]: string
+}
+
 // ─── Age Rating Calculation (ported from web AgeRating.tsx) ──────────────
 
 export function calculateAgeRating(answers: AgeRatingAnswers): string {
@@ -769,7 +775,8 @@ export async function collectPrivacyData(): Promise<PrivacyDeclarations | null> 
 // ─── Collect Feature Checklist ───────────────────────────────────────────
 
 export async function collectFeatureChecklist(
-    ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean }
+    ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean },
+    binaryDetections?: BinaryDetections,
 ): Promise<FeatureChecklist | null> {
     ui.log.step(subtext('Step 3 of 3: Features'))
 
@@ -784,8 +791,28 @@ export async function collectFeatureChecklist(
         ui.log.success('Pay to Unlock Features (from ASC)')
     }
 
-    let selectedFeatures: string[] = [...ascPrefilled]
+    // Auto-populate features from binary detection
+    const binaryPrefilled: string[] = []
+    if (binaryDetections) {
+        for (const [key, evidence] of Object.entries(binaryDetections)) {
+            if (!ascPrefilled.includes(key)) {
+                binaryPrefilled.push(key)
+                ui.log.success(`${FEATURE_ITEMS.find(f => f.value === key)?.label || key} (detected from binary)`)
+            }
+        }
+    }
+
+    let selectedFeatures: string[] = [...ascPrefilled, ...binaryPrefilled]
     let checklist: FeatureChecklist | null = null
+
+    // Build feature items with detection labels
+    const featureItemsWithDetections = FEATURE_ITEMS.map(item => {
+        const detected = binaryDetections?.[item.value]
+        if (detected) {
+            return { ...item, hint: `${item.hint} (detected from binary)` }
+        }
+        return item
+    })
 
     // Helper to build object
     const buildChecklist = (features: string[]): FeatureChecklist => ({
@@ -831,7 +858,7 @@ export async function collectFeatureChecklist(
             case 'select': {
                 const result = await ui.multiselect<string>({
                     message: 'Which features does your app include? (Space to select, Enter to confirm)',
-                    options: FEATURE_ITEMS,
+                    options: featureItemsWithDetections,
                     initialValue: selectedFeatures,
                 })
                 if (result === null) {
@@ -950,7 +977,8 @@ export async function collectCompliance(
     defaults?: Partial<ComplianceData>,
     ascAgeRating?: { rating: string | null; gambling: boolean; unrestrictedWebAccess: boolean; kidsAgeBand: string | null; seventeenPlus: boolean },
     ascPrivacyStatus?: { configured: boolean; privacyPolicyUrl: string | null },
-    ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean }
+    ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean },
+    binaryDetections?: BinaryDetections,
 ): Promise<ComplianceData | null> {
     // Track completion of each phase
     const state: {
@@ -1059,7 +1087,7 @@ export async function collectCompliance(
                 console.log()
                 break
             case 'features':
-                const featuresResult = await collectFeatureChecklist(ascMonetization)
+                const featuresResult = await collectFeatureChecklist(ascMonetization, binaryDetections)
                 if (featuresResult !== null) state.checklist = featuresResult
                 console.log()
                 break

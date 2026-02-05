@@ -178,6 +178,7 @@ export async function runHardRules(
 
     // Check 8: Conditional Warnings (96-100%) - Form-field based warnings
     // These check for common rejection reasons based on app characteristics
+    // Includes auto-detected signals from binary/entitlements/plist
     const conditionalChecks = checkConditionalWarnings({
         sign_in_required: input.sign_in_required,
         has_iap: input.has_iap,
@@ -185,6 +186,15 @@ export async function runHardRules(
         has_third_party_login: input.has_third_party_login,
         has_account_deletion: input.has_account_deletion,
         has_restore_purchases: input.has_restore_purchases,
+        subscription_terms_on_paywall: input.subscription_terms_on_paywall,
+        has_health_disclaimers: input.has_health_disclaimers,
+        detected_healthkit: input.detected_healthkit,
+        detected_background_location: input.detected_background_location,
+        detected_sign_in_with_apple: input.detected_sign_in_with_apple,
+        detected_push_notifications: input.detected_push_notifications,
+        detected_vpn: input.detected_vpn,
+        detected_apple_pay: input.detected_apple_pay,
+        category: input.category,
     });
     checks.push(...conditionalChecks);
     emit(createProgressEvent('check_complete', `Found ${conditionalChecks.length} compliance reminders`, 100, {

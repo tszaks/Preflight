@@ -9,7 +9,20 @@ import { getImageDimensions } from '../lib/image-dimensions.js'
 import * as ui from '../ui/interactive.js'
 import { ok, okBold, critical, criticalBold, warning, warningBold, info, subtext, brand, icons, muted } from '../ui/theme.js'
 import { runHardRules } from '@preflight/shared/engine/hard-rules/index'
+import { autoDetect } from '@preflight/shared/engine/auto-detect/index'
+import type { AutoDetectResult, DetectionSource } from '@preflight/shared/engine/auto-detect/index'
 import type { CheckResult, ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
+
+/** Question labels for unresolved fields */
+const UNRESOLVED_QUESTIONS: Record<string, { message: string; defaultValue: boolean }> = {
+    sign_in_required: { message: 'Does your app require sign-in?', defaultValue: false },
+    has_subscriptions: { message: 'Does your app have subscriptions?', defaultValue: false },
+    has_iap: { message: 'Does your app have in-app purchases?', defaultValue: false },
+    has_account_deletion: { message: 'Does your app have an account deletion button?', defaultValue: true },
+    has_restore_purchases: { message: 'Does your app have a "Restore Purchases" button?', defaultValue: true },
+    subscription_terms_on_paywall: { message: 'Are subscription terms displayed on your paywall?', defaultValue: true },
+    has_health_disclaimers: { message: 'Does your app include health disclaimers?', defaultValue: true },
+}
 
 export async function scanCommand(path?: string) {
     // Interactive mode: no path provided
@@ -71,6 +84,95 @@ export async function scanCommand(path?: string) {
 
     ui.log.message(lines.join('\n'))
 
+    // === Read file contents for analysis & auto-detection ===
+    let plistContent: string | undefined
+    if (detected.infoPlist) {
+        try {
+            plistContent = readFileSync(detected.infoPlist, 'utf-8')
+        } catch { /* skip if unreadable */ }
+    }
+
+    let manifestContent: string | undefined
+    if (detected.privacyManifest) {
+        try {
+            manifestContent = readFileSync(detected.privacyManifest, 'utf-8')
+        } catch { /* skip if unreadable */ }
+    }
+
+    // === Extract IPA data for auto-detection (if IPA found) ===
+    let ipaBuffer: ArrayBuffer | undefined
+    let ipaFrameworks: string[] = []
+    let ipaEntitlements: string | undefined
+    let ipaImportedSymbols: string[] | undefined
+
+    if (detected.ipa) {
+        s.start('Analyzing IPA binary...')
+        try {
+            const ipaData = readFileSync(detected.ipa)
+            // Check size guard (500 MB)
+            if (ipaData.byteLength > 500 * 1024 * 1024) {
+                s.stop('IPA too large for analysis (>500 MB), skipping binary detection')
+            } else {
+                ipaBuffer = ipaData.buffer.slice(ipaData.byteOffset, ipaData.byteOffset + ipaData.byteLength)
+                // Quick extraction for auto-detection (full scan runs later in hard rules)
+                const { extractIPA } = await import('@preflight/shared/engine/ipa-scanner/extract')
+                const extracted = await extractIPA(ipaBuffer)
+                ipaFrameworks = extracted.frameworks
+                ipaEntitlements = extracted.entitlements
+
+                // Try Mach-O for imported symbols (best-effort)
+                if (extracted.zip && extracted.appDir && extracted.bundleName) {
+                    try {
+                        const { analyzeMachOFromIPA } = await import('@preflight/shared/engine/ipa-scanner/macho/index')
+                        const machoResult = await analyzeMachOFromIPA(
+                            extracted.zip, extracted.appDir, extracted.bundleName
+                        )
+                        ipaImportedSymbols = machoResult.metadata.importedSymbols
+                    } catch { /* Mach-O analysis is optional for auto-detect */ }
+                }
+
+                s.stop(`IPA analyzed: ${ipaFrameworks.length} frameworks detected`)
+            }
+        } catch {
+            s.stop('Could not read IPA file')
+        }
+    }
+
+    // === Run auto-detection ===
+    const detectResult = autoDetect({
+        ipa: (ipaFrameworks.length > 0 || ipaEntitlements) ? {
+            frameworks: ipaFrameworks,
+            entitlements: ipaEntitlements,
+            importedSymbols: ipaImportedSymbols,
+        } : undefined,
+        plistContent,
+        // ASC data would go here when connected
+    })
+
+    // === Display auto-detected findings ===
+    const displayableDetections = detectResult.detections.filter(
+        d => typeof d.value === 'boolean' ? d.value === true : true
+    )
+
+    if (displayableDetections.length > 0) {
+        const autoLines: string[] = []
+        autoLines.push(chalk.bold('Auto-detected'))
+
+        for (const d of displayableDetections) {
+            const sourceLabel = formatSourceLabel(d.source)
+            autoLines.push(`  ${ok(icons.check)} ${d.evidence} ${subtext(`(${sourceLabel})`)}`)
+        }
+
+        ui.log.message(autoLines.join('\n'))
+    }
+
+    // ASC tip if not connected
+    if (!detectResult.detections.some(d => d.source === 'asc')) {
+        ui.log.message(
+            `  ${subtext(`Tip: Connect App Store Connect for more auto-detection (${brand('preflight asc')})`)}`
+        )
+    }
+
     // === Collect minimal metadata from user ===
     const detectedName = detected.projectName || basename(dir)
 
@@ -87,27 +189,61 @@ export async function scanCommand(path?: string) {
     })
     const description = descriptionResult || undefined
 
-    const hasSubscriptions = await ui.confirm('Does your app have subscriptions?', false)
-    const hasIap = await ui.confirm('Does your app have in-app purchases?', false)
-    const signInRequired = await ui.confirm('Does your app require sign-in?', false)
+    // === Two-phase questioning: core fields first, then follow-ups ===
+    const userAnswers: Record<string, boolean> = {}
+
+    // Phase 1: Ask core unresolved questions (sign-in, subscriptions, IAP)
+    const coreFields = detectResult.unresolved.filter(
+        f => ['sign_in_required', 'has_subscriptions', 'has_iap'].includes(f)
+    )
+    const initialFollowUps = detectResult.unresolved.filter(
+        f => !['sign_in_required', 'has_subscriptions', 'has_iap'].includes(f)
+    )
+
+    const hasQuestions = coreFields.length > 0 || initialFollowUps.length > 0
+    if (hasQuestions) {
+        ui.log.message(chalk.bold('Confirming a few things'))
+    }
+
+    for (const field of coreFields) {
+        const question = UNRESOLVED_QUESTIONS[field]
+        if (question) {
+            const answer = await ui.confirm(question.message, question.defaultValue)
+            userAnswers[field] = answer ?? question.defaultValue
+        }
+    }
+
+    // Phase 2: Compute follow-up questions based on combined detected + answered data
+    const resolvedSignIn = detectResult.fields.sign_in_required ?? userAnswers.sign_in_required ?? false
+    const resolvedSubscriptions = detectResult.fields.has_subscriptions ?? userAnswers.has_subscriptions ?? false
+    const resolvedIAP = detectResult.fields.has_iap ?? userAnswers.has_iap ?? false
+    const resolvedHealthKit = detectResult.fields.detected_healthkit ?? false
+
+    const followUpFields: string[] = [...initialFollowUps]
+
+    if (resolvedSignIn && !followUpFields.includes('has_account_deletion')) {
+        followUpFields.push('has_account_deletion')
+    }
+    if ((resolvedIAP || resolvedSubscriptions) && !followUpFields.includes('has_restore_purchases')) {
+        followUpFields.push('has_restore_purchases')
+    }
+    if (resolvedSubscriptions && !followUpFields.includes('subscription_terms_on_paywall')) {
+        followUpFields.push('subscription_terms_on_paywall')
+    }
+    if (resolvedHealthKit && !followUpFields.includes('has_health_disclaimers')) {
+        followUpFields.push('has_health_disclaimers')
+    }
+
+    for (const field of followUpFields) {
+        const question = UNRESOLVED_QUESTIONS[field]
+        if (question) {
+            const answer = await ui.confirm(question.message, question.defaultValue)
+            userAnswers[field] = answer ?? question.defaultValue
+        }
+    }
 
     // === Run local hard rules analysis ===
     s.start('Running compliance checks...')
-
-    // Read file contents for analysis
-    let plistContent: string | undefined
-    if (detected.infoPlist) {
-        try {
-            plistContent = readFileSync(detected.infoPlist, 'utf-8')
-        } catch { /* skip if unreadable */ }
-    }
-
-    let manifestContent: string | undefined
-    if (detected.privacyManifest) {
-        try {
-            manifestContent = readFileSync(detected.privacyManifest, 'utf-8')
-        } catch { /* skip if unreadable */ }
-    }
 
     // Build screenshot data with dimensions from local files
     const screenshotData: ScreenshotData[] = []
@@ -126,14 +262,21 @@ export async function scanCommand(path?: string) {
         } catch { /* skip unreadable files */ }
     }
 
-    // Build HardRulesInput with collected metadata
+    // Merge auto-detected fields + user answers into HardRulesInput
     const input: HardRulesInput = {
         app_name: appName,
         description: description ?? null,
         screenshot_paths: detected.screenshots,
-        sign_in_required: signInRequired ?? false,
-        has_iap: hasIap ?? false,
-        has_subscriptions: hasSubscriptions ?? false,
+        // Auto-detected fields (from binary/plist/ASC)
+        ...detectResult.fields,
+        // User answers override auto-detected values
+        ...(userAnswers.sign_in_required !== undefined && { sign_in_required: userAnswers.sign_in_required }),
+        ...(userAnswers.has_subscriptions !== undefined && { has_subscriptions: userAnswers.has_subscriptions }),
+        ...(userAnswers.has_iap !== undefined && { has_iap: userAnswers.has_iap }),
+        ...(userAnswers.has_account_deletion !== undefined && { has_account_deletion: userAnswers.has_account_deletion }),
+        ...(userAnswers.has_restore_purchases !== undefined && { has_restore_purchases: userAnswers.has_restore_purchases }),
+        ...(userAnswers.subscription_terms_on_paywall !== undefined && { subscription_terms_on_paywall: userAnswers.subscription_terms_on_paywall }),
+        ...(userAnswers.has_health_disclaimers !== undefined && { has_health_disclaimers: userAnswers.has_health_disclaimers }),
     }
 
     // Run all hard rules through the unified engine
@@ -141,6 +284,7 @@ export async function scanCommand(path?: string) {
         screenshotData: screenshotData.length > 0 ? screenshotData : undefined,
         manifestContent,
         plistContent,
+        ipaBuffer,
     })
 
     const allChecks = result.checks
@@ -229,5 +373,17 @@ export async function scanCommand(path?: string) {
         await submitCommand(dir, {})
     } else {
         ui.tip(`Run ${brand('preflight submit')} anytime for AI-powered analysis.`)
+    }
+}
+
+/** Format detection source for display */
+function formatSourceLabel(source: string): string {
+    switch (source) {
+        case 'asc': return 'App Store Connect'
+        case 'ipa_framework': return 'Binary'
+        case 'ipa_entitlement': return 'Entitlement'
+        case 'ipa_symbol': return 'Binary'
+        case 'plist': return 'Info.plist'
+        default: return source
     }
 }
