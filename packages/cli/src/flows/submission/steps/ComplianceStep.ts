@@ -6,7 +6,8 @@ export class ComplianceStep implements SubmissionStep {
     name = 'Compliance'
 
     async run(state: DraftState): Promise<StepResult> {
-        const compliance = await collectCompliance(state.compliance)
+        // Pass ASC age rating for auto-population if available
+        const compliance = await collectCompliance(state.compliance, state.ageRating)
 
         if (compliance === null) {
             return { action: 'back' }
