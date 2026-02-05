@@ -583,6 +583,9 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     // ─── Navigation Loop for Submission Flow (Phase 5) ─────────────────────
     // Implements backward navigation while preserving data in DraftState
 
+    // Store detected files in state for display in steps
+    draftState._files = filesToUpload
+
     if (fromMenu) {
         const { SubmissionFlow } = await import('../flows/submission/SubmissionFlow.js')
         const { AscStep } = await import('../flows/submission/steps/AscStep.js')
@@ -832,16 +835,21 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 console.log(subtext(`  Full report: https://preflightlaunch.com/report/${submissionId}`))
                 console.log()
 
+                let copyMessage = ''
+
                 // Loop until user chooses to be done
                 while (true) {
                     const next = await ui.select<'open' | 'copy' | 'done'>({
-                        message: 'What next?',
+                        message: copyMessage ? `What next? ${chalk.green(copyMessage)}` : 'What next?',
                         options: [
                             { value: 'open', label: 'Open full report in browser' },
                             { value: 'copy', label: 'Copy for AI context', hint: 'Optimized for Claude/ChatGPT' },
                             { value: 'done', label: fromMenu ? 'Return to main menu' : 'Done' },
                         ],
                     })
+
+                    // Reset message for next loop
+                    copyMessage = ''
 
                     if (next === 'open') {
                         await openUrl(`https://preflightlaunch.com/report/${submissionId}`)
@@ -851,7 +859,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                             // Use pbcopy on Mac
                             const { execSync } = await import('child_process')
                             execSync('pbcopy', { input: aiText })
-                            ui.log.success('Copied to clipboard!')
+                            copyMessage = '(Copied!)'
                         } catch (err) {
                             ui.log.error('Failed to copy to clipboard (pbcopy not available?)')
                         }
@@ -994,7 +1002,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
 
     flow.addStep('asc', new AscStep())
     flow.addStep('screenshots', new ScreenshotsStep(filesToUpload))
-    flow.addStep('app_details', new AppDetailsStep(projectName))
+    flow.addStep('appDetails', new AppDetailsStep(projectName))
     flow.addStep('compliance', new ComplianceStep())
     flow.addStep('review', new ReviewStep(draftState.appName || projectName, dir, filesToUpload))
 
