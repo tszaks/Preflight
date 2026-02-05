@@ -188,6 +188,12 @@ export function applyThemePatch() {
                 return orangeOpen + char
             })
 
+            // 6. Make Magenta Spinner Orange (User request)
+            // Clack spinner uses \x1b[35m with chars ◒◐◓◑
+            patched = patched.replace(/(\x1b\[35m)([◒◐◓◑])/g, (_match, _color, char) => {
+                return orangeOpen + char
+            })
+
             return originalWrite(patched, ...args)
         }
         return originalWrite(chunk, ...args)
