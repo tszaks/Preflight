@@ -171,8 +171,8 @@ export function applyThemePatch() {
 
             // 3. Make active bar line Orange (often Cyan in Clack)
             // Clack often uses cyan for the active left border of the current step
-            // We look for \x1b[36m│
-            patched = patched.replace(/(\x1b\[36m)([│])/g, (match, color, char) => {
+            // We look for \x1b[36m followed by box chars
+            patched = patched.replace(/(\x1b\[36m)([│┌└├])/g, (_match, _color, char) => {
                 return orangeOpen + char
             })
 
