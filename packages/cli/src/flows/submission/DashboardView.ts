@@ -132,7 +132,7 @@ export class DashboardView {
 
         // Progress indicator - colors match step list (Green=Done, White=Current, Dim=Future)
         const progressBar = sections.map(s => {
-            if (s.complete) return chalk.green('●')
+            if (s.complete) return chalk.green('✓')
             if (nextStep?.id === s.id) return chalk.white('○')
             return chalk.dim('○')
         }).join(' ')
@@ -156,7 +156,7 @@ export class DashboardView {
             let name
             if (section.complete) {
                 // Completed
-                icon = chalk.green('●')
+                icon = chalk.green('✓')
                 name = chalk.green(nameText)
             } else if (isNext) {
                 // Current / Next Step (Active)

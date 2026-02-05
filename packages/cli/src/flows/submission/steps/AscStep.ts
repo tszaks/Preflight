@@ -57,11 +57,11 @@ export class AscStep implements SubmissionStep {
                                     console.log()
                                     console.log(`  ${chalk.dim('Monetization:')}`)
                                     if (result.subscriptionCount !== undefined) {
-                                        const icon = result.subscriptionCount > 0 ? chalk.green('●') : chalk.dim('○')
+                                        const icon = result.subscriptionCount > 0 ? chalk.green('✓') : chalk.dim('○')
                                         console.log(`    ${icon} ${result.subscriptionCount} Subscription${result.subscriptionCount !== 1 ? 's' : ''}`)
                                     }
                                     if (result.iapCount !== undefined) {
-                                        const icon = result.iapCount > 0 ? chalk.green('●') : chalk.dim('○')
+                                        const icon = result.iapCount > 0 ? chalk.green('✓') : chalk.dim('○')
                                         console.log(`    ${icon} ${result.iapCount} In-App Purchase${result.iapCount !== 1 ? 's' : ''}`)
                                     }
                                 }
@@ -69,19 +69,19 @@ export class AscStep implements SubmissionStep {
                                 // ─── Age Rating ──────────────────────────────────────────
                                 if (result.ageRating) {
                                     console.log()
-                                    console.log(`  ${chalk.green('●')} Age Rating: ${result.ageRating}`)
+                                    console.log(`  ${chalk.green('✓')} Age Rating: ${result.ageRating}`)
                                 }
 
                                 // ─── App Privacy Status ───────────────────────────────────
                                 if (result.privacyConfigured !== undefined) {
-                                    const icon = result.privacyConfigured ? chalk.green('●') : chalk.dim('○')
+                                    const icon = result.privacyConfigured ? chalk.green('✓') : chalk.dim('○')
                                     const status = result.privacyConfigured ? 'Configured' : 'Not configured'
                                     console.log(`  ${icon} App Privacy: ${status}`)
                                 }
 
                                 // ─── Review Contact ──────────────────────────────────────
                                 if (result.reviewContact) {
-                                    console.log(`  ${chalk.green('●')} Review Contact: ${result.reviewContact}`)
+                                    console.log(`  ${chalk.green('✓')} Review Contact: ${result.reviewContact}`)
                                 }
 
                                 console.log()
