@@ -7,7 +7,15 @@ import {
     getAppInfo,
     getAppDetails,
     getReviewDetail,
+    getAppInfoLocalization,
+    getVersionDetails,
+    getScreenshotStatus,
+    getSubscriptionGroups,
+    getSubscriptions,
+    getInAppPurchases,
+    getAgeRatingDeclaration,
     type ASCCredentials,
+    type ASCSubscription,
 } from '@/lib/app-store-connect'
 import { decryptPrivateKey } from '@/lib/asc-credential-store'
 import { getEncryptionKey } from '@/lib/asc-encryption'
@@ -48,10 +56,15 @@ export async function POST(request: Request) {
         privateKey,
     }
 
-    const [version, appInfo, appDetails] = await Promise.all([
+    // ─── Phase 1: Core App Data ──────────────────────────────────────────────
+    const [version, appInfo, appDetails, privacyInfo, ageRating, subscriptionGroups, inAppPurchases] = await Promise.all([
         getLatestVersion(credentials, appId).catch(e => { console.error('getLatestVersion failed', e); return null }),
         getAppInfo(credentials, appId).catch(e => { console.error('getAppInfo failed', e); return null }),
         getAppDetails(credentials, appId).catch(e => { console.error('getAppDetails failed', e); return null }),
+        getAppInfoLocalization(credentials, appId).catch(e => { console.error('getAppInfoLocalization failed', e); return null }),
+        getAgeRatingDeclaration(credentials, appId).catch(e => { console.error('getAgeRatingDeclaration failed', e); return null }),
+        getSubscriptionGroups(credentials, appId).catch(e => { console.error('getSubscriptionGroups failed', e); return [] }),
+        getInAppPurchases(credentials, appId).catch(e => { console.error('getInAppPurchases failed', e); return [] }),
     ])
 
     console.log('ASC Autofill Debug:', {
@@ -59,19 +72,38 @@ export async function POST(request: Request) {
         hasVersion: !!version,
         hasAppInfo: !!appInfo,
         hasAppDetails: !!appDetails,
-        detailsName: appDetails?.name,
+        hasAgeRating: !!ageRating,
+        subscriptionGroups: subscriptionGroups?.length || 0,
+        inAppPurchases: inAppPurchases?.length || 0,
         versionId: version?.id
     })
 
+    // ─── Phase 2: Version-Dependent Data ─────────────────────────────────────
     let metadata = null
     let reviewDetail = null
+    let versionDetails = null
+    let screenshotStatus: { deviceType: string; count: number }[] = []
+
     if (version) {
-        [metadata, reviewDetail] = await Promise.all([
+        [metadata, reviewDetail, versionDetails, screenshotStatus] = await Promise.all([
             getAppMetadata(credentials, version.id).catch(() => null),
             getReviewDetail(credentials, version.id).catch(() => null),
+            getVersionDetails(credentials, version.id).catch(() => null),
+            getScreenshotStatus(credentials, version.id).catch(() => []),
         ])
     }
 
+    // ─── Phase 3: Subscription Details ───────────────────────────────────────
+    let allSubscriptions: ASCSubscription[] = []
+    if (subscriptionGroups && subscriptionGroups.length > 0) {
+        const subPromises = subscriptionGroups.map(group =>
+            getSubscriptions(credentials, group.id, group.name).catch(() => [])
+        )
+        const subResults = await Promise.all(subPromises)
+        allSubscriptions = subResults.flat()
+    }
+
+    // ─── Update Selected App ─────────────────────────────────────────────────
     await serviceSupabase
         .from('asc_connections')
         .update({
@@ -81,6 +113,7 @@ export async function POST(request: Request) {
         })
         .eq('user_id', user.id)
 
+    // ─── Category Mapping ────────────────────────────────────────────────────
     const categoryMap: Record<string, string> = {
         'BUSINESS': 'Business',
         'DEVELOPER_TOOLS': 'Developer Tools',
@@ -107,22 +140,67 @@ export async function POST(request: Request) {
         'WEATHER': 'Weather',
     }
 
+    // ─── Build Response ──────────────────────────────────────────────────────
     return NextResponse.json({
         success: true,
         data: {
+            // Basic metadata
             app_name: metadata?.name || appDetails?.name || '',
             description: metadata?.description || '',
             keywords: metadata?.keywords || '',
             promotional_text: metadata?.promotionalText || '',
+            privacy_policy_url: privacyInfo?.privacyPolicyUrl || metadata?.privacyUrl || '',
             support_url: metadata?.supportUrl || '',
             marketing_url: metadata?.marketingUrl || '',
             category: appInfo?.categoryId ? categoryMap[appInfo.categoryId] || appInfo.categoryId : '',
             secondary_category: appInfo?.subcategoryId ? categoryMap[appInfo.subcategoryId] || appInfo.subcategoryId : '',
+
+            // Version info
             version: version?.versionString || '',
-            // Sign-in info from review detail
+            copyright: versionDetails?.copyright || '',
+            release_type: versionDetails?.releaseType || '',
+            app_store_state: versionDetails?.appStoreState || '',
+
+            // Review details
             sign_in_required: reviewDetail?.signInRequired || false,
             demo_username: reviewDetail?.demoAccountName || '',
             demo_password: reviewDetail?.demoAccountPassword || '',
+            contact_first_name: reviewDetail?.contactFirstName || '',
+            contact_last_name: reviewDetail?.contactLastName || '',
+            contact_email: reviewDetail?.contactEmail || '',
+            contact_phone: reviewDetail?.contactPhone || '',
+            review_notes: reviewDetail?.notes || '',
+
+            // Screenshots (for analysis: are they complete?)
+            screenshots: screenshotStatus.map(s => ({
+                device_type: s.deviceType,
+                count: s.count,
+            })),
+
+            // Monetization (for analysis: are subscriptions configured?)
+            subscriptions: allSubscriptions.map(s => ({
+                id: s.id,
+                name: s.name,
+                product_id: s.productId,
+                state: s.state,
+                group_name: s.groupName,
+            })),
+            in_app_purchases: (inAppPurchases || []).map(iap => ({
+                id: iap.id,
+                name: iap.name,
+                product_id: iap.productId,
+                type: iap.inAppPurchaseType,
+                state: iap.state,
+            })),
+
+            // Age rating (for analysis: does it match what user declared?)
+            age_rating: ageRating ? {
+                rating: ageRating.rating,
+                gambling: ageRating.gambling,
+                unrestricted_web_access: ageRating.unrestrictedWebAccess,
+                kids_age_band: ageRating.kidsAgeBand,
+                seventeen_plus: ageRating.seventeenPlus,
+            } : null,
         }
     })
 }

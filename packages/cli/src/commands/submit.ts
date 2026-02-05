@@ -110,6 +110,7 @@ interface DraftState {
     description?: string
     keywords?: string
     category?: string
+    privacyPolicyUrl?: string
     supportUrl?: string
     promotionalText?: string
     marketingUrl?: string
@@ -141,6 +142,7 @@ async function offerDraftSave(state: DraftState, skipConfirmation = false): Prom
         if (state.description) body.description = state.description
         if (state.keywords) body.keywords = state.keywords
         if (state.category) body.category = state.category
+        if (state.privacyPolicyUrl) body.privacy_policy_url = state.privacyPolicyUrl
         if (state.supportUrl) body.support_url = state.supportUrl
         if (state.promotionalText) body.promotional_text = state.promotionalText
         if (state.marketingUrl) body.marketing_url = state.marketingUrl
@@ -218,6 +220,7 @@ async function offerAscAutofill(appDetails: AppDetails): Promise<AppDetails> {
                 description: appDetails.description || autofillData.description,
                 keywords: appDetails.keywords || autofillData.keywords,
                 category: appDetails.category || autofillData.category,
+                privacyPolicyUrl: appDetails.privacyPolicyUrl || autofillData.privacy_policy_url,
                 supportUrl: appDetails.supportUrl || autofillData.support_url,
                 promotionalText: appDetails.promotionalText || autofillData.promotional_text,
                 marketingUrl: appDetails.marketingUrl || autofillData.marketing_url,
@@ -297,6 +300,7 @@ async function offerAscConnection(draftState: DraftState): Promise<'forward' | '
                             draftState.description = autofillData.description || draftState.description
                             draftState.keywords = autofillData.keywords || draftState.keywords
                             draftState.category = autofillData.category || draftState.category
+                            draftState.privacyPolicyUrl = autofillData.privacy_policy_url || draftState.privacyPolicyUrl
                             draftState.supportUrl = autofillData.support_url || draftState.supportUrl
                             draftState.promotionalText =
                                 autofillData.promotional_text || draftState.promotionalText
@@ -664,6 +668,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         if (draftState.description) submissionBody.description = draftState.description
         if (draftState.keywords) submissionBody.keywords = draftState.keywords
         if (draftState.category) submissionBody.category = draftState.category
+        if (draftState.privacyPolicyUrl) submissionBody.privacy_policy_url = draftState.privacyPolicyUrl
         if (draftState.supportUrl) submissionBody.support_url = draftState.supportUrl
         if (draftState.promotionalText) submissionBody.promotional_text = draftState.promotionalText
         if (draftState.marketingUrl) submissionBody.marketing_url = draftState.marketingUrl
@@ -818,9 +823,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             return
         }
 
-        analyzeSpinner.succeed('Analysis complete!')
-
         if (reportData.status === 'complete' && reportData.data) {
+            analyzeSpinner.succeed('Analysis complete!')
             if (options.json) {
                 console.log(JSON.stringify(reportData.data, null, 2))
             } else {
@@ -844,9 +848,11 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 }
             }
         } else if (reportData.status === 'failed') {
+            analyzeSpinner.stop()
             ui.log.error(reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed. Please try submitting again or contact support.')
             if (!fromMenu) process.exitCode = 1
         } else {
+            analyzeSpinner.stop()
             ui.log.warning('Analysis is still running. Check status with:')
             console.log(subtext(`  preflight status ${submissionId}`))
         }

@@ -37,14 +37,46 @@ export class AscStep implements SubmissionStep {
                                 ui.log.success('Connected to App Store Connect')
                                 console.log()
 
-                                // Show what was imported
+                                // ─── Basic Info ──────────────────────────────────────────
                                 if (result.appName) console.log(`  ${chalk.green('●')} App Name: ${brand(result.appName)}`)
                                 if (result.description) console.log(`  ${chalk.green('●')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
                                 if (result.keywords) console.log(`  ${chalk.green('●')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
                                 if (result.category) console.log(`  ${chalk.green('●')} Category: ${result.category}`)
                                 if (result.supportUrl) console.log(`  ${chalk.green('●')} Support URL: ${subtext(result.supportUrl)}`)
-                                console.log()
+                                if (result.copyright) console.log(`  ${chalk.green('●')} Copyright: ${subtext(result.copyright)}`)
 
+                                // ─── Screenshots ─────────────────────────────────────────
+                                if (result.screenshotCount !== undefined) {
+                                    const icon = result.screenshotCount > 0 ? chalk.green('●') : chalk.yellow('○')
+                                    console.log(`  ${icon} Screenshots: ${result.screenshotCount} uploaded`)
+                                }
+
+                                // ─── Monetization ────────────────────────────────────────
+                                if (result.subscriptionCount !== undefined || result.iapCount !== undefined) {
+                                    console.log()
+                                    console.log(`  ${chalk.dim('Monetization:')}`)
+                                    if (result.subscriptionCount !== undefined) {
+                                        const icon = result.subscriptionCount > 0 ? chalk.green('●') : chalk.dim('○')
+                                        console.log(`    ${icon} ${result.subscriptionCount} Subscription${result.subscriptionCount !== 1 ? 's' : ''}`)
+                                    }
+                                    if (result.iapCount !== undefined) {
+                                        const icon = result.iapCount > 0 ? chalk.green('●') : chalk.dim('○')
+                                        console.log(`    ${icon} ${result.iapCount} In-App Purchase${result.iapCount !== 1 ? 's' : ''}`)
+                                    }
+                                }
+
+                                // ─── Age Rating ──────────────────────────────────────────
+                                if (result.ageRating) {
+                                    console.log()
+                                    console.log(`  ${chalk.green('●')} Age Rating: ${result.ageRating}`)
+                                }
+
+                                // ─── Review Contact ──────────────────────────────────────
+                                if (result.reviewContact) {
+                                    console.log(`  ${chalk.green('●')} Review Contact: ${result.reviewContact}`)
+                                }
+
+                                console.log()
                                 await ui.keypress('Press Enter to continue...')
                             }
                         } else {
@@ -105,6 +137,12 @@ export class AscStep implements SubmissionStep {
         keywords?: string
         category?: string
         supportUrl?: string
+        copyright?: string
+        screenshotCount?: number
+        subscriptionCount?: number
+        iapCount?: number
+        ageRating?: string
+        reviewContact?: string
     }> {
         const s = ui.spinner()
         s.start('Fetching from App Store Connect...')
@@ -120,6 +158,8 @@ export class AscStep implements SubmissionStep {
 
             if (autofillRes.ok && autofillData?.data) {
                 const data = autofillData.data
+
+                // ─── Basic Metadata ──────────────────────────────────────────
                 state.appName = data.app_name || state.appName
                 state.description = data.description || state.description
                 state.keywords = data.keywords || state.keywords
@@ -127,7 +167,84 @@ export class AscStep implements SubmissionStep {
                 state.supportUrl = data.support_url || state.supportUrl
                 state.promotionalText = data.promotional_text || state.promotionalText
                 state.marketingUrl = data.marketing_url || state.marketingUrl
+                state.privacyPolicyUrl = data.privacy_policy_url || state.privacyPolicyUrl
+
+                // ─── Version Info ────────────────────────────────────────────
+                state.copyright = data.copyright || state.copyright
+                state.version = data.version || state.version
+
+                // ─── Review Credentials ──────────────────────────────────────
+                state.signInRequired = data.sign_in_required ?? state.signInRequired
+                state.demoUsername = data.demo_username || state.demoUsername
+                state.demoPassword = data.demo_password || state.demoPassword
+                state.reviewNotes = data.review_notes || state.reviewNotes
+
+                // ─── Review Contact ──────────────────────────────────────────
+                if (data.contact_first_name || data.contact_email) {
+                    state.reviewContact = {
+                        firstName: data.contact_first_name || undefined,
+                        lastName: data.contact_last_name || undefined,
+                        email: data.contact_email || undefined,
+                        phone: data.contact_phone || undefined,
+                    }
+                }
+
+                // ─── Screenshots (for analysis) ──────────────────────────────
+                if (data.screenshots && Array.isArray(data.screenshots)) {
+                    state.screenshots = data.screenshots.map((s: any) => ({
+                        deviceType: s.device_type,
+                        count: s.count,
+                    }))
+                }
+
+                // ─── Subscriptions (for analysis) ────────────────────────────
+                if (data.subscriptions && Array.isArray(data.subscriptions)) {
+                    state.subscriptions = data.subscriptions.map((s: any) => ({
+                        id: s.id,
+                        name: s.name,
+                        productId: s.product_id,
+                        state: s.state,
+                        groupName: s.group_name,
+                    }))
+                }
+
+                // ─── In-App Purchases (for analysis) ─────────────────────────
+                if (data.in_app_purchases && Array.isArray(data.in_app_purchases)) {
+                    state.inAppPurchases = data.in_app_purchases.map((iap: any) => ({
+                        id: iap.id,
+                        name: iap.name,
+                        productId: iap.product_id,
+                        type: iap.type,
+                        state: iap.state,
+                    }))
+                }
+
+                // ─── Age Rating (for analysis) ───────────────────────────────
+                if (data.age_rating) {
+                    state.ageRating = {
+                        rating: data.age_rating.rating,
+                        gambling: data.age_rating.gambling || false,
+                        unrestrictedWebAccess: data.age_rating.unrestricted_web_access || false,
+                        kidsAgeBand: data.age_rating.kids_age_band || null,
+                        seventeenPlus: data.age_rating.seventeen_plus || false,
+                    }
+                }
+
                 state._ascConnected = true
+
+                // Calculate totals for display
+                const screenshotCount = state.screenshots?.reduce((sum, s) => sum + s.count, 0) || 0
+                const subscriptionCount = state.subscriptions?.length || 0
+                const iapCount = state.inAppPurchases?.length || 0
+
+                // Format review contact for display
+                let reviewContact: string | undefined
+                if (state.reviewContact?.firstName || state.reviewContact?.email) {
+                    reviewContact = [
+                        state.reviewContact.firstName,
+                        state.reviewContact.lastName
+                    ].filter(Boolean).join(' ') || state.reviewContact.email
+                }
 
                 return {
                     success: true,
@@ -136,6 +253,12 @@ export class AscStep implements SubmissionStep {
                     keywords: data.keywords,
                     category: data.category,
                     supportUrl: data.support_url,
+                    copyright: data.copyright,
+                    screenshotCount,
+                    subscriptionCount,
+                    iapCount,
+                    ageRating: state.ageRating?.rating || undefined,
+                    reviewContact,
                 }
             }
         } catch {
@@ -144,4 +267,3 @@ export class AscStep implements SubmissionStep {
         return { success: false }
     }
 }
-
