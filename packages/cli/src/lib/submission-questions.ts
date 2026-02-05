@@ -935,7 +935,8 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
 
 export async function collectCompliance(
     defaults?: Partial<ComplianceData>,
-    ascAgeRating?: { rating: string | null; gambling: boolean; unrestrictedWebAccess: boolean; kidsAgeBand: string | null; seventeenPlus: boolean }
+    ascAgeRating?: { rating: string | null; gambling: boolean; unrestrictedWebAccess: boolean; kidsAgeBand: string | null; seventeenPlus: boolean },
+    ascPrivacyStatus?: { configured: boolean; updateDate: string | null }
 ): Promise<ComplianceData | null> {
     // Track completion of each phase
     const state: {
@@ -967,6 +968,21 @@ export async function collectCompliance(
             rating: ascAgeRating.rating
         }
         ui.log.success(`Age Rating: ${ascAgeRating.rating} (from App Store Connect)`)
+    }
+
+    // Auto-populate privacy from ASC if already configured
+    if (ascPrivacyStatus?.configured) {
+        // Since privacy is already configured in ASC, we don't need detailed answers
+        // Create a "configured" placeholder that indicates privacy was handled in ASC
+        const emptyData = Object.fromEntries(
+            PRIVACY_DATA_TYPES.map(t => [t.value, { collected: false, linked: false }])
+        ) as PrivacyDeclarations['data']
+
+        state.privacy = {
+            data: emptyData,
+            tracking: false,
+        }
+        ui.log.success(`App Privacy: Already configured in App Store Connect`)
     }
 
     while (true) {
