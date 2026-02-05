@@ -43,15 +43,14 @@ export function renderHeader(email?: string, credits?: number) {
         const segments: string[] = []
 
         if (email) {
-            segments.push(chalk.dim('┌─') + chalk.white(` ${email} `) + chalk.dim('─┐'))
+            segments.push(brand('┌─') + brand(` ${email} `) + brand('─┐'))
         }
 
         if (credits !== undefined) {
-            const creditColor = credits < 100 ? chalk.yellow : chalk.green
-            segments.push(chalk.dim('┌─') + creditColor(` ${credits.toLocaleString()} credits `) + chalk.dim('─┐'))
+            segments.push(brand('┌─') + brand(` ${credits.toLocaleString()} credits `) + brand('─┐'))
         }
 
-        segments.push(chalk.dim('┌─') + chalk.dim(` v${APP_VERSION} `) + chalk.dim('─┐'))
+        segments.push(brand('┌─') + brand(` v${APP_VERSION} `) + brand('─┐'))
 
         console.log(`       ${segments.join('  ')}`)
     } else {
