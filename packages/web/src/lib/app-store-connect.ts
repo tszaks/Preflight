@@ -208,7 +208,7 @@ export async function getAppInfoLocalization(
 ): Promise<{ privacyPolicyUrl: string | null; privacyChoicesUrl: string | null; privacyPolicyText: string | null } | null> {
     try {
         const infos = await ascFetch(
-            `/apps/${appId}/appInfos?limit=1&sort=-state`,
+            `/apps/${appId}/appInfos?limit=1`,
             credentials,
         );
 
