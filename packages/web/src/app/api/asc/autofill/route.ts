@@ -80,6 +80,7 @@ export async function POST(request: Request) {
         hasAppInfo: !!appInfo,
         hasAppDetails: !!appDetails,
         hasAgeRating: !!ageRating,
+        ageRatingData: ageRating, // Log full object to see what's there
         subscriptionGroups: subscriptionGroups?.length || 0,
         inAppPurchases: inAppPurchases?.length || 0,
         versionId: version?.id
