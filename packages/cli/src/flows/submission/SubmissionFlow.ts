@@ -45,7 +45,7 @@ export class SubmissionFlow {
     async showSetupChoice(): Promise<boolean> {
         ui.renderHeader(this.context.email, this.context.credits)
         console.log()
-        console.log(chalk.cyan('    ℹ Let\'s get your app ready for review.'))
+        console.log(chalk.white('    ℹ Let\'s get your app ready for review.'))
         console.log(chalk.dim('      Choose how you\'d like to set up:'))
         console.log()
 
