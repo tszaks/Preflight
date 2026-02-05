@@ -176,6 +176,12 @@ export function applyThemePatch() {
                 return orangeOpen + char
             })
 
+            // 4. Make selection bullet White (instead of Green)
+            // Clack uses \x1b[32m● for selected radio/checkbox
+            patched = patched.replace(/(\x1b\[32m)([●])/g, (_match, _color, char) => {
+                return whiteOpen + char
+            })
+
             return originalWrite(patched, ...args)
         }
         return originalWrite(chunk, ...args)
