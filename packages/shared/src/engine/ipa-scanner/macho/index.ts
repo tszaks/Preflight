@@ -79,7 +79,7 @@ export async function analyzeMachOFromIPA(
     const parseResult = parseMachO(buffer);
 
     // Analyze
-    return analyzeMachOBinary(parseResult);
+    return analyzeMachOBinary(parseResult, executableName);
 }
 
 // Re-export for external use

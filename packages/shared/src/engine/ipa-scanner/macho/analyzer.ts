@@ -31,7 +31,7 @@ export interface MachOAnalysisResult {
 /**
  * Analyze a parsed Mach-O binary for App Store compliance issues.
  */
-export function analyzeMachOBinary(parseResult: MachOParseResult): MachOAnalysisResult {
+export function analyzeMachOBinary(parseResult: MachOParseResult, binaryName?: string): MachOAnalysisResult {
     const checks: CheckResult[] = [];
 
     // 1. Check for private API symbol usage
@@ -43,6 +43,7 @@ export function analyzeMachOBinary(parseResult: MachOParseResult): MachOAnalysis
             title: `Private API detected: ${hit.entry.symbol}`,
             description:
                 `The binary imports "${hit.matchedSymbol}" from ${hit.entry.framework}. ` +
+                `Found in binary: ${binaryName || 'main executable'}. ` +
                 `${hit.entry.description}. Apple's automated scanner (App Review) ` +
                 `will detect this and reject the submission.`,
             guideline_ref: hit.entry.guideline_ref,

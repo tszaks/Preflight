@@ -1,7 +1,6 @@
 import type { CheckResult } from '../types';
 import {
     REQUIRED_PLIST_KEYS,
-    OPTIONAL_PLIST_KEYS,
     USAGE_DESCRIPTION_KEYS,
     BUNDLE_ID_REGEX,
     VERSION_REGEX,
@@ -62,36 +61,13 @@ export function checkInfoPlist(plistContent: string | null | undefined): CheckRe
         }
     }
 
-    // Check optional keys (info-level if missing)
-    for (const key of OPTIONAL_PLIST_KEYS) {
-        if (!plistContent.includes(`<key>${key}</key>`)) {
-            results.push({
-                category: 'info_plist',
-                severity: 'info',
-                title: `Optional key not found: ${key}`,
-                description: `"${key}" is not present. Modern apps often omit this key, but it's needed if your app requires specific device hardware (e.g., ARKit, NFC).`,
-                confidence: 100,
-                guideline_ref: getGuidelineRef('2.5'),
-                fix_suggestion: `Only add "${key}" if your app requires specific device capabilities. Most apps don't need it.`,
-            });
-        }
-    }
-
     // Validate CFBundleIdentifier format
     const bundleIdMatch = plistContent.match(/<key>CFBundleIdentifier<\/key>\s*<string>([^<]+)<\/string>/);
     if (bundleIdMatch) {
         const bundleId = bundleIdMatch[1];
 
         if (isXcodeBuildVariable(bundleId)) {
-            results.push({
-                category: 'info_plist',
-                severity: 'info',
-                title: 'Bundle ID uses Xcode build variable',
-                description: `Bundle ID "${bundleId}" is an Xcode build variable that resolves at compile time. This is normal for source-level Info.plist files.`,
-                confidence: 100,
-                guideline_ref: getGuidelineRef('2.5'),
-                fix_suggestion: 'No action needed. Xcode will substitute the real bundle ID from your build settings when compiling.',
-            });
+            // Build variable — this is normal, don't generate a finding
         } else if (!BUNDLE_ID_REGEX.test(bundleId)) {
             results.push({
                 category: 'info_plist',
