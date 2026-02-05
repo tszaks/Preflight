@@ -606,7 +606,8 @@ export async function getAgeRatingDeclaration(
             kidsAgeBand: attr.kidsAgeBand || null,
             seventeenPlus: attr.seventeenPlus || false,
         };
-    } catch {
+    } catch (e) {
+        console.error('getAgeRatingDeclaration error:', e);
         return null;
     }
 }
