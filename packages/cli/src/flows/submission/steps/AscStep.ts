@@ -39,16 +39,16 @@ export class AscStep implements SubmissionStep {
                                 console.log()
 
                                 // ─── Basic Info ──────────────────────────────────────────
-                                if (result.appName) console.log(`  ${chalk.green('●')} App Name: ${brand(result.appName)}`)
-                                if (result.description) console.log(`  ${chalk.green('●')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
-                                if (result.keywords) console.log(`  ${chalk.green('●')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
-                                if (result.category) console.log(`  ${chalk.green('●')} Category: ${result.category}`)
-                                if (result.supportUrl) console.log(`  ${chalk.green('●')} Support URL: ${subtext(result.supportUrl)}`)
-                                if (result.copyright) console.log(`  ${chalk.green('●')} Copyright: ${subtext(result.copyright)}`)
+                                if (result.appName) console.log(`  ${chalk.green('✓')} App Name: ${brand(result.appName)}`)
+                                if (result.description) console.log(`  ${chalk.green('✓')} Description: ${subtext(result.description.slice(0, 50) + (result.description.length > 50 ? '...' : ''))}`)
+                                if (result.keywords) console.log(`  ${chalk.green('✓')} Keywords: ${subtext(result.keywords.slice(0, 50) + (result.keywords.length > 50 ? '...' : ''))}`)
+                                if (result.category) console.log(`  ${chalk.green('✓')} Category: ${result.category}`)
+                                if (result.supportUrl) console.log(`  ${chalk.green('✓')} Support URL: ${subtext(result.supportUrl)}`)
+                                if (result.copyright) console.log(`  ${chalk.green('✓')} Copyright: ${subtext(result.copyright)}`)
 
-                                // ─── Screenshots ─────────────────────────────────────────
+                                // ─── Screenshots ───────────────────────────────────────── (example usage)
                                 if (result.screenshotCount !== undefined) {
-                                    const icon = result.screenshotCount > 0 ? chalk.green('●') : chalk.yellow('○')
+                                    const icon = result.screenshotCount > 0 ? chalk.green('✓') : chalk.yellow('○')
                                     console.log(`  ${icon} Screenshots: ${result.screenshotCount} uploaded`)
                                 }
 

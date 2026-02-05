@@ -123,10 +123,10 @@ export class DashboardView {
             console.log(chalk.white(`    ℹ Complete the required steps to continue.`))
             console.log()
         } else if (!requiredComplete) {
-            console.log(chalk.green('    ● Ready for Final Review! Almost there.'))
+            console.log(chalk.green('    ✓ Ready for Final Review! Almost there.'))
             console.log()
         } else {
-            console.log(chalk.green('    ● Ready to submit! All steps complete.'))
+            console.log(chalk.green('    ✓ Ready to submit! All steps complete.'))
             console.log()
         }
 
