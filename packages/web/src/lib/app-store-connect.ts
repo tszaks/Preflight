@@ -524,7 +524,7 @@ export async function getAgeRatingDeclaration(
     try {
         // First get the latest appInfo
         const infos = await ascFetch(
-            `/apps/${appId}/appInfos?limit=1&sort=-state`,
+            `/apps/${appId}/appInfos?limit=1`,
             credentials,
         );
 
