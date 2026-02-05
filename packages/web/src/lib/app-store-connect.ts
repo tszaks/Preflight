@@ -528,6 +528,13 @@ export async function getAgeRatingDeclaration(
             credentials,
         );
 
+        console.log('getAgeRatingDeclaration - appInfos response:', {
+            appId,
+            hasData: !!infos.data,
+            length: infos.data?.length || 0,
+            firstId: infos.data?.[0]?.id || null
+        });
+
         if (!infos.data?.length) return null;
 
         const infoId = infos.data[0].id;
