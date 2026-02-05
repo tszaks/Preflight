@@ -219,9 +219,10 @@ export async function POST(request: Request) {
             } : null,
 
             // App Privacy status (whether user has filled out App Privacy in ASC)
+            // Privacy is considered configured if privacyPolicyUrl is set (required for App Privacy)
             privacy_status: {
-                configured: appInfo?.privacyConfigured || false,
-                update_date: appInfo?.privacyUpdateDate || null,
+                configured: !!(privacyInfo?.privacyPolicyUrl),
+                privacy_policy_url: privacyInfo?.privacyPolicyUrl || null,
             },
 
             // App Previews (videos) with URLs

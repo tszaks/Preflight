@@ -118,16 +118,24 @@ export async function listApps(credentials: ASCCredentials): Promise<ASCApp[]> {
 export async function getAppDetails(
     credentials: ASCCredentials,
     appId: string,
-): Promise<ASCApp | null> {
+): Promise<ASCApp & { privacyInfoConfigured?: boolean } | null> {
     try {
         const data = await ascFetch(`/apps/${appId}`, credentials);
         const app = data.data;
+
+        console.log('getAppDetails - all app attributes:', {
+            appId,
+            keys: Object.keys(app.attributes || {}),
+            contentRightsDeclaration: app.attributes?.contentRightsDeclaration,
+        });
+
         return {
             id: app.id,
             bundleId: app.attributes.bundleId,
             name: app.attributes.name,
             sku: app.attributes.sku,
             primaryLocale: app.attributes.primaryLocale,
+            privacyInfoConfigured: app.attributes?.contentRightsDeclaration?.usesThirdPartyContent !== undefined,
         };
     } catch {
         return null;

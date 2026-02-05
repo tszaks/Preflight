@@ -242,7 +242,7 @@ export class AscStep implements SubmissionStep {
                 if (data.privacy_status) {
                     state.privacyStatus = {
                         configured: data.privacy_status.configured || false,
-                        updateDate: data.privacy_status.update_date || null,
+                        privacyPolicyUrl: data.privacy_status.privacy_policy_url || null,
                     }
                 }
 

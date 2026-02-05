@@ -86,7 +86,7 @@ export interface DraftState {
     ageRating?: AgeRatingInfo
     privacyStatus?: {
         configured: boolean
-        updateDate: string | null
+        privacyPolicyUrl: string | null
     }
 
     // Flow position tracking for draft resumption

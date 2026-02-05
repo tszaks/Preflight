@@ -66,6 +66,10 @@ async function main() {
     if (infos.data.length > 0) {
         const info = infos.data[0]
         console.log(`Inspecting AppInfo: ${info.id}`)
+        console.log('--- AppInfo Attributes ---')
+        console.log(JSON.stringify(info.attributes, null, 2))
+        console.log('--- AppInfo Relationships ---')
+        console.log(JSON.stringify(Object.keys(info.relationships || {}), null, 2))
 
         const locs = await ascFetch(`/appInfos/${info.id}/appInfoLocalizations`, token)
         if (locs.data.length > 0) {
@@ -74,6 +78,22 @@ async function main() {
             console.log('AppInfo Privacy Policy URL:', loc.attributes.privacyPolicyUrl)
             console.log('AppInfo Privacy Policy Text:', loc.attributes.privacyPolicyText)
         }
+    }
+
+    // Also check the main app object
+    console.log('\n--- Main App Attributes ---')
+    const app = apps.data[0]
+    console.log(JSON.stringify(app.attributes, null, 2))
+    console.log('--- Main App Relationships ---')
+    console.log(JSON.stringify(Object.keys(app.relationships || {}), null, 2))
+
+    // Try fetching the app with all fields to find privacy-related ones
+    console.log('\n--- Checking for app privacy details ---')
+    try {
+        const appWithPrivacy = await ascFetch(`/apps/${appId}?fields[apps]=contentRightsDeclaration`, token)
+        console.log('App with contentRightsDeclaration:', appWithPrivacy.data.attributes)
+    } catch (e) {
+        console.log('Error fetching app with privacy fields:', e)
     }
 }
 
