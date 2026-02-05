@@ -1,15 +1,14 @@
 import chalk from 'chalk'
-import { resolve } from 'node:path'
+import { resolve, basename } from 'node:path'
 import { readFileSync, statSync } from 'node:fs'
 import { extname } from 'node:path'
 import { scanProject } from '../lib/scanner.js'
 import { setLastScannedPath } from '../lib/config.js'
 import { interactiveProjectSelect } from '../lib/project-finder.js'
+import { getImageDimensions } from '../lib/image-dimensions.js'
 import * as ui from '../ui/interactive.js'
 import { ok, okBold, critical, criticalBold, warning, warningBold, info, subtext, brand, icons, muted } from '../ui/theme.js'
-import { checkInfoPlist } from '@preflight/shared/engine/hard-rules/info-plist'
-import { checkPrivacyManifest } from '@preflight/shared/engine/hard-rules/privacy-manifest'
-import { checkScreenshots } from '@preflight/shared/engine/hard-rules/screenshots'
+import { runHardRules } from '@preflight/shared/engine/hard-rules/index'
 import type { CheckResult, ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
 
 export async function scanCommand(path?: string) {
@@ -72,10 +71,28 @@ export async function scanCommand(path?: string) {
 
     ui.log.message(lines.join('\n'))
 
+    // === Collect minimal metadata from user ===
+    const detectedName = detected.projectName || basename(dir)
+
+    const appNameResult = await ui.text({
+        message: 'App name',
+        placeholder: detectedName,
+        defaultValue: detectedName,
+    })
+    const appName = appNameResult || detectedName
+
+    const descriptionResult = await ui.text({
+        message: 'Brief description (optional, press Enter to skip)',
+        placeholder: 'e.g. A fitness tracking app',
+    })
+    const description = descriptionResult || undefined
+
+    const hasSubscriptions = await ui.confirm('Does your app have subscriptions?', false)
+    const hasIap = await ui.confirm('Does your app have in-app purchases?', false)
+    const signInRequired = await ui.confirm('Does your app require sign-in?', false)
+
     // === Run local hard rules analysis ===
     s.start('Running compliance checks...')
-
-    const allChecks: CheckResult[] = []
 
     // Read file contents for analysis
     let plistContent: string | undefined
@@ -92,34 +109,41 @@ export async function scanCommand(path?: string) {
         } catch { /* skip if unreadable */ }
     }
 
-    // Build screenshot data from local files
+    // Build screenshot data with dimensions from local files
     const screenshotData: ScreenshotData[] = []
     for (const screenshotPath of detected.screenshots) {
         try {
             const stat = statSync(screenshotPath)
             const ext = extname(screenshotPath).toLowerCase()
+            const dimensions = getImageDimensions(screenshotPath)
             screenshotData.push({
                 path: screenshotPath,
-                base64: '', // Not needed for dimension/size checks
+                base64: '', // Not needed for local checks
                 mime_type: ext === '.png' ? 'image/png' : 'image/jpeg',
                 size_bytes: stat.size,
+                ...(dimensions ? { width: dimensions.width, height: dimensions.height } : {}),
             })
-        } catch { /* skip */ }
+        } catch { /* skip unreadable files */ }
     }
 
-    // Run checks
-    const plistChecks = checkInfoPlist(plistContent)
-    allChecks.push(...plistChecks)
-
-    const manifestChecks = checkPrivacyManifest(manifestContent)
-    allChecks.push(...manifestChecks)
-
-    const screenshotInput: HardRulesInput = {
-        app_name: detected.projectName || '',
+    // Build HardRulesInput with collected metadata
+    const input: HardRulesInput = {
+        app_name: appName,
+        description: description ?? null,
         screenshot_paths: detected.screenshots,
+        sign_in_required: signInRequired ?? false,
+        has_iap: hasIap ?? false,
+        has_subscriptions: hasSubscriptions ?? false,
     }
-    const screenshotChecks = checkScreenshots(screenshotInput, screenshotData.length > 0 ? screenshotData : undefined)
-    allChecks.push(...screenshotChecks)
+
+    // Run all hard rules through the unified engine
+    const result = await runHardRules(input, {
+        screenshotData: screenshotData.length > 0 ? screenshotData : undefined,
+        manifestContent,
+        plistContent,
+    })
+
+    const allChecks = result.checks
 
     s.stop('Compliance checks complete')
 

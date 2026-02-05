@@ -8,6 +8,22 @@ import { cn } from '@/components/ui/status'
 
 const plans = [
     {
+        id: "free",
+        name: "Free",
+        credits: 50,
+        price: 0,
+        description: "Try Preflight risk-free",
+        free: true,
+        ctaLabel: "Get Started",
+        ctaLink: "/signup",
+        creditsNote: "on signup",
+        features: [
+            { text: "Local compliance scan", hint: "Info.plist, privacy manifest, screenshots" },
+            { text: "50 credits on signup", hint: "1 full review at half price" },
+            { text: "No credit card required" },
+        ],
+    },
+    {
         id: "starter",
         name: "Starter",
         credits: 200,
@@ -64,7 +80,7 @@ export default function PricingPage() {
     }
 
     return (
-        <div className="container mx-auto px-6 max-w-6xl py-24">
+        <div className="container mx-auto px-6 max-w-7xl py-24">
             <header className="text-center mb-16 space-y-4">
                 <div className="text-[10px] font-bold tracking-[0.3em] text-gray-500 uppercase">Pricing</div>
                 <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
@@ -77,7 +93,7 @@ export default function PricingPage() {
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
                 {plans.map((plan) => (
                     <div
                         key={plan.id}
@@ -104,30 +120,48 @@ export default function PricingPage() {
 
                         <div className="mb-8 p-4 bg-white/5 rounded-xl border border-white/5 text-center">
                             <div className="text-2xl font-bold tracking-tight">{plan.credits}</div>
-                            <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Credits</div>
+                            <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                                {plan.creditsNote ? plan.creditsNote : "Credits"}
+                            </div>
                         </div>
 
                         <ul className="space-y-4 mb-8 flex-grow">
-                            {plan.features.map((feature, i) => (
-                                <li key={i} className="flex items-start gap-3 text-sm text-gray-400 font-light">
-                                    <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                    <span>{feature}</span>
-                                </li>
-                            ))}
+                            {plan.features.map((feature, i) => {
+                                const text = typeof feature === 'string' ? feature : feature.text
+                                const hint = typeof feature === 'string' ? null : feature.hint
+                                return (
+                                    <li key={i} className="flex items-start gap-3 text-sm text-gray-400 font-light">
+                                        <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                        <span>
+                                            {text}
+                                            {hint && <span className="block text-[11px] text-gray-600 mt-0.5">({hint})</span>}
+                                        </span>
+                                    </li>
+                                )
+                            })}
                         </ul>
 
-                        <button
-                            onClick={() => handleBuy(plan.id)}
-                            disabled={!!loading}
-                            className={cn(
-                                "w-full py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition-all",
-                                plan.featured
-                                    ? "bg-white text-black hover:bg-gray-200"
-                                    : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-                            )}
-                        >
-                            {loading === plan.id ? "Processing..." : "Buy Credits"}
-                        </button>
+                        {plan.free ? (
+                            <a
+                                href={plan.ctaLink}
+                                className="w-full py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition-all bg-white/5 border border-white/10 text-white hover:bg-white/10 text-center block"
+                            >
+                                {plan.ctaLabel}
+                            </a>
+                        ) : (
+                            <button
+                                onClick={() => handleBuy(plan.id)}
+                                disabled={!!loading}
+                                className={cn(
+                                    "w-full py-3 rounded-lg text-xs font-bold tracking-widest uppercase transition-all",
+                                    plan.featured
+                                        ? "bg-white text-black hover:bg-gray-200"
+                                        : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                                )}
+                            >
+                                {loading === plan.id ? "Processing..." : "Buy Credits"}
+                            </button>
+                        )}
                     </div>
                 ))}
             </div>
