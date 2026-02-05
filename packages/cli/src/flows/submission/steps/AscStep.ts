@@ -1,4 +1,5 @@
 import * as ui from '../../../ui/interactive.js'
+import * as p from '@clack/prompts'
 import { apiRequest } from '../../../lib/api-client.js'
 import { SubmissionStep, StepResult, FlowContext } from '../BaseStep.js'
 import { DraftState } from '../types.js'
@@ -213,7 +214,10 @@ export class AscStep implements SubmissionStep {
                     const tempDir = join(tmpdir(), 'preflight-asc-screenshots')
                     await mkdir(tempDir, { recursive: true })
 
-                    s.message('Downloading screenshots from App Store Connect...')
+                    // s.message('Downloading screenshots from App Store Connect...')
+                    // Use a spinner instead of a static message for better feedback on long downloads
+                    const dlSpinner = p.spinner()
+                    dlSpinner.start('Downloading screenshots from App Store Connect...')
 
                     try {
                         for (const group of data.screenshots) {
@@ -228,6 +232,8 @@ export class AscStep implements SubmissionStep {
                                                 const destPath = join(tempDir, filename)
                                                 await writeFile(destPath, buffer)
                                                 tempPaths.push(destPath)
+                                                // Optional: update message for progress?
+                                                // dlSpinner.message(`Downloading screenshots... (${tempPaths.length})`) 
                                             }
                                         } catch (err) {
                                             // Ignore download failures for individual images
@@ -243,13 +249,10 @@ export class AscStep implements SubmissionStep {
                     if (tempPaths.length > 0) {
                         state._tempScreenshotPaths = tempPaths
                         state._screenshotPaths = tempPaths
-                        ui.log.success(`Downloaded ${tempPaths.length} screenshots from ASC`)
-                    }
-
-                    if (tempPaths.length > 0) {
-                        state._tempScreenshotPaths = tempPaths
-                        state._screenshotPaths = tempPaths // Also update persistent paths so ScreenshotsStep sees them as "selected"
-                        ui.log.success(`Downloaded ${tempPaths.length} screenshots from ASC`)
+                        dlSpinner.stop(`Downloaded ${tempPaths.length} screenshots from ASC`)
+                        // ui.log.success(`Downloaded ${tempPaths.length} screenshots from ASC`)
+                    } else {
+                        dlSpinner.stop('No screenshots downloaded')
                     }
                 }
 
