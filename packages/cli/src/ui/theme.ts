@@ -37,6 +37,8 @@ export const icons = {
     file: '',
     image: '',
     plane: '',
+    check: '✓',
+    cross: '✗',
 } as const
 
 // Severity badge formatting - No emojis
@@ -193,6 +195,11 @@ export function applyThemePatch() {
             patched = patched.replace(/(\x1b\[35m)([◒◐◓◑])/g, (_match, _color, char) => {
                 return orangeOpen + char
             })
+
+            // 7. Make Blue/Cyan/Magenta Info Text & Spinners Orange (User request)
+            // Clack uses \x1b[36m (Cyan), \x1b[34m (Blue), and \x1b[35m (Magenta) for various info/spinner elements.
+            // We force these to Brand Orange.
+            patched = patched.replace(/(\x1b\[3[456]m)/g, orangeOpen)
 
             return originalWrite(patched, ...args)
         }

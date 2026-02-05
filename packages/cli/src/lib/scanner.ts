@@ -44,8 +44,8 @@ export function scanProject(dir: string): DetectedFiles {
     )
     result.privacyManifest = filteredManifests[0] || manifests[0] || null
 
-    // Find IPA
-    const ipas = findFiles(absDir, (f) => f.endsWith('.ipa'), 4)
+    // Find IPA - search deeper since users may have IPAs in various nested locations
+    const ipas = findFiles(absDir, (f) => f.endsWith('.ipa'), 10)
     // Prefer recent ones in build/ or DerivedData/
     const sortedIPAs = ipas.sort((a, b) => {
         try {
