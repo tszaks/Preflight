@@ -176,6 +176,13 @@ export async function getAppInfo(
         const info = data.data[0];
         const privacyUpdateDate = info.attributes?.appPrivacyDetailsUpdateDate || null;
 
+        console.log('getAppInfo - privacy check:', {
+            appId,
+            hasAttributes: !!info.attributes,
+            privacyUpdateDate,
+            allAttributeKeys: info.attributes ? Object.keys(info.attributes) : [],
+        });
+
         return {
             categoryId: info.relationships?.primaryCategory?.data?.id || null,
             subcategoryId: info.relationships?.secondaryCategory?.data?.id || null,
