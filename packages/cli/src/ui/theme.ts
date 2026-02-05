@@ -198,7 +198,7 @@ export function applyThemePatch() {
 
             // 5. Make Green Diamond Orange (User request) - kept for other usages if any
             // Clack uses \x1b[32m◆ or \x1b[32m◇ for active states
-            patched = patched.replace(/(\x1b\[32m)([◆])/g, (_match, _color, char) => {
+            patched = patched.replace(/(\x1b\[32m)([◆◇])/g, (_match, _color, char) => {
                 return orangeOpen + char
             })
 
