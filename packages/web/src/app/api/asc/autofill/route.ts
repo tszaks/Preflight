@@ -74,19 +74,6 @@ export async function POST(request: Request) {
         getAppAvailability(credentials, appId).catch(() => null),
     ])
 
-    console.log('ASC Autofill Debug:', {
-        appId,
-        hasVersion: !!version,
-        hasAppInfo: !!appInfo,
-        hasAppDetails: !!appDetails,
-        hasAgeRating: !!ageRating,
-        hasPrivacyPolicyUrl: !!privacyInfo?.privacyPolicyUrl,
-        privacyPolicyUrl: privacyInfo?.privacyPolicyUrl || null,
-        subscriptionGroups: subscriptionGroups?.length || 0,
-        inAppPurchases: inAppPurchases?.length || 0,
-        versionId: version?.id
-    })
-
     // ─── Phase 2: Version-Dependent Data ─────────────────────────────────────
     let metadata = null
     let reviewDetail = null

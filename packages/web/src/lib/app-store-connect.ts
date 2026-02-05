@@ -184,13 +184,6 @@ export async function getAppInfo(
         const info = data.data[0];
         const privacyUpdateDate = info.attributes?.appPrivacyDetailsUpdateDate || null;
 
-        console.log('getAppInfo - privacy check:', {
-            appId,
-            hasAttributes: !!info.attributes,
-            privacyUpdateDate,
-            allAttributeKeys: info.attributes ? Object.keys(info.attributes) : [],
-        });
-
         return {
             categoryId: info.relationships?.primaryCategory?.data?.id || null,
             subcategoryId: info.relationships?.secondaryCategory?.data?.id || null,
@@ -220,14 +213,6 @@ export async function getAppInfoLocalization(
             credentials,
         );
 
-        console.log('getAppInfoLocalization - debug:', {
-            appId,
-            infoId,
-            locsCount: locs.data.length,
-            firstLocAttrs: locs.data.length > 0 ? Object.keys(locs.data[0].attributes || {}) : [],
-            privacyPolicyUrl: locs.data.length > 0 ? locs.data[0].attributes?.privacyPolicyUrl : 'NO_LOCS',
-        });
-
         if (!locs.data.length) return null;
 
         const attr = locs.data[0].attributes;
@@ -236,8 +221,7 @@ export async function getAppInfoLocalization(
             privacyChoicesUrl: attr.privacyChoicesUrl || null,
             privacyPolicyText: attr.privacyPolicyText || null,
         };
-    } catch (e) {
-        console.error('getAppInfoLocalization - ERROR:', e);
+    } catch {
         return null;
     }
 }

@@ -7,7 +7,11 @@ export class ComplianceStep implements SubmissionStep {
 
     async run(state: DraftState): Promise<StepResult> {
         // Pass ASC data for auto-population if available
-        const compliance = await collectCompliance(state.compliance, state.ageRating, state.privacyStatus)
+        const ascMonetization = {
+            hasSubscriptions: (state.subscriptions?.length ?? 0) > 0,
+            hasIAPs: (state.inAppPurchases?.length ?? 0) > 0,
+        }
+        const compliance = await collectCompliance(state.compliance, state.ageRating, state.privacyStatus, ascMonetization)
 
         if (compliance === null) {
             return { action: 'back' }

@@ -768,10 +768,23 @@ export async function collectPrivacyData(): Promise<PrivacyDeclarations | null> 
 
 // ─── Collect Feature Checklist ───────────────────────────────────────────
 
-export async function collectFeatureChecklist(): Promise<FeatureChecklist | null> {
+export async function collectFeatureChecklist(
+    ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean }
+): Promise<FeatureChecklist | null> {
     ui.log.step(subtext('Step 3 of 3: Features'))
 
-    let selectedFeatures: string[] = []
+    // Auto-populate features from ASC data
+    const ascPrefilled: string[] = []
+    if (ascMonetization?.hasSubscriptions) {
+        ascPrefilled.push('subscriptions')
+        ui.log.success('Subscription / Recurring Payment (from ASC)')
+    }
+    if (ascMonetization?.hasIAPs) {
+        ascPrefilled.push('iap')
+        ui.log.success('Pay to Unlock Features (from ASC)')
+    }
+
+    let selectedFeatures: string[] = [...ascPrefilled]
     let checklist: FeatureChecklist | null = null
 
     // Helper to build object
@@ -936,7 +949,8 @@ export async function collectFeatureChecklist(): Promise<FeatureChecklist | null
 export async function collectCompliance(
     defaults?: Partial<ComplianceData>,
     ascAgeRating?: { rating: string | null; gambling: boolean; unrestrictedWebAccess: boolean; kidsAgeBand: string | null; seventeenPlus: boolean },
-    ascPrivacyStatus?: { configured: boolean; privacyPolicyUrl: string | null }
+    ascPrivacyStatus?: { configured: boolean; privacyPolicyUrl: string | null },
+    ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean }
 ): Promise<ComplianceData | null> {
     // Track completion of each phase
     const state: {
@@ -1045,7 +1059,7 @@ export async function collectCompliance(
                 console.log()
                 break
             case 'features':
-                const featuresResult = await collectFeatureChecklist()
+                const featuresResult = await collectFeatureChecklist(ascMonetization)
                 if (featuresResult !== null) state.checklist = featuresResult
                 console.log()
                 break
