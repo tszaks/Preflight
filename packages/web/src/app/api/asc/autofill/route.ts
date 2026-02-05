@@ -80,7 +80,8 @@ export async function POST(request: Request) {
         hasAppInfo: !!appInfo,
         hasAppDetails: !!appDetails,
         hasAgeRating: !!ageRating,
-        privacyConfigured: appInfo?.privacyConfigured || false,
+        hasPrivacyPolicyUrl: !!privacyInfo?.privacyPolicyUrl,
+        privacyPolicyUrl: privacyInfo?.privacyPolicyUrl || null,
         subscriptionGroups: subscriptionGroups?.length || 0,
         inAppPurchases: inAppPurchases?.length || 0,
         versionId: version?.id
