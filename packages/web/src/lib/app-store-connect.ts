@@ -236,7 +236,8 @@ export async function getAppInfoLocalization(
             privacyChoicesUrl: attr.privacyChoicesUrl || null,
             privacyPolicyText: attr.privacyPolicyText || null,
         };
-    } catch {
+    } catch (e) {
+        console.error('getAppInfoLocalization - ERROR:', e);
         return null;
     }
 }
