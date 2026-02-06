@@ -66,6 +66,9 @@ export async function runAnalysis(
             privacy_url: input.privacy_url,
             support_url: input.support_url,
             marketing_url: input.marketing_url,
+            demo_username: input.demo_username,
+            demo_password: input.demo_password,
+            minimum_os_version: input.minimum_os_version,
             screenshot_paths: input.screenshot_paths,
             manifest_path: input.manifest_path,
             plist_path: input.plist_path,
@@ -100,6 +103,7 @@ export async function runAnalysis(
             tested_ipv6: input.tested_ipv6,
             contextual_permissions: input.contextual_permissions,
             has_alternate_icons: input.has_alternate_icons,
+
         };
 
         // Create progress callback for hard rules
@@ -278,6 +282,7 @@ export async function runAnalysis(
                 .update({
                     status: 'completed',
                     report_generated: true,
+                    error_message: null,
                     completed_at: new Date().toISOString(),
                 })
                 .eq('submission_id', submissionId);
@@ -501,8 +506,8 @@ async function updateJobStatus(
         .from('analysis_jobs')
         .update({
             status,
-            ...(status === 'running' ? { started_at: new Date().toISOString() } : {}),
-            ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {}),
+            ...(status === 'running' ? { started_at: new Date().toISOString(), error_message: null } : {}),
+            ...(status === 'completed' ? { completed_at: new Date().toISOString(), error_message: null } : {}),
         })
         .eq('submission_id', submissionId);
 

@@ -66,7 +66,7 @@ program
     .option('--manifest <path>', 'Path to PrivacyInfo.xcprivacy')
     .option('--screenshots <glob>', 'Screenshot paths (glob pattern)')
     .option('--json', 'Output results as JSON')
-    .action(submitCommand)
+    .action((path, options) => submitCommand(path, options))
 
 program
     .command('status [id]')
