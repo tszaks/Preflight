@@ -1,6 +1,8 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+buildCommand = "npm install && npm run build"
+watchPatterns = ["packages/web/**"]
 
 [deploy]
-startCommand = "node packages/web/server.js"
+startCommand = "npm run start -w packages/web"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
