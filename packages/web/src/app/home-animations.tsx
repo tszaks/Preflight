@@ -66,31 +66,8 @@ export function HomeAnimations() {
         )
       }
 
-      // Parallax on hero title - reduced movement to prevent cutoff
-      if (heroTitle) {
-        gsap.to(heroTitle, {
-          y: -20,
-          scrollTrigger: {
-            trigger: 'section',
-            start: 'top top',
-            end: 'bottom top',
-            scrub: 1.5
-          }
-        })
-      }
-
-      // Parallax on subtitle (subtle)
-      if (heroSubtitle) {
-        gsap.to(heroSubtitle, {
-          y: 10,
-          scrollTrigger: {
-            trigger: 'section',
-            start: 'center center',
-            end: 'bottom top',
-            scrub: 1
-          }
-        })
-      }
+      // Parallax disabled to prevent text cutoff issues
+      // Can re-enable once overflow constraints are properly debugged
     })
 
     return () => ctx.revert()
