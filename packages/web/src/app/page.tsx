@@ -1,68 +1,4 @@
 import Link from "next/link";
-import { WaitlistForm } from "@/components/WaitlistForm";
-
-export default function Home() {
-  return (
-    <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black">
-      {/* Waitlist Hero */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="container mx-auto px-6 max-w-5xl relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-gray-400 mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-            </span>
-            Coming Soon
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 vercel-gradient-text leading-[1]">
-            Stop getting rejected <br /> by the App Store.
-          </h1>
-
-          <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-light">
-            PreFlight scans your Xcode project, analyzes your screenshots, and checks your metadata
-            against Apple&apos;s review guidelines before you submit. Catch the small stuff that costs you weeks.
-          </p>
-
-          <WaitlistForm />
-
-          <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-gray-600" />
-              CLI + Web App
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-gray-600" />
-              AI-powered review simulation
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-gray-600" />
-              Built for vibe-coders and indie devs
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-white/5 mt-20">
-        <div className="container mx-auto px-6 max-w-5xl flex justify-between items-center">
-          <span className="text-sm text-gray-500">&copy; 2026 Preflight</span>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link href="/terms" className="hover:text-white transition-colors underline-offset-4 hover:underline">Terms</Link>
-            <Link href="/privacy" className="hover:text-white transition-colors underline-offset-4 hover:underline">Privacy</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-/* ============================================================
-   ORIGINAL HOMEPAGE — COMMENTED OUT FOR WAITLIST MODE
-   Uncomment this and delete the waitlist above to restore
-   ============================================================
-
-import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { CLIInstallSection } from "@/components/CLIInstallSection";
 
@@ -143,5 +79,3 @@ export default function Home() {
     </div>
   );
 }
-
-============================================================ */
