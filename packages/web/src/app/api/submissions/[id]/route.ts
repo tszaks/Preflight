@@ -14,9 +14,9 @@ export async function GET(
 
     const { id } = await params
 
-    const { data, error } = await supabase
+    const { data: submission, error } = await supabase
         .from('submissions')
-        .select('*, analysis_jobs(error_message)')
+        .select('*')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -26,5 +26,19 @@ export async function GET(
         return NextResponse.json({ message: 'Submission not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ data })
+    const { data: jobs } = await supabase
+        .from('analysis_jobs')
+        .select('status, error_message, created_at')
+        .eq('submission_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+    const latestJob = jobs?.[0]
+    const analysis_jobs = latestJob
+        ? [{
+            error_message: latestJob.status === 'failed' ? latestJob.error_message : null,
+        }]
+        : []
+
+    return NextResponse.json({ data: { ...submission, analysis_jobs } })
 }

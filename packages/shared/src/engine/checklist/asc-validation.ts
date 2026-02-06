@@ -152,17 +152,18 @@ export function checkAscData(input: SoftRulesInput): CheckResult[] {
     }
 
     // ─── Age Rating Validation ───────────────────────────────────────────────
-    if (input.asc_age_rating && input.age_rating) {
+    const declaredAgeRating = normalizeAgeRating(input.age_rating);
+    if (input.asc_age_rating && declaredAgeRating) {
         // Check for rating mismatch
-        const userRating = input.age_rating.toUpperCase().replace(/[^0-9+]/g, '');
-        const ascRating = input.asc_age_rating.rating || '';
+        const userRating = declaredAgeRating.toUpperCase().replace(/[^0-9+]/g, '');
+        const ascRating = typeof input.asc_age_rating.rating === 'string' ? input.asc_age_rating.rating : '';
 
         if (ascRating && !ratingMatches(userRating, ascRating)) {
             checks.push({
                 category: 'metadata',
                 severity: 'warning',
                 title: 'Age rating mismatch between submission and App Store Connect',
-                description: `Your submission declares an age rating of "${input.age_rating}", but App Store Connect shows "${ascRating}". This inconsistency may cause confusion or rejection.`,
+                description: `Your submission declares an age rating of "${declaredAgeRating}", but App Store Connect shows "${ascRating}". This inconsistency may cause confusion or rejection.`,
                 guideline_ref: 'Age Rating Guidelines',
                 fix_suggestion: 'Ensure your age rating declarations are consistent between your submission and App Store Connect.',
                 confidence: 85,
@@ -267,4 +268,22 @@ function ratingMatches(userRating: string, ascRating: string): boolean {
     // Fallback to partial match
     return ascRating.toLowerCase().includes(userRating.toLowerCase()) ||
         userRating.toLowerCase().includes(ascRating.toLowerCase());
+}
+
+function normalizeAgeRating(value: unknown): string | null {
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : null;
+    }
+
+    // Defensive fallback for legacy/malformed payloads where age_rating was saved as an object.
+    if (value && typeof value === 'object') {
+        const rating = (value as Record<string, unknown>).rating;
+        if (typeof rating === 'string') {
+            const trimmed = rating.trim();
+            return trimmed.length > 0 ? trimmed : null;
+        }
+    }
+
+    return null;
 }
