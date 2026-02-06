@@ -78,6 +78,16 @@ export interface FeatureChecklist {
     externalLinkCompliant?: boolean // Conditional: shown when externalPayments=true
     accountDeletion?: boolean
     restorePurchases?: boolean
+    ugcModeration?: boolean
+    healthDisclaimers?: boolean
+    aiContentFiltering?: boolean
+    subscriptionTerms?: boolean
+    sellsDigitalOutsideIap?: boolean
+    subscriptionsWithoutLogin?: boolean
+    screenshotsMatchUi?: boolean
+    testedIpv6?: boolean
+    contextualPermissions?: boolean
+    alternateIcons?: boolean
 }
 
 export interface ComplianceData {
@@ -831,6 +841,16 @@ export async function collectFeatureChecklist(
         // Conditionals preserved from 'checklist' object if exists, else undefined
         accountDeletion: checklist?.accountDeletion,
         restorePurchases: checklist?.restorePurchases,
+        ugcModeration: checklist?.ugcModeration,
+        healthDisclaimers: checklist?.healthDisclaimers,
+        aiContentFiltering: checklist?.aiContentFiltering,
+        subscriptionTerms: checklist?.subscriptionTerms,
+        sellsDigitalOutsideIap: checklist?.sellsDigitalOutsideIap,
+        subscriptionsWithoutLogin: checklist?.subscriptionsWithoutLogin,
+        screenshotsMatchUi: checklist?.screenshotsMatchUi,
+        testedIpv6: checklist?.testedIpv6,
+        contextualPermissions: checklist?.contextualPermissions,
+        alternateIcons: checklist?.alternateIcons,
         creatorAgeGate: checklist?.creatorAgeGate,
         miniAppsReviewed: checklist?.miniAppsReviewed,
         euTraderDeclared: checklist?.euTraderDeclared,
@@ -893,6 +913,52 @@ export async function collectFeatureChecklist(
                 if (checklist.ugc) {
                     steps.push({
                         type: 'followup',
+                        key: 'ugcModeration',
+                        label: 'Does your app include UGC moderation (reporting, blocking, and filtering)?',
+                        condition: () => true
+                    })
+                }
+                if (checklist.healthClaims) {
+                    steps.push({
+                        type: 'followup',
+                        key: 'healthDisclaimers',
+                        label: 'Does your app include clear medical disclaimers for health claims?',
+                        condition: () => true
+                    })
+                }
+                if (checklist.aiContent) {
+                    steps.push({
+                        type: 'followup',
+                        key: 'aiContentFiltering',
+                        label: 'Do you filter AI-generated output for harmful/unsafe content?',
+                        condition: () => true
+                    })
+                }
+                if (checklist.subscriptions) {
+                    steps.push({
+                        type: 'followup',
+                        key: 'subscriptionTerms',
+                        label: 'Do you clearly display subscription price/period/terms on the paywall?',
+                        condition: () => true
+                    })
+                    steps.push({
+                        type: 'followup',
+                        key: 'subscriptionsWithoutLogin',
+                        label: 'Can users access subscription status without account login?',
+                        condition: () => true
+                    })
+                }
+                if (checklist.iap || checklist.subscriptions || checklist.externalPayments) {
+                    steps.push({
+                        type: 'followup',
+                        key: 'sellsDigitalOutsideIap',
+                        label: 'Does your app sell digital goods outside Apple IAP?',
+                        condition: () => true
+                    })
+                }
+                if (checklist.ugc) {
+                    steps.push({
+                        type: 'followup',
                         key: 'creatorAgeGate',
                         label: 'Do you verify content creators are 13+ (or local minimum age)?',
                         condition: () => true
@@ -922,6 +988,30 @@ export async function collectFeatureChecklist(
                         condition: () => true
                     })
                 }
+                steps.push({
+                    type: 'followup',
+                    key: 'screenshotsMatchUi',
+                    label: 'Do your App Store screenshots match the current app UI?',
+                    condition: () => true
+                })
+                steps.push({
+                    type: 'followup',
+                    key: 'testedIpv6',
+                    label: 'Has your app been tested on an IPv6-only network?',
+                    condition: () => true
+                })
+                steps.push({
+                    type: 'followup',
+                    key: 'contextualPermissions',
+                    label: 'Are permissions requested contextually (when user triggers the feature)?',
+                    condition: () => true
+                })
+                steps.push({
+                    type: 'followup',
+                    key: 'alternateIcons',
+                    label: 'Does your app include alternate app icons?',
+                    condition: () => true
+                })
 
                 currentStepIdx++
                 break
@@ -1132,6 +1222,24 @@ export function parseComplianceFromApi(data: Record<string, any>): ComplianceDat
 
 export function formatComplianceSummary(compliance: ComplianceData): string[] {
     const lines: string[] = []
+    const CONDITIONAL_FEATURE_LABELS: Record<string, string> = {
+        accountDeletion: 'Account Deletion Button',
+        restorePurchases: 'Restore Purchases Button',
+        ugcModeration: 'UGC Moderation Controls',
+        healthDisclaimers: 'Health Disclaimers',
+        aiContentFiltering: 'AI Output Filtering',
+        subscriptionTerms: 'Subscription Terms on Paywall',
+        sellsDigitalOutsideIap: 'Digital Goods Outside IAP',
+        subscriptionsWithoutLogin: 'Subscriptions Accessible Without Login',
+        screenshotsMatchUi: 'Screenshots Match Current UI',
+        testedIpv6: 'Tested on IPv6 Network',
+        contextualPermissions: 'Contextual Permission Prompts',
+        alternateIcons: 'Alternate App Icons',
+        creatorAgeGate: 'Creator Age Verification',
+        miniAppsReviewed: 'Mini Apps Individually Reviewed',
+        euTraderDeclared: 'EU Trader Status Declared',
+        externalLinkCompliant: 'External Link API Compliance',
+    }
 
     lines.push(`  Age Rating: ${compliance.ageRating}`)
 
@@ -1154,7 +1262,7 @@ export function formatComplianceSummary(compliance: ComplianceData): string[] {
         .filter(([_, v]) => v === true)
         .map(([k, _]) => {
             const featureInfo = FEATURE_ITEMS.find(f => f.value === k)
-            return featureInfo?.label || k
+            return featureInfo?.label || CONDITIONAL_FEATURE_LABELS[k] || k
         })
 
     if (enabledFeatures.length > 0) {

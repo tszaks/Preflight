@@ -80,6 +80,30 @@ const ITEMS = [
         label: 'External Payment Links (US)',
         desc: 'Do you link users to pay for digital goods outside of Apple?',
         icon: ShoppingCart
+    },
+    {
+        id: 'screenshotsMatchUi',
+        label: 'Screenshots Match Current UI',
+        desc: 'Do your App Store screenshots accurately reflect the current app interface?',
+        icon: ShieldAlert
+    },
+    {
+        id: 'testedIpv6',
+        label: 'Tested on IPv6 Network',
+        desc: 'Has your app been tested on an IPv6-only network?',
+        icon: ShieldAlert
+    },
+    {
+        id: 'contextualPermissions',
+        label: 'Contextual Permission Prompts',
+        desc: 'Do you request permissions only when users trigger related features?',
+        icon: ShieldAlert
+    },
+    {
+        id: 'alternateIcons',
+        label: 'Alternate App Icons',
+        desc: 'Does your app include alternate icons users can choose?',
+        icon: ShieldAlert
     }
 ]
 
@@ -107,6 +131,27 @@ const CONDITIONAL_ITEMS = [
         showWhen: (v: ChecklistValue) => v.ugc === true
     },
     {
+        id: 'ugcModeration',
+        label: 'UGC Moderation Controls',
+        desc: 'Do you provide reporting, blocking, and filtering for user-generated content?',
+        icon: Users,
+        showWhen: (v: ChecklistValue) => v.ugc === true
+    },
+    {
+        id: 'healthDisclaimers',
+        label: 'Health Disclaimers',
+        desc: 'Do you include clear disclaimers for medical or health-related claims?',
+        icon: ShieldAlert,
+        showWhen: (v: ChecklistValue) => v.healthClaims === true
+    },
+    {
+        id: 'aiContentFiltering',
+        label: 'AI Output Filtering',
+        desc: 'Do you filter AI-generated content for harmful, illegal, or explicit output?',
+        icon: ShieldAlert,
+        showWhen: (v: ChecklistValue) => v.aiContent === true
+    },
+    {
         id: 'miniAppsReviewed',
         label: 'Mini Apps Individually Reviewed',
         desc: 'Have all mini apps/plugins been submitted for individual Apple review?',
@@ -126,6 +171,27 @@ const CONDITIONAL_ITEMS = [
         desc: 'Do you use StoreKit External Link Account API with Apple&apos;s disclosure?',
         icon: ShoppingCart,
         showWhen: (v: ChecklistValue) => v.externalPayments === true
+    },
+    {
+        id: 'subscriptionTerms',
+        label: 'Subscription Terms on Paywall',
+        desc: 'Do you display subscription price, billing period, and terms clearly on the paywall?',
+        icon: ShoppingCart,
+        showWhen: (v: ChecklistValue) => v.subscriptions === true
+    },
+    {
+        id: 'subscriptionsWithoutLogin',
+        label: 'Subscriptions Accessible Without Login',
+        desc: 'Can users access subscription status without being forced to create an app account?',
+        icon: ShoppingCart,
+        showWhen: (v: ChecklistValue) => v.subscriptions === true
+    },
+    {
+        id: 'sellsDigitalOutsideIap',
+        label: 'Digital Goods Outside IAP',
+        desc: 'Do you sell digital goods or features outside Apple In-App Purchase?',
+        icon: ShoppingCart,
+        showWhen: (v: ChecklistValue) => v.iap === true || v.subscriptions === true || v.externalPayments === true
     }
 ]
 
