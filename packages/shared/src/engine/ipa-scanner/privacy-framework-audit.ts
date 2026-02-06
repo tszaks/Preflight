@@ -5,9 +5,12 @@
  *
  * Example: If HealthKit framework is linked, the privacy manifest should
  * declare NSPrivacyCollectedDataTypeHealth or NSPrivacyCollectedDataTypeFitness.
+ *
+ * Uses structural plist parsing when possible, with string-match fallback.
  */
 
 import type { CheckResult } from '../types';
+import { parsePlist } from '../utils/parse-plist';
 
 /** Maps frameworks/entitlements to required privacy manifest data types */
 interface FrameworkPrivacyRule {
@@ -88,6 +91,30 @@ const FRAMEWORK_PRIVACY_RULES: FrameworkPrivacyRule[] = [
 ];
 
 /**
+ * Extract declared NSPrivacyCollectedDataType values from manifest content.
+ * Returns null if parsing fails (caller should fall back to string matching).
+ */
+function extractDeclaredDataTypes(manifestContent: string): Set<string> | null {
+    const parsed = parsePlist(manifestContent);
+    if (!parsed) return null;
+
+    const collectedTypes = parsed.NSPrivacyCollectedDataTypes;
+    if (!Array.isArray(collectedTypes)) return new Set();
+
+    const types = new Set<string>();
+    for (const entry of collectedTypes) {
+        if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+            const entryDict = entry as Record<string, unknown>;
+            const dataType = entryDict.NSPrivacyCollectedDataType;
+            if (typeof dataType === 'string') {
+                types.add(dataType);
+            }
+        }
+    }
+    return types;
+}
+
+/**
  * Audit privacy frameworks and entitlements against the privacy manifest.
  * Returns warnings when frameworks that access sensitive data are linked
  * but the corresponding data types are not declared in the manifest.
@@ -99,6 +126,10 @@ export function auditPrivacyFrameworks(
 ): CheckResult[] {
     const results: CheckResult[] = [];
     const frameworkSet = new Set(frameworks);
+
+    // Try structural parsing of manifest
+    const declaredTypes = manifestContent ? extractDeclaredDataTypes(manifestContent) : null;
+    const isStructural = declaredTypes !== null;
 
     for (const rule of FRAMEWORK_PRIVACY_RULES) {
         // Check if this rule matches any detected framework or entitlement
@@ -129,9 +160,21 @@ export function auditPrivacyFrameworks(
             continue;
         }
 
-        const anyDeclared = manifestContent
-            ? requiredTypes.some(t => manifestContent.includes(t))
-            : false;
+        let anyDeclared: boolean;
+        let confidence: number;
+
+        if (isStructural && manifestContent) {
+            // Structural check: look up in parsed data types set
+            anyDeclared = requiredTypes.some(t => declaredTypes!.has(t));
+            confidence = rule.confidence ?? 90;
+        } else if (manifestContent) {
+            // Fallback: string matching with lower confidence
+            anyDeclared = requiredTypes.some(t => manifestContent.includes(t));
+            confidence = Math.min((rule.confidence ?? 85) - 15, 70);
+        } else {
+            anyDeclared = false;
+            confidence = rule.confidence ?? 85;
+        }
 
         if (!anyDeclared) {
             const expectedTypes = requiredTypes.join(' or ');
@@ -146,7 +189,7 @@ export function auditPrivacyFrameworks(
                 fix_suggestion:
                     `If your app collects data via ${rule.displayName}, add the appropriate ` +
                     'NSPrivacyCollectedDataType entries to your PrivacyInfo.xcprivacy file.',
-                confidence: rule.confidence ?? 85,
+                confidence,
             });
         }
     }

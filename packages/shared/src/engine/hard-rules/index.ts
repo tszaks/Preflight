@@ -15,6 +15,7 @@ import { checkPrivacyMismatch } from './privacy-mismatch';
 import { scanIPA } from '../ipa-scanner';
 import { auditPrivacyFrameworks } from '../ipa-scanner/privacy-framework-audit';
 import { auditEntitlements } from '../ipa-scanner/entitlements-audit';
+import { checkAssociatedDomains } from '../ipa-scanner/associated-domains';
 
 export interface HardRulesResult {
     checks: CheckResult[];
@@ -88,7 +89,9 @@ export async function runHardRules(
         check: PROGRESS_CHECKS.INFO_PLIST,
         phase: 'hard_rules',
     }));
-    const plistChecks = checkInfoPlist(options?.plistContent);
+    const plistChecks = checkInfoPlist(options?.plistContent, {
+        minimum_os_version: input.minimum_os_version,
+    });
     checks.push(...plistChecks);
     emit(createProgressEvent('check_complete', `Info.plist parsed`, 80, {
         check: PROGRESS_CHECKS.INFO_PLIST,
@@ -159,6 +162,11 @@ export async function runHardRules(
                 effectiveManifest,
             );
             checks.push(...entitlementAuditChecks);
+
+            const associatedDomainChecks = await checkAssociatedDomains(
+                ipaScanResult.extracted.entitlements,
+            );
+            checks.push(...associatedDomainChecks);
         }
     }
 

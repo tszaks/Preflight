@@ -5,6 +5,7 @@
  */
 
 import type { CheckResult } from '../types';
+import { parsePlist } from '../utils/parse-plist';
 
 /** Well-known entitlement keys and their meaning */
 const ENTITLEMENT_INFO: Record<string, { name: string; review_note?: string }> = {
@@ -68,6 +69,8 @@ const ENTITLEMENT_INFO: Record<string, { name: string; review_note?: string }> =
 export function analyzeEntitlements(entitlementsXml: string): CheckResult[] {
     const results: CheckResult[] = [];
 
+    const parsed = parsePlist(entitlementsXml);
+
     for (const [key, info] of Object.entries(ENTITLEMENT_INFO)) {
         if (entitlementsXml.includes(key)) {
             if (info.review_note) {
@@ -96,6 +99,30 @@ export function analyzeEntitlements(entitlementsXml: string): CheckResult[] {
                 confidence: 95,
             });
         }
+    }
+
+    // Check for debug entitlement (get-task-allow)
+    let getTaskAllowTrue = false;
+    if (parsed && typeof parsed['get-task-allow'] === 'boolean') {
+        getTaskAllowTrue = parsed['get-task-allow'] === true;
+    } else {
+        const match = entitlementsXml.match(/<key>get-task-allow<\/key>\s*<true\s*\/>/i);
+        getTaskAllowTrue = !!match;
+    }
+
+    if (getTaskAllowTrue) {
+        results.push({
+            category: 'ipa_binary',
+            severity: 'critical',
+            title: 'Debug entitlement detected (get-task-allow = true)',
+            description:
+                'The IPA includes the debug entitlement get-task-allow, which is not permitted for App Store submissions. ' +
+                'This will fail App Store validation.',
+            fix_suggestion:
+                'Archive and export the app using a Distribution provisioning profile. ' +
+                'Ensure the Release build configuration is used and Debug entitlements are disabled.',
+            confidence: parsed ? 100 : 85,
+        });
     }
 
     return results;

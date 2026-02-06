@@ -14,6 +14,7 @@
 import type { CheckResult } from '../../types';
 import type { MachOParseResult } from './parser';
 import { PRIVATE_API_BLOCKLIST, PRIVATE_FRAMEWORKS, type PrivateAPIEntry } from './private-api-blocklist';
+import { SDK_REQUIREMENTS } from '../../knowledge-base/requirements';
 
 export interface MachOAnalysisResult {
     checks: CheckResult[];
@@ -21,6 +22,7 @@ export interface MachOAnalysisResult {
         arch: string;
         minOS?: string;
         sdk?: string;
+        platform?: string;
         linkedFrameworkCount: number;
         importedSymbolCount: number;
         importedSymbols: string[];
@@ -110,8 +112,9 @@ export function analyzeMachOBinary(parseResult: MachOParseResult, binaryName?: s
 
     // 5. Check deployment target
     if (parseResult.buildVersion?.minOS) {
-        const minOS = parseFloat(parseResult.buildVersion.minOS);
-        if (minOS < 15.0) {
+        const minOS = parseVersionNumber(parseResult.buildVersion.minOS);
+        const minRequired = parseVersionNumber(SDK_REQUIREMENTS.minimum_deployment_target);
+        if (minOS !== null && minRequired !== null && minOS < minRequired) {
             checks.push({
                 category: 'ipa_binary',
                 severity: 'info',
@@ -119,17 +122,61 @@ export function analyzeMachOBinary(parseResult: MachOParseResult, binaryName?: s
                 description:
                     `The binary's minimum deployment target is iOS ${parseResult.buildVersion.minOS}. ` +
                     `While not a rejection reason, apps targeting very old iOS versions may encounter ` +
-                    `additional review scrutiny. As of 2026, most apps target iOS 16.0 or higher.`,
+                    `additional review scrutiny. As of 2026, most apps target iOS ${SDK_REQUIREMENTS.minimum_deployment_target} or higher.`,
                 guideline_ref: 'Build Settings',
                 fix_suggestion:
-                    'Consider raising the minimum deployment target to iOS 16.0 or higher ' +
+                    `Consider raising the minimum deployment target to iOS ${SDK_REQUIREMENTS.minimum_deployment_target} or higher ` +
                     'to take advantage of modern APIs and reduce compatibility testing burden.',
                 confidence: 80,
             });
         }
     }
 
-    // 6. Report encryption status (info only)
+    // 6. Check SDK version requirement (build SDK)
+    if (parseResult.buildVersion?.sdk) {
+        const sdkVersion = parseVersionNumber(parseResult.buildVersion.sdk);
+        const minSdkRequired = parseVersionNumber(SDK_REQUIREMENTS.minimum_sdk);
+
+        if (sdkVersion !== null && minSdkRequired !== null && sdkVersion < minSdkRequired) {
+            const afterDeadline = isAfterDeadline(SDK_REQUIREMENTS.deadline);
+            checks.push({
+                category: 'ipa_binary',
+                severity: afterDeadline ? 'critical' : 'warning',
+                title: afterDeadline
+                    ? 'App built with outdated iOS SDK'
+                    : 'Upcoming SDK requirement not met',
+                description:
+                    `The binary was built with iOS SDK ${parseResult.buildVersion.sdk}, ` +
+                    `but Apple requires iOS SDK ${SDK_REQUIREMENTS.minimum_sdk} (Xcode ${SDK_REQUIREMENTS.minimum_xcode}+) ` +
+                    `starting ${SDK_REQUIREMENTS.deadline}.`,
+                guideline_ref: 'App Store Connect Build Requirements',
+                fix_suggestion:
+                    `Build with Xcode ${SDK_REQUIREMENTS.minimum_xcode}+ and the iOS ${SDK_REQUIREMENTS.minimum_sdk} ` +
+                    'to avoid App Store validation failures.',
+                confidence: 90,
+            });
+        }
+    }
+
+    // 7. Platform sanity (App Store iOS builds should target iOS)
+    if (parseResult.buildVersion?.platform &&
+        parseResult.buildVersion.platform !== 'iOS' &&
+        !parseResult.buildVersion.platform.startsWith('Unknown')) {
+        checks.push({
+            category: 'ipa_binary',
+            severity: 'critical',
+            title: `Unexpected build platform: ${parseResult.buildVersion.platform}`,
+            description:
+                `The Mach-O build platform is "${parseResult.buildVersion.platform}". ` +
+                'App Store submissions must target iOS. This may indicate a simulator or non‑iOS build.',
+            guideline_ref: 'App Store Connect Build Requirements',
+            fix_suggestion:
+                'Ensure you archive an iOS build (not simulator) using Xcode, then export for App Store.',
+            confidence: 95,
+        });
+    }
+
+    // 8. Report encryption status (info only)
     if (parseResult.encrypted) {
         checks.push({
             category: 'ipa_binary',
@@ -149,12 +196,26 @@ export function analyzeMachOBinary(parseResult: MachOParseResult, binaryName?: s
             arch: parseResult.arch,
             minOS: parseResult.buildVersion?.minOS,
             sdk: parseResult.buildVersion?.sdk,
+            platform: parseResult.buildVersion?.platform,
             linkedFrameworkCount: parseResult.linkedFrameworks.length,
             importedSymbolCount: parseResult.importedSymbols.length,
             importedSymbols: parseResult.importedSymbols,
             encrypted: parseResult.encrypted,
         },
     };
+}
+
+function parseVersionNumber(value: string | undefined): number | null {
+    if (!value) return null;
+    const match = value.match(/(\d+)(\.\d+)?/);
+    if (!match) return null;
+    return parseFloat(match[0]);
+}
+
+function isAfterDeadline(deadline: string): boolean {
+    const date = new Date(deadline);
+    if (Number.isNaN(date.getTime())) return false;
+    return Date.now() >= date.getTime();
 }
 
 interface PrivateAPIHit {

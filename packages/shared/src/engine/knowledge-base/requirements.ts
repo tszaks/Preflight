@@ -53,16 +53,27 @@ export const OPTIONAL_PLIST_KEYS = [
 export const USAGE_DESCRIPTION_KEYS = [
     'NSCameraUsageDescription',
     'NSPhotoLibraryUsageDescription',
+    'NSPhotoLibraryAddUsageDescription',
     'NSMicrophoneUsageDescription',
     'NSLocationWhenInUseUsageDescription',
     'NSLocationAlwaysUsageDescription',
+    'NSLocationAlwaysAndWhenInUseUsageDescription',
     'NSContactsUsageDescription',
     'NSCalendarsUsageDescription',
+    'NSRemindersUsageDescription',
     'NSFaceIDUsageDescription',
     'NSHealthShareUsageDescription',
+    'NSHealthUpdateUsageDescription',
     'NSMotionUsageDescription',
     'NSSpeechRecognitionUsageDescription',
     'NSBluetoothAlwaysUsageDescription',
+    'NSBluetoothPeripheralUsageDescription',
+    'NSNearbyInteractionUsageDescription',
+    'NSLocalNetworkUsageDescription',
+    'NSAppleMusicUsageDescription',
+    'NSMediaLibraryUsageDescription',
+    'NSSiriUsageDescription',
+    'NSUserTrackingUsageDescription',
 ] as const;
 
 export const PRIVACY_MANIFEST_API_TYPES = [
@@ -80,6 +91,15 @@ export const PRIVACY_MANIFEST_REASON_CODES: Record<string, string[]> = {
     'NSPrivacyAccessedAPICategoryActiveKeyboards': ['3EC4.1', '54BD.1'],
     'NSPrivacyAccessedAPICategoryUserDefaults': ['CA92.1', '1C8F.1', 'C56D.1', 'AC6B.1'],
 } as const;
+
+export const PRIVACY_MANIFEST_DATA_PURPOSES = [
+    'NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising',
+    'NSPrivacyCollectedDataTypePurposeDeveloperAdvertising',
+    'NSPrivacyCollectedDataTypePurposeAnalytics',
+    'NSPrivacyCollectedDataTypePurposeProductPersonalization',
+    'NSPrivacyCollectedDataTypePurposeAppFunctionality',
+    'NSPrivacyCollectedDataTypePurposeOther',
+] as const;
 
 export const APP_CATEGORIES = [
     'Books', 'Business', 'Developer Tools', 'Education', 'Entertainment',

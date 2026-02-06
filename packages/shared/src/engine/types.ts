@@ -34,6 +34,9 @@ export interface HardRulesInput {
     privacy_url?: string | null;
     support_url?: string | null;
     marketing_url?: string | null;
+    demo_username?: string | null;
+    demo_password?: string | null;
+    minimum_os_version?: string | null;
     screenshot_paths: string[];
     manifest_path?: string | null;
     plist_path?: string | null;
@@ -273,20 +276,29 @@ export interface ASOAnalysisResult {
 
 // Valid screenshot dimensions (points × scale factor)
 export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number; device: string }> = [
+    // iPhone 6.9" (iPhone 16 Pro Max)
+    { width: 1320, height: 2868, device: '6.9" iPhone' },
     // iPhone 6.7" (iPhone 15 Pro Max, 14 Pro Max)
     { width: 1290, height: 2796, device: '6.7" iPhone' },
+    // iPhone 6.5" (iPhone 14 Plus, 13 Pro Max)
+    { width: 1284, height: 2778, device: '6.5" iPhone' },
     // iPhone 6.1" (iPhone 15 Pro, 14 Pro)
     { width: 1179, height: 2556, device: '6.1" iPhone' },
     // iPhone 5.5" (iPhone 8 Plus - still accepted)
     { width: 1242, height: 2208, device: '5.5" iPhone' },
+    // iPad Pro 13" (M4)
+    { width: 2064, height: 2752, device: '13" iPad Pro' },
     // iPad Pro 12.9"
     { width: 2048, height: 2732, device: '12.9" iPad Pro' },
     // iPad Pro 11"
     { width: 1668, height: 2388, device: '11" iPad Pro' },
     // Also allow landscape (swapped)
+    { width: 2868, height: 1320, device: '6.9" iPhone (landscape)' },
     { width: 2796, height: 1290, device: '6.7" iPhone (landscape)' },
+    { width: 2778, height: 1284, device: '6.5" iPhone (landscape)' },
     { width: 2556, height: 1179, device: '6.1" iPhone (landscape)' },
     { width: 2208, height: 1242, device: '5.5" iPhone (landscape)' },
+    { width: 2752, height: 2064, device: '13" iPad Pro (landscape)' },
     { width: 2732, height: 2048, device: '12.9" iPad Pro (landscape)' },
     { width: 2388, height: 1668, device: '11" iPad Pro (landscape)' },
 ];
