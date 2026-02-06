@@ -1,37 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type Dispatch, type SetStateAction } from 'react'
 import { Check, CreditCard, Zap, Shield, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+
+async function fetchCreditsForUser(
+    setCurrentCredits: Dispatch<SetStateAction<number | null>>
+) {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+        const { data } = await supabase
+            .from('profiles')
+            .select('credits')
+            .eq('id', user.id)
+            .single()
+        setCurrentCredits(data?.credits || 0)
+    }
+}
 
 export default function CreditsPage() {
-    const router = useRouter()
-    const [loading, setLoading] = useState(false)
     const [currentCredits, setCurrentCredits] = useState<number | null>(null)
 
     useEffect(() => {
-        fetchCredits()
+        void fetchCreditsForUser(setCurrentCredits)
     }, [])
 
-    const fetchCredits = async () => {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-            const { data } = await supabase
-                .from('profiles')
-                .select('credits')
-                .eq('id', user.id)
-                .single()
-            setCurrentCredits(data?.credits || 0)
-        }
-    }
-
     const handlePurchase = (plan: string) => {
-        setLoading(true)
         // Todo: Integrate Stripe
         alert(`Initiating purchase for ${plan} plan. Stripe integration coming soon.`)
-        setLoading(false)
     }
 
     return (

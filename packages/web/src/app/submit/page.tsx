@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense, type InputHTMLAttributes } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Upload, Check, AlertCircle, Plus, X, Link as LinkIcon, Loader2, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/components/ui/status'
 import { scanProjectFolder } from '@/lib/project-scanner'
@@ -19,6 +20,15 @@ import {
 } from '@/lib/upload'
 
 const STEPS = ["App Info", "Files", "Compliance", "Review"]
+
+type AutofillData = Record<string, unknown>
+
+type DirectoryInputProps = InputHTMLAttributes<HTMLInputElement> & {
+    webkitdirectory?: string
+    directory?: string
+}
+
+const directoryInputProps: DirectoryInputProps = { webkitdirectory: '', directory: '' }
 
 function SubmitPageContent() {
     const router = useRouter()
@@ -145,19 +155,19 @@ function SubmitPageContent() {
         }
     }
 
-    const handleAutofill = (data: any) => {
-        if (data.app_name) setAppName(data.app_name)
-        if (data.promotional_text) setPromotionalText(data.promotional_text)
-        if (data.description) setDescription(data.description)
-        if (data.keywords) setKeywords(data.keywords)
-        if (data.category) setCategory(data.category)
-        if (data.support_url) setSupportUrl(data.support_url)
-        if (data.marketing_url) setMarketingUrl(data.marketing_url)
+    const handleAutofill = (data: AutofillData) => {
+        if (typeof data.app_name === 'string') setAppName(data.app_name)
+        if (typeof data.promotional_text === 'string') setPromotionalText(data.promotional_text)
+        if (typeof data.description === 'string') setDescription(data.description)
+        if (typeof data.keywords === 'string') setKeywords(data.keywords)
+        if (typeof data.category === 'string') setCategory(data.category)
+        if (typeof data.support_url === 'string') setSupportUrl(data.support_url)
+        if (typeof data.marketing_url === 'string') setMarketingUrl(data.marketing_url)
 
         // Sign-in info from ASC
-        if (data.sign_in_required !== undefined) setSignInRequired(data.sign_in_required)
-        if (data.demo_username) setDemoUsername(data.demo_username)
-        if (data.demo_password) setDemoPassword(data.demo_password)
+        if (typeof data.sign_in_required === 'boolean') setSignInRequired(data.sign_in_required)
+        if (typeof data.demo_username === 'string') setDemoUsername(data.demo_username)
+        if (typeof data.demo_password === 'string') setDemoPassword(data.demo_password)
 
         // Refresh connection status to show the selected app name
         checkAscStatus()
@@ -271,7 +281,7 @@ function SubmitPageContent() {
 
             // All files now uploaded — finalize
             await handleFinalize(activeSubmissionId)
-        } catch (err: any) {
+        } catch (err) {
             console.error('Retry error:', err)
             setUploadPhase('error')
             setLoading(false)
@@ -525,7 +535,7 @@ function SubmitPageContent() {
                                     {scanning ? "Scanning..." : "Scan Xcode Folder"}
                                     <input
                                         type="file"
-                                        {...({ webkitdirectory: "" } as any)}
+                                        {...directoryInputProps}
                                         onChange={handleFolderScan}
                                         hidden
                                     />
@@ -603,7 +613,14 @@ function SubmitPageContent() {
                                 ) : (
                                     screenshots.map((_, i) => (
                                         <div key={i} className="flex-shrink-0 w-32 aspect-[9/16] bg-white/5 rounded relative group overflow-hidden border border-white/5">
-                                            <img src={URL.createObjectURL(screenshots[i])} alt="preview" className="object-cover w-full h-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                                            <Image
+                                                src={URL.createObjectURL(screenshots[i])}
+                                                alt="preview"
+                                                fill
+                                                sizes="128px"
+                                                unoptimized
+                                                className="object-cover w-full h-full opacity-50 group-hover:opacity-100 transition-opacity"
+                                            />
                                             <button
                                                 onClick={() => setScreenshots(prev => prev.filter((_, idx) => idx !== i))}
                                                 className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-white/10"
@@ -889,13 +906,14 @@ function SubmitPageContent() {
 
             // Phase 3: Finalize — update file paths, deduct credits, trigger worker
             await handleFinalize(submissionId)
-        } catch (err: any) {
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Something went wrong'
             console.error('Submission error:', err)
             if (inUploadPhase) {
                 setUploadPhase('error')
                 setUploadProgress(prev => ({
                     ...prev,
-                    failedFiles: [{ type: 'unknown', error: err.message || 'Something went wrong' }]
+                    failedFiles: [{ type: 'unknown', error: message }]
                 }))
             } else {
                 alert('Something went wrong during submission')

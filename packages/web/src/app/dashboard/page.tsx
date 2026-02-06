@@ -3,9 +3,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { cn, StatusLight } from "@/components/ui/status";
 export const dynamic = "force-dynamic";
-import { ArrowRight, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import { ArchiveButton } from "@/components/ArchiveButton";
-import { archiveSubmission } from "./actions";
+
+type Submission = {
+    id: string;
+    status: string;
+    app_name?: string | null;
+    created_at: string;
+    is_rereviewing?: boolean | null;
+};
 
 export default async function DashboardPage() {
     const supabase = await createClient();
@@ -27,8 +34,9 @@ export default async function DashboardPage() {
         console.error("Error fetching submissions:", submissionsError);
     }
 
-    const drafts = submissions?.filter(s => s.status === 'draft' && !s.is_rereviewing) || [];
-    const active = submissions?.filter(s => s.status !== 'draft' && !s.is_rereviewing) || [];
+    const submissionRows = (submissions ?? []) as Submission[];
+    const drafts = submissionRows.filter(s => s.status === 'draft' && !s.is_rereviewing);
+    const active = submissionRows.filter(s => s.status !== 'draft' && !s.is_rereviewing);
 
     function formatDate(dateStr: string): string {
         return new Date(dateStr).toLocaleDateString("en-US", {
@@ -51,7 +59,7 @@ export default async function DashboardPage() {
         }
     }
 
-    function SubmissionCard({ sub, variant = 'full' }: { sub: any, variant?: 'full' | 'draft' }) {
+    function SubmissionCard({ sub, variant = 'full' }: { sub: Submission, variant?: 'full' | 'draft' }) {
         return (
             <Link
                 href={sub.status === 'draft' ? `/submit?draft=${sub.id}` : `/report/${sub.id}`}
@@ -117,7 +125,7 @@ export default async function DashboardPage() {
                     </div>
                     <h2 className="text-xl font-medium mb-2">No Submissions Yet</h2>
                     <p className="text-gray-400 text-sm max-w-sm mb-8 font-light">
-                        Upload your first iOS submission and Preflight will scan it against Apple's review guidelines.
+                        Upload your first iOS submission and Preflight will scan it against Apple&apos;s review guidelines.
                     </p>
                     <Link href="/submit" className="vercel-btn-primary flex items-center gap-2">
                         Begin Preflight Check <ArrowRight className="w-4 h-4" />

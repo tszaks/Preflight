@@ -18,13 +18,13 @@ export default function TermsPage() {
 
                 <h2 className="text-xl font-semibold text-white mt-8">1. Acceptance of Terms</h2>
                 <p>
-                    By accessing and using Preflight ("the Service"), you agree to be bound by these Terms of Service.
+                    By accessing and using Preflight (&quot;the Service&quot;), you agree to be bound by these Terms of Service.
                     If you do not agree to these terms, please do not use our Service.
                 </p>
 
                 <h2 className="text-xl font-semibold text-white mt-8">2. Description of Service</h2>
                 <p>
-                    Preflight provides an automated analysis service that simulates Apple's App Store review process
+                    Preflight provides an automated analysis service that simulates Apple&apos;s App Store review process
                     to help developers identify potential compliance issues before submitting their iOS applications.
                 </p>
 

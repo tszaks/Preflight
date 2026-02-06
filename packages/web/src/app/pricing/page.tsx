@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Check, Shield, Clock, Zap } from 'lucide-react'
 import { buyCredits } from './actions'
-import { StatusLight } from '@/components/ui/status'
 import { cn } from '@/components/ui/status'
 
 const plans = [

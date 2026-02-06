@@ -6,7 +6,7 @@ import Stripe from 'stripe'
 import { CREDIT_AMOUNTS } from '@preflight/shared/constants'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-10-10' as any, // Use actual current API version
+    apiVersion: '2025-10-10' as Stripe.LatestApiVersion, // Use actual current API version
 })
 
 const PRICE_IDS: Record<string, string> = {

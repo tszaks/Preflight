@@ -13,7 +13,7 @@ interface ASCApp {
 interface ASCConnectModalProps {
     isOpen: boolean
     onClose: () => void
-    onAutofill: (data: any) => void
+    onAutofill: (data: Record<string, unknown>) => void
 }
 
 export function ASCConnectModal({ isOpen, onClose, onAutofill }: ASCConnectModalProps) {
@@ -72,8 +72,9 @@ export function ASCConnectModal({ isOpen, onClose, onAutofill }: ASCConnectModal
             setApps(data.apps || [])
             setTeamName(data.teamName || 'Connected')
             setModalStep(2)
-        } catch (err: any) {
-            setError(err.message || 'Failed to connect')
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to connect'
+            setError(message)
         } finally {
             setConnecting(false)
         }
@@ -99,8 +100,9 @@ export function ASCConnectModal({ isOpen, onClose, onAutofill }: ASCConnectModal
             const { data } = await res.json()
             onAutofill(data)
             onClose()
-        } catch (err: any) {
-            setError(err.message || 'Failed to fetch app data')
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to fetch app data'
+            setError(message)
         } finally {
             setAutofilling(false)
         }

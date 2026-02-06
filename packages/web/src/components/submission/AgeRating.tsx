@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
+
+type AgeRatingValue = Record<string, number | boolean | undefined>;
 
 interface AgeRatingProps {
-    value: any;
-    onChange: (value: any) => void;
+    value: AgeRatingValue;
+    onChange: (value: AgeRatingValue) => void;
 }
 
 const RATING_QUESTIONS = [
@@ -124,41 +126,39 @@ const BOOLEAN_FLAGS = [
 ]
 
 export function AgeRating({ value, onChange }: AgeRatingProps) {
-    const [rating, setRating] = useState<string>("4+")
+    const calculateRating = (a: AgeRatingValue): string => {
+        const getNumberValue = (key: string): number => {
+            const raw = a[key];
+            return typeof raw === 'number' ? raw : 0;
+        };
 
-    useEffect(() => {
-        calculateRating(value)
-    }, [value])
-
-    const calculateRating = (a: any) => {
         // 17+ triggers (per Apple's Age Rating questionnaire)
-        if (a.prolongedViolence === 2 ||
-            a.sexualContent === 2 ||
-            a.gamblingSimulated === 2 ||
-            a.gamblingContests > 0) {
-            setRating("17+")
-            return
+        if (getNumberValue('prolongedViolence') === 2 ||
+            getNumberValue('sexualContent') === 2 ||
+            getNumberValue('gamblingSimulated') === 2 ||
+            getNumberValue('gamblingContests') > 0) {
+            return "17+"
         }
         // 12+ triggers
-        if (a.realisticViolence > 0 ||
-            a.sexualContent > 0 ||
-            a.matureSuggestive === 2 ||
-            a.alcoholDrugs === 2 ||
-            a.gamblingSimulated > 0) {
-            setRating("12+")
-            return
+        if (getNumberValue('realisticViolence') > 0 ||
+            getNumberValue('sexualContent') > 0 ||
+            getNumberValue('matureSuggestive') === 2 ||
+            getNumberValue('alcoholDrugs') === 2 ||
+            getNumberValue('gamblingSimulated') > 0) {
+            return "12+"
         }
         // 9+ triggers
-        if (a.cartoonViolence === 2 ||
-            a.matureSuggestive > 0 ||
-            a.profanity === 2 ||
-            a.horrorFear === 2) {
-            setRating("9+")
-            return
+        if (getNumberValue('cartoonViolence') === 2 ||
+            getNumberValue('matureSuggestive') > 0 ||
+            getNumberValue('profanity') === 2 ||
+            getNumberValue('horrorFear') === 2) {
+            return "9+"
         }
         // Default 4+
-        setRating("4+")
+        return "4+"
     }
+
+    const rating = useMemo(() => calculateRating(value), [value])
 
     const handleChange = (questionId: string, optionValue: number) => {
         const newValue = { ...value, [questionId]: optionValue }
@@ -175,7 +175,7 @@ export function AgeRating({ value, onChange }: AgeRatingProps) {
             <div className="flex justify-between items-center border-b border-white/10 pb-4">
                 <div>
                     <h2 className="text-xl font-bold tracking-tight">Age Rating</h2>
-                    <p className="text-sm text-gray-500 font-light">Determine your app's suitable audience</p>
+                    <p className="text-sm text-gray-500 font-light">Determine your app&apos;s suitable audience</p>
                 </div>
                 <div className="flex flex-col items-end">
                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Calculated Rating</span>
@@ -197,7 +197,7 @@ export function AgeRating({ value, onChange }: AgeRatingProps) {
                                     onClick={() => handleChange(q.id, opt.value)}
                                     className={`
                                         p-3 text-left rounded-md border text-sm transition-all
-                                        ${(value[q.id] || 0) === opt.value
+                                        {(typeof value[q.id] === 'number' ? value[q.id] : 0) === opt.value
                                             ? 'bg-white text-black border-white'
                                             : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10'}
                                     `}
@@ -216,7 +216,7 @@ export function AgeRating({ value, onChange }: AgeRatingProps) {
                     <label key={flag.id} className="flex items-start gap-3 cursor-pointer group">
                         <input
                             type="checkbox"
-                            checked={value[flag.id] || false}
+                            checked={value[flag.id] === true}
                             onChange={(e) => handleFlagChange(flag.id, e.target.checked)}
                             className="mt-1 w-4 h-4 rounded border-white/20 bg-white/5 text-white focus:ring-white/20"
                         />

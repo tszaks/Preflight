@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-10-10' as any,
+    apiVersion: '2025-10-10' as Stripe.LatestApiVersion,
 })
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
@@ -16,8 +16,9 @@ export async function POST(req: NextRequest) {
 
     try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } catch (err: any) {
-        return NextResponse.json({ message: `Webhook Error: ${err.message}` }, { status: 400 })
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        return NextResponse.json({ message: `Webhook Error: ${message}` }, { status: 400 })
     }
 
     // Handle the event

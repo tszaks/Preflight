@@ -215,7 +215,7 @@ export async function POST(request: Request) {
             },
 
             // App Previews (videos) with URLs
-            app_previews: appPreviewStatus.map((s: any) => ({
+            app_previews: appPreviewStatus.map((s) => ({
                 device_type: s.deviceType,
                 count: s.count,
                 videos: s.previews.map((p: ASCAppPreview) => ({

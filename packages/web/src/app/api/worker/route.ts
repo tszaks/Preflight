@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
-import { runAnalysis, fetchSubmissionFiles } from '@preflight/shared/engine';
+import { runAnalysis, fetchSubmissionFiles, type SoftRulesInput } from '@preflight/shared/engine';
 import {
     getVersionDetails,
     getScreenshotStatus,
@@ -44,12 +44,20 @@ export async function POST(req: NextRequest) {
 
         // 4. Transform form data to engine expected format
         // Cast to any for fields that may not be in generated types yet
-        const sub = submission as Record<string, any>;
+        const submissionData = submission as Partial<SoftRulesInput>;
+        const sub = submission as Record<string, unknown>;
+        const userId = typeof sub.user_id === 'string' ? sub.user_id : undefined;
 
         // Parse stored JSON fields (with safe fallbacks)
         const checklist = (typeof sub.checklist === 'object' && sub.checklist !== null) ? sub.checklist : {};
         const privacyDeclarations = (typeof sub.privacy_declarations === 'object' && sub.privacy_declarations !== null) ? sub.privacy_declarations : {};
         const ageRating = (typeof sub.age_rating === 'object' && sub.age_rating !== null) ? sub.age_rating : {};
+        const ageRatingString =
+            typeof sub.age_rating === 'string'
+                ? sub.age_rating
+                : (typeof (ageRating as Record<string, unknown>).rating === 'string'
+                    ? (ageRating as Record<string, unknown>).rating as string
+                    : null);
 
         // Cast to any for dynamic property access
         const cl = checklist as Record<string, boolean | undefined>;
@@ -66,11 +74,12 @@ export async function POST(req: NextRequest) {
         }
 
         // Build engine input with proper field mappings
-        const engineInput = {
+        const engineInput: SoftRulesInput = {
             // Base submission data
-            ...submission,
-            app_name: submission.app_name || 'Untitled App',
-            screenshot_paths: submission.screenshot_paths || [],
+            ...submissionData,
+            app_name: submissionData.app_name || 'Untitled App',
+            review_type: (submissionData.review_type ?? 'full') as SoftRulesInput['review_type'],
+            screenshot_paths: submissionData.screenshot_paths || [],
 
             // File contents from storage
             screenshots_data: files.screenshotsData,
@@ -98,7 +107,7 @@ export async function POST(req: NextRequest) {
             has_creator_age_gate: cl.creatorAgeGate,
 
             // Authentication & Accounts
-            sign_in_required: submission.sign_in_required ?? cl.login,
+            sign_in_required: submissionData.sign_in_required ?? cl.login,
             has_third_party_login: cl.thirdPartyLogin,
             has_account_deletion: cl.accountDeletion,
 
@@ -128,27 +137,29 @@ export async function POST(req: NextRequest) {
             data_collection: Object.keys(dataCollection).length > 0 ? dataCollection : undefined,
 
             // === Age Rating ===
-            age_rating: ageRating,
+            age_rating: ageRatingString,
 
-            // Privacy tracking flag (from declarations)
-            tracking: pd.tracking === true || (typeof pd.tracking === 'object' && pd.tracking),
+            // Review demo credentials (for App Review)
+            demo_username: submissionData.demo_username,
+            demo_password: submissionData.demo_password,
         };
 
         // 5. Run Analysis with transformed input
         const result = await runAnalysis(
             supabase,
             submissionId,
-            engineInput as any,
+            engineInput,
             {
                 anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-                userId: submission.user_id,
+                userId,
             }
         );
 
         return NextResponse.json(result);
-    } catch (err: any) {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Internal Server Error';
         console.error('[Worker API] Error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 

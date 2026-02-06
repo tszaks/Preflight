@@ -32,6 +32,35 @@ export interface ASCAppMetadata {
     whatsNew: string | null;
 }
 
+type ASCAttributes = Record<string, unknown>;
+type ASCRelationships = Record<string, unknown>;
+
+interface ASCResource {
+    id: string;
+    attributes?: ASCAttributes;
+    relationships?: ASCRelationships;
+}
+
+interface ASCResponse<T = ASCResource> {
+    data: T[];
+    included?: ASCResource[];
+}
+
+interface ASCResponseSingle<T = ASCResource> {
+    data: T;
+    included?: ASCResource[];
+}
+
+const getAttr = (resource: ASCResource): ASCAttributes => (resource.attributes ?? {}) as ASCAttributes;
+const getRel = (resource: ASCResource): ASCRelationships => (resource.relationships ?? {}) as ASCRelationships;
+const getString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
+const getOptionalString = (value: unknown): string | null =>
+    (typeof value === 'string' && value.length > 0 ? value : null);
+const getNumber = (value: unknown, fallback = 0): number =>
+    (typeof value === 'number' && Number.isFinite(value) ? value : fallback);
+const getBoolean = (value: unknown, fallback = false): boolean =>
+    (typeof value === 'boolean' ? value : fallback);
+
 const ASC_BASE_URL = 'https://api.appstoreconnect.apple.com/v1';
 const JWT_TTL_SECONDS = 20 * 60;
 
@@ -62,11 +91,11 @@ async function generateJWT(credentials: ASCCredentials): Promise<string> {
     return jwt;
 }
 
-async function ascFetch(
+async function ascFetch<T = ASCResponse>(
     path: string,
     credentials: ASCCredentials,
     options?: RequestInit,
-): Promise<any> {
+): Promise<T> {
     const token = await generateJWT(credentials);
 
     const response = await fetch(`${ASC_BASE_URL}${path}`, {
@@ -83,17 +112,19 @@ async function ascFetch(
         throw new Error(`ASC API error ${response.status}: ${errorBody.slice(0, 200)}`);
     }
 
-    return response.json();
+    return response.json() as Promise<T>;
 }
 
 export async function validateCredentials(
     credentials: ASCCredentials,
 ): Promise<{ valid: boolean; teamName?: string }> {
     try {
-        const data = await ascFetch('/apps?limit=1', credentials);
+        const data = await ascFetch<ASCResponse<ASCResource>>('/apps?limit=1', credentials);
+        const apps = Array.isArray(data.data) ? data.data : [];
+        const teamName = apps.length > 0 ? getString(getAttr(apps[0]).name, 'Connected') : 'Connected';
         return {
             valid: true,
-            teamName: data.data?.[0]?.attributes?.name || 'Connected',
+            teamName,
         };
     } catch {
         return { valid: false };
@@ -101,18 +132,22 @@ export async function validateCredentials(
 }
 
 export async function listApps(credentials: ASCCredentials): Promise<ASCApp[]> {
-    const data = await ascFetch(
+    const data = await ascFetch<ASCResponse<ASCResource>>(
         '/apps?fields[apps]=bundleId,name,sku,primaryLocale&limit=100',
         credentials,
     );
 
-    return data.data.map((app: any) => ({
-        id: app.id,
-        bundleId: app.attributes.bundleId,
-        name: app.attributes.name,
-        sku: app.attributes.sku,
-        primaryLocale: app.attributes.primaryLocale,
-    }));
+    const apps = Array.isArray(data.data) ? data.data : [];
+    return apps.map((app) => {
+        const attr = getAttr(app);
+        return {
+            id: app.id,
+            bundleId: getString(attr.bundleId),
+            name: getString(attr.name),
+            sku: getString(attr.sku),
+            primaryLocale: getString(attr.primaryLocale),
+        };
+    });
 }
 
 export async function getAppDetails(
@@ -120,22 +155,24 @@ export async function getAppDetails(
     appId: string,
 ): Promise<ASCApp & { privacyInfoConfigured?: boolean } | null> {
     try {
-        const data = await ascFetch(`/apps/${appId}`, credentials);
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(`/apps/${appId}`, credentials);
         const app = data.data;
+        const attr = getAttr(app);
+        const contentRights = attr.contentRightsDeclaration as Record<string, unknown> | undefined;
 
         console.log('getAppDetails - all app attributes:', {
             appId,
-            keys: Object.keys(app.attributes || {}),
-            contentRightsDeclaration: app.attributes?.contentRightsDeclaration,
+            keys: Object.keys(attr),
+            contentRightsDeclaration: contentRights,
         });
 
         return {
             id: app.id,
-            bundleId: app.attributes.bundleId,
-            name: app.attributes.name,
-            sku: app.attributes.sku,
-            primaryLocale: app.attributes.primaryLocale,
-            privacyInfoConfigured: app.attributes?.contentRightsDeclaration?.usesThirdPartyContent !== undefined,
+            bundleId: getString(attr.bundleId),
+            name: getString(attr.name),
+            sku: getString(attr.sku),
+            primaryLocale: getString(attr.primaryLocale),
+            privacyInfoConfigured: typeof contentRights?.usesThirdPartyContent !== 'undefined',
         };
     } catch {
         return null;
@@ -146,21 +183,23 @@ export async function getLatestVersion(
     credentials: ASCCredentials,
     appId: string,
 ): Promise<{ id: string; versionString: string; appStoreState: string } | null> {
-    const data = await ascFetch(
+    const data = await ascFetch<ASCResponse<ASCResource>>(
         `/apps/${appId}/appStoreVersions?filter[platform]=IOS&limit=5`,
         credentials,
     );
 
-    if (!data.data.length) return null;
+    const versions = Array.isArray(data.data) ? data.data : [];
+    if (versions.length === 0) return null;
 
-    const preparing = data.data.find(
-        (v: any) => v.attributes.appStoreState === 'PREPARE_FOR_SUBMISSION',
+    const preparing = versions.find(
+        (v) => getString(getAttr(v).appStoreState) === 'PREPARE_FOR_SUBMISSION',
     );
-    const v = preparing || data.data[0];
+    const v = preparing || versions[0];
+    const attr = getAttr(v);
     return {
         id: v.id,
-        versionString: v.attributes.versionString,
-        appStoreState: v.attributes.appStoreState || 'UNKNOWN',
+        versionString: getString(attr.versionString),
+        appStoreState: getString(attr.appStoreState, 'UNKNOWN'),
     };
 }
 
@@ -174,19 +213,24 @@ export async function getAppInfo(
     privacyUpdateDate: string | null;
 } | null> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponse<ASCResource>>(
             `/apps/${appId}/appInfos?limit=1`,
             credentials,
         );
 
-        if (!data.data.length) return null;
+        const infos = Array.isArray(data.data) ? data.data : [];
+        if (infos.length === 0) return null;
 
-        const info = data.data[0];
-        const privacyUpdateDate = info.attributes?.appPrivacyDetailsUpdateDate || null;
+        const info = infos[0];
+        const attr = getAttr(info);
+        const rel = getRel(info);
+        const privacyUpdateDate = getOptionalString(attr.appPrivacyDetailsUpdateDate);
+        const primaryCategory = (rel.primaryCategory as { data?: { id?: string } } | undefined)?.data?.id ?? null;
+        const secondaryCategory = (rel.secondaryCategory as { data?: { id?: string } } | undefined)?.data?.id ?? null;
 
         return {
-            categoryId: info.relationships?.primaryCategory?.data?.id || null,
-            subcategoryId: info.relationships?.secondaryCategory?.data?.id || null,
+            categoryId: primaryCategory,
+            subcategoryId: secondaryCategory,
             privacyConfigured: privacyUpdateDate !== null,
             privacyUpdateDate,
         };
@@ -200,30 +244,32 @@ export async function getAppInfoLocalization(
     appId: string
 ): Promise<{ privacyPolicyUrl: string | null; privacyChoicesUrl: string | null; privacyPolicyText: string | null } | null> {
     try {
-        const infos = await ascFetch(
+        const infos = await ascFetch<ASCResponse<ASCResource>>(
             `/apps/${appId}/appInfos?limit=1`,
             credentials,
         );
 
-        if (!infos.data.length) return null;
+        const infoList = Array.isArray(infos.data) ? infos.data : [];
+        if (infoList.length === 0) return null;
 
-        const infoId = infos.data[0].id;
-        const locs = await ascFetch(
+        const infoId = infoList[0].id;
+        const locs = await ascFetch<ASCResponse<ASCResource>>(
             `/appInfos/${infoId}/appInfoLocalizations?limit=10`,
             credentials,
         );
 
-        if (!locs.data.length) return null;
+        const locList = Array.isArray(locs.data) ? locs.data : [];
+        if (locList.length === 0) return null;
 
         // Find the first localization that has a privacy policy URL
         // Preferably 'en-US' but any will do if that's missing
-        const validLoc = locs.data.find((l: any) => l.attributes?.privacyPolicyUrl) || locs.data[0];
-        const attr = validLoc.attributes;
+        const validLoc = locList.find((l) => getOptionalString(getAttr(l).privacyPolicyUrl)) || locList[0];
+        const attr = getAttr(validLoc);
 
         return {
-            privacyPolicyUrl: attr.privacyPolicyUrl || null,
-            privacyChoicesUrl: attr.privacyChoicesUrl || null,
-            privacyPolicyText: attr.privacyPolicyText || null,
+            privacyPolicyUrl: getOptionalString(attr.privacyPolicyUrl),
+            privacyChoicesUrl: getOptionalString(attr.privacyChoicesUrl),
+            privacyPolicyText: getOptionalString(attr.privacyPolicyText),
         };
     } catch {
         return null;
@@ -234,24 +280,25 @@ export async function getAppMetadata(
     credentials: ASCCredentials,
     versionId: string,
 ): Promise<ASCAppMetadata | null> {
-    const data = await ascFetch(
+    const data = await ascFetch<ASCResponse<ASCResource>>(
         `/appStoreVersions/${versionId}/appStoreVersionLocalizations?limit=1`,
         credentials,
     );
 
-    if (!data.data.length) return null;
+    const locs = Array.isArray(data.data) ? data.data : [];
+    if (locs.length === 0) return null;
 
-    const loc = data.data[0].attributes;
+    const loc = getAttr(locs[0]);
     return {
-        name: loc.name || '',
-        subtitle: loc.subtitle || null,
-        description: loc.description || null,
-        keywords: loc.keywords || null,
-        promotionalText: loc.promotionalText || null,
-        privacyUrl: loc.privacyPolicyUrl || null,
-        supportUrl: loc.supportUrl || null,
-        marketingUrl: loc.marketingUrl || null,
-        whatsNew: loc.whatsNew || null,
+        name: getString(loc.name),
+        subtitle: getOptionalString(loc.subtitle),
+        description: getOptionalString(loc.description),
+        keywords: getOptionalString(loc.keywords),
+        promotionalText: getOptionalString(loc.promotionalText),
+        privacyUrl: getOptionalString(loc.privacyPolicyUrl),
+        supportUrl: getOptionalString(loc.supportUrl),
+        marketingUrl: getOptionalString(loc.marketingUrl),
+        whatsNew: getOptionalString(loc.whatsNew),
     };
 }
 
@@ -271,23 +318,23 @@ export async function getReviewDetail(
     versionId: string,
 ): Promise<ASCReviewDetail | null> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(
             `/appStoreVersions/${versionId}/appStoreReviewDetail`,
             credentials,
         );
 
         if (!data.data) return null;
 
-        const detail = data.data.attributes;
+        const detail = getAttr(data.data);
         return {
-            signInRequired: detail.demoAccountRequired || false,
-            demoAccountName: detail.demoAccountName || null,
-            demoAccountPassword: detail.demoAccountPassword || null,
-            contactFirstName: detail.contactFirstName || null,
-            contactLastName: detail.contactLastName || null,
-            contactEmail: detail.contactEmail || null,
-            contactPhone: detail.contactPhone || null,
-            notes: detail.notes || null,
+            signInRequired: getBoolean(detail.demoAccountRequired),
+            demoAccountName: getOptionalString(detail.demoAccountName),
+            demoAccountPassword: getOptionalString(detail.demoAccountPassword),
+            contactFirstName: getOptionalString(detail.contactFirstName),
+            contactLastName: getOptionalString(detail.contactLastName),
+            contactEmail: getOptionalString(detail.contactEmail),
+            contactPhone: getOptionalString(detail.contactPhone),
+            notes: getOptionalString(detail.notes),
         };
     } catch {
         return null;
@@ -309,20 +356,20 @@ export async function getVersionDetails(
     versionId: string,
 ): Promise<ASCVersionDetails | null> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(
             `/appStoreVersions/${versionId}`,
             credentials,
         );
 
         if (!data.data) return null;
 
-        const attr = data.data.attributes;
+        const attr = getAttr(data.data);
         return {
-            versionString: attr.versionString || '',
-            copyright: attr.copyright || null,
-            releaseType: attr.releaseType || null,
-            earliestReleaseDate: attr.earliestReleaseDate || null,
-            appStoreState: attr.appStoreState || '',
+            versionString: getString(attr.versionString),
+            copyright: getOptionalString(attr.copyright),
+            releaseType: getOptionalString(attr.releaseType),
+            earliestReleaseDate: getOptionalString(attr.earliestReleaseDate),
+            appStoreState: getString(attr.appStoreState),
         };
     } catch {
         return null;
@@ -351,56 +398,63 @@ export async function getScreenshotStatus(
 ): Promise<ASCScreenshotStatus[]> {
     try {
         // First get the localizations for this version
-        const locs = await ascFetch(
+        const locs = await ascFetch<ASCResponse<ASCResource>>(
             `/appStoreVersions/${versionId}/appStoreVersionLocalizations`,
             credentials,
         );
 
-        if (!locs.data?.length) return [];
+        const locList = Array.isArray(locs.data) ? locs.data : [];
+        if (locList.length === 0) return [];
 
-        const locId = locs.data[0].id;
+        const locId = locList[0].id;
 
         // Then get screenshot sets for the localization
-        const sets = await ascFetch(
+        const sets = await ascFetch<ASCResponse<ASCResource>>(
             `/appStoreVersionLocalizations/${locId}/appScreenshotSets`,
             credentials,
         );
 
-        if (!sets.data?.length) return [];
+        const setList = Array.isArray(sets.data) ? sets.data : [];
+        if (setList.length === 0) return [];
 
         // For each set, get the screenshots with their URLs
         const results: ASCScreenshotStatus[] = [];
-        for (const set of sets.data) {
-            const deviceType = set.attributes?.screenshotDisplayType || 'UNKNOWN';
+        for (const set of setList) {
+            const setAttr = getAttr(set);
+            const deviceType = getString(setAttr.screenshotDisplayType, 'UNKNOWN');
 
             // Get screenshots in this set
-            const screenshotsResp = await ascFetch(
+            const screenshotsResp = await ascFetch<ASCResponse<ASCResource>>(
                 `/appScreenshotSets/${set.id}/appScreenshots`,
                 credentials,
             );
 
-            const screenshots: ASCScreenshot[] = (screenshotsResp.data || []).map((s: any) => {
-                const attr = s.attributes || {};
+            const screenshotList = Array.isArray(screenshotsResp.data) ? screenshotsResp.data : [];
+            const screenshots: ASCScreenshot[] = screenshotList.map((s) => {
+                const attr = getAttr(s);
                 // imageAsset contains the template URL and dimensions
-                const imageAsset = attr.imageAsset || {};
+                const imageAsset = (attr.imageAsset ?? {}) as Record<string, unknown>;
+                const templateUrl = getOptionalString(imageAsset.templateUrl);
+                const width = getString(imageAsset.width);
+                const height = getString(imageAsset.height);
 
                 // Build the URL from template if available
                 let url: string | null = null;
-                if (imageAsset.templateUrl) {
+                if (templateUrl) {
                     // Template format: {url}/{width}x{height}{extension}
                     // We want the full resolution
-                    url = imageAsset.templateUrl
-                        .replace('{w}', imageAsset.width || '0')
-                        .replace('{h}', imageAsset.height || '0')
+                    url = templateUrl
+                        .replace('{w}', width || '0')
+                        .replace('{h}', height || '0')
                         .replace('{f}', 'png');
                 }
 
                 return {
                     id: s.id,
-                    fileName: attr.fileName || '',
-                    fileSize: attr.fileSize || 0,
+                    fileName: getString(attr.fileName),
+                    fileSize: getNumber(attr.fileSize),
                     url,
-                    state: attr.assetDeliveryState?.state || 'UNKNOWN',
+                    state: getString((attr.assetDeliveryState as Record<string, unknown> | undefined)?.state, 'UNKNOWN'),
                 };
             });
 
@@ -439,16 +493,17 @@ export async function getSubscriptionGroups(
     appId: string,
 ): Promise<ASCSubscriptionGroup[]> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponse<ASCResource>>(
             `/apps/${appId}/subscriptionGroups`,
             credentials,
         );
 
-        if (!data.data?.length) return [];
+        const groups = Array.isArray(data.data) ? data.data : [];
+        if (groups.length === 0) return [];
 
-        return data.data.map((group: any) => ({
+        return groups.map((group) => ({
             id: group.id,
-            name: group.attributes?.referenceName || 'Unnamed Group',
+            name: getString(getAttr(group).referenceName, 'Unnamed Group'),
         }));
     } catch {
         return [];
@@ -461,22 +516,26 @@ export async function getSubscriptions(
     groupName: string,
 ): Promise<ASCSubscription[]> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponse<ASCResource>>(
             `/subscriptionGroups/${groupId}/subscriptions`,
             credentials,
         );
 
-        if (!data.data?.length) return [];
+        const subs = Array.isArray(data.data) ? data.data : [];
+        if (subs.length === 0) return [];
 
-        return data.data.map((sub: any) => ({
-            id: sub.id,
-            name: sub.attributes?.name || 'Unnamed',
-            productId: sub.attributes?.productId || '',
-            state: sub.attributes?.state || 'UNKNOWN',
-            groupId,
-            groupName,
-            subscriptionPeriod: sub.attributes?.subscriptionPeriod || null,
-        }));
+        return subs.map((sub) => {
+            const attr = getAttr(sub);
+            return {
+                id: sub.id,
+                name: getString(attr.name, 'Unnamed'),
+                productId: getString(attr.productId),
+                state: getString(attr.state, 'UNKNOWN'),
+                groupId,
+                groupName,
+                subscriptionPeriod: getOptionalString(attr.subscriptionPeriod),
+            };
+        });
     } catch {
         return [];
     }
@@ -497,20 +556,24 @@ export async function getInAppPurchases(
     appId: string,
 ): Promise<ASCInAppPurchase[]> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponse<ASCResource>>(
             `/apps/${appId}/inAppPurchasesV2`,
             credentials,
         );
 
-        if (!data.data?.length) return [];
+        const iaps = Array.isArray(data.data) ? data.data : [];
+        if (iaps.length === 0) return [];
 
-        return data.data.map((iap: any) => ({
-            id: iap.id,
-            name: iap.attributes?.name || 'Unnamed',
-            productId: iap.attributes?.productId || '',
-            inAppPurchaseType: iap.attributes?.inAppPurchaseType || 'UNKNOWN',
-            state: iap.attributes?.state || 'UNKNOWN',
-        }));
+        return iaps.map((iap) => {
+            const attr = getAttr(iap);
+            return {
+                id: iap.id,
+                name: getString(attr.name, 'Unnamed'),
+                productId: getString(attr.productId),
+                inAppPurchaseType: getString(attr.inAppPurchaseType, 'UNKNOWN'),
+                state: getString(attr.state, 'UNKNOWN'),
+            };
+        });
     } catch {
         return [];
     }
@@ -544,7 +607,7 @@ export async function getAgeRatingDeclaration(
 ): Promise<ASCAgeRating | null> {
     try {
         // First get the latest appInfo
-        const infos = await ascFetch(
+        const infos = await ascFetch<ASCResponse<ASCResource>>(
             `/apps/${appId}/appInfos?limit=1`,
             credentials,
         );
@@ -556,49 +619,62 @@ export async function getAgeRatingDeclaration(
             firstId: infos.data?.[0]?.id || null
         });
 
-        if (!infos.data?.length) return null;
+        const infoList = Array.isArray(infos.data) ? infos.data : [];
+        if (infoList.length === 0) return null;
 
-        const infoId = infos.data[0].id;
+        const infoId = infoList[0].id;
 
         // Then get the age rating declaration
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(
             `/appInfos/${infoId}/ageRatingDeclaration`,
             credentials,
         );
 
         if (!data.data) return null;
 
-        const attr = data.data.attributes;
+        const attr = getAttr(data.data);
+        const violenceRealisticProlongedGraphicOrSadistic = getString(attr.violenceRealisticProlongedGraphicOrSadistic);
+        const sexualContentGraphicAndNudity = getString(attr.sexualContentGraphicAndNudity);
+        const gambling = getBoolean(attr.gambling);
+        const seventeenPlus = getBoolean(attr.seventeenPlus);
+        const violenceRealistic = getString(attr.violenceRealistic);
+        const sexualContentOrNudity = getString(attr.sexualContentOrNudity);
+        const matureOrSuggestiveThemes = getString(attr.matureOrSuggestiveThemes);
+        const alcoholTobaccoOrDrugUseOrReferences = getString(attr.alcoholTobaccoOrDrugUseOrReferences);
+        const gamblingSimulated = getString(attr.gamblingSimulated);
+        const violenceCartoonOrFantasy = getString(attr.violenceCartoonOrFantasy);
+        const profanityOrCrudeHumor = getString(attr.profanityOrCrudeHumor);
+        const horrorOrFearThemes = getString(attr.horrorOrFearThemes);
 
         // Compute the rating if ASC doesn't return it directly
         // This mirrors Apple's age rating logic
-        let computedRating = attr.rating;
+        let computedRating = getString(attr.rating);
         if (!computedRating) {
             // Check for 17+ conditions
             if (
-                attr.violenceRealisticProlongedGraphicOrSadistic === 'FREQUENT_OR_INTENSE' ||
-                attr.sexualContentGraphicAndNudity === 'FREQUENT_OR_INTENSE' ||
-                attr.gambling === true ||
-                attr.seventeenPlus === true
+                violenceRealisticProlongedGraphicOrSadistic === 'FREQUENT_OR_INTENSE' ||
+                sexualContentGraphicAndNudity === 'FREQUENT_OR_INTENSE' ||
+                gambling === true ||
+                seventeenPlus === true
             ) {
                 computedRating = '17+';
             }
             // Check for 12+ conditions
             else if (
-                attr.violenceRealistic === 'INFREQUENT_OR_MILD' || attr.violenceRealistic === 'FREQUENT_OR_INTENSE' ||
-                attr.sexualContentOrNudity === 'INFREQUENT_OR_MILD' || attr.sexualContentOrNudity === 'FREQUENT_OR_INTENSE' ||
-                attr.matureOrSuggestiveThemes === 'FREQUENT_OR_INTENSE' ||
-                attr.alcoholTobaccoOrDrugUseOrReferences === 'FREQUENT_OR_INTENSE' ||
-                attr.gamblingSimulated === 'INFREQUENT_OR_MILD' || attr.gamblingSimulated === 'FREQUENT_OR_INTENSE'
+                violenceRealistic === 'INFREQUENT_OR_MILD' || violenceRealistic === 'FREQUENT_OR_INTENSE' ||
+                sexualContentOrNudity === 'INFREQUENT_OR_MILD' || sexualContentOrNudity === 'FREQUENT_OR_INTENSE' ||
+                matureOrSuggestiveThemes === 'FREQUENT_OR_INTENSE' ||
+                alcoholTobaccoOrDrugUseOrReferences === 'FREQUENT_OR_INTENSE' ||
+                gamblingSimulated === 'INFREQUENT_OR_MILD' || gamblingSimulated === 'FREQUENT_OR_INTENSE'
             ) {
                 computedRating = '12+';
             }
             // Check for 9+ conditions
             else if (
-                attr.violenceCartoonOrFantasy === 'FREQUENT_OR_INTENSE' ||
-                attr.matureOrSuggestiveThemes === 'INFREQUENT_OR_MILD' ||
-                attr.profanityOrCrudeHumor === 'FREQUENT_OR_INTENSE' ||
-                attr.horrorOrFearThemes === 'FREQUENT_OR_INTENSE'
+                violenceCartoonOrFantasy === 'FREQUENT_OR_INTENSE' ||
+                matureOrSuggestiveThemes === 'INFREQUENT_OR_MILD' ||
+                profanityOrCrudeHumor === 'FREQUENT_OR_INTENSE' ||
+                horrorOrFearThemes === 'FREQUENT_OR_INTENSE'
             ) {
                 computedRating = '9+';
             }
@@ -609,23 +685,23 @@ export async function getAgeRatingDeclaration(
         }
 
         return {
-            rating: computedRating,
-            alcoholTobaccoOrDrugUseOrReferences: attr.alcoholTobaccoOrDrugUseOrReferences || null,
-            contests: attr.contests || null,
-            gamblingSimulated: attr.gamblingSimulated || null,
-            horrorOrFearThemes: attr.horrorOrFearThemes || null,
-            matureOrSuggestiveThemes: attr.matureOrSuggestiveThemes || null,
-            medicalOrTreatmentInformation: attr.medicalOrTreatmentInformation || null,
-            profanityOrCrudeHumor: attr.profanityOrCrudeHumor || null,
-            sexualContentGraphicAndNudity: attr.sexualContentGraphicAndNudity || null,
-            sexualContentOrNudity: attr.sexualContentOrNudity || null,
-            violenceCartoonOrFantasy: attr.violenceCartoonOrFantasy || null,
-            violenceRealistic: attr.violenceRealistic || null,
-            violenceRealisticProlongedGraphicOrSadistic: attr.violenceRealisticProlongedGraphicOrSadistic || null,
-            gambling: attr.gambling || false,
-            unrestrictedWebAccess: attr.unrestrictedWebAccess || false,
-            kidsAgeBand: attr.kidsAgeBand || null,
-            seventeenPlus: attr.seventeenPlus || false,
+            rating: computedRating || null,
+            alcoholTobaccoOrDrugUseOrReferences: getOptionalString(attr.alcoholTobaccoOrDrugUseOrReferences),
+            contests: getOptionalString(attr.contests),
+            gamblingSimulated: getOptionalString(attr.gamblingSimulated),
+            horrorOrFearThemes: getOptionalString(attr.horrorOrFearThemes),
+            matureOrSuggestiveThemes: getOptionalString(attr.matureOrSuggestiveThemes),
+            medicalOrTreatmentInformation: getOptionalString(attr.medicalOrTreatmentInformation),
+            profanityOrCrudeHumor: getOptionalString(attr.profanityOrCrudeHumor),
+            sexualContentGraphicAndNudity: getOptionalString(attr.sexualContentGraphicAndNudity),
+            sexualContentOrNudity: getOptionalString(attr.sexualContentOrNudity),
+            violenceCartoonOrFantasy: getOptionalString(attr.violenceCartoonOrFantasy),
+            violenceRealistic: getOptionalString(attr.violenceRealistic),
+            violenceRealisticProlongedGraphicOrSadistic: getOptionalString(attr.violenceRealisticProlongedGraphicOrSadistic),
+            gambling,
+            unrestrictedWebAccess: getBoolean(attr.unrestrictedWebAccess),
+            kidsAgeBand: getOptionalString(attr.kidsAgeBand),
+            seventeenPlus,
         };
     } catch (e) {
         console.error('getAgeRatingDeclaration error:', e);
@@ -657,53 +733,59 @@ export async function getAppPreviewStatus(
 ): Promise<ASCAppPreviewStatus[]> {
     try {
         // Get localizations for this version
-        const locs = await ascFetch(
+        const locs = await ascFetch<ASCResponse<ASCResource>>(
             `/appStoreVersions/${versionId}/appStoreVersionLocalizations`,
             credentials,
         );
 
-        if (!locs.data?.length) return [];
+        const locList = Array.isArray(locs.data) ? locs.data : [];
+        if (locList.length === 0) return [];
 
-        const locId = locs.data[0].id;
+        const locId = locList[0].id;
 
         // Get app preview sets
-        const sets = await ascFetch(
+        const sets = await ascFetch<ASCResponse<ASCResource>>(
             `/appStoreVersionLocalizations/${locId}/appPreviewSets`,
             credentials,
         );
 
-        if (!sets.data?.length) return [];
+        const setList = Array.isArray(sets.data) ? sets.data : [];
+        if (setList.length === 0) return [];
 
         const results: ASCAppPreviewStatus[] = [];
-        for (const set of sets.data) {
-            const deviceType = set.attributes?.previewType || 'UNKNOWN';
+        for (const set of setList) {
+            const deviceType = getString(getAttr(set).previewType, 'UNKNOWN');
 
             // Get previews in this set
-            const previewsResp = await ascFetch(
+            const previewsResp = await ascFetch<ASCResponse<ASCResource>>(
                 `/appPreviewSets/${set.id}/appPreviews`,
                 credentials,
             );
 
-            const previews: ASCAppPreview[] = (previewsResp.data || []).map((p: any) => {
-                const attr = p.attributes || {};
-                const videoAsset = attr.videoAsset || {};
+            const previewList = Array.isArray(previewsResp.data) ? previewsResp.data : [];
+            const previews: ASCAppPreview[] = previewList.map((p) => {
+                const attr = getAttr(p);
+                const videoAsset = (attr.videoAsset ?? {}) as Record<string, unknown>;
+                const templateUrl = getOptionalString(videoAsset.templateUrl);
+                const width = getString(videoAsset.width);
+                const height = getString(videoAsset.height);
 
                 let url: string | null = null;
-                if (videoAsset.templateUrl) {
-                    url = videoAsset.templateUrl
-                        .replace('{w}', videoAsset.width || '0')
-                        .replace('{h}', videoAsset.height || '0')
+                if (templateUrl) {
+                    url = templateUrl
+                        .replace('{w}', width || '0')
+                        .replace('{h}', height || '0')
                         .replace('{f}', 'm3u8');
                 }
 
                 return {
                     id: p.id,
-                    fileName: attr.fileName || '',
-                    fileSize: attr.fileSize || 0,
+                    fileName: getString(attr.fileName),
+                    fileSize: getNumber(attr.fileSize),
                     url,
-                    previewFrameTimeCode: attr.previewFrameTimeCode || null,
-                    mimeType: attr.mimeType || null,
-                    state: attr.assetDeliveryState?.state || 'UNKNOWN',
+                    previewFrameTimeCode: getOptionalString(attr.previewFrameTimeCode),
+                    mimeType: getOptionalString(attr.mimeType),
+                    state: getString((attr.assetDeliveryState as Record<string, unknown> | undefined)?.state, 'UNKNOWN'),
                 };
             });
 
@@ -732,18 +814,20 @@ export async function getContentRights(
     appId: string,
 ): Promise<ASCContentRights | null> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(
             `/apps/${appId}?fields[apps]=contentRightsDeclaration`,
             credentials,
         );
 
-        if (!data.data?.attributes) return null;
+        if (!data.data) return null;
 
-        const attr = data.data.attributes;
+        const attr = getAttr(data.data);
+        const declaration = getString(attr.contentRightsDeclaration);
         return {
-            usesThirdPartyContent: attr.contentRightsDeclaration === 'USES_THIRD_PARTY_CONTENT',
-            hasRightsToContent: attr.contentRightsDeclaration === 'DOES_NOT_USE_THIRD_PARTY_CONTENT' ||
-                attr.contentRightsDeclaration === 'USES_THIRD_PARTY_CONTENT',
+            usesThirdPartyContent: declaration === 'USES_THIRD_PARTY_CONTENT',
+            hasRightsToContent:
+                declaration === 'DOES_NOT_USE_THIRD_PARTY_CONTENT' ||
+                declaration === 'USES_THIRD_PARTY_CONTENT',
         };
     } catch {
         return null;
@@ -764,19 +848,23 @@ export async function getIAPLocalizations(
     iapId: string,
 ): Promise<ASCIAPLocalization[]> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponse<ASCResource>>(
             `/inAppPurchases/${iapId}/inAppPurchaseLocalizations`,
             credentials,
         );
 
-        if (!data.data?.length) return [];
+        const locs = Array.isArray(data.data) ? data.data : [];
+        if (locs.length === 0) return [];
 
-        return data.data.map((loc: any) => ({
-            iapId,
-            locale: loc.attributes?.locale || 'en-US',
-            displayName: loc.attributes?.name || '',
-            description: loc.attributes?.description || '',
-        }));
+        return locs.map((loc) => {
+            const attr = getAttr(loc);
+            return {
+                iapId,
+                locale: getString(attr.locale, 'en-US'),
+                displayName: getString(attr.name),
+                description: getString(attr.description),
+            };
+        });
     } catch {
         return [];
     }
@@ -796,19 +884,23 @@ export async function getSubscriptionLocalizations(
     subscriptionId: string,
 ): Promise<ASCSubscriptionLocalization[]> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponse<ASCResource>>(
             `/subscriptions/${subscriptionId}/subscriptionLocalizations`,
             credentials,
         );
 
-        if (!data.data?.length) return [];
+        const locs = Array.isArray(data.data) ? data.data : [];
+        if (locs.length === 0) return [];
 
-        return data.data.map((loc: any) => ({
-            subscriptionId,
-            locale: loc.attributes?.locale || 'en-US',
-            displayName: loc.attributes?.name || '',
-            description: loc.attributes?.description || '',
-        }));
+        return locs.map((loc) => {
+            const attr = getAttr(loc);
+            return {
+                subscriptionId,
+                locale: getString(attr.locale, 'en-US'),
+                displayName: getString(attr.name),
+                description: getString(attr.description),
+            };
+        });
     } catch {
         return [];
     }
@@ -826,16 +918,16 @@ export async function getAppAvailability(
     appId: string,
 ): Promise<ASCAppAvailability | null> {
     try {
-        const data = await ascFetch(
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(
             `/apps/${appId}/appAvailabilityV2`,
             credentials,
         );
 
         if (!data.data) return null;
 
-        const attr = data.data.attributes || {};
+        const attr = getAttr(data.data);
         return {
-            availableInNewTerritories: attr.availableInNewTerritories || false,
+            availableInNewTerritories: getBoolean(attr.availableInNewTerritories),
             territoryCount: 0, // Would need separate territories fetch
         };
     } catch {
