@@ -60,6 +60,48 @@ const getNumber = (value: unknown, fallback = 0): number =>
     (typeof value === 'number' && Number.isFinite(value) ? value : fallback);
 const getBoolean = (value: unknown, fallback = false): boolean =>
     (typeof value === 'boolean' ? value : fallback);
+const getDimensionString = (value: unknown): string | null => {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return String(Math.round(value));
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return /^[0-9]+$/.test(trimmed) ? trimmed : null;
+    }
+    return null;
+};
+const getFileExtension = (fileName: string | null, fallback: string): string => {
+    if (!fileName) return fallback;
+    const dot = fileName.lastIndexOf('.');
+    if (dot < 0 || dot === fileName.length - 1) return fallback;
+    const raw = fileName.slice(dot + 1).toLowerCase();
+    // Apple's templates commonly expect jpg even when source says jpeg.
+    return raw === 'jpeg' ? 'jpg' : raw;
+};
+
+function buildAssetTemplateUrl(
+    templateUrl: string | null,
+    opts: {
+        width: unknown;
+        height: unknown;
+        fileName?: string | null;
+        defaultFormat: string;
+    },
+): string | null {
+    if (!templateUrl) return null;
+
+    const width = getDimensionString(opts.width) ?? '0';
+    const height = getDimensionString(opts.height) ?? '0';
+    const format = getFileExtension(opts.fileName ?? null, opts.defaultFormat);
+
+    return templateUrl
+        .replace(/\{w(?:idth)?\}/gi, width)
+        .replace(/\{h(?:eight)?\}/gi, height)
+        .replace(/\{f(?:ormat)?\}/gi, format)
+        .replace(/\{extension\}/gi, format)
+        .replace(/\{c\}/gi, '')
+        .replace(/\{[^}]+\}/g, '');
+}
 
 const ASC_BASE_URL = 'https://api.appstoreconnect.apple.com/v1';
 const JWT_TTL_SECONDS = 20 * 60;
@@ -435,23 +477,17 @@ export async function getScreenshotStatus(
                 // imageAsset contains the template URL and dimensions
                 const imageAsset = (attr.imageAsset ?? {}) as Record<string, unknown>;
                 const templateUrl = getOptionalString(imageAsset.templateUrl);
-                const width = getString(imageAsset.width);
-                const height = getString(imageAsset.height);
-
-                // Build the URL from template if available
-                let url: string | null = null;
-                if (templateUrl) {
-                    // Template format: {url}/{width}x{height}{extension}
-                    // We want the full resolution
-                    url = templateUrl
-                        .replace('{w}', width || '0')
-                        .replace('{h}', height || '0')
-                        .replace('{f}', 'png');
-                }
+                const fileName = getString(attr.fileName);
+                const url = buildAssetTemplateUrl(templateUrl, {
+                    width: imageAsset.width,
+                    height: imageAsset.height,
+                    fileName,
+                    defaultFormat: 'png',
+                });
 
                 return {
                     id: s.id,
-                    fileName: getString(attr.fileName),
+                    fileName,
                     fileSize: getNumber(attr.fileSize),
                     url,
                     state: getString((attr.assetDeliveryState as Record<string, unknown> | undefined)?.state, 'UNKNOWN'),
@@ -767,20 +803,17 @@ export async function getAppPreviewStatus(
                 const attr = getAttr(p);
                 const videoAsset = (attr.videoAsset ?? {}) as Record<string, unknown>;
                 const templateUrl = getOptionalString(videoAsset.templateUrl);
-                const width = getString(videoAsset.width);
-                const height = getString(videoAsset.height);
-
-                let url: string | null = null;
-                if (templateUrl) {
-                    url = templateUrl
-                        .replace('{w}', width || '0')
-                        .replace('{h}', height || '0')
-                        .replace('{f}', 'm3u8');
-                }
+                const fileName = getString(attr.fileName);
+                const url = buildAssetTemplateUrl(templateUrl, {
+                    width: videoAsset.width,
+                    height: videoAsset.height,
+                    fileName,
+                    defaultFormat: 'm3u8',
+                });
 
                 return {
                     id: p.id,
-                    fileName: getString(attr.fileName),
+                    fileName,
                     fileSize: getNumber(attr.fileSize),
                     url,
                     previewFrameTimeCode: getOptionalString(attr.previewFrameTimeCode),
