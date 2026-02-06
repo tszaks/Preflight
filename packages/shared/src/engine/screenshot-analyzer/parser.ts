@@ -15,10 +15,12 @@ import type { AIResponse, AIFinding, AIEvidence } from './prompt';
  * Parse a raw AI response text into structured checks and evidence.
  * @param rawText - The raw text from Claude's response
  * @param batchStartIndex - The starting screenshot index for this batch (for absolute indices)
+ * @param batchLength - Number of screenshots in this batch
  */
 export function parseScreenshotAIResponse(
     rawText: string,
     batchStartIndex: number,
+    batchLength: number,
 ): { checks: CheckResult[]; evidence: Partial<ScreenshotEvidence> } {
     const parsed = extractJSON(rawText);
     if (!parsed) {
@@ -32,7 +34,7 @@ export function parseScreenshotAIResponse(
     // Parse findings into CheckResult items
     if (Array.isArray(response.findings)) {
         for (const finding of response.findings) {
-            const check = findingToCheckResult(finding, batchStartIndex);
+            const check = findingToCheckResult(finding, batchStartIndex, batchLength);
             if (check) {
                 checks.push(check);
             }
@@ -51,10 +53,9 @@ export function parseScreenshotAIResponse(
             evidence.evidence_locations = {};
             for (const [key, indices] of Object.entries(response.evidence.evidence_locations)) {
                 if (Array.isArray(indices)) {
-                    // Adjust indices to be absolute (add batch offset)
-                    evidence.evidence_locations[key] = indices.map((i) =>
-                        typeof i === 'number' ? i + batchStartIndex : i
-                    );
+                    evidence.evidence_locations[key] = indices
+                        .filter((i): i is number => typeof i === 'number')
+                        .map((i) => normalizeScreenshotIndex(i, batchStartIndex, batchLength));
                 }
             }
         }
@@ -129,6 +130,7 @@ function extractJSON(text: string): unknown | null {
 function findingToCheckResult(
     finding: AIFinding,
     batchStartIndex: number,
+    batchLength: number,
 ): CheckResult | null {
     if (!finding || !finding.title || !finding.description) return null;
 
@@ -149,7 +151,11 @@ function findingToCheckResult(
     const effectiveSeverity: SeverityLevel = confidence < 50 ? 'info' : severity;
 
     // Build title with screenshot reference
-    const absoluteIndex = batchStartIndex + (finding.screenshot_index || 0);
+    const absoluteIndex = normalizeScreenshotIndex(
+        finding.screenshot_index || 0,
+        batchStartIndex,
+        batchLength,
+    );
     const title = `Screenshot ${absoluteIndex + 1}: ${finding.title}`;
 
     return {
@@ -161,6 +167,30 @@ function findingToCheckResult(
         fix_suggestion: undefined, // AI doesn't generate fix suggestions
         confidence,
     };
+}
+
+function normalizeScreenshotIndex(
+    rawIndex: number,
+    batchStartIndex: number,
+    batchLength: number,
+): number {
+    const safeBatchLength = Math.max(1, batchLength);
+    const batchEndIndex = batchStartIndex + safeBatchLength - 1;
+    const normalized = Number.isFinite(rawIndex) ? Math.trunc(rawIndex) : 0;
+
+    // Preferred format: batch-relative index (0..batchLength-1)
+    if (normalized >= 0 && normalized < safeBatchLength) {
+        return batchStartIndex + normalized;
+    }
+
+    // Also accept absolute indices if model returns them.
+    if (normalized >= batchStartIndex && normalized <= batchEndIndex) {
+        return normalized;
+    }
+
+    // Clamp anything out-of-range so user-facing screenshot labels stay valid.
+    if (normalized < 0) return batchStartIndex;
+    return batchEndIndex;
 }
 
 function mergeLocations(

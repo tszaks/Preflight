@@ -304,7 +304,12 @@ function extractAccessedApiTypes(manifestContent: string | undefined): Set<strin
     if (!parsed) return null;
 
     const apiTypes = parsed.NSPrivacyAccessedAPITypes;
-    if (!Array.isArray(apiTypes)) return new Set();
+    if (!Array.isArray(apiTypes)) {
+        // If the key is present in raw XML but parsed shape is missing, fall back to string scan.
+        return manifestContent.includes('NSPrivacyAccessedAPITypes')
+            ? extractAccessedApiTypesByStringScan(manifestContent)
+            : new Set();
+    }
 
     const declared = new Set<string>();
     for (const entry of apiTypes) {
@@ -312,6 +317,21 @@ function extractAccessedApiTypes(manifestContent: string | undefined): Set<strin
         const dict = entry as Record<string, unknown>;
         const apiType = dict.NSPrivacyAccessedAPIType;
         if (typeof apiType === 'string') {
+            declared.add(apiType);
+        }
+    }
+
+    // Guard against partially parsed entries (for example XML comments in nested arrays).
+    if (declared.size === 0 && manifestContent.includes('NSPrivacyAccessedAPITypes')) {
+        return extractAccessedApiTypesByStringScan(manifestContent);
+    }
+    return declared;
+}
+
+function extractAccessedApiTypesByStringScan(manifestContent: string): Set<string> {
+    const declared = new Set<string>();
+    for (const apiType of PRIVACY_MANIFEST_API_TYPES) {
+        if (manifestContent.includes(apiType)) {
             declared.add(apiType);
         }
     }

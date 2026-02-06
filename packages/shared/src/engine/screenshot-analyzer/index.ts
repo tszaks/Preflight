@@ -140,7 +140,7 @@ async function analyzeScreenshotBatch(
         .map((b) => b.text)
         .join('');
 
-    return parseScreenshotAIResponse(text, startIndex);
+    return parseScreenshotAIResponse(text, startIndex, batch.length);
 }
 
 function batchScreenshots(screenshots: ScreenshotData[]): ScreenshotData[][] {

@@ -137,5 +137,5 @@ export function buildUserMessage(
     endIndex: number,
     totalScreenshots: number,
 ): string {
-    return `Analyze these ${batchSize} App Store screenshots (indices ${startIndex}-${endIndex} of ${totalScreenshots} total). Return JSON only.`;
+    return `Analyze these ${batchSize} App Store screenshots (indices ${startIndex}-${endIndex} of ${totalScreenshots} total). Return JSON only. Use screenshot_index as a zero-based index within this batch (0 to ${batchSize - 1}), not an absolute index across all screenshots.`;
 }
