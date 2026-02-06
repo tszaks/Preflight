@@ -3,6 +3,41 @@ import { SELF_REPORT_RULES, INFORMATIONAL_RULES } from './rules';
 import type { SelfReportRule } from './rules';
 
 /**
+ * Fields that are currently collected by the submission questionnaire (web + CLI).
+ * Only these fields should generate "not answered/not confirmed" reminders.
+ */
+const QUESTIONNAIRE_FIELDS = new Set<string>([
+    // Core feature toggles
+    'sign_in_required',
+    'has_iap',
+    'has_subscriptions',
+    'has_third_party_login',
+    'has_ugc',
+    'has_ugc_moderation',
+    'makes_health_claims',
+    'has_health_disclaimers',
+    'generates_ai_content',
+    'has_ai_content_filtering',
+    'has_mini_apps',
+    'distributes_in_eu',
+    'has_external_payment_link',
+    // Conditional follow-ups currently asked
+    'has_account_deletion',
+    'has_restore_purchases',
+    'has_creator_age_gate',
+    'mini_apps_reviewed',
+    'eu_trader_declared',
+    'external_link_compliant',
+    'subscription_terms_on_paywall',
+    'sells_digital_outside_iap',
+    'subscriptions_without_login',
+    'screenshots_match_ui',
+    'tested_ipv6',
+    'contextual_permissions',
+    'has_alternate_icons',
+]);
+
+/**
  * Self-report answer evaluation.
  *
  * Converts user form answers into deterministic CheckResults.
@@ -55,6 +90,11 @@ function evaluateRule(rule: SelfReportRule, input: HardRulesInput): CheckResult 
 
     // Null/undefined trigger = user didn't answer → info reminder
     if (triggerValue === null || triggerValue === undefined) {
+        // Suppress "not answered" noise for fields we don't currently ask in the form.
+        if (!QUESTIONNAIRE_FIELDS.has(rule.trigger_field)) {
+            return null;
+        }
+
         return {
             category: rule.category,
             severity: 'info',
@@ -98,6 +138,11 @@ function evaluateRule(rule: SelfReportRule, input: HardRulesInput): CheckResult 
         const confirmValue = getFieldValue(input, rule.confirm_field);
 
         if (confirmValue === null || confirmValue === undefined) {
+            // Suppress "not confirmed" noise for follow-ups not present in current questionnaire.
+            if (!QUESTIONNAIRE_FIELDS.has(rule.confirm_field)) {
+                return null;
+            }
+
             // Confirm field not answered
             return {
                 category: rule.category,

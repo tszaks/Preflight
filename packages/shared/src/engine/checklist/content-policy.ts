@@ -31,18 +31,8 @@ export function checkContentPolicy(input: HardRulesInput): CheckResult[] {
 
     // === Subscriptions: multiple compliance checks ===
     if (input.has_subscriptions === true) {
-        // Free trial without clear terms
-        if (input.subscription_terms_on_paywall === null || input.subscription_terms_on_paywall === undefined) {
-            checks.push({
-                category: 'content_policy',
-                severity: 'info',
-                title: 'Confirm subscription terms are displayed',
-                description: 'Your app has subscriptions. Please confirm that price, duration, auto-renewal terms, and cancellation instructions are displayed before purchase.',
-                guideline_ref: '3.1.2 — Subscriptions',
-                fix_suggestion: 'Answer the subscription terms question in the submission form.',
-                confidence: 100,
-            });
-        }
+        // subscription_terms_on_paywall is not collected in all flows yet.
+        // Avoid generating "missing answer" reminders until the question is universally asked.
     }
 
     // === IAP without restore purchases ===
