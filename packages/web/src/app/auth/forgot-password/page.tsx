@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
 
                 <div className="vercel-card">
                     <h1 className="text-2xl font-bold tracking-tighter mb-2">Reset password</h1>
-                    <p className="text-sm text-gray-500 font-light mb-8">Enter your email and we'll send you a reset link</p>
+                    <p className="text-sm text-gray-500 font-light mb-8">Enter your email and we&apos;ll send you a reset link</p>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">

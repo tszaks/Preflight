@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
 
-        const recordData: any = {
+        const recordData: Record<string, unknown> = {
             user_id: user.id,
             app_name: body.app_name,
             promotional_text: body.promotional_text,
@@ -79,8 +79,9 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ submissionId, message: 'Draft saved successfully' })
-    } catch (err: any) {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Internal Server Error'
         console.error('Submission error:', err)
-        return NextResponse.json({ message: err.message || 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({ message }, { status: 500 })
     }
 }

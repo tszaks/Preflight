@@ -8,9 +8,9 @@ import { cn } from '@/components/ui/status'
 import { createClient } from '@/lib/supabase/client'
 
 interface ReportClientProps {
-    initialSubmission: any
-    initialReport: any
-    initialItems: any[]
+    initialSubmission: SubmissionSummary
+    initialReport: ReportSummary | null
+    initialItems: ReportItem[]
 }
 
 interface TerminalLine {
@@ -22,6 +22,36 @@ interface TerminalLine {
 }
 
 type AnalysisPhase = 'init' | 'hard' | 'soft' | 'report' | 'done' | 'failed'
+
+interface SubmissionSummary {
+    id: string
+    app_name?: string | null
+    version?: string | null
+    status?: string | null
+    created_at?: string
+}
+
+interface ReportSummary {
+    id?: string
+    score_overall?: number
+}
+
+interface ReportItem {
+    id: string
+    severity: 'critical' | 'warning' | 'info' | 'pass' | string
+    category?: string | null
+    guideline_ref?: string | null
+    title?: string | null
+    description?: string | null
+    fix_suggestion?: string | null
+}
+
+interface AnalysisJob {
+    status?: string | null
+    hard_rules_completed?: boolean
+    soft_rules_completed?: boolean
+    error_message?: string | null
+}
 
 const HARD_CHECKS = [
     'Validating app name and keywords...',
@@ -55,10 +85,10 @@ function asciiProgressBar(percent: number, width = 14): string {
 }
 
 export default function ReportClient({ initialSubmission, initialReport, initialItems }: ReportClientProps) {
-    const [submission, setSubmission] = useState(initialSubmission)
-    const [report, setReport] = useState(initialReport)
-    const [items, setItems] = useState(initialItems)
-    const [job, setJob] = useState<any>(null)
+    const [submission, setSubmission] = useState<SubmissionSummary>(initialSubmission)
+    const [report, setReport] = useState<ReportSummary | null>(initialReport)
+    const [items, setItems] = useState<ReportItem[]>(initialItems)
+    const [job, setJob] = useState<AnalysisJob | null>(null)
 
     // Severity sorting
     const criticalItems = items.filter(i => i.severity === 'critical')
@@ -81,7 +111,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                 },
                 (payload) => {
                     console.log('[Realtime] Submission update:', payload.new)
-                    setSubmission(payload.new)
+                    setSubmission(payload.new as SubmissionSummary)
                 }
             )
             .subscribe()
@@ -99,8 +129,11 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                 },
                 (payload) => {
                     console.log('[Realtime] Report created:', payload.new)
-                    setReport(payload.new)
-                    fetchItems(payload.new.id)
+                    const nextReport = payload.new as ReportSummary
+                    setReport(nextReport)
+                    if (nextReport?.id) {
+                        fetchItems(nextReport.id)
+                    }
                 }
             )
             .subscribe()
@@ -118,7 +151,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                 },
                 (payload) => {
                     console.log('[Realtime] Job update:', payload.new)
-                    setJob(payload.new)
+                    setJob(payload.new as AnalysisJob)
                 }
             )
             .subscribe()
@@ -130,7 +163,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                 .select('*')
                 .eq('submission_id', submission.id)
                 .maybeSingle()
-            if (data) setJob(data)
+            if (data) setJob(data as AnalysisJob)
         }
         fetchJob()
 
@@ -148,7 +181,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
             .select('*')
             .eq('report_id', reportId)
 
-        if (data) setItems(data)
+        if (data) setItems(data as ReportItem[])
     }
 
     const isAnalyzing = submission.status === 'analyzing' || submission.status === 'queued'
@@ -505,7 +538,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                             <span className="bg-white/5 px-2 py-0.5 rounded text-[10px] uppercase tracking-widest font-bold text-white">Full Review</span>
                             <span>v{submission.version || '1.0'}</span>
                             <span>&middot;</span>
-                            <span>{new Date(submission.created_at).toLocaleDateString()}</span>
+                            <span>{submission.created_at ? new Date(submission.created_at).toLocaleDateString() : 'N/A'}</span>
                         </div>
                     </div>
                 </div>
@@ -525,7 +558,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
                             <div className="text-[10px] font-bold tracking-[0.2em] text-gray-500 uppercase">System Health</div>
-                            <div className={cn("text-7xl font-bold tracking-tighter", scoreColor(report?.score_overall))}>
+                            <div className={cn("text-7xl font-bold tracking-tighter", scoreColor(report?.score_overall ?? 0))}>
                                 {report?.score_overall ?? 0}
                             </div>
                             <div className="text-sm text-gray-400 font-light italic">
@@ -637,10 +670,10 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                                             <div className="mt-4 bg-white/5 rounded-lg border border-white/5 p-4">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-[10px] font-bold tracking-widest text-gray-300 uppercase">Recommended Fix</span>
-                                                    <button
-                                                        className="text-gray-500 hover:text-white transition-colors"
-                                                        onClick={() => navigator.clipboard.writeText(item.fix_suggestion)}
-                                                    >
+                                                        <button
+                                                            className="text-gray-500 hover:text-white transition-colors"
+                                                            onClick={() => navigator.clipboard.writeText(item.fix_suggestion ?? '')}
+                                                        >
                                                         <Copy className="w-3.5 h-3.5" />
                                                     </button>
                                                 </div>

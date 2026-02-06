@@ -234,10 +234,11 @@ export async function POST(req: NextRequest) {
             rejectionId: body.rejectionId,
             patternsUpdated: patternsToUpdate.length,
         })
-    } catch (err: any) {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Internal Server Error'
         console.error('Process rejection feedback error:', err)
         return NextResponse.json(
-            { message: err.message || 'Internal Server Error' },
+            { message },
             { status: 500 }
         )
     }

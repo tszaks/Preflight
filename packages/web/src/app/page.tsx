@@ -21,7 +21,7 @@ export default function Home() {
 
           <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-light">
             PreFlight scans your Xcode project, analyzes your screenshots, and checks your metadata
-            against Apple's review guidelines before you submit. Catch the small stuff that costs you weeks.
+            against Apple&apos;s review guidelines before you submit. Catch the small stuff that costs you weeks.
           </p>
 
           <WaitlistForm />

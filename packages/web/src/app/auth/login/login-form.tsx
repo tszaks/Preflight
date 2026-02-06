@@ -13,16 +13,10 @@ export default function LoginForm() {
     const searchParams = useSearchParams()
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [formError, setFormError] = useState<string | null>(null)
     const [checkingAuth, setCheckingAuth] = useState(true)
-
-    // Show error from callback redirect (e.g. email verification failure)
-    useEffect(() => {
-        const urlError = searchParams.get('error')
-        if (urlError) {
-            setError(decodeURIComponent(urlError))
-        }
-    }, [searchParams])
+    const urlError = searchParams.get('error')
+    const errorMessage = formError ?? (urlError ? decodeURIComponent(urlError) : null)
 
     // Redirect if already logged in
     useEffect(() => {
@@ -41,13 +35,13 @@ export default function LoginForm() {
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setLoading(true)
-        setError(null)
+        setFormError(null)
 
         const formData = new FormData(e.currentTarget)
         const result = await login(formData)
 
         if (result?.error) {
-            setError(result.error)
+            setFormError(result.error)
             setLoading(false)
         }
     }
@@ -116,9 +110,9 @@ export default function LoginForm() {
                             />
                         </div>
 
-                        {error && (
+                        {errorMessage && (
                             <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 p-3 rounded-md">
-                                {error}
+                                {errorMessage}
                             </div>
                         )}
 
@@ -139,7 +133,7 @@ export default function LoginForm() {
                 </div>
 
                 <p className="text-center mt-8 text-sm text-gray-500 font-light">
-                    Don't have an account?{' '}
+                    Don&apos;t have an account?{' '}
                     <Link href="/auth/signup" className="text-white hover:underline underline-offset-4">
                         Sign up
                     </Link>

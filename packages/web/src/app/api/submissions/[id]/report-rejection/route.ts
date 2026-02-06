@@ -154,7 +154,7 @@ export async function POST(
         }
 
         // Now refund credits (rejection record is committed, so we have backup)
-        const { data: refundResult, error: refundError } = await supabase
+        const { error: refundError } = await supabase
             .rpc('refund_credits', { p_user_id: user.id, p_amount: REFUND_AMOUNT })
 
         if (refundError) {
@@ -215,10 +215,11 @@ export async function POST(
             },
             { status: 200 }
         )
-    } catch (err: any) {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Internal Server Error'
         console.error('Rejection report error:', err)
         return NextResponse.json(
-            { message: err.message || 'Internal Server Error' },
+            { message },
             { status: 500 }
         )
     }

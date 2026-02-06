@@ -119,8 +119,9 @@ export async function uploadAllFiles(
 
             if (error) throw error
             uploaded.push(urlInfo)
-        } catch (err: any) {
-            failed.push({ type: item.type, index: item.index, error: err.message || 'Upload failed' })
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Upload failed'
+            failed.push({ type: item.type, index: item.index, error: message })
         }
 
         completed++
@@ -152,8 +153,9 @@ export async function uploadAllFiles(
 
                 if (error) throw error
                 uploaded.push(urlInfo)
-            } catch (err: any) {
-                failed.push({ type: 'ipa', error: err.message || 'Upload failed' })
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Upload failed'
+                failed.push({ type: 'ipa', error: message })
             }
         }
 

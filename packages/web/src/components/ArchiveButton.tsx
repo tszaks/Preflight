@@ -18,9 +18,10 @@ export function ArchiveButton({ submissionId }: { submissionId: string }) {
         setLoading(true)
         try {
             await archiveSubmission(submissionId)
-        } catch (err: any) {
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unknown error'
             console.error(err)
-            alert(`Failed to archive submission: ${err.message || 'Unknown error'}`)
+            alert(`Failed to archive submission: ${message}`)
             setLoading(false)
         }
     }

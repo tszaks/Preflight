@@ -1,8 +1,11 @@
+import type { SVGProps } from 'react'
 import { ShieldAlert, Users, ShoppingCart } from 'lucide-react'
 
+type ChecklistValue = Record<string, boolean | undefined>;
+
 interface SelfChecklistProps {
-    value: any;
-    onChange: (value: any) => void;
+    value: ChecklistValue;
+    onChange: (value: ChecklistValue) => void;
 }
 
 const ITEMS = [
@@ -87,47 +90,47 @@ const CONDITIONAL_ITEMS = [
         label: 'Account Deletion Button',
         desc: 'Apple requires this! Is there a way for users to delete their account?',
         icon: ShieldAlert,
-        showWhen: (v: any) => v.login === true
+        showWhen: (v: ChecklistValue) => v.login === true
     },
     {
         id: 'restorePurchases',
         label: 'Restore Purchases Button',
         desc: 'Apple requires this! Is there a "Restore Purchases" button for returning users?',
         icon: ShoppingCart,
-        showWhen: (v: any) => v.iap === true || v.subscriptions === true
+        showWhen: (v: ChecklistValue) => v.iap === true || v.subscriptions === true
     },
     {
         id: 'creatorAgeGate',
         label: 'Creator Age Verification',
         desc: 'Do you verify content creators are at least 13 years old?',
         icon: Users,
-        showWhen: (v: any) => v.ugc === true
+        showWhen: (v: ChecklistValue) => v.ugc === true
     },
     {
         id: 'miniAppsReviewed',
         label: 'Mini Apps Individually Reviewed',
         desc: 'Have all mini apps/plugins been submitted for individual Apple review?',
         icon: ShieldAlert,
-        showWhen: (v: any) => v.miniApps === true
+        showWhen: (v: ChecklistValue) => v.miniApps === true
     },
     {
         id: 'euTraderDeclared',
         label: 'EU Trader Status Declared',
         desc: 'Have you declared your trader status in App Store Connect? (EU DSA)',
         icon: ShieldAlert,
-        showWhen: (v: any) => v.euDistribution === true
+        showWhen: (v: ChecklistValue) => v.euDistribution === true
     },
     {
         id: 'externalLinkCompliant',
         label: 'External Link API Compliance',
-        desc: 'Do you use StoreKit External Link Account API with Apple\'s disclosure?',
+        desc: 'Do you use StoreKit External Link Account API with Apple&apos;s disclosure?',
         icon: ShoppingCart,
-        showWhen: (v: any) => v.externalPayments === true
+        showWhen: (v: ChecklistValue) => v.externalPayments === true
     }
 ]
 
 // Simple LockIcon since it was missing in imports
-function LockIcon(props: any) {
+function LockIcon(props: SVGProps<SVGSVGElement>) {
     return (
         <svg
             {...props}
@@ -193,7 +196,7 @@ export function SelfChecklist({ value, onChange }: SelfChecklistProps) {
         <div className="space-y-6">
             <div className="border-b border-white/10 pb-4">
                 <h2 className="text-xl font-bold tracking-tight">Feature Checklist</h2>
-                <p className="text-sm text-gray-500 font-light">Confirm your app's capabilities</p>
+                <p className="text-sm text-gray-500 font-light">Confirm your app&apos;s capabilities</p>
             </div>
 
             <div className="grid gap-4">

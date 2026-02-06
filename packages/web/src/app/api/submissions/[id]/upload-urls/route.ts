@@ -98,10 +98,11 @@ export async function POST(
         )
 
         return NextResponse.json({ urls })
-    } catch (err: any) {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to generate upload URLs'
         console.error('Upload URL generation error:', err)
         return NextResponse.json(
-            { message: err.message || 'Failed to generate upload URLs' },
+            { message },
             { status: 500 }
         )
     }

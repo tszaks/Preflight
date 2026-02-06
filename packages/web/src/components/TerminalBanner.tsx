@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { Copy, Check, Terminal, ChevronRight } from "lucide-react";
 
 export function TerminalBanner() {
@@ -25,7 +26,7 @@ export function TerminalBanner() {
   if (isHome) {
     return (
       <div className="fixed top-20 left-0 right-0 z-40 flex justify-center px-4 md:px-6 pointer-events-none">
-        <a
+        <Link
           href="#install"
           className="pointer-events-auto inline-flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-2 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 cursor-pointer"
         >
@@ -55,14 +56,14 @@ export function TerminalBanner() {
               </span>
             ))}
           </div>
-        </a>
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="fixed bottom-4 left-4 z-40 pointer-events-none">
-      <a
+      <Link
         href="/#install"
         className="pointer-events-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200 cursor-pointer"
       >
@@ -81,7 +82,7 @@ export function TerminalBanner() {
             <Copy className="w-2.5 h-2.5" />
           )}
         </button>
-      </a>
+      </Link>
     </div>
   );
 }

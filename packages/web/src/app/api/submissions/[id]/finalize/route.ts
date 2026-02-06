@@ -154,7 +154,8 @@ export async function POST(
         revalidatePath('/dashboard')
         console.log(`Submission ${submissionId} finalized. Analysis started.`)
         return NextResponse.json({ submissionId })
-    } catch (err: any) {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Internal Server Error'
         console.error('Finalize error:', err)
         // Attempt rollback: revert status and refund credits
         try {
@@ -163,6 +164,6 @@ export async function POST(
         } catch (rollbackErr) {
             console.error('Rollback failed:', rollbackErr)
         }
-        return NextResponse.json({ message: err.message || 'Internal Server Error' }, { status: 500 })
+        return NextResponse.json({ message }, { status: 500 })
     }
 }

@@ -1,8 +1,18 @@
-import { Share2, Lock, Eye } from 'lucide-react'
+import { Lock, Eye } from 'lucide-react'
+
+type PrivacyDataEntry = {
+    collected: boolean;
+    linked: boolean;
+};
+
+type PrivacyDeclarationsValue = {
+    data?: Record<string, PrivacyDataEntry>;
+    tracking?: boolean;
+};
 
 interface PrivacyDeclarationsProps {
-    value: any;
-    onChange: (value: any) => void;
+    value: PrivacyDeclarationsValue;
+    onChange: (value: PrivacyDeclarationsValue) => void;
 }
 
 const DATA_TYPES = [

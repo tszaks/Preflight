@@ -47,7 +47,7 @@ export function scanProjectFolder(files: FileList): ScanResults {
   };
 
   // Track candidates for Info.plist (may find multiple)
-  let infoPlistCandidates: Array<{ file: File; path: string; depth: number; priority: number }> = [];
+  const infoPlistCandidates: Array<{ file: File; path: string; depth: number; priority: number }> = [];
 
   for (const file of files) {
     const path = file.webkitRelativePath;

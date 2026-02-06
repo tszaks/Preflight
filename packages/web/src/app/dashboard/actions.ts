@@ -15,7 +15,7 @@ export async function archiveSubmission(submissionId: string) {
     // 2. Perform archive (restricted to owner)
     const { error } = await supabase
         .from('submissions')
-        .update({ is_rereviewing: true } as any)
+        .update({ is_rereviewing: true } as { is_rereviewing: boolean })
         .eq('id', submissionId)
         .eq('user_id', user.id)
 
