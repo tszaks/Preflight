@@ -66,10 +66,10 @@ export function HomeAnimations() {
         )
       }
 
-      // Parallax on hero title
+      // Parallax on hero title - reduced movement to prevent cutoff
       if (heroTitle) {
         gsap.to(heroTitle, {
-          y: -40,
+          y: -20,
           scrollTrigger: {
             trigger: 'section',
             start: 'top top',
@@ -79,10 +79,10 @@ export function HomeAnimations() {
         })
       }
 
-      // Parallax on subtitle (slower)
+      // Parallax on subtitle (subtle)
       if (heroSubtitle) {
         gsap.to(heroSubtitle, {
-          y: 20,
+          y: 10,
           scrollTrigger: {
             trigger: 'section',
             start: 'center center',

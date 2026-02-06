@@ -11,6 +11,8 @@
  */
 
 import type { CheckResult } from '../types';
+import { parsePlist } from '../utils/parse-plist';
+import { PRIVACY_MANIFEST_API_TYPES } from '../knowledge-base/requirements';
 import { extractIPA, type ExtractedIPA } from './extract';
 import { analyzeFrameworks } from './frameworks';
 import { analyzeEntitlements } from './entitlements';
@@ -31,6 +33,381 @@ const MAX_IPA_SIZE = 500 * 1024 * 1024;
 /** Convert bytes to megabytes, formatted to a fixed number of decimal places. */
 function toMB(bytes: number, decimals = 0): string {
     return (bytes / (1024 * 1024)).toFixed(decimals);
+}
+
+function isPlistDict(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getIconConfig(parsed: Record<string, unknown> | null): { hasIconKeys: boolean; iconName?: string } {
+    if (!parsed) return { hasIconKeys: false };
+
+    let iconName: string | undefined;
+    let hasIconKeys = false;
+
+    if (typeof parsed.CFBundleIconName === 'string') {
+        iconName = parsed.CFBundleIconName;
+        hasIconKeys = true;
+    }
+
+    if (Array.isArray(parsed.CFBundleIconFiles) && parsed.CFBundleIconFiles.length > 0) {
+        hasIconKeys = true;
+    }
+
+    const iconsDict = isPlistDict(parsed.CFBundleIcons) ? parsed.CFBundleIcons as Record<string, unknown> : null;
+    if (iconsDict) {
+        hasIconKeys = true;
+        const primaryIcon = isPlistDict(iconsDict.CFBundlePrimaryIcon)
+            ? iconsDict.CFBundlePrimaryIcon as Record<string, unknown>
+            : null;
+        if (primaryIcon && typeof primaryIcon.CFBundleIconName === 'string') {
+            iconName = primaryIcon.CFBundleIconName;
+        }
+        if (primaryIcon && Array.isArray(primaryIcon.CFBundleIconFiles) && primaryIcon.CFBundleIconFiles.length > 0) {
+            hasIconKeys = true;
+        }
+    }
+
+    const iconsIpad = isPlistDict(parsed['CFBundleIcons~ipad'])
+        ? parsed['CFBundleIcons~ipad'] as Record<string, unknown>
+        : null;
+    if (iconsIpad) {
+        hasIconKeys = true;
+    }
+
+    return { hasIconKeys, iconName };
+}
+
+function getPlistStringValue(plistContent: string | undefined, key: string): string | null {
+    if (!plistContent) return null;
+    const re = new RegExp(`<key>${key}<\\/key>\\s*<string>([\\s\\S]*?)<\\/string>`, 'i');
+    const match = plistContent.match(re);
+    if (!match) return null;
+    return match[1].trim();
+}
+
+const REQUIRED_REASON_API_SIGNALS: Array<{
+    apiType: typeof PRIVACY_MANIFEST_API_TYPES[number];
+    title: string;
+    symbols: string[];
+    confidence: number;
+}> = [
+    {
+        apiType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+        title: 'UserDefaults access detected',
+        symbols: ['NSUserDefaults', 'CFPreferencesCopyAppValue', 'CFPreferencesSetAppValue'],
+        confidence: 80,
+    },
+    {
+        apiType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+        title: 'File timestamp access detected',
+        symbols: ['stat', 'fstat', 'lstat', 'getattrlist', 'getattrlistbulk', 'getattrlistat'],
+        confidence: 70,
+    },
+    {
+        apiType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+        title: 'Disk space access detected',
+        symbols: ['statfs', 'statvfs', 'getfsstat', 'NSURLVolumeAvailableCapacity', 'volumeAvailableCapacity'],
+        confidence: 70,
+    },
+    {
+        apiType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+        title: 'System boot time access detected',
+        symbols: ['KERN_BOOTTIME', 'sysctl', 'sysctlbyname'],
+        confidence: 65,
+    },
+    {
+        apiType: 'NSPrivacyAccessedAPICategoryActiveKeyboards',
+        title: 'Active keyboard access detected',
+        symbols: ['UIKeyboardInputMode', 'UITextInputMode', 'activeInputModes'],
+        confidence: 70,
+    },
+];
+
+function checkTrackingUsageDescription(plistContent: string | undefined, importedSymbols: string[]): CheckResult[] {
+    const results: CheckResult[] = [];
+    const usesATT = importedSymbols.some(sym =>
+        sym.includes('ATTrackingManager') || sym.includes('requestTrackingAuthorization')
+    );
+    if (!usesATT) return results;
+
+    const desc = getPlistStringValue(plistContent, 'NSUserTrackingUsageDescription');
+    if (desc === null) {
+        results.push({
+            category: 'info_plist',
+            severity: 'critical',
+            title: 'Missing NSUserTrackingUsageDescription',
+            description: 'The binary references App Tracking Transparency APIs but NSUserTrackingUsageDescription is missing from Info.plist.',
+            guideline_ref: '5.1.2',
+            fix_suggestion: 'Add NSUserTrackingUsageDescription with a clear explanation of why tracking permission is needed.',
+            confidence: 90,
+        });
+        return results;
+    }
+
+    if (desc.length === 0) {
+        results.push({
+            category: 'info_plist',
+            severity: 'critical',
+            title: 'Empty NSUserTrackingUsageDescription',
+            description: 'NSUserTrackingUsageDescription is present but empty. Apple will reject apps that request tracking without a meaningful purpose string.',
+            guideline_ref: '5.1.2',
+            fix_suggestion: 'Provide a clear, specific explanation of why tracking permission is needed.',
+            confidence: 90,
+        });
+        return results;
+    }
+
+    if (desc.length < 10) {
+        results.push({
+            category: 'info_plist',
+            severity: 'warning',
+            title: 'Vague NSUserTrackingUsageDescription',
+            description: `NSUserTrackingUsageDescription ("${desc}") is too short to be meaningful.`,
+            guideline_ref: '5.1.2',
+            fix_suggestion: 'Explain the specific feature that requires tracking. Avoid generic phrases.',
+            confidence: 85,
+        });
+    }
+
+    return results;
+}
+
+function extractPlistFromMobileProvision(content: string): string | null {
+    const start = content.indexOf('<plist');
+    const end = content.indexOf('</plist>');
+    if (start === -1 || end === -1) return null;
+    return content.slice(start, end + '</plist>'.length);
+}
+
+function checkMobileProvision(
+    mobileProvision: string | undefined,
+    bundleId: string | undefined,
+): CheckResult[] {
+    const results: CheckResult[] = [];
+    if (!mobileProvision) return results;
+
+    const plistXml = extractPlistFromMobileProvision(mobileProvision);
+    if (!plistXml) {
+        results.push({
+            category: 'ipa_binary',
+            severity: 'warning',
+            title: 'Embedded provisioning profile could not be parsed',
+            description:
+                'The IPA contains an embedded.mobileprovision file, but its plist payload could not be extracted. ' +
+                'This may indicate a malformed profile or a non-standard build.',
+            guideline_ref: 'App Store Connect Build Requirements',
+            fix_suggestion:
+                'Rebuild and export using a standard App Store distribution profile in Xcode.',
+            confidence: 70,
+        });
+        return results;
+    }
+
+    const parsed = parsePlist(plistXml);
+    if (!parsed) {
+        results.push({
+            category: 'ipa_binary',
+            severity: 'warning',
+            title: 'Embedded provisioning profile is not valid plist',
+            description:
+                'embedded.mobileprovision was found but could not be parsed as a valid plist. ' +
+                'App Store submissions require a valid distribution profile.',
+            guideline_ref: 'App Store Connect Build Requirements',
+            fix_suggestion:
+                'Rebuild with a valid App Store distribution provisioning profile.',
+            confidence: 70,
+        });
+        return results;
+    }
+
+    const expiration = parsed.ExpirationDate;
+    const expDate =
+        expiration instanceof Date
+            ? expiration
+            : typeof expiration === 'string'
+                ? new Date(expiration)
+                : null;
+
+    if (expDate && !Number.isNaN(expDate.getTime()) && expDate.getTime() < Date.now()) {
+        results.push({
+            category: 'ipa_binary',
+            severity: 'critical',
+            title: 'Provisioning profile expired',
+            description:
+                `The embedded provisioning profile expired on ${expDate.toDateString()}. ` +
+                'Expired profiles will fail App Store submission.',
+            guideline_ref: 'App Store Connect Build Requirements',
+            fix_suggestion:
+                'Create a new App Store distribution provisioning profile and re-export the IPA.',
+            confidence: 95,
+        });
+    }
+
+    const provisionedDevices = parsed.ProvisionedDevices;
+    if (Array.isArray(provisionedDevices) && provisionedDevices.length > 0) {
+        results.push({
+            category: 'ipa_binary',
+            severity: 'critical',
+            title: 'Ad-hoc or development provisioning profile detected',
+            description:
+                'The embedded provisioning profile includes specific device UDIDs. ' +
+                'App Store submissions must use an App Store distribution profile (no ProvisionedDevices).',
+            guideline_ref: 'App Store Connect Build Requirements',
+            fix_suggestion:
+                'Archive and export using an App Store distribution profile (not ad-hoc or development).',
+            confidence: 95,
+        });
+    }
+
+    if (parsed.ProvisionsAllDevices === true) {
+        results.push({
+            category: 'ipa_binary',
+            severity: 'critical',
+            title: 'Enterprise provisioning profile detected',
+            description:
+                'The embedded provisioning profile is an enterprise profile (ProvisionsAllDevices=true). ' +
+                'Enterprise builds cannot be submitted to the App Store.',
+            guideline_ref: 'App Store Connect Build Requirements',
+            fix_suggestion:
+                'Use an App Store distribution profile when exporting the IPA.',
+            confidence: 95,
+        });
+    }
+
+    const appIdentifier = parsed['application-identifier'];
+    if (typeof appIdentifier === 'string' && bundleId) {
+        const parts = appIdentifier.split('.');
+        const entBundleId = parts.slice(1).join('.');
+        if (entBundleId && entBundleId !== bundleId) {
+            results.push({
+                category: 'ipa_binary',
+                severity: 'critical',
+                title: 'Provisioning profile bundle ID mismatch',
+                description:
+                    `The embedded provisioning profile is for "${entBundleId}", but the app bundle identifier is "${bundleId}". ` +
+                    'This mismatch will fail App Store validation.',
+                guideline_ref: 'App Store Connect Build Requirements',
+                fix_suggestion:
+                    'Rebuild with a provisioning profile that matches the app’s bundle identifier.',
+                confidence: 90,
+            });
+        }
+    }
+
+    return results;
+}
+
+function extractAccessedApiTypes(manifestContent: string | undefined): Set<string> | null {
+    if (!manifestContent) return null;
+    const parsed = parsePlist(manifestContent);
+    if (!parsed) return null;
+
+    const apiTypes = parsed.NSPrivacyAccessedAPITypes;
+    if (!Array.isArray(apiTypes)) return new Set();
+
+    const declared = new Set<string>();
+    for (const entry of apiTypes) {
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+        const dict = entry as Record<string, unknown>;
+        const apiType = dict.NSPrivacyAccessedAPIType;
+        if (typeof apiType === 'string') {
+            declared.add(apiType);
+        }
+    }
+    return declared;
+}
+
+function detectRequiredReasonApis(importedSymbols: string[]): Array<{ apiType: string; title: string; confidence: number }> {
+    const hits: Array<{ apiType: string; title: string; confidence: number }> = [];
+    for (const signal of REQUIRED_REASON_API_SIGNALS) {
+        const matched = signal.symbols.some(sym =>
+            importedSymbols.some(s => s.includes(sym))
+        );
+        if (matched) {
+            hits.push({
+                apiType: signal.apiType,
+                title: signal.title,
+                confidence: signal.confidence,
+            });
+        }
+    }
+    return hits;
+}
+
+function checkRequiredReasonApiDeclarations(
+    importedSymbols: string[],
+    manifestContent: string | undefined,
+): CheckResult[] {
+    const results: CheckResult[] = [];
+    const detected = detectRequiredReasonApis(importedSymbols);
+    if (detected.length === 0) return results;
+
+    const declaredTypes = extractAccessedApiTypes(manifestContent);
+    const hasManifest = typeof manifestContent === 'string' && manifestContent.length > 0;
+
+    for (const hit of detected) {
+        const declared =
+            declaredTypes !== null
+                ? declaredTypes.has(hit.apiType)
+                : hasManifest && manifestContent!.includes(hit.apiType);
+
+        if (!declared) {
+            results.push({
+                category: 'privacy_manifest',
+                severity: 'warning',
+                title: `Required-reason API not declared: ${hit.apiType.replace('NSPrivacyAccessedAPICategory', '')}`,
+                description:
+                    `${hit.title}, but the privacy manifest does not declare ${hit.apiType}. ` +
+                    'Apple requires required-reason APIs to be declared with valid reason codes.',
+                guideline_ref: '5.1 — Privacy Manifest',
+                fix_suggestion:
+                    `Add ${hit.apiType} with at least one valid NSPrivacyAccessedAPITypeReasons entry in PrivacyInfo.xcprivacy.`,
+                confidence: declaredTypes ? hit.confidence : Math.max(60, hit.confidence - 10),
+            });
+        }
+    }
+
+    return results;
+}
+
+function checkTrackingDeclarationConsistency(
+    manifestContent: string | undefined,
+    plistContent: string | undefined,
+    importedSymbols: string[],
+): CheckResult[] {
+    const results: CheckResult[] = [];
+    if (!manifestContent) return results;
+
+    const parsed = parsePlist(manifestContent);
+    const trackingEnabled =
+        parsed && typeof parsed.NSPrivacyTracking === 'boolean'
+            ? parsed.NSPrivacyTracking === true
+            : manifestContent.includes('NSPrivacyTracking') && manifestContent.includes('<true/>');
+
+    if (!trackingEnabled) return results;
+
+    const usesATT = importedSymbols.some(sym =>
+        sym.includes('ATTrackingManager') || sym.includes('requestTrackingAuthorization')
+    );
+    const hasUsage = getPlistStringValue(plistContent, 'NSUserTrackingUsageDescription');
+
+    if (!usesATT || !hasUsage) {
+        results.push({
+            category: 'privacy_manifest',
+            severity: 'warning',
+            title: 'Tracking declared without ATT compliance',
+            description:
+                'Privacy manifest declares tracking, but App Tracking Transparency APIs or usage description are missing. ' +
+                'Apps that track must request ATT permission and include NSUserTrackingUsageDescription.',
+            guideline_ref: '5.1.2',
+            fix_suggestion:
+                'Add AppTrackingTransparency usage with ATTrackingManager.requestTrackingAuthorization() and include NSUserTrackingUsageDescription.',
+            confidence: 75,
+        });
+    }
+
+    return results;
 }
 
 /**
@@ -72,7 +449,18 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             fix_suggestion: 'Re-export the IPA from Xcode (Product → Archive → Distribute App) and try uploading again. Ensure the file was not truncated during upload.',
             confidence: 100,
         });
-        return { checks, extracted: { bundleName: '', frameworks: [], frameworksMissingPrivacyManifest: [], iconFiles: [], totalSize: buffer.byteLength } };
+        return {
+            checks,
+            extracted: {
+                bundleName: '',
+                frameworks: [],
+                frameworksMissingPrivacyManifest: [],
+                iconFiles: [],
+                iconDimensions: {},
+                hasAssetsCar: false,
+                totalSize: buffer.byteLength,
+            },
+        };
     }
 
     // Step 2: Analyze frameworks
@@ -101,6 +489,11 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
         checks.push(...entitlementChecks);
     }
 
+    // Step 3b: Provisioning profile checks
+    const bundleId = extracted.infoPlist ? getPlistStringValue(extracted.infoPlist, 'CFBundleIdentifier') || undefined : undefined;
+    const provisioningChecks = checkMobileProvision(extracted.mobileProvision, bundleId);
+    checks.push(...provisioningChecks);
+
     // Step 4: Mach-O binary analysis
     let importedSymbols: string[] = [];
     if (extracted.zip && extracted.appDir && extracted.bundleName) {
@@ -110,6 +503,9 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             );
             checks.push(...machoResult.checks);
             importedSymbols = machoResult.metadata.importedSymbols;
+            if (machoResult.metadata.minOS) {
+                extracted.minOSVersion = machoResult.metadata.minOS;
+            }
             console.log(
                 `[IPA] Mach-O analysis: ${machoResult.checks.length} findings, ` +
                 `${machoResult.metadata.importedSymbolCount} symbols analyzed, ` +
@@ -129,6 +525,25 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
     );
     checks.push(...exportChecks);
 
+    // Step 4c: ATT usage description validation (if ATT symbols detected)
+    const attChecks = checkTrackingUsageDescription(extracted.infoPlist, importedSymbols);
+    checks.push(...attChecks);
+
+    // Step 4d: Required-reason API declaration checks
+    const requiredReasonChecks = checkRequiredReasonApiDeclarations(
+        importedSymbols,
+        extracted.privacyManifest,
+    );
+    checks.push(...requiredReasonChecks);
+
+    // Step 4e: Tracking declaration consistency (manifest vs ATT)
+    const trackingConsistencyChecks = checkTrackingDeclarationConsistency(
+        extracted.privacyManifest,
+        extracted.infoPlist,
+        importedSymbols,
+    );
+    checks.push(...trackingConsistencyChecks);
+
     // Step 5: Structural checks
     if (!extracted.infoPlist) {
         checks.push({
@@ -141,15 +556,56 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
         });
     }
 
-    if (extracted.iconFiles.length === 0) {
+    const parsedInfoPlist = extracted.infoPlist ? parsePlist(extracted.infoPlist) : null;
+    const iconConfig = getIconConfig(parsedInfoPlist);
+    const hasAppIconPngs = extracted.iconFiles.length > 0;
+    const hasAssetsCar = extracted.hasAssetsCar;
+
+    if (!hasAppIconPngs && !hasAssetsCar) {
         checks.push({
             category: 'ipa_binary',
-            severity: 'warning',
-            title: 'No app icon found in IPA',
-            description: 'No AppIcon PNG files were found in the app bundle. While icons are typically provided via the Asset Catalog, missing icons in the binary may indicate a build configuration issue.',
-            fix_suggestion: 'Ensure your app icon is included in the Xcode Asset Catalog and that the build process copies it into the final bundle.',
-            confidence: 85,
+            severity: 'critical',
+            title: 'No app icon assets found in IPA',
+            description:
+                'No AppIcon PNG files or Assets.car were found in the app bundle. ' +
+                'Apps without a valid AppIcon set will fail App Store validation.',
+            fix_suggestion:
+                'Ensure your AppIcon set is present in the Asset Catalog and included in the app bundle.',
+            confidence: 90,
         });
+    } else if (!iconConfig.hasIconKeys && !hasAssetsCar) {
+        checks.push({
+            category: 'info_plist',
+            severity: 'warning',
+            title: 'Missing CFBundleIcons configuration',
+            description:
+                'Info.plist does not declare CFBundleIcons/CFBundleIconName, and no asset catalog was detected. ' +
+                'This may indicate a misconfigured app icon setup.',
+            fix_suggestion:
+                'Ensure CFBundleIcons and CFBundleIconName are set, or use an Asset Catalog AppIcon set.',
+            confidence: 80,
+        });
+    }
+
+    const iconDims = extracted.iconDimensions || {};
+    const hasParsedIconDims = Object.keys(iconDims).length > 0;
+    if (hasParsedIconDims && hasAppIconPngs) {
+        const hasMarketingIcon = Object.values(iconDims).some(
+            (dim) => dim.width === 1024 && dim.height === 1024
+        );
+        if (!hasMarketingIcon && !hasAssetsCar) {
+            checks.push({
+                category: 'ipa_binary',
+                severity: 'warning',
+                title: 'Missing 1024x1024 App Store icon',
+                description:
+                    'AppIcon PNGs were found, but no 1024x1024 marketing icon was detected in the bundle. ' +
+                    'App Store submissions require a 1024x1024 icon in the AppIcon set.',
+                fix_suggestion:
+                    'Add a 1024x1024 marketing icon to the AppIcon set in Xcode.',
+                confidence: 85,
+            });
+        }
     }
 
     // Size check (Apple rejects apps > 4 GB)

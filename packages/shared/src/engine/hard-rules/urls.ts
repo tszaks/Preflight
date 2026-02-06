@@ -47,6 +47,9 @@ export async function checkUrls(input: HardRulesInput): Promise<CheckResult[]> {
 
     results.push(...reachabilityResults.flat());
 
+    // Domain consistency checks for privacy policy
+    results.push(...checkPrivacyDomainConsistency(input));
+
     // If no issues
     if (results.length === 0 && urlsToCheck.length > 0) {
         results.push({
@@ -167,6 +170,86 @@ async function checkReachability(url: string, label: string): Promise<CheckResul
                 confidence: 100,
             });
         }
+    }
+
+    return results;
+}
+
+function normalizeHost(url: string): string | null {
+    try {
+        const parsed = new URL(url);
+        return parsed.hostname.replace(/^www\./i, '').toLowerCase();
+    } catch {
+        return null;
+    }
+}
+
+function isSameOrSubdomain(a: string, b: string): boolean {
+    if (a === b) return true;
+    return a.endsWith(`.${b}`) || b.endsWith(`.${a}`);
+}
+
+function isGenericPolicyHost(host: string): boolean {
+    const genericHosts = [
+        'github.io',
+        'vercel.app',
+        'netlify.app',
+        'notion.site',
+        'notion.so',
+        'medium.com',
+        'sites.google.com',
+        'appspot.com',
+        'firebaseapp.com',
+        'pages.dev',
+        'webflow.io',
+        'wixsite.com',
+        'squarespace.com',
+        'substack.com',
+    ];
+    return genericHosts.some(h => host === h || host.endsWith(`.${h}`));
+}
+
+function checkPrivacyDomainConsistency(input: HardRulesInput): CheckResult[] {
+    const results: CheckResult[] = [];
+    if (!input.privacy_url) return results;
+
+    const privacyHost = normalizeHost(input.privacy_url);
+    if (!privacyHost) return results;
+
+    const supportHost = input.support_url ? normalizeHost(input.support_url) : null;
+    const marketingHost = input.marketing_url ? normalizeHost(input.marketing_url) : null;
+
+    const referenceHosts = [supportHost, marketingHost].filter(Boolean) as string[];
+
+    if (referenceHosts.length > 0) {
+        const matchesAny = referenceHosts.some(h => isSameOrSubdomain(privacyHost, h));
+        if (!matchesAny) {
+            results.push({
+                category: 'urls',
+                severity: 'info',
+                title: 'Privacy policy domain differs from support/marketing site',
+                description:
+                    `Privacy policy is hosted on "${privacyHost}", which does not match your support/marketing domains ` +
+                    `(${referenceHosts.join(', ')}). This can be legitimate, but Apple may scrutinize mismatched domains.`,
+                guideline_ref: getGuidelineRef('2.1'),
+                fix_suggestion: 'If possible, host the privacy policy on the same domain as your app or company website.',
+                confidence: 70,
+            });
+        }
+    }
+
+    if (isGenericPolicyHost(privacyHost)) {
+        results.push({
+            category: 'urls',
+            severity: 'warning',
+            title: 'Privacy policy hosted on a generic platform',
+            description:
+                `Privacy policy is hosted on "${privacyHost}", a generic hosting platform. ` +
+                'Apple sometimes flags policies that appear templated or not tied to the app developer.',
+            guideline_ref: getGuidelineRef('2.1'),
+            fix_suggestion: 'Consider hosting the privacy policy on your primary domain or a branded subdomain.',
+            confidence: 70,
+        });
     }
 
     return results;

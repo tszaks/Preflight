@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black grid-bg-dark">
       <HomeAnimations />
-      <section className="relative pt-32 pb-20 overflow-hidden">
+      <section className="relative pt-32 pb-20 overflow-visible">
         {/* Corner decorations - subtle geometric accents */}
         <div className="corner-decoration corner-tl opacity-30" />
         <div className="corner-decoration corner-tr opacity-30" />

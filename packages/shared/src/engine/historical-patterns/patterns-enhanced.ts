@@ -150,6 +150,24 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         fix: 'Add a PrivacyInfo.xcprivacy file declaring all required-reason API usage with valid reason codes.',
         // Handled by hard rules
     },
+    {
+        id: 'privacy-required-reason-api',
+        guideline: '5.1',
+        category: 'privacy_manifest',
+        title: 'Required-reason API not declared',
+        trigger: 'Binary uses required-reason APIs (UserDefaults, file timestamps, disk space) without manifest declarations',
+        fix: 'Declare each required-reason API type with valid reason codes in PrivacyInfo.xcprivacy.',
+        // Handled by hard rules / binary scan
+    },
+    {
+        id: 'privacy-tracking-without-att',
+        guideline: '5.1.2',
+        category: 'privacy_manifest',
+        title: 'Tracking declared without ATT',
+        trigger: 'Privacy manifest declares tracking but ATT usage or NSUserTrackingUsageDescription is missing',
+        fix: 'Implement AppTrackingTransparency and provide NSUserTrackingUsageDescription.',
+        // Handled by hard rules / binary scan
+    },
 
     // ============================================================
     // INFO.PLIST PATTERNS
@@ -181,6 +199,42 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         fix: 'Only declare background modes your app actively uses. Remove unused UIBackgroundModes entries.',
         // Handled by hard rules
     },
+    {
+        id: 'plist-ats-exceptions',
+        guideline: '2.5.1',
+        category: 'info_plist',
+        title: 'ATS exceptions too broad',
+        trigger: 'NSAllowsArbitraryLoads or insecure ATS exception domains are enabled',
+        fix: 'Use HTTPS by default and scope ATS exceptions to specific domains only when required.',
+        // Handled by hard rules
+    },
+    {
+        id: 'plist-required-capabilities',
+        guideline: '2.1',
+        category: 'info_plist',
+        title: 'Invalid UIRequiredDeviceCapabilities',
+        trigger: 'UIRequiredDeviceCapabilities is invalid, empty, or requires legacy hardware',
+        fix: 'Use valid capability keys and avoid legacy architecture requirements.',
+        // Handled by hard rules
+    },
+    {
+        id: 'plist-att-usage-description',
+        guideline: '5.1.2',
+        category: 'info_plist',
+        title: 'Missing NSUserTrackingUsageDescription',
+        trigger: 'App Tracking Transparency APIs are used without a purpose string',
+        fix: 'Add NSUserTrackingUsageDescription with a clear explanation for users.',
+        // Handled by hard rules / binary scan
+    },
+    {
+        id: 'plist-query-schemes',
+        guideline: '2.1',
+        category: 'info_plist',
+        title: 'Invalid LSApplicationQueriesSchemes',
+        trigger: 'LSApplicationQueriesSchemes contains invalid, duplicate, or placeholder URL schemes',
+        fix: 'Use valid URL scheme strings and remove placeholders or duplicates.',
+        // Handled by hard rules
+    },
 
     // ============================================================
     // URL PATTERNS
@@ -201,6 +255,15 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         title: 'Placeholder URL',
         trigger: 'URLs pointing to example.com, localhost, placeholder pages, or "under construction" pages',
         fix: 'Replace with real, live URLs containing actual content relevant to your app.',
+        // Handled by hard rules
+    },
+    {
+        id: 'url-associated-domains',
+        guideline: '2.1',
+        category: 'urls',
+        title: 'Associated domains missing AASA file',
+        trigger: 'Associated domains are declared but the Apple App Site Association file is missing or invalid',
+        fix: 'Host a valid AASA file at /.well-known/apple-app-site-association for each domain.',
         // Handled by hard rules
     },
 

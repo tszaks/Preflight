@@ -44,6 +44,9 @@ export function evaluateSelfReports(input: HardRulesInput): CheckResult[] {
         }
     }
 
+    // Demo account requirement for new apps with login
+    checks.push(...checkDemoCredentials(input));
+
     return checks;
 }
 
@@ -195,4 +198,40 @@ function shouldShowInformationalRule(ruleId: string, input: HardRulesInput): boo
  */
 function getFieldValue(input: HardRulesInput, field: string): boolean | null | undefined {
     return (input as unknown as Record<string, unknown>)[field] as boolean | null | undefined;
+}
+
+function checkDemoCredentials(input: HardRulesInput): CheckResult[] {
+    const results: CheckResult[] = [];
+    const needsDemo = input.sign_in_required === true && input.is_new_app === true;
+    if (!needsDemo) return results;
+
+    const hasUsername = typeof input.demo_username === 'string' && input.demo_username.trim().length > 0;
+    const hasPassword = typeof input.demo_password === 'string' && input.demo_password.trim().length > 0;
+
+    if (hasUsername && hasPassword) {
+        results.push({
+            category: 'metadata',
+            severity: 'pass',
+            title: 'Demo account provided for App Review',
+            description: 'Review credentials are present for a new app that requires login.',
+            guideline_ref: '2.1 — App Completeness',
+            confidence: 100,
+        });
+        return results;
+    }
+
+    results.push({
+        category: 'metadata',
+        severity: 'warning',
+        title: 'Missing demo account for App Review',
+        description:
+            'This is a new app that requires login, but no demo credentials were provided. ' +
+            'App Review often rejects or delays apps that require login without test access.',
+        guideline_ref: '2.1 — App Completeness',
+        fix_suggestion:
+            'Provide a demo username and password in App Store Connect review notes so Apple can access the app.',
+        confidence: 90,
+    });
+
+    return results;
 }

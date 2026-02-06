@@ -18,10 +18,18 @@ export interface ExtractedIPA {
     frameworksMissingPrivacyManifest: string[];
     /** Entitlements XML if found */
     entitlements?: string;
+    /** Embedded provisioning profile (CMS with plist payload) */
+    mobileProvision?: string;
     /** App icon file names found */
     iconFiles: string[];
+    /** App icon dimensions (PNG only) */
+    iconDimensions: Record<string, { width: number; height: number }>;
+    /** Whether Assets.car exists in the app bundle */
+    hasAssetsCar: boolean;
     /** Total IPA size in bytes */
     totalSize: number;
+    /** Minimum OS version reported by Mach-O analysis (if available) */
+    minOSVersion?: string;
     /** The JSZip instance (for deferred binary extraction by Mach-O analyzer) */
     zip?: JSZip;
     /** The app directory path inside the ZIP (e.g., "Payload/MyApp.app/") */
@@ -47,6 +55,8 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
         frameworks: [],
         frameworksMissingPrivacyManifest: [],
         iconFiles: [],
+        iconDimensions: {},
+        hasAssetsCar: false,
         totalSize: buffer.byteLength,
         zip,
         appDir: '',
@@ -98,13 +108,38 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
         result.entitlements = await entFile.async('string');
     }
 
-    // Find app icons
+    // Extract embedded.mobileprovision (for provisioning profile checks)
+    const provFile = zip.file(`${appDir}embedded.mobileprovision`);
+    if (provFile) {
+        result.mobileProvision = await provFile.async('string');
+    }
+
+    // Find app icons + asset catalog
+    const iconPaths: string[] = [];
     zip.forEach((path: string) => {
+        if (path === `${appDir}Assets.car`) {
+            result.hasAssetsCar = true;
+        }
         if (path.startsWith(appDir) && path.includes('AppIcon') && path.endsWith('.png')) {
             const name = path.split('/').pop();
             if (name) result.iconFiles.push(name);
+            iconPaths.push(path);
         }
     });
+
+    if (iconPaths.length > 0) {
+        await Promise.all(
+            iconPaths.map(async (path) => {
+                const file = zip.file(path);
+                if (!file) return;
+                const data = await file.async('uint8array');
+                const dims = readPngDimensions(data);
+                if (!dims) return;
+                const name = path.split('/').pop() || path;
+                result.iconDimensions[name] = dims;
+            })
+        );
+    }
 
     // Calculate size breakdown by content type
     const executableName = result.bundleName.replace(/\.app$/, '');
@@ -182,4 +217,30 @@ function findAppDirectory(zip: JSZip): string | null {
         }
     });
     return appDir;
+}
+
+function readPngDimensions(data: Uint8Array): { width: number; height: number } | null {
+    if (data.length < 24) return null;
+    const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    for (let i = 0; i < signature.length; i += 1) {
+        if (data[i] !== signature[i]) return null;
+    }
+    const type = String.fromCharCode(data[12], data[13], data[14], data[15]);
+    if (type !== 'IHDR') return null;
+
+    const width = (
+        (data[16] << 24) |
+        (data[17] << 16) |
+        (data[18] << 8) |
+        data[19]
+    ) >>> 0;
+    const height = (
+        (data[20] << 24) |
+        (data[21] << 16) |
+        (data[22] << 8) |
+        data[23]
+    ) >>> 0;
+
+    if (width === 0 || height === 0) return null;
+    return { width, height };
 }
