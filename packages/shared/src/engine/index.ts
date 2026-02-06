@@ -66,9 +66,6 @@ export async function runAnalysis(
             privacy_url: input.privacy_url,
             support_url: input.support_url,
             marketing_url: input.marketing_url,
-            demo_username: input.demo_username,
-            demo_password: input.demo_password,
-            minimum_os_version: input.minimum_os_version,
             screenshot_paths: input.screenshot_paths,
             manifest_path: input.manifest_path,
             plist_path: input.plist_path,
@@ -103,7 +100,6 @@ export async function runAnalysis(
             tested_ipv6: input.tested_ipv6,
             contextual_permissions: input.contextual_permissions,
             has_alternate_icons: input.has_alternate_icons,
-
         };
 
         // Create progress callback for hard rules
