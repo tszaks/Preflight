@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
-// import { TerminalBanner } from "@/components/TerminalBanner"; // WAITLIST MODE
+import { TerminalBanner } from "@/components/TerminalBanner";
 
 export const metadata: Metadata = {
   title: "Preflight | App Store Review Simulator",
@@ -32,7 +32,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Navbar />
-        {/* <TerminalBanner /> */}{/* WAITLIST MODE */}
+        <TerminalBanner />
         <div className="pt-16 min-h-screen">
           {children}
         </div>
