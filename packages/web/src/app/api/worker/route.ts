@@ -138,10 +138,6 @@ export async function POST(req: NextRequest) {
 
             // === Age Rating ===
             age_rating: ageRatingString,
-
-            // Review demo credentials (for App Review)
-            demo_username: submissionData.demo_username,
-            demo_password: submissionData.demo_password,
         };
 
         // 5. Run Analysis with transformed input
