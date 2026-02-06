@@ -1,6 +1,6 @@
 {
   "name": "preflightlaunch",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",
   "bin": {
@@ -29,7 +29,6 @@
   "homepage": "https://preflightlaunch.com",
   "author": "Tyler Szakacs <tylerszakacs@gmail.com>",
   "dependencies": {
-    "@preflight/shared": "*",
     "@clack/prompts": "^1.0.0",
     "@supabase/supabase-js": "^2.93.3",
     "chalk": "^5.4.1",
