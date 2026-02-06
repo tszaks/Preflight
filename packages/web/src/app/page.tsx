@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { CLIInstallSection } from "@/components/CLIInstallSection";
+import { HomeAnimations } from "./home-animations";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black grid-bg-dark">
+      <HomeAnimations />
       <section className="relative pt-32 pb-20 overflow-hidden">
+        {/* Corner decorations - subtle geometric accents */}
+        <div className="corner-decoration corner-tl opacity-30" />
+        <div className="corner-decoration corner-tr opacity-30" />
+
         <div className="container mx-auto px-6 max-w-5xl relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-gray-400 mb-8">
             <span className="relative flex h-2 w-2">
@@ -15,16 +21,16 @@ export default function Home() {
             App Store Review Simulator
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 vercel-gradient-text leading-[1]">
+          <h1 data-hero-title className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 vercel-gradient-text leading-[1]">
             Never get rejected <br /> for something you could catch.
           </h1>
 
-          <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-light">
+          <p data-hero-subtitle className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-light">
             Preflight runs Apple's review checks on your submission before you hit Send.
             Catch rejection risks before they cost you a week in review purgatory.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div data-hero-cta className="flex flex-col sm:flex-row gap-4">
             <Link href="/auth/signup" className="vercel-btn-primary flex items-center justify-center gap-2">
               Get Started <ArrowRight className="w-4 h-4" />
             </Link>
@@ -42,7 +48,7 @@ export default function Home() {
 
       <section className="py-24 border-t border-white/5">
         <div className="container mx-auto px-6 max-w-5xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div data-features className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="vercel-card">
               <h3 className="text-lg font-medium mb-2">Metadata Analysis</h3>
               <p className="text-sm text-gray-400 leading-relaxed font-light">
