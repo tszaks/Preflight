@@ -5,7 +5,7 @@
  * during App Store submission. Detects:
  *   - Encryption frameworks (Security, CommonCrypto, OpenSSL, CryptoKit)
  *   - Encryption symbols from Mach-O imports
- *   - ITSAppUsesEncryption key in Info.plist
+ *   - Export compliance key in Info.plist (ITSAppUsesEncryption or ITSAppUsesNonExemptEncryption)
  */
 
 import type { CheckResult } from '../types';
@@ -22,6 +22,9 @@ const ENCRYPTION_FRAMEWORKS: Record<string, { label: string; usuallyExempt: bool
 
 /** OpenSSL-specific symbol prefixes (non-exempt encryption) */
 const OPENSSL_SYMBOL_PREFIXES = ['SSL_', 'EVP_', 'AES_', 'RSA_', 'DES_'];
+
+/** Supported Info.plist export compliance keys (legacy + current naming). */
+const EXPORT_COMPLIANCE_KEYS = ['ITSAppUsesEncryption', 'ITSAppUsesNonExemptEncryption'] as const;
 
 /** Symbol prefixes that indicate encryption usage (matched with or without leading underscore) */
 const ENCRYPTION_SYMBOL_PREFIXES = [
@@ -68,34 +71,29 @@ export function checkExportCompliance(
     const hasOpenSSLSymbols = detectedSymbols.some(sym =>
         OPENSSL_SYMBOL_PREFIXES.some(prefix => normalizeSymbol(sym).startsWith(prefix))
     );
+    const likelyNonExemptEncryption = hasNonExemptFramework || hasOpenSSLSymbols;
 
-    // 3. Check Info.plist for ITSAppUsesEncryption
-    const plistHasKey = plistContent?.includes('ITSAppUsesEncryption') ?? false;
-    let encryptionDeclaredTrue = false;
-    let encryptionDeclaredFalse = false;
+    // 3. Check Info.plist for export compliance declaration
+    const declarationStates = EXPORT_COMPLIANCE_KEYS
+        .map(key => parsePlistBooleanKey(plistContent, key))
+        .filter((state): state is PlistBooleanState => state !== null);
 
-    if (plistHasKey && plistContent) {
-        // Simple XML parsing: look for the key followed by <true/> or <false/>
-        const keyIndex = plistContent.indexOf('ITSAppUsesEncryption');
-        if (keyIndex !== -1) {
-            const afterKey = plistContent.slice(keyIndex + 'ITSAppUsesEncryption'.length, keyIndex + 200);
-            if (afterKey.includes('<true/>') || afterKey.includes('<true />')) {
-                encryptionDeclaredTrue = true;
-            } else if (afterKey.includes('<false/>') || afterKey.includes('<false />')) {
-                encryptionDeclaredFalse = true;
-            }
-        }
-    }
+    const plistHasKey = declarationStates.length > 0;
+    const encryptionDeclaredTrue = declarationStates.some(state => state.value === true);
+    const encryptionDeclaredFalse = !encryptionDeclaredTrue && declarationStates.some(state => state.value === false);
+    const plistLooksXml = typeof plistContent === 'string' && plistContent.includes('<plist');
+    const hasUnparseableDeclaration = plistLooksXml && !encryptionDeclaredTrue && !encryptionDeclaredFalse &&
+        declarationStates.some(state => state.value === null);
 
     // 3b. Handle unparseable key value
-    if (plistHasKey && !encryptionDeclaredTrue && !encryptionDeclaredFalse) {
+    if (hasUnparseableDeclaration) {
         results.push({
             category: 'ipa_binary',
             severity: 'info',
-            title: 'ITSAppUsesEncryption key found but value could not be determined',
+            title: 'Export compliance key found but value could not be determined',
             description:
-                'The Info.plist contains ITSAppUsesEncryption but the boolean value could not be parsed. ' +
-                'Verify the key is correctly set to YES or NO in your Info.plist.',
+                'The Info.plist contains ITSAppUsesEncryption/ITSAppUsesNonExemptEncryption, ' +
+                'but the boolean value could not be parsed. Verify the key is correctly set to YES or NO.',
             guideline_ref: 'export_compliance',
             confidence: 60,
         });
@@ -110,13 +108,13 @@ export function checkExportCompliance(
         results.push({
             category: 'ipa_binary',
             severity: 'warning',
-            title: 'Missing ITSAppUsesEncryption key in Info.plist',
+            title: 'Missing export compliance key in Info.plist',
             description:
-                `Encryption usage detected but ITSAppUsesEncryption is not declared in Info.plist. ` +
+                `Encryption usage detected but no export compliance key is declared in Info.plist. ` +
                 `You will be asked about encryption during App Store submission. ${summary}`,
             guideline_ref: 'export_compliance',
             fix_suggestion:
-                'Add the ITSAppUsesEncryption key to your Info.plist. ' +
+                'Add ITSAppUsesNonExemptEncryption (or ITSAppUsesEncryption) to your Info.plist. ' +
                 buildExemptionGuidance(hasNonExemptFramework, hasOpenSSLSymbols),
             confidence: 80,
         });
@@ -127,7 +125,7 @@ export function checkExportCompliance(
         results.push({
             category: 'ipa_binary',
             severity: 'info',
-            title: 'App declares encryption usage (ITSAppUsesEncryption = YES)',
+            title: 'App declares encryption usage (export compliance key = YES)',
             description:
                 'Your app declares that it uses encryption. Ensure you have proper export compliance documentation. ' +
                 'This may include an ECCN classification, an exemption (e.g., TSU exception for mass-market apps), ' +
@@ -141,21 +139,21 @@ export function checkExportCompliance(
     }
 
     // Case: Key = false + encryption detected
-    if (encryptionDeclaredFalse && hasEncryption) {
+    if (encryptionDeclaredFalse && hasEncryption && likelyNonExemptEncryption) {
         const summary = formatEncryptionSummary(detectedFrameworks, detectedSymbols.length);
 
         results.push({
             category: 'ipa_binary',
             severity: 'warning',
-            title: 'Encryption detected despite ITSAppUsesEncryption = NO',
+            title: 'Encryption detected despite export compliance key = NO',
             description:
                 `Your Info.plist declares no encryption usage, but encryption frameworks or symbols were detected in the binary. ${summary} ` +
                 `This mismatch may cause issues during App Store review.`,
             guideline_ref: 'export_compliance',
             fix_suggestion:
-                'Review your encryption declaration. If your app only uses HTTPS (via URLSession/ATS), ' +
-                'setting ITSAppUsesEncryption to NO is correct. If you use encryption beyond HTTPS, ' +
-                'set it to YES and file the appropriate compliance documentation.',
+                'Review your export compliance declaration. If your app only uses exempt encryption ' +
+                '(HTTPS via URLSession/ATS or standard Apple frameworks), keep ITSAppUsesNonExemptEncryption set to NO. ' +
+                'If you use non-exempt encryption (OpenSSL or custom crypto), set it to YES and file the appropriate compliance documentation.',
             confidence: 70,
         });
     }
@@ -163,6 +161,28 @@ export function checkExportCompliance(
     // Case: Key = false + no encryption → pass (no result needed)
 
     return results;
+}
+
+interface PlistBooleanState {
+    value: boolean | null;
+}
+
+function parsePlistBooleanKey(
+    plistContent: string | undefined,
+    key: typeof EXPORT_COMPLIANCE_KEYS[number],
+): PlistBooleanState | null {
+    if (!plistContent || !plistContent.includes(key)) return null;
+
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const boolMatch = plistContent.match(
+        new RegExp(`<key>\\s*${escapedKey}\\s*<\\/key>\\s*<(true|false)\\s*\\/>`, 'i'),
+    );
+
+    if (!boolMatch) {
+        return { value: null };
+    }
+
+    return { value: boolMatch[1].toLowerCase() === 'true' };
 }
 
 /**

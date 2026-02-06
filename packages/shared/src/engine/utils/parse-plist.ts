@@ -15,8 +15,10 @@ interface PlistDict { [key: string]: PlistValue }
  */
 export function parsePlist(xml: string): PlistDict | null {
     try {
+        const normalizedXml = normalizePlistXml(xml);
+
         // Strip XML declaration and find <plist> content
-        const plistMatch = xml.match(/<plist[^>]*>([\s\S]*)<\/plist>/);
+        const plistMatch = normalizedXml.match(/<plist[^>]*>([\s\S]*)<\/plist>/);
         if (!plistMatch) return null;
 
         const inner = plistMatch[1].trim();
@@ -31,6 +33,13 @@ export function parsePlist(xml: string): PlistDict | null {
     } catch {
         return null;
     }
+}
+
+function normalizePlistXml(xml: string): string {
+    return xml
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<\?[\s\S]*?\?>/g, '')
+        .replace(/<!DOCTYPE[\s\S]*?>/gi, '');
 }
 
 // ─── Tokenizer ───────────────────────────────────────────────────────────────

@@ -85,8 +85,10 @@ function checkPrivacyManifestStructural(parsed: Record<string, unknown>): CheckR
         });
     }
 
+    const trackingEnabled = parsed.NSPrivacyTracking === true;
+
     // Check tracking domains if tracking is enabled
-    if (parsed.NSPrivacyTracking === true) {
+    if (trackingEnabled) {
         const domains = parsed.NSPrivacyTrackingDomains;
         const hasDomains = Array.isArray(domains) && domains.length > 0;
         if (!hasDomains) {
@@ -102,8 +104,8 @@ function checkPrivacyManifestStructural(parsed: Record<string, unknown>): CheckR
         }
     }
 
-    // Validate tracking domains format (if present)
-    if (Array.isArray(parsed.NSPrivacyTrackingDomains)) {
+    // Validate tracking domains format only when tracking is enabled
+    if (trackingEnabled && Array.isArray(parsed.NSPrivacyTrackingDomains)) {
         const invalidDomains = parsed.NSPrivacyTrackingDomains.filter(
             (d) => typeof d !== 'string' || !/^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(d)
         ) as string[];
@@ -310,9 +312,8 @@ function checkPrivacyManifestFallback(manifestContent: string): CheckResult[] {
     }
 
     // Check for NSPrivacyTrackingDomains if tracking appears enabled
-    if (manifestContent.includes('NSPrivacyTracking') &&
-        manifestContent.includes('<true/>') &&
-        !manifestContent.includes('NSPrivacyTrackingDomains')) {
+    const trackingEnabled = parseManifestBoolean(manifestContent, 'NSPrivacyTracking');
+    if (trackingEnabled === true && !manifestContent.includes('NSPrivacyTrackingDomains')) {
         results.push({
             category: 'privacy_manifest',
             severity: 'critical',
@@ -380,4 +381,13 @@ function checkPrivacyManifestFallback(manifestContent: string): CheckResult[] {
     }
 
     return results;
+}
+
+function parseManifestBoolean(manifestContent: string, key: string): boolean | null {
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = manifestContent.match(
+        new RegExp(`<key>\\s*${escapedKey}\\s*<\\/key>\\s*<(true|false)\\s*\\/>`, 'i'),
+    );
+    if (!match) return null;
+    return match[1].toLowerCase() === 'true';
 }
