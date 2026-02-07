@@ -1,5 +1,6 @@
 import chalk from 'chalk'
 import Table from 'cli-table3'
+import open from 'open'
 import { isLoggedIn } from '../lib/config.js'
 import { apiRequest } from '../lib/api-client.js'
 import { createSpinner, error } from '../ui/spinner.js'
@@ -7,6 +8,7 @@ import { renderReport } from '../ui/report.js'
 import { subtext, brand } from '../ui/theme.js'
 import * as ui from '../ui/interactive.js'
 import { resumeSubmitCommand } from './submit.js'
+import { DEFAULT_API_URL } from '../lib/constants.js'
 
 interface HistoryOptions {
     json?: boolean
@@ -272,7 +274,8 @@ export async function interactiveHistory(): Promise<void> {
 
                 if (reportRes.ok) {
                     renderReport(reportData.report, reportData.items)
-                    console.log(subtext(`  Full report: https://preflightlaunch.com/report/${sub.report_id}`))
+                    // Web report page is keyed by submission id (not report id).
+                    console.log(subtext(`  Full report: ${DEFAULT_API_URL}/report/${sub.id}`))
                     console.log()
                 } else {
                     ui.log.error('Could not load this report.')
@@ -283,22 +286,35 @@ export async function interactiveHistory(): Promise<void> {
 
             // Offer actions after viewing report
             const { reportRejection } = await import('./rejection.js')
-            const action = await ui.select<'rejection' | 'back'>(
-                {
-                    message: 'What would you like to do?',
-                    options: [
-                        {
-                            value: 'rejection',
-                            label: 'Report Apple rejection',
-                            hint: 'Get 100 credits refunded',
-                        },
-                        { value: 'back', label: 'Back to list', hint: '' },
-                    ],
-                }
-            )
+            while (true) {
+                const action = await ui.select<'open' | 'rejection' | 'back'>(
+                    {
+                        message: 'What would you like to do?',
+                        options: [
+                            { value: 'open', label: 'View report in browser', hint: '' },
+                            {
+                                value: 'rejection',
+                                label: 'Report Apple rejection',
+                                hint: 'Get 100 credits refunded',
+                            },
+                            { value: 'back', label: 'Back to list', hint: '' },
+                        ],
+                    }
+                )
 
-            if (action === 'rejection') {
-                await reportRejection(sub.id)
+                if (action === null || action === 'back') break
+
+                if (action === 'open') {
+                    await open(`${DEFAULT_API_URL}/report/${sub.id}`)
+                    ui.log.success('Opened report in browser')
+                    console.log()
+                    continue
+                }
+
+                if (action === 'rejection') {
+                    await reportRejection(sub.id)
+                    break
+                }
             }
             // After action or back, loop back to list
         }
