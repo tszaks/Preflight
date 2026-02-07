@@ -82,6 +82,8 @@ program
     .description('View full analysis report')
     .option('--json', 'Output raw JSON')
     .option('--open', 'Open report in browser')
+    .option('--show-info', 'Show info items (including historical patterns and manual review)')
+    .option('--show-all', 'Show everything (includes passed checks)')
     .action(reportCommand)
 
 // Utility commands
