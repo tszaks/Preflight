@@ -80,21 +80,28 @@ export async function POST(
         const monthAgo = new Date()
         monthAgo.setMonth(monthAgo.getMonth() - 1)
 
-        const { data: recentRejections, error: recentError } = await supabase
+        // Use an exact count with `head: true` so we don't fetch rows and we avoid
+        // relying on `data.length` (which can be empty/null depending on settings).
+        const { count: recentCount, error: recentError } = await supabase
             .from('apple_rejections')
-            .select('id', { count: 'exact' })
+            .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .gte('reported_at', monthAgo.toISOString())
 
         if (recentError) {
-            console.error('Error checking rate limit:', recentError)
+            console.error('Error checking rate limit:', {
+                message: recentError.message,
+                code: (recentError as any).code,
+                details: (recentError as any).details,
+                hint: (recentError as any).hint,
+            })
             return NextResponse.json(
                 { message: 'Failed to check rate limit' },
                 { status: 500 }
             )
         }
 
-        if ((recentRejections?.length ?? 0) >= MAX_REJECTIONS_PER_MONTH) {
+        if ((recentCount ?? 0) >= MAX_REJECTIONS_PER_MONTH) {
             return NextResponse.json(
                 {
                     message: `You can only report up to ${MAX_REJECTIONS_PER_MONTH} rejections per month. Please try again later.`,
