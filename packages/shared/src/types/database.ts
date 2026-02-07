@@ -16,6 +16,14 @@ export type Database = {
     Tables: {
       apple_rejections: {
         Row: {
+          asc_app_id: string | null
+          asc_app_store_state: string | null
+          asc_app_store_version_id: string | null
+          asc_build_number: string | null
+          asc_bundle_id: string | null
+          asc_verified: boolean | null
+          asc_verified_at: string | null
+          asc_version_string: string | null
           id: string
           submission_id: string
           user_id: string
@@ -28,6 +36,14 @@ export type Database = {
           pattern_feedback_processed: boolean
         }
         Insert: {
+          asc_app_id?: string | null
+          asc_app_store_state?: string | null
+          asc_app_store_version_id?: string | null
+          asc_build_number?: string | null
+          asc_bundle_id?: string | null
+          asc_verified?: boolean | null
+          asc_verified_at?: string | null
+          asc_version_string?: string | null
           id?: string
           submission_id: string
           user_id: string
@@ -40,6 +56,14 @@ export type Database = {
           pattern_feedback_processed?: boolean
         }
         Update: {
+          asc_app_id?: string | null
+          asc_app_store_state?: string | null
+          asc_app_store_version_id?: string | null
+          asc_build_number?: string | null
+          asc_bundle_id?: string | null
+          asc_verified?: boolean | null
+          asc_verified_at?: string | null
+          asc_version_string?: string | null
           id?: string
           submission_id?: string
           user_id?: string
@@ -451,6 +475,9 @@ export type Database = {
           amount_paid: number | null
           app_icon_path: string | null
           app_name: string
+          build_number: string | null
+          bundle_id: string | null
+          bundle_version: string | null
           category: string | null
           completed_at: string | null
           contextual_permissions: boolean | null
@@ -516,6 +543,9 @@ export type Database = {
           amount_paid?: number | null
           app_icon_path?: string | null
           app_name: string
+          build_number?: string | null
+          bundle_id?: string | null
+          bundle_version?: string | null
           category?: string | null
           completed_at?: string | null
           contextual_permissions?: boolean | null
@@ -581,6 +611,9 @@ export type Database = {
           amount_paid?: number | null
           app_icon_path?: string | null
           app_name?: string
+          build_number?: string | null
+          bundle_id?: string | null
+          bundle_version?: string | null
           category?: string | null
           completed_at?: string | null
           contextual_permissions?: boolean | null
