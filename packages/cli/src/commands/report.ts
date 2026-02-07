@@ -9,6 +9,8 @@ import { DEFAULT_API_URL } from '../lib/constants.js'
 interface ReportOptions {
     json?: boolean
     open?: boolean
+    showInfo?: boolean
+    showAll?: boolean
 }
 
 export async function reportCommand(id: string, options: ReportOptions) {
@@ -52,7 +54,7 @@ export async function reportCommand(id: string, options: ReportOptions) {
         if (options.json) {
             renderReportJson(data.report, data.items)
         } else {
-            renderReport(data.report, data.items)
+            renderReport(data.report, data.items, { showInfo: options.showInfo === true, showAll: options.showAll === true })
             console.log(chalk.dim(`  Full report: ${DEFAULT_API_URL}/report/${id}`))
             console.log()
         }

@@ -45,7 +45,34 @@ function computeCompleteness(report: ReportData, items: ReportItem[]): number {
     return Math.round((providedCount / 4) * 100)
 }
 
-export function renderReport(report: ReportData, items: ReportItem[]) {
+function severityRank(sev: string): number {
+    switch (sev) {
+        case 'critical': return 0
+        case 'warning': return 1
+        case 'info': return 2
+        case 'pass': return 3
+        default: return 4
+    }
+}
+
+function sortItemsForDisplay(items: ReportItem[]): ReportItem[] {
+    return [...items].sort((a, b) => {
+        const r = severityRank(a.severity) - severityRank(b.severity)
+        if (r !== 0) return r
+        const ca = typeof a.confidence === 'number' ? a.confidence : 0
+        const cb = typeof b.confidence === 'number' ? b.confidence : 0
+        if (cb !== ca) return cb - ca
+        const ta = (a.title || '').toLowerCase()
+        const tb = (b.title || '').toLowerCase()
+        return ta.localeCompare(tb)
+    })
+}
+
+export function renderReport(
+    report: ReportData,
+    items: ReportItem[],
+    options?: { showInfo?: boolean; showAll?: boolean }
+) {
     console.log()
     p.log.step(heading('Analysis Complete'))
     console.log()
@@ -60,14 +87,36 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
     const isManualReview = (i: ReportItem) =>
         (i.title || '').trimStart().toLowerCase().startsWith('manual review:')
 
-    const manualReview = items.filter(isManualReview)
-    const mainItems = items.filter((i) => !isManualReview(i))
+    const isHistorical = (i: ReportItem) =>
+        (i.title || '').trimStart().toLowerCase().startsWith('historical pattern:')
+
+    const sorted = sortItemsForDisplay(items)
+
+    const manualReview = sorted.filter(isManualReview)
+    const historical = sorted.filter((i) => !isManualReview(i) && isHistorical(i))
+    const mainItems = sorted.filter((i) => !isManualReview(i) && !isHistorical(i))
 
     // Group items by severity
     const criticals = mainItems.filter((i) => i.severity === 'critical')
     const warnings = mainItems.filter((i) => i.severity === 'warning')
     const infos = mainItems.filter((i) => i.severity === 'info')
     const passes = mainItems.filter((i) => i.severity === 'pass')
+
+    const showInfo = options?.showAll === true || options?.showInfo === true
+    const showAll = options?.showAll === true
+
+    const extraCounts = [
+        infos.length > 0 ? `${infos.length} info` : null,
+        historical.length > 0 ? `${historical.length} historical` : null,
+        manualReview.length > 0 ? `${manualReview.length} manual review` : null,
+        passes.length > 0 ? `${passes.length} passed` : null,
+    ].filter(Boolean) as string[]
+
+    if (!showAll && extraCounts.length > 0) {
+        const hint = passes.length > 0 ? 'Use --show-info or --show-all to view.' : 'Use --show-info to view.'
+        console.log(`  ${subtext(`Also: ${extraCounts.join(', ')}. ${hint}`)}`)
+        console.log()
+    }
 
     // Critical issues
     if (criticals.length > 0) {
@@ -99,7 +148,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
     }
 
     // Info items
-    if (infos.length > 0) {
+    if (showInfo && infos.length > 0) {
         console.log(`  ${infoBold(`\u2139\uFE0F  ${infos.length} Info`)}`)
         console.log(subtext(`  ${'─'.repeat(40)}`))
         for (const item of infos) {
@@ -108,8 +157,17 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         console.log()
     }
 
+    if (showInfo && historical.length > 0) {
+        console.log(`  ${infoBold(`Historical Patterns (${historical.length})`)}`)
+        console.log(subtext(`  ${'─'.repeat(40)}`))
+        for (const item of historical) {
+            console.log(`  ${subtext(item.title)}`)
+        }
+        console.log()
+    }
+
     // Manual review items (no score impact)
-    if (manualReview.length > 0) {
+    if (showInfo && manualReview.length > 0) {
         console.log(`  ${infoBold(`Manual Review (${manualReview.length})`)}`)
         console.log(subtext(`  ${'─'.repeat(40)}`))
         for (const item of manualReview) {
@@ -119,7 +177,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
     }
 
     // Passed items
-    if (passes.length > 0) {
+    if (showAll && passes.length > 0) {
         console.log(`  ${okBold(`\uD83D\uDFE2 ${passes.length} Passed`)}`)
         console.log(subtext(`  ${'─'.repeat(40)}`))
         for (const item of passes) {
