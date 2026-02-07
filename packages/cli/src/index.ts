@@ -65,6 +65,8 @@ program
     .option('--plist <path>', 'Path to Info.plist')
     .option('--manifest <path>', 'Path to PrivacyInfo.xcprivacy')
     .option('--screenshots <glob>', 'Screenshot paths (glob pattern)')
+    .option('--skip-screenshots', 'Skip screenshots entirely (non-interactive friendly)')
+    .option('--non-interactive', 'Do not prompt; fail fast if required inputs are missing')
     .option('--json', 'Output results as JSON')
     .action((path, options) => submitCommand(path, options))
 
