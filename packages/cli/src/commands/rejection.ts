@@ -80,7 +80,8 @@ export async function reportRejection(submissionId: string): Promise<void> {
             if (res.status === 429) {
                 error(`Rate limit: ${data.message}`)
             } else if (res.status === 409) {
-                error(`Already reported: ${data.message}`)
+                // 409 can mean duplicate report OR "cannot verify via ASC" gating.
+                error(data.message || 'Could not report rejection')
             } else {
                 error(data.message || 'Failed to report rejection')
             }

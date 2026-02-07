@@ -15,6 +15,21 @@ import {
 import { decryptPrivateKey } from '@/lib/asc-credential-store';
 import { getEncryptionKey } from '@/lib/asc-encryption';
 
+function extractPlistScalar(plistContent: string, key: string): string | null {
+    // Supports the common XML plist forms: <string> and <integer>
+    const re = new RegExp(
+        `<key>${key.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}<\\/key>\\s*<(string|integer)>([^<]+)<\\/(?:string|integer)>`,
+        'i',
+    );
+    const m = plistContent.match(re);
+    return m ? m[2].trim() : null;
+}
+
+function isLikelyBuildVariable(value: string): boolean {
+    // Examples: $(PRODUCT_BUNDLE_IDENTIFIER), ${PRODUCT_BUNDLE_IDENTIFIER}
+    return /\$\([^)]+\)|\$\{[^}]+\}/.test(value);
+}
+
 export async function POST(req: NextRequest) {
     const supabase = createServiceClient();
     const { submissionId, secret } = await req.json();
@@ -38,6 +53,30 @@ export async function POST(req: NextRequest) {
 
         // 2. Fetch files from storage
         const files = await fetchSubmissionFiles(supabase, submission);
+
+        // 2.1 Persist submission identity (bundle id, version, build) for later ASC verification
+        try {
+            if (typeof files.plistContent === 'string' && files.plistContent.length > 0) {
+                const bundleId = extractPlistScalar(files.plistContent, 'CFBundleIdentifier');
+                const version = extractPlistScalar(files.plistContent, 'CFBundleShortVersionString');
+                const buildNumber = extractPlistScalar(files.plistContent, 'CFBundleVersion');
+
+                const update: Record<string, string> = {};
+                if (bundleId && !isLikelyBuildVariable(bundleId)) update.bundle_id = bundleId;
+                if (version && !isLikelyBuildVariable(version)) update.bundle_version = version;
+                if (buildNumber && !isLikelyBuildVariable(buildNumber)) update.build_number = buildNumber;
+
+                if (Object.keys(update).length > 0) {
+                    await supabase
+                        .from('submissions')
+                        .update(update)
+                        .eq('id', submissionId);
+                }
+            }
+        } catch (err) {
+            // Non-fatal: analysis can proceed even if identity isn't extracted.
+            console.warn('[Worker API] Failed to extract submission identity from plist:', err);
+        }
 
         // 3. Fetch ASC data if user has ASC connected
         const ascData = await fetchAscDataForUser(submission.user_id);
