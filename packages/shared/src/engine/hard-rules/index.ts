@@ -23,7 +23,7 @@ export interface HardRulesResult {
     checks: CheckResult[];
     completed: boolean;
     /** Info.plist content extracted from IPA (overrides uploaded plist) */
-    ipaExtractedPlist?: string;
+    ipaExtractedPlist?: string | Buffer;
     /** Privacy manifest content extracted from IPA (overrides uploaded manifest) */
     ipaExtractedManifest?: string;
 }
@@ -37,7 +37,7 @@ export async function runHardRules(
     options?: {
         screenshotData?: ScreenshotData[];
         manifestContent?: string;
-        plistContent?: string;
+        plistContent?: string | Buffer;
         ipaBuffer?: ArrayBuffer;
         onProgress?: OnProgressCallback;
     }
@@ -115,7 +115,7 @@ export async function runHardRules(
     }));
 
     // Check 6: IPA Binary Scan (85-93%) - Extract and analyze the actual app binary
-    let ipaExtractedPlist: string | undefined;
+    let ipaExtractedPlist: string | Buffer | undefined;
     let ipaExtractedManifest: string | undefined;
     let effectiveManifest = options?.manifestContent;
     let effectivePlist = options?.plistContent;

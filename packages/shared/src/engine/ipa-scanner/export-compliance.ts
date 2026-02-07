@@ -9,6 +9,7 @@
  */
 
 import type { CheckResult } from '../types';
+import { parseApplePlist } from '../utils/parse-apple-plist';
 
 /** Encryption frameworks and their exemption status */
 const ENCRYPTION_FRAMEWORKS: Record<string, { label: string; usuallyExempt: boolean }> = {
@@ -52,7 +53,7 @@ function normalizeSymbol(sym: string): string {
 export function checkExportCompliance(
     frameworks: string[],
     importedSymbols: string[],
-    plistContent: string | undefined,
+    plistContent: string | Buffer | undefined,
 ): CheckResult[] {
     const results: CheckResult[] = [];
 
@@ -168,10 +169,20 @@ interface PlistBooleanState {
 }
 
 function parsePlistBooleanKey(
-    plistContent: string | undefined,
+    plistContent: string | Buffer | undefined,
     key: typeof EXPORT_COMPLIANCE_KEYS[number],
 ): PlistBooleanState | null {
-    if (!plistContent || !plistContent.includes(key)) return null;
+    if (!plistContent) return null;
+
+    // Prefer parsing (handles binary plists). Fall back to XML regex if needed.
+    const parsed = parseApplePlist(plistContent);
+    const parsedValue = parsed ? (parsed as Record<string, unknown>)[key] : undefined;
+    if (typeof parsedValue === 'boolean') {
+        return { value: parsedValue };
+    }
+
+    if (typeof plistContent !== 'string') return null;
+    if (!plistContent.includes(key)) return null;
 
     const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const boolMatch = plistContent.match(

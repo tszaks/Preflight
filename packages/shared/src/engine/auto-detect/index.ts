@@ -21,7 +21,7 @@ import { detectFromPlist } from './detect-from-plist';
 export interface AutoDetectInput {
     asc?: AscDetectionInput;
     ipa?: BinaryDetectionInput;
-    plistContent?: string;
+    plistContent?: string | Buffer;
 }
 
 export type DetectionSourceType = 'asc' | 'ipa_framework' | 'ipa_entitlement' | 'ipa_symbol' | 'plist';

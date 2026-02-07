@@ -12,6 +12,7 @@
 
 import type { CheckResult } from '../types';
 import { parsePlist } from '../utils/parse-plist';
+import { parseApplePlist } from '../utils/parse-apple-plist';
 import { PRIVACY_MANIFEST_API_TYPES } from '../knowledge-base/requirements';
 import { extractIPA, type ExtractedIPA } from './extract';
 import { analyzeFrameworks } from './frameworks';
@@ -78,12 +79,13 @@ function getIconConfig(parsed: Record<string, unknown> | null): { hasIconKeys: b
     return { hasIconKeys, iconName };
 }
 
-function getPlistStringValue(plistContent: string | undefined, key: string): string | null {
+function getPlistStringValue(plistContent: string | Buffer | undefined, key: string): string | null {
     if (!plistContent) return null;
-    const re = new RegExp(`<key>${key}<\\/key>\\s*<string>([\\s\\S]*?)<\\/string>`, 'i');
-    const match = plistContent.match(re);
-    if (!match) return null;
-    return match[1].trim();
+
+    // Built Info.plist is commonly binary, so we must parse, not regex.
+    const parsed = parseApplePlist(plistContent);
+    const value = parsed ? (parsed as Record<string, unknown>)[key] : undefined;
+    return typeof value === 'string' ? value : null;
 }
 
 const REQUIRED_REASON_API_SIGNALS: Array<{
@@ -124,7 +126,7 @@ const REQUIRED_REASON_API_SIGNALS: Array<{
     },
 ];
 
-function checkTrackingUsageDescription(plistContent: string | undefined, importedSymbols: string[]): CheckResult[] {
+function checkTrackingUsageDescription(plistContent: string | Buffer | undefined, importedSymbols: string[]): CheckResult[] {
     const results: CheckResult[] = [];
     const usesATT = importedSymbols.some(sym =>
         sym.includes('ATTrackingManager') || sym.includes('requestTrackingAuthorization')
@@ -393,7 +395,7 @@ function checkRequiredReasonApiDeclarations(
 
 function checkTrackingDeclarationConsistency(
     manifestContent: string | undefined,
-    plistContent: string | undefined,
+    plistContent: string | Buffer | undefined,
     importedSymbols: string[],
 ): CheckResult[] {
     const results: CheckResult[] = [];
@@ -576,7 +578,7 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
         });
     }
 
-    const parsedInfoPlist = extracted.infoPlist ? parsePlist(extracted.infoPlist) : null;
+    const parsedInfoPlist = extracted.infoPlist ? parseApplePlist(extracted.infoPlist) : null;
     const iconConfig = getIconConfig(parsedInfoPlist);
     const hasAppIconPngs = extracted.iconFiles.length > 0;
     const hasAssetsCar = extracted.hasAssetsCar;

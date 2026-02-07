@@ -167,7 +167,7 @@ export interface SoftRulesInput extends HardRulesInput {
     // File contents (fetched from storage)
     screenshots_data?: ScreenshotData[];
     manifest_content?: string;
-    plist_content?: string;
+    plist_content?: string | Buffer;
     privacy_policy_text?: string;
     /** IPA binary as ArrayBuffer (fetched from storage) */
     ipa_buffer?: ArrayBuffer;

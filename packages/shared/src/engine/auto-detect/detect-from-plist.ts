@@ -1,9 +1,10 @@
 /**
  * Auto-detection from Info.plist content.
- * Parses plist XML for background modes, usage descriptions, encryption keys, and URL schemes.
+ * Supports XML and binary plists (built iOS apps typically use binary Info.plist).
  */
 
 import type { DetectionSource } from './index';
+import { parseApplePlist } from '../utils/parse-apple-plist';
 
 /** Background mode values and their meanings */
 const BACKGROUND_MODES: Record<string, string> = {
@@ -45,29 +46,29 @@ const USAGE_DESCRIPTION_KEYS: Record<string, string> = {
 };
 
 /**
- * Detect app features from Info.plist XML content.
+ * Detect app features from Info.plist content (XML or binary).
  */
-export function detectFromPlist(plistContent: string): DetectionSource[] {
+export function detectFromPlist(plistContent: string | Buffer): DetectionSource[] {
     const detections: DetectionSource[] = [];
+    const parsed = parseApplePlist(plistContent) || {};
 
     // --- Background location detection ---
-    if (plistContent.includes('UIBackgroundModes')) {
-        const backgroundModes = extractArrayValues(plistContent, 'UIBackgroundModes');
-
-        if (backgroundModes.includes('location')) {
-            detections.push({
-                field: 'detected_background_location',
-                value: true,
-                source: 'plist',
-                confidence: 95,
-                evidence: 'UIBackgroundModes contains "location" in Info.plist',
-            });
-        }
+    const backgroundModes = Array.isArray((parsed as any).UIBackgroundModes)
+        ? ((parsed as any).UIBackgroundModes as unknown[]).filter((v) => typeof v === 'string') as string[]
+        : [];
+    if (backgroundModes.includes('location')) {
+        detections.push({
+            field: 'detected_background_location',
+            value: true,
+            source: 'plist',
+            confidence: 95,
+            evidence: 'UIBackgroundModes contains "location" in Info.plist',
+        });
     }
 
     // --- HealthKit plist keys (supplements binary detection) ---
-    const hasHealthShare = plistContent.includes('NSHealthShareUsageDescription');
-    const hasHealthUpdate = plistContent.includes('NSHealthUpdateUsageDescription');
+    const hasHealthShare = typeof (parsed as any).NSHealthShareUsageDescription === 'string';
+    const hasHealthUpdate = typeof (parsed as any).NSHealthUpdateUsageDescription === 'string';
     if (hasHealthShare || hasHealthUpdate) {
         const keys: string[] = [];
         if (hasHealthShare) keys.push('NSHealthShareUsageDescription');
@@ -83,21 +84,21 @@ export function detectFromPlist(plistContent: string): DetectionSource[] {
     }
 
     // --- Export encryption key ---
-    if (plistContent.includes('ITSAppUsesNonExemptEncryption')) {
-        const value = extractBooleanValue(plistContent, 'ITSAppUsesNonExemptEncryption');
-        if (value !== null) {
+    if ('ITSAppUsesNonExemptEncryption' in (parsed as any)) {
+        const v = (parsed as any).ITSAppUsesNonExemptEncryption;
+        if (typeof v === 'boolean') {
             detections.push({
                 field: 'encryption_non_exempt',
-                value,
+                value: v,
                 source: 'plist',
                 confidence: 95,
-                evidence: `ITSAppUsesNonExemptEncryption = ${value} in Info.plist`,
+                evidence: `ITSAppUsesNonExemptEncryption = ${v} in Info.plist`,
             });
         }
     }
 
     // --- URL Schemes (potential OAuth flows) ---
-    if (plistContent.includes('CFBundleURLTypes')) {
+    if (Array.isArray((parsed as any).CFBundleURLTypes)) {
         detections.push({
             field: 'has_url_schemes',
             value: true,
@@ -110,19 +111,16 @@ export function detectFromPlist(plistContent: string): DetectionSource[] {
     // --- Third-party login detection from URL schemes (OAuth callbacks) ---
     // We intentionally keep this "detected_third_party_login" separate from the form field
     // "has_third_party_login" so self-report alone cannot create a critical SIWA issue.
-    const schemes = extractAllArrayValues(plistContent, 'CFBundleURLSchemes')
-        .map(s => s.trim())
-        .filter(Boolean);
-
+    const schemes = extractUrlSchemesFromParsedPlist(parsed);
     if (schemes.length > 0) {
         const hits: string[] = [];
         for (const scheme of schemes) {
             // Facebook: fb<APP_ID>
-            if (/^fb\d+$/i.test(scheme)) hits.push(`Facebook (${scheme})`);
+            if (/^fb\\d+$/i.test(scheme)) hits.push(`Facebook (${scheme})`);
             // Google Sign-In / OAuth: com.googleusercontent.apps.<CLIENT_ID>
-            else if (/^com\.googleusercontent\.apps\./i.test(scheme)) hits.push(`Google (${scheme})`);
+            else if (/^com\\.googleusercontent\\.apps\\./i.test(scheme)) hits.push(`Google (${scheme})`);
             // Microsoft MSAL: msauth.<bundle_id> (common)
-            else if (/^msauth\./i.test(scheme)) hits.push(`Microsoft (${scheme})`);
+            else if (/^msauth\\./i.test(scheme)) hits.push(`Microsoft (${scheme})`);
             // Auth0: often uses "a0" prefixes or includes auth0 in callback scheme
             else if (/auth0/i.test(scheme) || /^a0/i.test(scheme)) hits.push(`Auth0 (${scheme})`);
         }
@@ -141,7 +139,7 @@ export function detectFromPlist(plistContent: string): DetectionSource[] {
     // --- Collect detected usage descriptions for informational purposes ---
     const detectedUsageKeys: string[] = [];
     for (const [key, label] of Object.entries(USAGE_DESCRIPTION_KEYS)) {
-        if (plistContent.includes(key)) {
+        if (typeof (parsed as any)[key] === 'string') {
             detectedUsageKeys.push(label);
         }
     }
@@ -156,89 +154,35 @@ export function detectFromPlist(plistContent: string): DetectionSource[] {
         });
     }
 
+    // --- Background mode listing (informational) ---
+    const meaningfulBackground = backgroundModes.filter((m) => m in BACKGROUND_MODES);
+    if (meaningfulBackground.length > 0) {
+        detections.push({
+            field: 'background_modes',
+            value: meaningfulBackground.map((m) => BACKGROUND_MODES[m]).join(', '),
+            source: 'plist',
+            confidence: 90,
+            evidence: `UIBackgroundModes includes: ${meaningfulBackground.join(', ')}`,
+        });
+    }
+
     return detections;
 }
 
-/**
- * Extract string values from a plist array that follows a specific key.
- * Simple XML parsing for plist format.
- */
-function extractArrayValues(plistContent: string, key: string): string[] {
-    const keyTag = `<key>${key}</key>`;
-    const keyIndex = plistContent.indexOf(keyTag);
-    if (keyIndex === -1) return [];
+function extractUrlSchemesFromParsedPlist(parsed: Record<string, unknown>): string[] {
+    const urlTypes = (parsed as any).CFBundleURLTypes;
+    if (!Array.isArray(urlTypes)) return [];
 
-    const afterKey = plistContent.slice(keyIndex + keyTag.length);
-    const arrayStart = afterKey.indexOf('<array>');
-    if (arrayStart === -1 || arrayStart > 200) return [];
-
-    const arrayEnd = afterKey.indexOf('</array>');
-    if (arrayEnd === -1) return [];
-
-    const arrayContent = afterKey.slice(arrayStart, arrayEnd);
-    const values: string[] = [];
-    const stringRegex = /<string>(.*?)<\/string>/g;
-    let match;
-    while ((match = stringRegex.exec(arrayContent)) !== null) {
-        values.push(match[1]);
+    const schemes: string[] = [];
+    for (const t of urlTypes) {
+        if (!t || typeof t !== 'object' || Array.isArray(t)) continue;
+        const s = (t as any).CFBundleURLSchemes;
+        if (!Array.isArray(s)) continue;
+        for (const raw of s) {
+            if (typeof raw === 'string') schemes.push(raw.trim());
+        }
     }
 
-    return values;
+    return schemes.filter(Boolean);
 }
 
-/**
- * Extract string values from all plist arrays that follow a given key.
- * Useful for nested structures like CFBundleURLTypes -> CFBundleURLSchemes.
- */
-function extractAllArrayValues(plistContent: string, key: string): string[] {
-    const values: string[] = [];
-    const keyTag = `<key>${key}</key>`;
-    let idx = 0;
-    while (idx < plistContent.length) {
-        const keyIndex = plistContent.indexOf(keyTag, idx);
-        if (keyIndex === -1) break;
-
-        const afterKey = plistContent.slice(keyIndex + keyTag.length);
-        const arrayStart = afterKey.indexOf('<array>');
-        if (arrayStart === -1) {
-            idx = keyIndex + keyTag.length;
-            continue;
-        }
-
-        const arrayEnd = afterKey.indexOf('</array>');
-        if (arrayEnd === -1) {
-            idx = keyIndex + keyTag.length;
-            continue;
-        }
-
-        // Only accept arrays that appear immediately after the key (avoid jumping across unrelated sections)
-        if (arrayStart > 400) {
-            idx = keyIndex + keyTag.length;
-            continue;
-        }
-
-        const arrayContent = afterKey.slice(arrayStart, arrayEnd);
-        const stringRegex = /<string>(.*?)<\/string>/g;
-        let match;
-        while ((match = stringRegex.exec(arrayContent)) !== null) {
-            values.push(match[1]);
-        }
-
-        idx = keyIndex + keyTag.length;
-    }
-    return values;
-}
-
-/**
- * Extract a boolean value from a plist that follows a specific key.
- */
-function extractBooleanValue(plistContent: string, key: string): boolean | null {
-    const keyTag = `<key>${key}</key>`;
-    const keyIndex = plistContent.indexOf(keyTag);
-    if (keyIndex === -1) return null;
-
-    const afterKey = plistContent.slice(keyIndex + keyTag.length, keyIndex + keyTag.length + 100);
-    if (afterKey.includes('<true/>') || afterKey.includes('<true />')) return true;
-    if (afterKey.includes('<false/>') || afterKey.includes('<false />')) return false;
-    return null;
-}
