@@ -19,17 +19,23 @@ export async function historyCommand(options: HistoryOptions) {
         process.exit(1)
     }
 
-    const spinner = createSpinner('Loading submissions...')
-    spinner.start()
+    const useSpinner = !options.json
+    const spinner = useSpinner ? createSpinner('Loading submissions...') : null
+    spinner?.start()
 
     try {
         const res = await apiRequest('/api/submissions')
         const data = await res.json()
 
-        spinner.stop()
+        spinner?.stop()
 
         if (!res.ok) {
-            error(data.message || 'Failed to load submissions')
+            const msg = data?.message || 'Failed to load submissions'
+            if (options.json) {
+                console.error(msg)
+            } else {
+                error(msg)
+            }
             process.exit(1)
         }
 
@@ -77,8 +83,13 @@ export async function historyCommand(options: HistoryOptions) {
         console.log(table.toString())
         console.log()
     } catch (err) {
-        spinner.stop()
-        error(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        spinner?.stop()
+        const msg = `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`
+        if (options.json) {
+            console.error(msg)
+        } else {
+            error(msg)
+        }
         process.exit(1)
     }
 }
