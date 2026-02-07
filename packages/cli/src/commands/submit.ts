@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import { readFileSync, statSync, existsSync, readdirSync } from 'node:fs'
-import { basename, resolve, extname, join } from 'node:path'
+import { basename, resolve, extname, join, dirname } from 'node:path'
 import { scanProject, findFiles, getFileSize } from '../lib/scanner.js'
 import { apiRequest } from '../lib/api-client.js'
 import { isLoggedIn, setLastScannedPath, getAscConnected, getConfig } from '../lib/config.js'
@@ -36,6 +36,72 @@ interface SubmitOptions {
     manifest?: string
     screenshots?: string
     json?: boolean
+}
+
+function resolveScreenshotPaths(input: string): string[] {
+    const expanded = input.replace(/^~/, process.env.HOME || '')
+    const resolved = resolve(expanded)
+
+    const imageExts = new Set(['.png', '.jpg', '.jpeg'])
+
+    // Very small glob support: allow one-segment patterns like `/path/*.png`.
+    const hasGlobChars = /[*?\[]/.test(resolved)
+    if (hasGlobChars) {
+        const dir = dirname(resolved)
+        const base = basename(resolved)
+
+        if (!existsSync(dir)) return []
+
+        // Convert a basic glob into a regex: `*` and `?` and character classes.
+        // This intentionally avoids full glob semantics; it's enough for common `*.png` usage.
+        const escapeRegex = (s: string) => s.replace(/[-/\\^$+?.()|{}]/g, '\\$&')
+        let re = '^'
+        let i = 0
+        while (i < base.length) {
+            const ch = base[i]
+            if (ch === '*') {
+                re += '.*'
+                i++
+                continue
+            }
+            if (ch === '?') {
+                re += '.'
+                i++
+                continue
+            }
+            if (ch === '[') {
+                const end = base.indexOf(']', i + 1)
+                if (end !== -1) {
+                    // Keep the class as-is (best effort).
+                    re += base.slice(i, end + 1)
+                    i = end + 1
+                    continue
+                }
+            }
+            re += escapeRegex(ch)
+            i++
+        }
+        re += '$'
+
+        const rx = new RegExp(re, 'i')
+        return readdirSync(dir)
+            .filter((f) => rx.test(f) && imageExts.has(extname(f).toLowerCase()))
+            .sort()
+            .map((f) => join(dir, f))
+    }
+
+    if (!existsSync(resolved)) return []
+
+    const stats = statSync(resolved)
+    if (stats.isDirectory()) {
+        return findFiles(
+            resolved,
+            (f) => imageExts.has(extname(f).toLowerCase()),
+            2
+        ).sort()
+    }
+
+    return imageExts.has(extname(resolved).toLowerCase()) ? [resolved] : []
 }
 
 // Open a URL in the browser with fallback to printing the URL
@@ -383,6 +449,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     if (options.plist) detected.infoPlist = resolve(options.plist)
     if (options.manifest) detected.privacyManifest = resolve(options.manifest)
     if (options.ipa) detected.ipa = resolve(options.ipa)
+    if (options.screenshots) detected.screenshots = resolveScreenshotPaths(options.screenshots)
 
     // Build file list for display
     const filesToUpload: Array<{ type: string; index?: number; filename: string; path: string }> = []
