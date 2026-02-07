@@ -143,6 +143,9 @@ function mapDetectionToField(
         case 'has_third_party_login':
             fields.has_third_party_login = value as boolean;
             break;
+        case 'detected_third_party_login':
+            fields.detected_third_party_login = value as boolean;
+            break;
         case 'category':
             fields.category = value as string;
             break;

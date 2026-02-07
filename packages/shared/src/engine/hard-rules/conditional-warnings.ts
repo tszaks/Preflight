@@ -19,6 +19,8 @@ export interface ConditionalWarningsInput {
     has_iap?: boolean;
     has_subscriptions?: boolean;
     has_third_party_login?: boolean;
+    detected_third_party_login?: boolean;
+    detected_third_party_login_confidence?: number;
     // Explicit feature confirmations (null = not asked, true = exists, false = missing)
     has_account_deletion?: boolean | null;
     has_restore_purchases?: boolean | null;
@@ -216,41 +218,55 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
     // === 4. Sign in with Apple Requirement ===
     // Apple Guideline 4.8: If you offer third-party login (Google, Facebook, etc.),
     // you MUST also offer Sign in with Apple as an option
-    if (input.has_third_party_login) {
-        // Confidence boost: if we detected SIWA framework is absent, this is near-certain
-        const siwaDetected = input.detected_sign_in_with_apple === true;
+    const selfReportedThirdParty = input.has_third_party_login === true;
+    const detectedThirdParty = input.detected_third_party_login === true;
+    const siwaDetected = input.detected_sign_in_with_apple === true;
+    const detectedThirdPartyConfidence = input.detected_third_party_login_confidence ?? (detectedThirdParty ? 85 : 60);
 
+    if (selfReportedThirdParty || detectedThirdParty) {
         if (siwaDetected) {
-            // Third-party login + SIWA framework present = likely compliant
             results.push({
                 category: 'content_policy',
                 severity: 'info',
                 title: 'Sign in with Apple framework detected alongside third-party login',
                 description:
-                    'Your app uses third-party login and AuthenticationServices framework was detected, ' +
+                    'Third-party login appears to be present and AuthenticationServices framework was detected, ' +
                     'which likely includes Sign in with Apple. Ensure the SIWA button is equally prominent ' +
                     'as other login options.',
                 guideline_ref: '4.8',
-                confidence: 85,
+                confidence: detectedThirdParty ? 90 : 75,
             });
-        } else {
-            // Third-party login + no SIWA framework = high confidence warning
+        } else if (detectedThirdParty) {
             results.push({
                 category: 'content_policy',
                 severity: 'critical',
                 title: 'Sign in with Apple likely missing',
                 description:
-                    'Your app uses third-party login services but the AuthenticationServices framework ' +
+                    'Third-party login was detected, but the AuthenticationServices framework ' +
                     'was not detected in the binary. Apple requires Sign in with Apple as an equally ' +
                     'prominent option when offering third-party login (Guideline 4.8). ' +
                     'This is a common rejection reason.',
                 guideline_ref: '4.8',
                 fix_suggestion:
-                    'Add Sign in with Apple button alongside your other social login options. ' +
+                    'Add Sign in with Apple alongside your other social login options. ' +
                     'It must be the same size and prominence as other login buttons. ' +
                     'Use Apple\'s official Sign in with Apple button assets and follow their HIG.',
-                // Binary evidence of missing SIWA = high confidence (vs. 40 before)
-                confidence: 90,
+                // Important: leave severity "critical" but let confidence-severity capping demote when detection is weak.
+                confidence: detectedThirdPartyConfidence,
+            });
+        } else {
+            results.push({
+                category: 'content_policy',
+                severity: 'warning',
+                title: 'Confirm whether you offer third-party login (SIWA requirement)',
+                description:
+                    'You indicated third-party social login (Google/Facebook/etc), but Preflight could not ' +
+                    'confirm it from the IPA or Info.plist. If you do offer third-party login, Apple requires ' +
+                    'Sign in with Apple as an equally prominent option (Guideline 4.8). If you do not, uncheck this item.',
+                guideline_ref: '4.8',
+                fix_suggestion:
+                    'If you have Google/Facebook login: add Sign in with Apple. If you only use email/magic-link, uncheck third-party login.',
+                confidence: 60,
             });
         }
     }

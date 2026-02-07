@@ -154,7 +154,7 @@ const FEATURE_ITEMS = [
     { value: 'iap' as const, label: 'Pay to Unlock Features', hint: 'One-time purchases' },
     { value: 'subscriptions' as const, label: 'Subscription / Recurring Payment', hint: 'Weekly, monthly, yearly' },
     { value: 'ads' as const, label: 'Ads in Your App', hint: 'Banner, video, or sponsored' },
-    { value: 'thirdPartyLogin' as const, label: 'Sign in with Apple / Google', hint: 'Social login' },
+    { value: 'thirdPartyLogin' as const, label: 'Third-party social login (Google/Facebook/etc)', hint: 'Social login' },
     { value: 'aiContent' as const, label: 'AI-Generated Content', hint: 'ChatGPT, DALL-E, etc.' },
     { value: 'healthClaims' as const, label: 'Health / Medical Advice', hint: 'Diagnosis, treatment' },
     { value: 'crypto' as const, label: 'Crypto / NFTs', hint: 'Buy, sell, trade' },

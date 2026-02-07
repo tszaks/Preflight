@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./engine": "./src/engine/index.ts",
     "./engine/*": "./src/engine/*.ts",
+    "./engine/report/completeness": "./src/engine/report/completeness.ts",
     "./types/database": "./src/types/database.ts",
     "./types/progress": "./src/types/progress.ts",
     "./constants": "./src/constants.ts"

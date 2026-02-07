@@ -5,8 +5,10 @@ import type { CheckResult, ScoreResult, CheckCategory } from '../types';
  *
  * Scoring logic:
  * - Start at 100 for each category
- * - Critical: -30 points each
- * - Warning: -15 points each
+ * - Penalties are confidence-weighted to reduce score volatility from uncertain checks
+ * - Manual-review checks (pattern_id = "manual_review") do not affect score
+ * - Critical: up to -30 points each (scaled by confidence)
+ * - Warning: up to -15 points each (scaled by confidence)
  * - Info: -0 points (suggestions only)
  * - Pass: +0 (no penalty)
  * - Minimum score: 0
@@ -15,7 +17,6 @@ import type { CheckResult, ScoreResult, CheckCategory } from '../types';
  * Overall score is a weighted average of category scores.
  * Null categories are EXCLUDED and their weight is redistributed
  * proportionally among categories that have data.
- * Critical issues apply an additional -15 penalty each to the overall.
  */
 export function calculateScores(checks: CheckResult[]): ScoreResult {
     const categoryChecks = groupByCategory(checks);
@@ -36,13 +37,14 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
     // is redistributed proportionally, like a GPA that ignores untaken classes.
     // Weights must sum to 1.00 (normalized proportionally when null categories excluded)
     const categoryWeights: { score: number | null; weight: number }[] = [
-        { score: score_metadata, weight: 0.20 },
-        { score: score_screenshots, weight: 0.15 },
-        { score: score_privacy, weight: 0.20 },
+        // Risk-weighted: align score with actual App Review blockers.
+        { score: score_privacy, weight: 0.25 },
+        { score: score_ipa_binary, weight: 0.20 },
+        { score: score_content, weight: 0.20 },
         { score: score_plist, weight: 0.15 },
-        { score: score_urls, weight: 0.10 },
-        { score: score_content, weight: 0.10 },
-        { score: score_ipa_binary, weight: 0.10 },
+        { score: score_screenshots, weight: 0.10 },
+        { score: score_urls, weight: 0.05 },
+        { score: score_metadata, weight: 0.05 },
     ];
 
     const active = categoryWeights.filter(w => w.score !== null);
@@ -57,13 +59,6 @@ export function calculateScores(checks: CheckResult[]): ScoreResult {
             0
         );
         score_overall = Math.round(weighted);
-    }
-
-    // Critical issues should tank the overall score — not just their category.
-    // Each critical applies an additional -15 penalty to the overall.
-    const criticalCount = checks.filter(c => c.severity === 'critical').length;
-    if (criticalCount > 0) {
-        score_overall = Math.max(0, score_overall - (criticalCount * 15));
     }
 
     return {
@@ -84,19 +79,31 @@ function scoreCategory(checks: CheckResult[]): number {
     let score = 100;
 
     for (const check of checks) {
-        // Flat penalties — all checks are deterministic (confidence always 100)
-        switch (check.severity) {
-            case 'critical':
-                score -= 30;
-                break;
-            case 'warning':
-                score -= 15;
-                break;
-            // info and pass don't affect score
-        }
+        score -= penaltyForCheck(check);
     }
 
     return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function penaltyForCheck(check: CheckResult): number {
+    // Keep manual-review findings visible but do not penalize score.
+    if (isManualReview(check)) return 0;
+
+    const base =
+        check.severity === 'critical' ? 30 :
+            check.severity === 'warning' ? 15 :
+                0;
+
+    if (base === 0) return 0;
+
+    const conf = typeof check.confidence === 'number' ? check.confidence : 100;
+    const weight = Math.max(0, Math.min(1, conf / 100));
+    return base * weight;
+}
+
+function isManualReview(check: CheckResult): boolean {
+    const title = (check.title || '').toLowerCase();
+    return title.startsWith('manual review:');
 }
 
 /**
