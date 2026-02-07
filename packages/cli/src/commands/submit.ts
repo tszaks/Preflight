@@ -36,6 +36,8 @@ interface SubmitOptions {
     manifest?: string
     screenshots?: string
     json?: boolean
+    skipScreenshots?: boolean
+    nonInteractive?: boolean
 }
 
 function resolveScreenshotPaths(input: string): string[] {
@@ -432,14 +434,35 @@ async function offerAscConnection(draftState: DraftState): Promise<'forward' | '
 // collectComplianceWithNav moved to ComplianceStep.ts
 
 export async function submitCommand(path?: string, options: SubmitOptions = {}, fromMenu = false) {
+    const jsonMode = options.json === true
+    const nonInteractive = options.nonInteractive === true
+    // jsonMode must never prompt and must keep stdout clean for machine parsing.
+    const noPrompts = jsonMode || nonInteractive
+    const spinnerEnabled = !noPrompts && process.stdout.isTTY && process.stderr.isTTY
+
+    const log = {
+        info: (msg: string) => { if (!jsonMode) ui.log.info(msg) },
+        success: (msg: string) => { if (!jsonMode) ui.log.success(msg) },
+        warning: (msg: string) => { if (!jsonMode) ui.log.warning(msg) },
+        error: (msg: string) => { if (!jsonMode) ui.log.error(msg) },
+        message: (msg: string) => { if (!jsonMode) ui.log.message(msg) },
+    }
+
+    const fail = (msg: string, code = 1): never => {
+        // In json mode, stdout must remain parseable JSON only.
+        console.error(msg)
+        process.exit(code)
+    }
+
     // Track draft state for auto-save on cancel (Phase 4)
     const draftState: DraftState = {}
 
     // Auth check with friendly prompt
     if (!isLoggedIn()) {
+        if (noPrompts) fail('Not logged in. Run `preflight login` first.', 1)
         if (fromMenu) {
             // Should not happen -- menu checks auth first
-            ui.log.error('Not logged in.')
+            log.error('Not logged in.')
             return
         }
         const wantsLogin = await promptLogin()
@@ -454,8 +477,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 return
             }
         } else {
-            ui.log.warning('Login required for submissions. Scan is free without login!')
-            ui.tip(`Run ${brand('preflight scan')} for a free preview.`)
+            log.warning('Login required for submissions. Scan is free without login!')
+            if (!jsonMode) ui.tip(`Run ${brand('preflight scan')} for a free preview.`)
             return
         }
     }
@@ -468,6 +491,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
     // Interactive mode: no path provided
     if (!path) {
+        if (noPrompts) fail('Missing path. Pass a project path in --non-interactive/--json mode.', 2)
         const resolvedPath = await interactiveProjectSelect()
         if (!resolvedPath) return
         path = resolvedPath
@@ -488,6 +512,18 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     if (options.manifest) detected.privacyManifest = resolve(options.manifest)
     if (options.ipa) detected.ipa = resolve(options.ipa)
     if (options.screenshots) detected.screenshots = resolveScreenshotPaths(options.screenshots)
+
+    // In non-interactive mode, don't silently "guess" about screenshots.
+    // Either we detect them automatically, the user provides them explicitly, or they opt out.
+    if (!fromMenu && nonInteractive) {
+        const screenshotsExplicitlyProvided = typeof options.screenshots === 'string'
+        if (screenshotsExplicitlyProvided && detected.screenshots.length === 0) {
+            fail(`No screenshots matched ${options.screenshots}. Provide a valid --screenshots glob/path or pass --skip-screenshots.`, 2)
+        }
+        if (!screenshotsExplicitlyProvided && detected.screenshots.length === 0 && options.skipScreenshots !== true) {
+            fail('No screenshots detected. Pass --screenshots <glob/path> or --skip-screenshots in --non-interactive mode.', 2)
+        }
+    }
 
     // Build file list for display
     const filesToUpload: Array<{ type: string; index?: number; filename: string; path: string }> = []
@@ -513,6 +549,9 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     // If no screenshots found and NOT from menu, ask user to choose how to provide them
     // When fromMenu is true, ScreenshotsStep will handle this interactively
     if (detected.screenshots.length === 0 && !fromMenu) {
+        if (options.skipScreenshots || noPrompts) {
+            // Continue without screenshots
+        } else {
         const screenshotChoice = await ui.select<'manual' | 'browse' | 'skip'>({
             message: 'How do you want to provide screenshots?',
             options: [
@@ -658,12 +697,13 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 }
             }
         }
+        }
     }
 
     if (filesToUpload.length === 0) {
-        ui.log.warning('No files to upload. Make sure you\'re pointing to an Xcode project directory.')
+        log.warning('No files to upload. Make sure you\'re pointing to an Xcode project directory.')
         if (fromMenu) return
-        ui.log.info(subtext('Use --plist, --manifest, --ipa, or --screenshots flags to specify files manually.'))
+        log.info(subtext('Use --plist, --manifest, --ipa, or --screenshots flags to specify files manually.'))
         return
     }
 
@@ -730,6 +770,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
     // Summary confirmation (only in direct CLI mode - fromMenu already showed it in navigation loop via ReviewStep)
     if (!fromMenu) {
+        if (!noPrompts) {
         ui.intro(`Submit ${appName} for analysis`)
 
         const fileLines = filesToUpload.map((f) => {
@@ -745,14 +786,17 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             ui.outro('Submission cancelled.')
             return
         }
+        }
     }
 
     // ─── Upload & Analyze ────────────────────────────────────────────────
 
-    ui.log.info(subtext('Reviews usually take 1-3 minutes.'))
-    console.log()
+    if (!jsonMode) {
+        log.info(subtext('Reviews usually take 1-3 minutes.'))
+        console.log()
+    }
 
-    const spinner = createSpinner('Creating submission...')
+    const spinner = createSpinner('Creating submission...', { enabled: spinnerEnabled })
     spinner.start()
     let activeSpinner = spinner
 
@@ -787,7 +831,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         if (!createRes.ok) {
             spinner.stop()
-            ui.log.error(createData.message || 'Failed to create submission')
+            if (jsonMode) fail(createData.message || 'Failed to create submission', 1)
+            log.error(createData.message || 'Failed to create submission')
             if (!fromMenu) process.exitCode = 1
             return
         }
@@ -796,7 +841,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         spinner.succeed('Submission created')
 
         // 3. Get signed upload URLs
-        const uploadSpinner = createSpinner('Getting upload URLs...')
+        const uploadSpinner = createSpinner('Getting upload URLs...', { enabled: spinnerEnabled })
         uploadSpinner.start()
         activeSpinner = uploadSpinner
 
@@ -814,7 +859,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         if (!urlsRes.ok) {
             uploadSpinner.stop()
-            ui.log.error(urlsData.message || 'Failed to get upload URLs')
+            if (jsonMode) fail(urlsData.message || 'Failed to get upload URLs', 1)
+            log.error(urlsData.message || 'Failed to get upload URLs')
             if (!fromMenu) process.exitCode = 1
             return
         }
@@ -836,7 +882,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
             if (!uploadRes.ok) {
                 uploadSpinner.stop()
-                ui.log.error(`Failed to upload ${fileInfo.filename}: HTTP ${uploadRes.status} ${uploadRes.statusText}`)
+                if (jsonMode) fail(`Failed to upload ${fileInfo.filename}: HTTP ${uploadRes.status} ${uploadRes.statusText}`, 1)
+                log.error(`Failed to upload ${fileInfo.filename}: HTTP ${uploadRes.status} ${uploadRes.statusText}`)
                 if (!fromMenu) process.exitCode = 1
                 return
             }
@@ -844,7 +891,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         uploadSpinner.succeed('Files uploaded')
 
         // 5. Finalize (with 402 retry)
-        const analyzeSpinner = createSpinner('Starting analysis...')
+        const analyzeSpinner = createSpinner('Starting analysis...', { enabled: spinnerEnabled })
         analyzeSpinner.start()
         activeSpinner = analyzeSpinner
 
@@ -871,8 +918,12 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             } else if (finalizeRes.status === 402) {
                 analyzeSpinner.stop()
 
-                ui.log.warning(`Not enough credits. Need ${finalizeData.required ?? 100}, have ${finalizeData.credits ?? 0}.`)
-                console.log()
+                if (!jsonMode) {
+                    log.warning(`Not enough credits. Need ${finalizeData.required ?? 100}, have ${finalizeData.credits ?? 0}.`)
+                    console.log()
+                }
+
+                if (noPrompts) fail('Not enough credits to start analysis.', 1)
 
                 const wantsBuy = await ui.confirm('Would you like to buy more credits?')
                 if (wantsBuy === null || !wantsBuy) return
@@ -893,7 +944,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 maxFinalizeRetries--
             } else {
                 analyzeSpinner.stop()
-                ui.log.error(finalizeData.message || 'Failed to finalize submission')
+                if (jsonMode) fail(finalizeData.message || 'Failed to finalize submission', 1)
+                log.error(finalizeData.message || 'Failed to finalize submission')
                 if (!fromMenu) process.exitCode = 1
                 return
             }
@@ -901,7 +953,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         if (!finalizeSuccess) {
             analyzeSpinner.stop()
-            ui.log.error('Could not finalize after multiple attempts. Your files are saved -- try again later.')
+            if (jsonMode) fail('Could not finalize after multiple attempts. Your files are saved -- try again later.', 1)
+            log.error('Could not finalize after multiple attempts. Your files are saved -- try again later.')
             return
         }
 
@@ -912,15 +965,17 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         if (reportData.status === 'cancelled') {
             analyzeSpinner.stop()
-            ui.log.info('Analysis continues in the background.')
-            console.log(subtext(`  Check status with ${brand(`preflight status ${submissionId}`)} or from View Reviews.`))
-            console.log()
+            if (!jsonMode) {
+                log.info('Analysis continues in the background.')
+                console.log(subtext(`  Check status with ${brand(`preflight status ${submissionId}`)} or from View Reviews.`))
+                console.log()
+            }
             return
         }
 
         if (reportData.status === 'complete' && reportData.data) {
             analyzeSpinner.succeed('Analysis complete!')
-            if (options.json) {
+            if (jsonMode) {
                 console.log(JSON.stringify(reportData.data, null, 2))
             } else {
                 renderReport(reportData.data.report, reportData.data.items)
@@ -931,6 +986,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
                 // Loop until user chooses to be done
                 while (true) {
+                    if (noPrompts) break
                     const next = await ui.select<'open' | 'copy' | 'done'>({
                         message: copyMessage ? `What next? ${chalk.green(copyMessage)}` : 'What next?',
                         options: [
@@ -962,16 +1018,19 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             }
         } else if (reportData.status === 'failed') {
             analyzeSpinner.stop()
-            ui.log.error(reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed. Please try submitting again or contact support.')
+            if (jsonMode) fail(reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed. Please try submitting again or contact support.', 1)
+            log.error(reportData.error ? `Analysis failed: ${reportData.error}` : 'Analysis failed. Please try submitting again or contact support.')
             if (!fromMenu) process.exitCode = 1
         } else {
             analyzeSpinner.stop()
-            ui.log.warning('Analysis is still running. Check status with:')
+            if (jsonMode) fail(`Analysis still running. Check status with: preflight status ${submissionId}`, 1)
+            log.warning('Analysis is still running. Check status with:')
             console.log(subtext(`  preflight status ${submissionId}`))
         }
     } catch (err) {
         activeSpinner.stop()
-        ui.log.error(`Submit failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        if (jsonMode) fail(`Submit failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 1)
+        log.error(`Submit failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
         if (!fromMenu) process.exitCode = 1
     }
 }
