@@ -116,16 +116,50 @@ export default function ReportClient({ initialSubmission, initialReport, initial
     const [items, setItems] = useState<ReportItem[]>(initialItems)
     const [job, setJob] = useState<AnalysisJob | null>(null)
 
-    // Severity sorting
+    const severityRank = (sev: string): number => {
+        switch (sev) {
+            case 'critical': return 0
+            case 'warning': return 1
+            case 'info': return 2
+            case 'pass': return 3
+            default: return 4
+        }
+    }
+
     const isManualReview = (i: ReportItem) =>
         (i.title || '').trimStart().toLowerCase().startsWith('manual review:')
 
-    const manualReviewItems = items.filter(isManualReview)
-    const nonManualItems = items.filter(i => !isManualReview(i))
+    const isHistorical = (i: ReportItem) =>
+        (i.title || '').trimStart().toLowerCase().startsWith('historical pattern:')
+
+    const sortedItems = [...items].sort((a, b) => {
+        const am = isManualReview(a)
+        const bm = isManualReview(b)
+        if (am !== bm) return am ? 1 : -1
+
+        const ah = isHistorical(a)
+        const bh = isHistorical(b)
+        if (ah !== bh) return ah ? 1 : -1
+
+        const r = severityRank(a.severity) - severityRank(b.severity)
+        if (r !== 0) return r
+
+        const ca = typeof a.confidence === 'number' ? a.confidence : 0
+        const cb = typeof b.confidence === 'number' ? b.confidence : 0
+        if (cb !== ca) return cb - ca
+
+        return String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' })
+    })
+
+    const manualReviewItems = sortedItems.filter(isManualReview)
+    const nonManualItems = sortedItems.filter((i) => !isManualReview(i))
+
+    const historicalItems = nonManualItems.filter((i) => isHistorical(i) && i.severity === 'info')
+    const suggestionItems = nonManualItems.filter((i) => i.severity === 'info' && !isHistorical(i))
 
     const criticalItems = nonManualItems.filter(i => i.severity === 'critical')
     const warningItems = nonManualItems.filter(i => i.severity === 'warning')
-    const infoItems = nonManualItems.filter(i => i.severity === 'info')
+    const mainFindingItems = nonManualItems.filter((i) => i.severity === 'critical' || i.severity === 'warning')
 
     const riskScore = report?.score_overall ?? 0
     const completeness = computeCompletenessFromReportAndItems(report, items)
@@ -641,8 +675,17 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                                 <Info className="w-4 h-4 text-blue-500" />
                                 <span className="text-xs">Suggestions</span>
                             </div>
-                            <span className="font-mono font-bold text-blue-500">{infoItems.length}</span>
+                            <span className="font-mono font-bold text-blue-500">{suggestionItems.length}</span>
                         </div>
+                        {historicalItems.length > 0 && (
+                            <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                                <div className="flex items-center gap-2">
+                                    <Info className="w-4 h-4 text-blue-500" />
+                                    <span className="text-xs">Historical</span>
+                                </div>
+                                <span className="font-mono font-bold text-blue-500">{historicalItems.length}</span>
+                            </div>
+                        )}
                         {manualReviewItems.length > 0 && (
                             <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
                                 <div className="flex items-center gap-2">
@@ -688,15 +731,15 @@ export default function ReportClient({ initialSubmission, initialReport, initial
             <div className="space-y-8">
                 <h2 className="text-xl font-bold tracking-tight border-b border-white/10 pb-4">Analysis Findings</h2>
 
-                {nonManualItems.length === 0 ? (
+                {mainFindingItems.length === 0 ? (
                     <div className="vercel-card py-24 flex flex-col items-center text-center">
                         <Check className="w-12 h-12 text-green-500 mb-6" />
-                        <h3 className="text-xl font-medium mb-2">No Issues Found</h3>
-                        <p className="text-gray-400 text-sm font-light">Your application matches all analyzed App Store guidelines.</p>
+                        <h3 className="text-xl font-medium mb-2">No Critical Issues Found</h3>
+                        <p className="text-gray-400 text-sm font-light">No critical or warning-level risks were detected. Review the suggestions below before submitting.</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {nonManualItems.map(item => (
+                        {mainFindingItems.map(item => (
                             <div key={item.id} className={cn(
                                 "vercel-card border-l-4",
                                 item.severity === 'critical' ? 'border-l-red-500' :
@@ -730,6 +773,66 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                             </div>
                         ))}
                     </div>
+                )}
+
+                {suggestionItems.length > 0 && (
+                    <details className="vercel-card p-6" open={mainFindingItems.length === 0}>
+                        <summary className="cursor-pointer text-sm font-medium text-gray-300">
+                            Suggestions ({suggestionItems.length})
+                        </summary>
+                        <div className="mt-4 space-y-3">
+                            {suggestionItems.map((item) => (
+                                <div key={item.id} className="bg-white/5 rounded-lg border border-white/5 p-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                                            {item.category?.replace('_', ' ')}
+                                        </span>
+                                        {item.guideline_ref && (
+                                            <span className="text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded">
+                                                Rule {item.guideline_ref}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="text-sm font-semibold">{item.title}</div>
+                                    {item.description && (
+                                        <div className="text-xs text-gray-400 font-light mt-1">{item.description}</div>
+                                    )}
+                                    {item.fix_suggestion && (
+                                        <div className="mt-3 bg-white/5 rounded-lg border border-white/5 p-3">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-[10px] font-bold tracking-widest text-gray-300 uppercase">Recommended Fix</span>
+                                                <button
+                                                    className="text-gray-500 hover:text-white transition-colors"
+                                                    onClick={() => navigator.clipboard.writeText(item.fix_suggestion ?? '')}
+                                                >
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-gray-300 font-mono leading-relaxed">{item.fix_suggestion}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </details>
+                )}
+
+                {historicalItems.length > 0 && (
+                    <details className="vercel-card p-6">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-300">
+                            Historical Patterns ({historicalItems.length})
+                        </summary>
+                        <div className="mt-4 space-y-3">
+                            {historicalItems.map((item) => (
+                                <div key={item.id} className="bg-white/5 rounded-lg border border-white/5 p-4">
+                                    <div className="text-sm font-semibold">{item.title}</div>
+                                    {item.description && (
+                                        <div className="text-xs text-gray-400 font-light mt-1">{item.description}</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </details>
                 )}
 
                 {manualReviewItems.length > 0 && (
