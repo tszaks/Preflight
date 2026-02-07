@@ -8,6 +8,7 @@ import {
 } from '../knowledge-base/requirements';
 import { getGuidelineRef } from '../knowledge-base/guidelines';
 import { parsePlist } from '../utils/parse-plist';
+import { parseApplePlist } from '../utils/parse-apple-plist';
 
 /**
  * Detects Xcode build variables in plist values.
@@ -24,7 +25,7 @@ function isXcodeBuildVariable(value: string): boolean {
  * The file is XML plist format.
  */
 export function checkInfoPlist(
-    plistContent: string | null | undefined,
+    plistContent: string | Buffer | null | undefined,
     input?: Pick<HardRulesInput, 'minimum_os_version'>,
 ): CheckResult[] {
     const results: CheckResult[] = [];
@@ -36,25 +37,26 @@ export function checkInfoPlist(
         return results;
     }
 
-    // Basic format validation
-    if (!plistContent.includes('<plist') || !plistContent.includes('<dict>')) {
+    // Built apps often ship with a *binary* Info.plist, so we must support both formats.
+    const parsed = parseApplePlist(plistContent);
+    const plistText = typeof plistContent === 'string' ? plistContent : '';
+
+    if (!parsed) {
         results.push({
             category: 'info_plist',
             severity: 'critical',
             title: 'Invalid Info.plist format',
-            description: 'The file does not appear to be a valid XML property list.',
+            description: 'The file could not be parsed as a valid XML or binary property list.',
             confidence: 100,
             guideline_ref: getGuidelineRef('2.1'),
-            fix_suggestion: 'Ensure the file is a valid XML plist. Use Xcode to regenerate if needed.',
+            fix_suggestion: 'Export the IPA from Xcode (Archive → Distribute) and provide the Info.plist from the built app bundle.',
         });
         return results;
     }
 
-    const parsed = parsePlist(plistContent);
-
     // Check required keys
     for (const key of REQUIRED_PLIST_KEYS) {
-        if (!plistContent.includes(`<key>${key}</key>`)) {
+        if (!(key in parsed)) {
             results.push({
                 category: 'info_plist',
                 severity: 'critical',
@@ -68,9 +70,8 @@ export function checkInfoPlist(
     }
 
     // Validate CFBundleIdentifier format
-    const bundleIdMatch = plistContent.match(/<key>CFBundleIdentifier<\/key>\s*<string>([^<]+)<\/string>/);
-    if (bundleIdMatch) {
-        const bundleId = bundleIdMatch[1];
+    const bundleId = typeof parsed.CFBundleIdentifier === 'string' ? parsed.CFBundleIdentifier : undefined;
+    if (bundleId) {
 
         if (isXcodeBuildVariable(bundleId)) {
             // Build variable — this is normal, don't generate a finding
@@ -102,9 +103,8 @@ export function checkInfoPlist(
     }
 
     // Validate version format
-    const versionMatch = plistContent.match(/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/);
-    if (versionMatch) {
-        const version = versionMatch[1];
+    const version = typeof parsed.CFBundleShortVersionString === 'string' ? parsed.CFBundleShortVersionString : undefined;
+    if (version) {
 
         if (isXcodeBuildVariable(version)) {
             results.push({
@@ -143,21 +143,20 @@ export function checkInfoPlist(
     }
 
     // Also check CFBundleVersion (build number) for build variables
-    const buildMatch = plistContent.match(/<key>CFBundleVersion<\/key>\s*<string>([^<]+)<\/string>/);
-    if (buildMatch && isXcodeBuildVariable(buildMatch[1])) {
+    const buildNumber = typeof parsed.CFBundleVersion === 'string' ? parsed.CFBundleVersion : undefined;
+    if (buildNumber && isXcodeBuildVariable(buildNumber)) {
         results.push({
             category: 'info_plist',
             severity: 'info',
             title: 'Build number uses Xcode build variable',
-            description: `Build number "${buildMatch[1]}" is an Xcode build variable. This is normal.`,
+            description: `Build number "${buildNumber}" is an Xcode build variable. This is normal.`,
             confidence: 100,
             fix_suggestion: 'No action needed.',
         });
     }
 
     // Validate CFBundleVersion format (if not a build variable)
-    if (buildMatch && !isXcodeBuildVariable(buildMatch[1])) {
-        const buildNumber = buildMatch[1];
+    if (buildNumber && !isXcodeBuildVariable(buildNumber)) {
         if (!BUILD_NUMBER_REGEX.test(buildNumber)) {
             results.push({
                 category: 'info_plist',
@@ -172,14 +171,14 @@ export function checkInfoPlist(
     }
 
     // Check if version and build number are identical
-    if (versionMatch && buildMatch &&
-        !isXcodeBuildVariable(versionMatch[1]) && !isXcodeBuildVariable(buildMatch[1]) &&
-        versionMatch[1] === buildMatch[1]) {
+    if (version && buildNumber &&
+        !isXcodeBuildVariable(version) && !isXcodeBuildVariable(buildNumber) &&
+        version === buildNumber) {
         results.push({
             category: 'info_plist',
             severity: 'info',
             title: 'Version and build number are identical',
-            description: `Version and build number are both '${versionMatch[1]}'. Using separate incrementing build numbers (e.g., 1, 2, 3) helps track builds.`,
+            description: `Version and build number are both '${version}'. Using separate incrementing build numbers (e.g., 1, 2, 3) helps track builds.`,
             confidence: 50,
             guideline_ref: getGuidelineRef('2.5'),
             fix_suggestion: 'Use an incrementing integer or date-based build number (e.g., 20240115) separate from the marketing version.',
@@ -187,62 +186,56 @@ export function checkInfoPlist(
     }
 
     // Check usage descriptions for permissions
-    const permissionKeys = USAGE_DESCRIPTION_KEYS.filter(key =>
-        plistContent.includes(`<key>${key}</key>`)
-    );
+    for (const key of USAGE_DESCRIPTION_KEYS) {
+        const raw = (parsed as Record<string, unknown>)[key];
+        if (raw === undefined) continue;
+        if (typeof raw !== 'string') continue;
 
-    for (const key of permissionKeys) {
-        const descMatch = plistContent.match(
-            new RegExp(`<key>${key}<\\/key>\\s*<string>([^<]*)<\\/string>`)
-        );
-
-        if (descMatch) {
-            const desc = descMatch[1].trim();
-
-            if (desc.length === 0) {
-                results.push({
-                    category: 'info_plist',
-                    severity: 'critical',
-                    title: `Empty usage description: ${key.replace('NS', '').replace('UsageDescription', '')}`,
-                    description: `Permission "${key}" has an empty usage description string.`,
-                    confidence: 100,
-                    guideline_ref: getGuidelineRef('5.1.1'),
-                    fix_suggestion: 'Provide a clear, specific explanation of why your app needs this permission.',
-                });
-            } else if (desc.length < 10) {
-                results.push({
-                    category: 'info_plist',
-                    severity: 'warning',
-                    title: `Vague usage description: ${key.replace('NS', '').replace('UsageDescription', '')}`,
-                    description: `Usage description "${desc}" is too short to be meaningful.`,
-                    confidence: 100,
-                    guideline_ref: getGuidelineRef('5.1.1'),
-                    fix_suggestion: 'Explain the specific feature that requires this permission. E.g., "Take photos for your profile picture".',
-                });
-            }
+        const desc = raw.trim();
+        if (desc.length === 0) {
+            results.push({
+                category: 'info_plist',
+                severity: 'critical',
+                title: `Empty usage description: ${key.replace('NS', '').replace('UsageDescription', '')}`,
+                description: `Permission "${key}" has an empty usage description string.`,
+                confidence: 100,
+                guideline_ref: getGuidelineRef('5.1.1'),
+                fix_suggestion: 'Provide a clear, specific explanation of why your app needs this permission.',
+            });
+        } else if (desc.length < 10) {
+            results.push({
+                category: 'info_plist',
+                severity: 'warning',
+                title: `Vague usage description: ${key.replace('NS', '').replace('UsageDescription', '')}`,
+                description: `Usage description "${desc}" is too short to be meaningful.`,
+                confidence: 100,
+                guideline_ref: getGuidelineRef('5.1.1'),
+                fix_suggestion: 'Explain the specific feature that requires this permission. E.g., "Take photos for your profile picture".',
+            });
         }
     }
 
     // ATS exceptions (App Transport Security)
-    results.push(...checkATSExceptions(parsed, plistContent));
+    results.push(...checkATSExceptions(parsed, plistText));
 
     // UIRequiredDeviceCapabilities validation
-    results.push(...checkRequiredDeviceCapabilities(parsed, plistContent));
+    results.push(...checkRequiredDeviceCapabilities(parsed, plistText));
 
     // LSApplicationQueriesSchemes validation
-    results.push(...checkApplicationQuerySchemes(parsed, plistContent));
+    results.push(...checkApplicationQuerySchemes(parsed, plistText));
 
     // Bonjour / Local Network validation
-    results.push(...checkBonjourAndLocalNetwork(parsed, plistContent));
+    results.push(...checkBonjourAndLocalNetwork(parsed, plistText));
 
     // CFBundleURLTypes validation
-    results.push(...checkBundleUrlTypes(parsed, plistContent));
+    results.push(...checkBundleUrlTypes(parsed, plistText));
 
     // Minimum OS version vs binary
-    results.push(...checkMinimumOsVersion(parsed, plistContent, input?.minimum_os_version));
+    results.push(...checkMinimumOsVersion(parsed, plistText, input?.minimum_os_version));
 
     // Check for background modes
-    if (plistContent.includes('UIBackgroundModes')) {
+    if (Array.isArray((parsed as Record<string, unknown>).UIBackgroundModes) ||
+        isPlistDict((parsed as Record<string, unknown>).UIBackgroundModes)) {
         results.push({
             category: 'info_plist',
             severity: 'info',

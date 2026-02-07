@@ -11,7 +11,10 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
     if (paths.length === 0) {
         results.push({
             category: 'screenshots',
-            severity: 'critical',
+            // Missing screenshots blocks *submission*, but in Preflight this often means
+            // "not provided for analysis" (e.g. CLI --skip-screenshots). Keep it visible
+            // without counting it as a rejection-risk critical.
+            severity: 'info',
             title: 'No screenshots provided',
             description: 'At least 1 screenshot is required for App Store submission.',
             confidence: 100,

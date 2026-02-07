@@ -84,10 +84,10 @@ export async function scanCommand(path?: string) {
     ui.log.message(lines.join('\n'))
 
     // === Read file contents for analysis & auto-detection ===
-    let plistContent: string | undefined
+    let plistContent: Buffer | undefined
     if (detected.infoPlist) {
         try {
-            plistContent = readFileSync(detected.infoPlist, 'utf-8')
+            plistContent = readFileSync(detected.infoPlist)
         } catch { /* skip if unreadable */ }
     }
 

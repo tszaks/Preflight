@@ -336,14 +336,14 @@ export async function fetchSubmissionFiles(
     submission: Database['public']['Tables']['submissions']['Row']
 ): Promise<{
     manifestContent?: string;
-    plistContent?: string;
+    plistContent?: string | Buffer;
     screenshotsData?: SoftRulesInput['screenshots_data'];
     privacyPolicyText?: string;
     ipaBuffer?: ArrayBuffer;
 }> {
     const result: {
         manifestContent?: string;
-        plistContent?: string;
+        plistContent?: string | Buffer;
         screenshotsData?: SoftRulesInput['screenshots_data'];
         privacyPolicyText?: string;
         ipaBuffer?: ArrayBuffer;
@@ -369,7 +369,10 @@ export async function fetchSubmissionFiles(
             .download(submission.plist_path);
 
         if (data) {
-            result.plistContent = await data.text();
+            // Info.plist is commonly a *binary* plist in built app bundles.
+            // Always fetch as bytes to avoid corrupting binary plists via UTF-8 decoding.
+            const buf = Buffer.from(await data.arrayBuffer());
+            result.plistContent = buf;
         } else if (error) {
             console.warn(`[Storage] Failed to download plist (${submission.plist_path}):`, error.message);
         }

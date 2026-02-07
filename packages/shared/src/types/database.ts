@@ -706,7 +706,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      deduct_credits: {
+        Args: {
+          p_user_id: string
+          p_cost: number
+        }
+        Returns: {
+          success: boolean
+          remaining: number
+        }[]
+      }
+      refund_credits: {
+        Args: {
+          p_user_id: string
+          p_amount: number
+        }
+        Returns: {
+          success: boolean
+          remaining: number
+        }[]
+      }
     }
     Enums: {
       check_category:

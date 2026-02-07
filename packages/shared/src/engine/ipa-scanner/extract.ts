@@ -4,12 +4,13 @@
  * We extract key files for analysis without needing the full binary.
  */
 import JSZip from 'jszip';
+import { Buffer } from 'node:buffer';
 
 export interface ExtractedIPA {
     /** The app bundle name (e.g., "MyApp.app") */
     bundleName: string;
-    /** Raw Info.plist XML content from the built binary */
-    infoPlist?: string;
+    /** Raw Info.plist content from the built binary (XML or binary plist) */
+    infoPlist?: Buffer;
     /** Raw PrivacyInfo.xcprivacy content */
     privacyManifest?: string;
     /** List of embedded framework names */
@@ -73,7 +74,7 @@ export async function extractIPA(buffer: ArrayBuffer): Promise<ExtractedIPA> {
     // Extract Info.plist
     const plistFile = zip.file(`${appDir}Info.plist`);
     if (plistFile) {
-        result.infoPlist = await plistFile.async('string');
+        result.infoPlist = await plistFile.async('nodebuffer');
     }
 
     // Extract PrivacyInfo.xcprivacy
