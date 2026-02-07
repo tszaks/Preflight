@@ -245,6 +245,52 @@ export async function getLatestVersion(
     };
 }
 
+export async function listAppStoreVersions(
+    credentials: ASCCredentials,
+    appId: string,
+): Promise<Array<{ id: string; versionString: string; appStoreState: string }>> {
+    try {
+        const data = await ascFetch<ASCResponse<ASCResource>>(
+            `/apps/${appId}/appStoreVersions?filter[platform]=IOS&fields[appStoreVersions]=versionString,appStoreState&limit=200`,
+            credentials,
+        );
+
+        const versions = Array.isArray(data.data) ? data.data : [];
+        return versions.map((v) => {
+            const attr = getAttr(v);
+            return {
+                id: v.id,
+                versionString: getString(attr.versionString),
+                appStoreState: getString(attr.appStoreState, 'UNKNOWN'),
+            };
+        });
+    } catch {
+        return [];
+    }
+}
+
+export async function getBuildForVersion(
+    credentials: ASCCredentials,
+    versionId: string,
+): Promise<{ id: string; buildNumber: string | null } | null> {
+    try {
+        const data = await ascFetch<ASCResponseSingle<ASCResource>>(
+            `/appStoreVersions/${versionId}/build?fields[builds]=version`,
+            credentials,
+        );
+
+        if (!data.data) return null;
+        const attr = getAttr(data.data);
+        return {
+            id: data.data.id,
+            // ASC calls build number "version" on the Build resource.
+            buildNumber: getOptionalString(attr.version),
+        };
+    } catch {
+        return null;
+    }
+}
+
 export async function getAppInfo(
     credentials: ASCCredentials,
     appId: string,
