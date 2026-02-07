@@ -6,7 +6,23 @@ import { Check, AlertCircle, Info, ArrowLeft, Download, Copy, Shield } from 'luc
 import Link from 'next/link'
 import { cn } from '@/components/ui/status'
 import { createClient } from '@/lib/supabase/client'
-import { computeCompleteness } from '@preflight/shared/engine/report/completeness'
+
+function computeCompletenessFromReportAndItems(
+    report: ReportSummary | null,
+    items: ReportItem[]
+): number {
+    if (!report) return 0
+
+    const titles = new Set(items.map((i) => (i.title || '').trim()))
+
+    const hasScreenshots = report.score_screenshots != null && !titles.has('No screenshots provided')
+    const hasPrivacyManifest = report.score_privacy != null && !titles.has('No privacy manifest provided')
+    const hasPlist = report.score_plist != null && !titles.has('No Info.plist provided')
+    const hasIpa = report.score_ipa_binary != null && !titles.has('No IPA binary provided')
+
+    const providedCount = [hasScreenshots, hasPrivacyManifest, hasPlist, hasIpa].filter(Boolean).length
+    return Math.round((providedCount / 4) * 100)
+}
 
 interface ReportClientProps {
     initialSubmission: SubmissionSummary
@@ -102,7 +118,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
 
     // Severity sorting
     const isManualReview = (i: ReportItem) =>
-        (i.title || '').toLowerCase().startsWith('manual review:')
+        (i.title || '').trimStart().toLowerCase().startsWith('manual review:')
 
     const manualReviewItems = items.filter(isManualReview)
     const nonManualItems = items.filter(i => !isManualReview(i))
@@ -112,14 +128,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
     const infoItems = nonManualItems.filter(i => i.severity === 'info')
 
     const riskScore = report?.score_overall ?? 0
-    const completeness = report
-        ? computeCompleteness({
-            score_screenshots: report.score_screenshots ?? null,
-            score_privacy: report.score_privacy ?? null,
-            score_plist: report.score_plist ?? null,
-            score_ipa_binary: report.score_ipa_binary ?? null,
-        })
-        : 0
+    const completeness = computeCompletenessFromReportAndItems(report, items)
 
     useEffect(() => {
         const supabase = createClient()

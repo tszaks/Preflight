@@ -102,7 +102,7 @@ function penaltyForCheck(check: CheckResult): number {
 }
 
 function isManualReview(check: CheckResult): boolean {
-    const title = (check.title || '').toLowerCase();
+    const title = (check.title || '').trimStart().toLowerCase();
     return title.startsWith('manual review:');
 }
 

@@ -33,21 +33,23 @@ export function renderScore(score: number): string {
     return scoreBar(score)
 }
 
-function computeCompleteness(report: ReportData): number {
-    const provided = [
-        report.score_screenshots,
-        report.score_privacy,
-        report.score_plist,
-        report.score_ipa_binary,
-    ].filter((v) => v != null).length
-    return Math.round((provided / 4) * 100)
+function computeCompleteness(report: ReportData, items: ReportItem[]): number {
+    const titles = new Set(items.map((i) => (i.title || '').trim()))
+
+    const hasScreenshots = report.score_screenshots != null && !titles.has('No screenshots provided')
+    const hasPrivacyManifest = report.score_privacy != null && !titles.has('No privacy manifest provided')
+    const hasPlist = report.score_plist != null && !titles.has('No Info.plist provided')
+    const hasIpa = report.score_ipa_binary != null && !titles.has('No IPA binary provided')
+
+    const providedCount = [hasScreenshots, hasPrivacyManifest, hasPlist, hasIpa].filter(Boolean).length
+    return Math.round((providedCount / 4) * 100)
 }
 
 export function renderReport(report: ReportData, items: ReportItem[]) {
     console.log()
     p.log.step(heading('Analysis Complete'))
     console.log()
-    console.log(`  ${chalk.bold('Risk Score:')} ${scoreBar(report.score_overall)}  ${subtext(`Completeness ${computeCompleteness(report)}%`)}`)
+    console.log(`  ${chalk.bold('Risk Score:')} ${scoreBar(report.score_overall)}  ${subtext(`Completeness ${computeCompleteness(report, items)}%`)}`)
     console.log()
 
     if (report.summary) {
@@ -56,7 +58,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
     }
 
     const isManualReview = (i: ReportItem) =>
-        (i.title || '').toLowerCase().startsWith('manual review:')
+        (i.title || '').trimStart().toLowerCase().startsWith('manual review:')
 
     const manualReview = items.filter(isManualReview)
     const mainItems = items.filter((i) => !isManualReview(i))
