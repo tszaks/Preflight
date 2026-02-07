@@ -116,11 +116,11 @@ export function detectFromPlist(plistContent: string | Buffer): DetectionSource[
         const hits: string[] = [];
         for (const scheme of schemes) {
             // Facebook: fb<APP_ID>
-            if (/^fb\\d+$/i.test(scheme)) hits.push(`Facebook (${scheme})`);
+            if (/^fb\d+$/i.test(scheme)) hits.push(`Facebook (${scheme})`);
             // Google Sign-In / OAuth: com.googleusercontent.apps.<CLIENT_ID>
-            else if (/^com\\.googleusercontent\\.apps\\./i.test(scheme)) hits.push(`Google (${scheme})`);
+            else if (/^com\.googleusercontent\.apps\./i.test(scheme)) hits.push(`Google (${scheme})`);
             // Microsoft MSAL: msauth.<bundle_id> (common)
-            else if (/^msauth\\./i.test(scheme)) hits.push(`Microsoft (${scheme})`);
+            else if (/^msauth\./i.test(scheme)) hits.push(`Microsoft (${scheme})`);
             // Auth0: often uses "a0" prefixes or includes auth0 in callback scheme
             else if (/auth0/i.test(scheme) || /^a0/i.test(scheme)) hits.push(`Auth0 (${scheme})`);
         }
@@ -185,4 +185,3 @@ function extractUrlSchemesFromParsedPlist(parsed: Record<string, unknown>): stri
 
     return schemes.filter(Boolean);
 }
-
