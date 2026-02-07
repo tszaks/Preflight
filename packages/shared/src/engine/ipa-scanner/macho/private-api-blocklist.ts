@@ -19,8 +19,13 @@ export interface PrivateAPIEntry {
     symbol: string;
     /** Source framework */
     framework: string;
-    /** Severity: critical = instant rejection, warning = high risk */
-    severity: 'critical' | 'warning';
+    /**
+     * Severity:
+     * - critical: near-certain rejection (private frameworks / known private symbols)
+     * - warning:  higher-risk usage that frequently leads to rejection depending on context
+     * - info:     common runtime primitives; keep as "manual review" to avoid false positives
+     */
+    severity: 'critical' | 'warning' | 'info';
     /** Human-readable explanation */
     description: string;
     /** Apple guideline reference */
@@ -315,15 +320,15 @@ export const PRIVATE_API_BLOCKLIST: PrivateAPIEntry[] = [
     {
         symbol: 'dlopen',
         framework: 'libdl',
-        severity: 'warning',
-        description: 'Dynamic library loading; can be used to load private frameworks at runtime. Flagged for manual review.',
+        severity: 'info',
+        description: 'Dynamic library loading. Common in legitimate SDKs; only risky when used to load private frameworks at runtime. Flagged for manual review.',
         guideline_ref: '2.5.2',
     },
     {
         symbol: 'objc_getClass',
         framework: 'libobjc',
-        severity: 'warning',
-        description: 'Runtime class lookup; can be used to access private classes. Context determines rejection risk.',
+        severity: 'info',
+        description: 'Runtime class lookup. Common in legitimate SDKs; only risky when used to access private classes. Flagged for manual review.',
         guideline_ref: '2.5.1',
     },
 ];

@@ -61,6 +61,15 @@ export function detectFromBinary(input: BinaryDetectionInput): DetectionSource[]
             confidence: 90,
             evidence: `Found ${detectedLoginFrameworks.join(', ')} framework${detectedLoginFrameworks.length > 1 ? 's' : ''} in binary`,
         });
+
+        // Separate artifact-backed signal so we can distinguish "detected" vs "self-reported".
+        detections.push({
+            field: 'detected_third_party_login',
+            value: true,
+            source: 'ipa_framework',
+            confidence: 95,
+            evidence: `Third-party login framework(s) detected: ${detectedLoginFrameworks.join(', ')}`,
+        });
     }
 
     // --- StoreKit / IAP detection (fallback when no ASC data) ---

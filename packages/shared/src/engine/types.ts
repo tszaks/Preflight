@@ -46,6 +46,14 @@ export interface HardRulesInput {
     has_iap?: boolean;
     has_subscriptions?: boolean;
     has_third_party_login?: boolean;
+    /**
+     * Artifact-backed third-party social login detection (binary/framework/plist evidence).
+     * This is used to prevent false positives from self-report checkboxes and to
+     * enable SIWA warnings even if a user forgets to self-report.
+     */
+    detected_third_party_login?: boolean;
+    /** Confidence (0-100) for detected_third_party_login when available (artifact-backed). */
+    detected_third_party_login_confidence?: number;
     // Explicit feature confirmations (null = not asked, true = confirmed exists, false = confirmed missing)
     has_account_deletion?: boolean | null;
     has_restore_purchases?: boolean | null;

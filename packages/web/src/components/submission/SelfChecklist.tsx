@@ -41,7 +41,7 @@ const ITEMS = [
     },
     {
         id: 'thirdPartyLogin',
-        label: 'Sign in with Apple / Google',
+        label: 'Third-party social login (Google/Facebook/etc)',
         desc: 'Can users log in using Apple, Google, Facebook, or other social accounts?',
         icon: Users
     },

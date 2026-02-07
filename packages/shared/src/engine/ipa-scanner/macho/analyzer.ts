@@ -39,20 +39,39 @@ export function analyzeMachOBinary(parseResult: MachOParseResult, binaryName?: s
     // 1. Check for private API symbol usage
     const privateAPIHits = findPrivateAPIUsage(parseResult.importedSymbols);
     for (const hit of privateAPIHits) {
+        const manualReview = hit.entry.severity === 'info' || hit.entry.symbol === 'dlopen' || hit.entry.symbol === 'objc_getClass';
+        const severity: CheckResult['severity'] =
+            hit.entry.severity === 'critical' ? 'critical'
+                : hit.entry.severity === 'warning' ? 'warning'
+                    : 'info';
+
+        const baseDescription =
+            `The binary imports "${hit.matchedSymbol}" from ${hit.entry.framework}. ` +
+            `Found in binary: ${binaryName || 'main executable'}. ` +
+            `${hit.entry.description}.`;
+
+        const outcomeDescription =
+            severity === 'critical'
+                ? ' Apple\'s automated scanner (App Review) will detect this and reject the submission.'
+                : severity === 'warning'
+                    ? ' This can trigger rejection depending on usage and context. Review carefully.'
+                    : ' This is flagged for manual review to reduce false positives.';
+
         checks.push({
             category: 'ipa_binary',
-            severity: hit.entry.severity === 'critical' ? 'critical' : 'warning',
-            title: `Private API detected: ${hit.entry.symbol}`,
+            severity,
+            title: manualReview
+                ? `Manual review: ${hit.entry.symbol} imported`
+                : `Private API detected: ${hit.entry.symbol}`,
             description:
-                `The binary imports "${hit.matchedSymbol}" from ${hit.entry.framework}. ` +
-                `Found in binary: ${binaryName || 'main executable'}. ` +
-                `${hit.entry.description}. Apple's automated scanner (App Review) ` +
-                `will detect this and reject the submission.`,
+                baseDescription + outcomeDescription,
             guideline_ref: hit.entry.guideline_ref,
             fix_suggestion:
-                `Remove usage of ${hit.entry.symbol}. Use the public API equivalent if available. ` +
-                `If this symbol comes from a third-party SDK, update to the latest version or contact the vendor.`,
-            confidence: hit.entry.severity === 'critical' ? 95 : 85,
+                severity === 'info'
+                    ? 'If you are intentionally loading private frameworks or calling private selectors, remove that behavior. Otherwise, this is usually safe and comes from a third-party SDK.'
+                    : `Remove usage of ${hit.entry.symbol}. Use the public API equivalent if available. ` +
+                      `If this symbol comes from a third-party SDK, update to the latest version or contact the vendor.`,
+            confidence: severity === 'critical' ? 95 : severity === 'warning' ? 85 : 60,
         });
     }
 

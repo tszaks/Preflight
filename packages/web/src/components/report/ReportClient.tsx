@@ -6,6 +6,7 @@ import { Check, AlertCircle, Info, ArrowLeft, Download, Copy, Shield } from 'luc
 import Link from 'next/link'
 import { cn } from '@/components/ui/status'
 import { createClient } from '@/lib/supabase/client'
+import { computeCompleteness } from '@preflight/shared/engine/report/completeness'
 
 interface ReportClientProps {
     initialSubmission: SubmissionSummary
@@ -33,7 +34,14 @@ interface SubmissionSummary {
 
 interface ReportSummary {
     id?: string
-    score_overall?: number
+    score_metadata?: number | null
+    score_screenshots?: number | null
+    score_privacy?: number | null
+    score_plist?: number | null
+    score_urls?: number | null
+    score_content?: number | null
+    score_ipa_binary?: number | null
+    score_overall?: number | null
 }
 
 interface ReportItem {
@@ -44,6 +52,8 @@ interface ReportItem {
     title?: string | null
     description?: string | null
     fix_suggestion?: string | null
+    confidence?: number | null
+    pattern_id?: string | null
 }
 
 interface AnalysisJob {
@@ -91,9 +101,25 @@ export default function ReportClient({ initialSubmission, initialReport, initial
     const [job, setJob] = useState<AnalysisJob | null>(null)
 
     // Severity sorting
-    const criticalItems = items.filter(i => i.severity === 'critical')
-    const warningItems = items.filter(i => i.severity === 'warning')
-    const infoItems = items.filter(i => i.severity === 'info')
+    const isManualReview = (i: ReportItem) =>
+        (i.title || '').toLowerCase().startsWith('manual review:')
+
+    const manualReviewItems = items.filter(isManualReview)
+    const nonManualItems = items.filter(i => !isManualReview(i))
+
+    const criticalItems = nonManualItems.filter(i => i.severity === 'critical')
+    const warningItems = nonManualItems.filter(i => i.severity === 'warning')
+    const infoItems = nonManualItems.filter(i => i.severity === 'info')
+
+    const riskScore = report?.score_overall ?? 0
+    const completeness = report
+        ? computeCompleteness({
+            score_screenshots: report.score_screenshots ?? null,
+            score_privacy: report.score_privacy ?? null,
+            score_plist: report.score_plist ?? null,
+            score_ipa_binary: report.score_ipa_binary ?? null,
+        })
+        : 0
 
     useEffect(() => {
         const supabase = createClient()
@@ -557,12 +583,13 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                 <div className="vercel-card md:col-span-2 flex flex-col justify-center py-12 px-10">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <div className="text-[10px] font-bold tracking-[0.2em] text-gray-500 uppercase">System Health</div>
-                            <div className={cn("text-7xl font-bold tracking-tighter", scoreColor(report?.score_overall ?? 0))}>
-                                {report?.score_overall ?? 0}
+                            <div className="text-[10px] font-bold tracking-[0.2em] text-gray-500 uppercase">Rejection Risk</div>
+                            <div className={cn("text-7xl font-bold tracking-tighter", scoreColor(riskScore))}>
+                                {riskScore}
                             </div>
                             <div className="text-sm text-gray-400 font-light italic">
-                                {criticalItems.length > 0 ? "Critical Rejection Risk" : "Optimized for Approval"}
+                                {criticalItems.length > 0 ? "Critical rejection risk" : "Optimized for approval"}
+                                <span className="ml-3 text-gray-500">Completeness {completeness}%</span>
                             </div>
                         </div>
 
@@ -607,6 +634,15 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                             </div>
                             <span className="font-mono font-bold text-blue-500">{infoItems.length}</span>
                         </div>
+                        {manualReviewItems.length > 0 && (
+                            <div className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
+                                <div className="flex items-center gap-2">
+                                    <Info className="w-4 h-4 text-gray-400" />
+                                    <span className="text-xs">Manual Review</span>
+                                </div>
+                                <span className="font-mono font-bold text-gray-400">{manualReviewItems.length}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -643,7 +679,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
             <div className="space-y-8">
                 <h2 className="text-xl font-bold tracking-tight border-b border-white/10 pb-4">Analysis Findings</h2>
 
-                {items.length === 0 ? (
+                {nonManualItems.length === 0 ? (
                     <div className="vercel-card py-24 flex flex-col items-center text-center">
                         <Check className="w-12 h-12 text-green-500 mb-6" />
                         <h3 className="text-xl font-medium mb-2">No Issues Found</h3>
@@ -651,7 +687,7 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {items.map(item => (
+                        {nonManualItems.map(item => (
                             <div key={item.id} className={cn(
                                 "vercel-card border-l-4",
                                 item.severity === 'critical' ? 'border-l-red-500' :
@@ -685,6 +721,34 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                             </div>
                         ))}
                     </div>
+                )}
+
+                {manualReviewItems.length > 0 && (
+                    <details className="vercel-card p-6">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-300">
+                            Manual Review ({manualReviewItems.length})
+                        </summary>
+                        <div className="mt-4 space-y-3">
+                            {manualReviewItems.map((item) => (
+                                <div key={item.id} className="bg-white/5 rounded-lg border border-white/5 p-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                                            {item.category?.replace('_', ' ')}
+                                        </span>
+                                        {item.guideline_ref && (
+                                            <span className="text-[10px] font-mono bg-white/5 px-2 py-0.5 rounded">
+                                                Rule {item.guideline_ref}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="text-sm font-semibold">{item.title}</div>
+                                    {item.description && (
+                                        <div className="text-xs text-gray-400 font-light mt-1">{item.description}</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </details>
                 )}
             </div>
         </div>

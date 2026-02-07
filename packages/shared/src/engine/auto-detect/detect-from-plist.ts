@@ -107,6 +107,37 @@ export function detectFromPlist(plistContent: string): DetectionSource[] {
         });
     }
 
+    // --- Third-party login detection from URL schemes (OAuth callbacks) ---
+    // We intentionally keep this "detected_third_party_login" separate from the form field
+    // "has_third_party_login" so self-report alone cannot create a critical SIWA issue.
+    const schemes = extractAllArrayValues(plistContent, 'CFBundleURLSchemes')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    if (schemes.length > 0) {
+        const hits: string[] = [];
+        for (const scheme of schemes) {
+            // Facebook: fb<APP_ID>
+            if (/^fb\d+$/i.test(scheme)) hits.push(`Facebook (${scheme})`);
+            // Google Sign-In / OAuth: com.googleusercontent.apps.<CLIENT_ID>
+            else if (/^com\.googleusercontent\.apps\./i.test(scheme)) hits.push(`Google (${scheme})`);
+            // Microsoft MSAL: msauth.<bundle_id> (common)
+            else if (/^msauth\./i.test(scheme)) hits.push(`Microsoft (${scheme})`);
+            // Auth0: often uses "a0" prefixes or includes auth0 in callback scheme
+            else if (/auth0/i.test(scheme) || /^a0/i.test(scheme)) hits.push(`Auth0 (${scheme})`);
+        }
+
+        if (hits.length > 0) {
+            detections.push({
+                field: 'detected_third_party_login',
+                value: true,
+                source: 'plist',
+                confidence: 75,
+                evidence: `OAuth/social login callback URL scheme(s) detected: ${hits.join(', ')}`,
+            });
+        }
+    }
+
     // --- Collect detected usage descriptions for informational purposes ---
     const detectedUsageKeys: string[] = [];
     for (const [key, label] of Object.entries(USAGE_DESCRIPTION_KEYS)) {
@@ -152,6 +183,49 @@ function extractArrayValues(plistContent: string, key: string): string[] {
         values.push(match[1]);
     }
 
+    return values;
+}
+
+/**
+ * Extract string values from all plist arrays that follow a given key.
+ * Useful for nested structures like CFBundleURLTypes -> CFBundleURLSchemes.
+ */
+function extractAllArrayValues(plistContent: string, key: string): string[] {
+    const values: string[] = [];
+    const keyTag = `<key>${key}</key>`;
+    let idx = 0;
+    while (idx < plistContent.length) {
+        const keyIndex = plistContent.indexOf(keyTag, idx);
+        if (keyIndex === -1) break;
+
+        const afterKey = plistContent.slice(keyIndex + keyTag.length);
+        const arrayStart = afterKey.indexOf('<array>');
+        if (arrayStart === -1) {
+            idx = keyIndex + keyTag.length;
+            continue;
+        }
+
+        const arrayEnd = afterKey.indexOf('</array>');
+        if (arrayEnd === -1) {
+            idx = keyIndex + keyTag.length;
+            continue;
+        }
+
+        // Only accept arrays that appear immediately after the key (avoid jumping across unrelated sections)
+        if (arrayStart > 400) {
+            idx = keyIndex + keyTag.length;
+            continue;
+        }
+
+        const arrayContent = afterKey.slice(arrayStart, arrayEnd);
+        const stringRegex = /<string>(.*?)<\/string>/g;
+        let match;
+        while ((match = stringRegex.exec(arrayContent)) !== null) {
+            values.push(match[1]);
+        }
+
+        idx = keyIndex + keyTag.length;
+    }
     return values;
 }
 

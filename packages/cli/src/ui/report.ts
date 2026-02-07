@@ -13,17 +13,18 @@ interface ReportItem {
     guideline_ref?: string
     fix_suggestion?: string
     confidence: number
+    pattern_id?: string | null
 }
 
 interface ReportData {
     id?: string
     score_metadata: number
-    score_screenshots: number
-    score_privacy: number
-    score_plist: number
+    score_screenshots: number | null
+    score_privacy: number | null
+    score_plist: number | null
     score_urls: number
     score_content: number
-    score_ipa_binary: number
+    score_ipa_binary: number | null
     score_overall: number
     summary?: string
 }
@@ -32,11 +33,21 @@ export function renderScore(score: number): string {
     return scoreBar(score)
 }
 
+function computeCompleteness(report: ReportData): number {
+    const provided = [
+        report.score_screenshots,
+        report.score_privacy,
+        report.score_plist,
+        report.score_ipa_binary,
+    ].filter((v) => v != null).length
+    return Math.round((provided / 4) * 100)
+}
+
 export function renderReport(report: ReportData, items: ReportItem[]) {
     console.log()
     p.log.step(heading('Analysis Complete'))
     console.log()
-    console.log(`  ${chalk.bold('Overall Score:')} ${scoreBar(report.score_overall)}`)
+    console.log(`  ${chalk.bold('Risk Score:')} ${scoreBar(report.score_overall)}  ${subtext(`Completeness ${computeCompleteness(report)}%`)}`)
     console.log()
 
     if (report.summary) {
@@ -44,11 +55,17 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         console.log()
     }
 
+    const isManualReview = (i: ReportItem) =>
+        (i.title || '').toLowerCase().startsWith('manual review:')
+
+    const manualReview = items.filter(isManualReview)
+    const mainItems = items.filter((i) => !isManualReview(i))
+
     // Group items by severity
-    const criticals = items.filter((i) => i.severity === 'critical')
-    const warnings = items.filter((i) => i.severity === 'warning')
-    const infos = items.filter((i) => i.severity === 'info')
-    const passes = items.filter((i) => i.severity === 'pass')
+    const criticals = mainItems.filter((i) => i.severity === 'critical')
+    const warnings = mainItems.filter((i) => i.severity === 'warning')
+    const infos = mainItems.filter((i) => i.severity === 'info')
+    const passes = mainItems.filter((i) => i.severity === 'pass')
 
     // Critical issues
     if (criticals.length > 0) {
@@ -89,6 +106,16 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         console.log()
     }
 
+    // Manual review items (no score impact)
+    if (manualReview.length > 0) {
+        console.log(`  ${infoBold(`Manual Review (${manualReview.length})`)}`)
+        console.log(subtext(`  ${'─'.repeat(40)}`))
+        for (const item of manualReview) {
+            console.log(`  ${subtext(item.title)}`)
+        }
+        console.log()
+    }
+
     // Passed items
     if (passes.length > 0) {
         console.log(`  ${okBold(`\uD83D\uDFE2 ${passes.length} Passed`)}`)
@@ -110,7 +137,7 @@ export function renderReport(report: ReportData, items: ReportItem[]) {
         ['IPA Binary', report.score_ipa_binary],
     ] as const
 
-    const validCategories = categories.filter(([, score]) => score != null)
+    const validCategories = categories.filter(([, score]) => score != null) as Array<[string, number]>
 
     if (validCategories.length > 0) {
         console.log(`  ${heading('Category Scores')}`)

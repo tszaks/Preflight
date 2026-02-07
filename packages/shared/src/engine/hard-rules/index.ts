@@ -16,6 +16,8 @@ import { scanIPA } from '../ipa-scanner';
 import { auditPrivacyFrameworks } from '../ipa-scanner/privacy-framework-audit';
 import { auditEntitlements } from '../ipa-scanner/entitlements-audit';
 import { checkAssociatedDomains } from '../ipa-scanner/associated-domains';
+import { detectFromBinary } from '../auto-detect/detect-from-binary';
+import { detectFromPlist } from '../auto-detect/detect-from-plist';
 
 export interface HardRulesResult {
     checks: CheckResult[];
@@ -137,6 +139,51 @@ export async function runHardRules(
             effectiveManifest = ipaExtractedManifest;
         }
 
+        // Apply artifact-backed auto-detections to the hard-rules input so conditional warnings
+        // can distinguish "detected" vs "self-reported" signals (reduces false positives).
+        try {
+            const detections = [
+                ...detectFromBinary({
+                    frameworks: ipaScanResult.extracted.frameworks || [],
+                    entitlements: ipaScanResult.extracted.entitlements,
+                }),
+                ...(effectivePlist ? detectFromPlist(effectivePlist) : []),
+            ];
+
+            // Winner-takes-highest-confidence per field
+            const best = new Map<string, { value: boolean | string; confidence: number }>();
+            for (const d of detections) {
+                const existing = best.get(d.field);
+                if (!existing || d.confidence > existing.confidence) {
+                    best.set(d.field, { value: d.value, confidence: d.confidence });
+                }
+            }
+
+            const truthy = (field: string) => best.get(field)?.value === true;
+            const confidenceOf = (field: string) => best.get(field)?.confidence;
+
+            // Only ever set these to true; never override explicit user input.
+            if (truthy('detected_third_party_login')) {
+                input.detected_third_party_login = true;
+                if (typeof confidenceOf('detected_third_party_login') === 'number') {
+                    input.detected_third_party_login_confidence = confidenceOf('detected_third_party_login');
+                }
+            }
+            if (truthy('detected_sign_in_with_apple')) input.detected_sign_in_with_apple = true;
+            if (truthy('detected_healthkit')) input.detected_healthkit = true;
+            if (truthy('detected_background_location')) input.detected_background_location = true;
+            if (truthy('detected_push_notifications')) input.detected_push_notifications = true;
+            if (truthy('detected_vpn')) input.detected_vpn = true;
+            if (truthy('detected_apple_pay')) input.detected_apple_pay = true;
+
+            // If we *detected* third-party login frameworks, it's safe to auto-fill the form signal too.
+            if (truthy('has_third_party_login') && input.has_third_party_login == null) {
+                input.has_third_party_login = true;
+            }
+        } catch {
+            // Auto-detection is best-effort; hard rules should still succeed.
+        }
+
         emit(createProgressEvent('check_complete', `IPA scan complete — found ${ipaScanResult.checks.length} findings, ${ipaScanResult.extracted.frameworks.length} SDKs`, 93, {
             check: PROGRESS_CHECKS.IPA_SCAN,
             phase: 'hard_rules',
@@ -192,6 +239,8 @@ export async function runHardRules(
         has_iap: input.has_iap,
         has_subscriptions: input.has_subscriptions,
         has_third_party_login: input.has_third_party_login,
+        detected_third_party_login: input.detected_third_party_login,
+        detected_third_party_login_confidence: input.detected_third_party_login_confidence,
         has_account_deletion: input.has_account_deletion,
         has_restore_purchases: input.has_restore_purchases,
         subscription_terms_on_paywall: input.subscription_terms_on_paywall,
