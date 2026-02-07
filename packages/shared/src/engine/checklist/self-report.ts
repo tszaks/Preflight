@@ -57,6 +57,22 @@ const QUESTIONNAIRE_FIELDS = new Set<string>([
 export function evaluateSelfReports(input: HardRulesInput): CheckResult[] {
     const checks: CheckResult[] = [];
 
+    // If the developer never engaged with the self-report questionnaire,
+    // suppress "not answered/not confirmed" noise entirely.
+    // (This is common for IPA-only submissions and should not flood the report.)
+    const anyAnswers = (() => {
+        const inputAny = input as unknown as Record<string, unknown>;
+        for (const field of QUESTIONNAIRE_FIELDS) {
+            const v = inputAny[field];
+            if (v !== null && v !== undefined) return true;
+        }
+        return false;
+    })();
+
+    if (!anyAnswers) {
+        return checks;
+    }
+
     for (const rule of SELF_REPORT_RULES) {
         const result = evaluateRule(rule, input);
         if (result) {
