@@ -104,6 +104,44 @@ function resolveScreenshotPaths(input: string): string[] {
     return imageExts.has(extname(resolved).toLowerCase()) ? [resolved] : []
 }
 
+async function autofillDraftFromAsc(draftState: DraftState): Promise<void> {
+    // Best-effort: if ASC is connected, pull metadata so direct CLI submissions
+    // don't get flagged for missing required fields like description/privacy policy.
+    try {
+        const statusRes = await apiRequest('/api/asc/connect')
+        const statusData = await statusRes.json().catch(() => null as any)
+
+        const appId = statusData?.appId ?? statusData?.data?.appId
+        if (!statusRes.ok || !appId) return
+
+        const autoRes = await apiRequest('/api/asc/autofill', {
+            method: 'POST',
+            body: JSON.stringify({ appId }),
+        })
+        const autoData = await autoRes.json().catch(() => null as any)
+        if (!autoRes.ok) return
+
+        const d = autoData?.data || {}
+
+        if (!draftState.description && typeof d.description === 'string') draftState.description = d.description
+        if (!draftState.keywords && typeof d.keywords === 'string') draftState.keywords = d.keywords
+        if (!draftState.category && typeof d.category === 'string') draftState.category = d.category
+        if (!draftState.privacyPolicyUrl && typeof d.privacy_policy_url === 'string') draftState.privacyPolicyUrl = d.privacy_policy_url
+        if (!draftState.supportUrl && typeof d.support_url === 'string') draftState.supportUrl = d.support_url
+        if (!draftState.marketingUrl && typeof d.marketing_url === 'string') draftState.marketingUrl = d.marketing_url
+        if (!draftState.promotionalText && typeof d.promotional_text === 'string') draftState.promotionalText = d.promotional_text
+
+        if (draftState.signInRequired === undefined && typeof d.sign_in_required === 'boolean') {
+            draftState.signInRequired = d.sign_in_required
+        }
+        if (!draftState.demoUsername && typeof d.demo_username === 'string') draftState.demoUsername = d.demo_username
+        if (!draftState.demoPassword && typeof d.demo_password === 'string') draftState.demoPassword = d.demo_password
+        if (!draftState.reviewNotes && typeof d.review_notes === 'string') draftState.reviewNotes = d.review_notes
+    } catch {
+        // ignore
+    }
+}
+
 // Open a URL in the browser with fallback to printing the URL
 async function openUrl(url: string): Promise<void> {
     try {
@@ -683,6 +721,11 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
     } else {
         // Non-interactive mode (from flags), ensure data is prepared
         // Logic for this falls through to below
+    }
+
+    // In direct CLI mode, ASC autofill helps avoid "missing required metadata" false alarms.
+    if (!fromMenu) {
+        await autofillDraftFromAsc(draftState)
     }
 
     // Summary confirmation (only in direct CLI mode - fromMenu already showed it in navigation loop via ReviewStep)
