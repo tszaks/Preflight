@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import bplist from 'bplist-parser';
-import plist from 'plist';
+import * as plist from 'plist';
 
 export type ApplePlistDict = Record<string, unknown>;
 
@@ -38,4 +38,3 @@ export function parseApplePlist(input: string | Buffer): ApplePlistDict | null {
         return null;
     }
 }
-
