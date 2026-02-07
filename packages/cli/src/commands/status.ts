@@ -24,17 +24,23 @@ export async function statusCommand(id: string, options: StatusOptions) {
         return watchStatus(id)
     }
 
-    const spinner = createSpinner('Checking status...')
-    spinner.start()
+    const useSpinner = !options.json
+    const spinner = useSpinner ? createSpinner('Checking status...') : null
+    spinner?.start()
 
     try {
         const res = await apiRequest(`/api/submissions/${id}`)
         const data = await res.json()
 
-        spinner.stop()
+        spinner?.stop()
 
         if (!res.ok) {
-            error(data.message || 'Submission not found')
+            const msg = data?.message || 'Submission not found'
+            if (options.json) {
+                console.error(msg)
+            } else {
+                error(msg)
+            }
             process.exit(1)
         }
 
@@ -51,8 +57,13 @@ export async function statusCommand(id: string, options: StatusOptions) {
         console.log(`  ID:     ${chalk.dim(sub.id)}`)
         console.log()
     } catch (err) {
-        spinner.stop()
-        error(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        spinner?.stop()
+        const msg = `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`
+        if (options.json) {
+            console.error(msg)
+        } else {
+            error(msg)
+        }
         process.exit(1)
     }
 }

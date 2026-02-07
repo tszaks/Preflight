@@ -29,17 +29,23 @@ export async function reportCommand(id: string, options: ReportOptions) {
         return
     }
 
-    const spinner = createSpinner('Loading report...')
-    spinner.start()
+    const useSpinner = !options.json
+    const spinner = useSpinner ? createSpinner('Loading report...') : null
+    spinner?.start()
 
     try {
         const res = await apiRequest(`/api/reports/${id}`)
         const data = await res.json()
 
-        spinner.stop()
+        spinner?.stop()
 
         if (!res.ok) {
-            error(data.message || 'Report not found')
+            const msg = data?.message || 'Report not found'
+            if (options.json) {
+                console.error(msg)
+            } else {
+                error(msg)
+            }
             process.exit(1)
         }
 
@@ -51,8 +57,13 @@ export async function reportCommand(id: string, options: ReportOptions) {
             console.log()
         }
     } catch (err) {
-        spinner.stop()
-        error(`Failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+        spinner?.stop()
+        const msg = `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`
+        if (options.json) {
+            console.error(msg)
+        } else {
+            error(msg)
+        }
         process.exit(1)
     }
 }

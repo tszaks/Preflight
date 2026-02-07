@@ -2,11 +2,15 @@ import ora, { type Ora } from 'ora'
 import chalk from 'chalk'
 import { brand, brandDim } from './theme.js'
 
-export function createSpinner(text: string): Ora {
+export function createSpinner(text: string, options?: { enabled?: boolean }): Ora {
+    // Default: only enable spinners for interactive terminals.
+    // This prevents spinners/progress from polluting machine output (pipes, redirects, --json).
+    const isEnabled = options?.enabled ?? (process.stdout.isTTY && process.stderr.isTTY)
     return ora({
         text,
         color: 'yellow',
         spinner: 'dots',
+        isEnabled,
     })
 }
 
