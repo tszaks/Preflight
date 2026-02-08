@@ -21,6 +21,7 @@ import {
     type AppDetails,
     type ComplianceData,
 } from '../lib/submission-questions.js'
+import { formatAiContext } from '@preflight/shared/ai'
 import { SubmissionFlow } from '../flows/submission/SubmissionFlow.js'
 import { AscStep } from '../flows/submission/steps/AscStep.js'
 import { ScreenshotsStep } from '../flows/submission/steps/ScreenshotsStep.js'
@@ -1003,7 +1004,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                         await openUrl(`https://preflightlaunch.com/report/${submissionId}`)
                     } else if (next === 'copy') {
                         try {
-                            const aiText = formatForAi(reportData.data.report, reportData.data.items, filesToUpload.map(f => f.type))
+                            const aiText = formatForAi(reportData.data.report, reportData.data.items, submissionId, draftState, filesToUpload.map(f => f.type))
                             // Use pbcopy on Mac
                             const { execSync } = await import('child_process')
                             execSync('pbcopy', { input: aiText })
@@ -1334,7 +1335,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
                     await openUrl(`https://preflightlaunch.com/report/${finalId}`)
                 } else if (next === 'copy') {
                     try {
-                        const aiText = formatForAi(reportData.data.report, reportData.data.items, filesToUpload.map(f => f.type))
+                        const aiText = formatForAi(reportData.data.report, reportData.data.items, submissionId, draft, filesToUpload.map(f => f.type))
                         const { execSync } = await import('child_process')
                         execSync('pbcopy', { input: aiText })
                         ui.log.success('Copied to clipboard!')
@@ -1446,77 +1447,74 @@ async function pollForReport(
     }
 }
 
-function formatForAi(report: any, items: any[], fileTypes?: string[]): string {
-    const lines: string[] = []
+function formatForAi(
+    report: any,
+    items: any[],
+    submissionId: string,
+    draft?: Partial<DraftState> | Record<string, any>,
+    fileTypes?: string[]
+): string {
+    // Build a "best available" submission object. In the CLI we always have local answers,
+    // and the server also stores them on the submission row; for AI context we want them
+    // explicitly present even if the report endpoint doesn't return the submission.
+    const submission: Record<string, any> = { id: submissionId }
 
-    lines.push('# Preflight App Store Review Report')
-    lines.push('')
-
-    if (report.score) {
-        lines.push(`Approval Chance: ${report.score}/100`)
-        lines.push('')
+    // Include user-provided app details (draft state uses camelCase; API uses snake_case)
+    if (draft) {
+        submission.app_name = (draft as any).appName ?? (draft as any).app_name ?? undefined
+        submission.version = (draft as any).version ?? undefined
+        submission.category = (draft as any).category ?? undefined
+        submission.privacy_url = (draft as any).privacyPolicyUrl ?? (draft as any).privacy_policy_url ?? (draft as any).privacy_url ?? undefined
+        submission.support_url = (draft as any).supportUrl ?? (draft as any).support_url ?? undefined
+        submission.marketing_url = (draft as any).marketingUrl ?? (draft as any).marketing_url ?? undefined
+        submission.sign_in_required = (draft as any).signInRequired ?? (draft as any).sign_in_required ?? undefined
+        submission.demo_username = (draft as any).demoUsername ?? (draft as any).demo_username ?? undefined
+        submission.demo_password = (draft as any).demoPassword ?? (draft as any).demo_password ?? undefined
     }
 
-    if (report.summary) {
-        lines.push('## Summary')
-        lines.push(report.summary)
-        lines.push('')
-    }
-
-    // What We Checked section
-    lines.push('## What We Checked')
-    lines.push('- App metadata (name, description, keywords, URLs)')
-    if (fileTypes) {
-        const hasIpa = fileTypes.includes('ipa')
-        const hasPlist = fileTypes.includes('plist')
-        const hasManifest = fileTypes.includes('manifest')
-        const screenshotCount = fileTypes.filter(t => t === 'screenshot').length
-
-        if (screenshotCount > 0) {
-            lines.push(`- ${screenshotCount} screenshot${screenshotCount === 1 ? '' : 's'} (dimensions, file size)`)
+    const compliance: ComplianceData | undefined = (draft as any)?.compliance
+    if (compliance) {
+        submission.age_rating = compliance.ageRatingAnswers
+        submission.privacy_declarations = {
+            data: compliance.privacyDeclarations.data,
+            tracking: compliance.privacyDeclarations.tracking,
         }
-        if (hasPlist) {
-            lines.push('- Info.plist (permissions, build settings, usage descriptions)')
-        }
-        if (hasManifest) {
-            lines.push('- PrivacyInfo.xcprivacy (privacy manifest, API declarations)')
-        }
-        if (hasIpa) {
-            lines.push('- IPA binary (frameworks, entitlements, Mach-O symbols, private APIs)')
-            lines.push('- Privacy cross-reference (manifest vs detected SDKs)')
-        }
-    } else {
-        lines.push('- Screenshots, Info.plist, privacy manifest')
-        lines.push('- IPA binary analysis (if provided)')
-    }
-    lines.push('- URL reachability (privacy policy, support, marketing URLs)')
-    lines.push('- Apple guideline compliance (account deletion, restore purchases, SIWA, subscriptions)')
-    lines.push('- AI content analysis (description, screenshots, privacy policy)')
-    lines.push('')
-
-    if (items && items.length > 0) {
-        lines.push('## Potential Issues')
-        lines.push('')
-        items.forEach((item: any, i: number) => {
-            lines.push(`${i + 1}. ${item.title || 'Issue'}`)
-            if (item.guidelines && item.guidelines.length) {
-                lines.push(`   Guideline: ${item.guidelines.join(', ')}`)
-            }
-            if (item.explanation) {
-                lines.push(`   Details: ${item.explanation}`)
-            }
-            if (item.fix_suggestion) {
-                lines.push(`   Fix: ${item.fix_suggestion}`)
-            }
-            lines.push('')
-        })
+        submission.checklist = compliance.checklist
     }
 
-    if (report.improved_version) {
-        lines.push('## Improved App Description')
-        lines.push(report.improved_version)
-        lines.push('')
-    }
+    // Normalize report fields between legacy CLI naming and current web naming.
+    const normalizedReport = report
+        ? {
+            score_overall: report.score_overall ?? report.score ?? null,
+            score_metadata: report.score_metadata ?? null,
+            score_screenshots: report.score_screenshots ?? null,
+            score_privacy: report.score_privacy ?? null,
+            score_plist: report.score_plist ?? null,
+            score_urls: report.score_urls ?? null,
+            score_content: report.score_content ?? null,
+            score_ipa_binary: report.score_ipa_binary ?? null,
+            summary: report.summary ?? null,
+            improved_version: report.improved_version ?? null,
+        }
+        : null
 
-    return lines.join('\n')
+    const normalizedItems = (Array.isArray(items) ? items : []).map((it: any) => {
+        const guideline =
+            it.guideline_ref ??
+            (Array.isArray(it.guidelines) ? it.guidelines.join(', ') : it.guidelines) ??
+            null
+        return {
+            ...it,
+            guideline_ref: guideline,
+            description: it.description ?? it.explanation ?? null,
+        }
+    })
+
+    return formatAiContext({
+        submission,
+        report: normalizedReport,
+        items: normalizedItems,
+        fileTypes: fileTypes || null,
+        redactSensitive: true,
+    })
 }

@@ -6,6 +6,7 @@ import { Check, AlertCircle, Info, ArrowLeft, Download, Copy, Shield } from 'luc
 import Link from 'next/link'
 import { cn } from '@/components/ui/status'
 import { createClient } from '@/lib/supabase/client'
+import { formatAiContext } from '@preflight/shared/ai'
 
 function computeCompletenessFromReportAndItems(
     report: ReportSummary | null,
@@ -46,6 +47,17 @@ interface SubmissionSummary {
     version?: string | null
     status?: string | null
     created_at?: string
+    category?: string | null
+    privacy_url?: string | null
+    support_url?: string | null
+    marketing_url?: string | null
+    sign_in_required?: boolean | null
+    demo_username?: string | null
+    demo_password?: string | null
+    // JSON answer blobs
+    age_rating?: unknown
+    privacy_declarations?: unknown
+    checklist?: unknown
 }
 
 interface ReportSummary {
@@ -612,6 +624,27 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                     </div>
                 </div>
                 <div className="flex gap-3">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const text = formatAiContext({
+                                    submission: submission as any,
+                                    report: report as any,
+                                    items: items as any,
+                                    fileTypes: null,
+                                    redactSensitive: true,
+                                })
+                                await navigator.clipboard.writeText(text)
+                            } catch (e) {
+                                console.error('Copy AI context failed', e)
+                                alert('Failed to copy. Your browser may be blocking clipboard access.')
+                            }
+                        }}
+                        className="vercel-btn-secondary py-1.5 flex items-center gap-2 text-xs"
+                        title="Copy a full AI context export including your answers"
+                    >
+                        <Copy className="w-3.5 h-3.5" /> Copy for AI context
+                    </button>
                     <button className="vercel-btn-secondary py-1.5 flex items-center gap-2 text-xs">
                         <Download className="w-3.5 h-3.5" /> Export PDF
                     </button>
