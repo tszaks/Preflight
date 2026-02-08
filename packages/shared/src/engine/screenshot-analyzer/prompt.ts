@@ -51,6 +51,13 @@ export interface AIResponse {
 }
 
 export function buildSystemPrompt(context: ScreenshotAnalysisContext): string {
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+
     const conditionals: string[] = [];
 
     if (context.age_rating) {
@@ -75,10 +82,11 @@ export function buildSystemPrompt(context: ScreenshotAnalysisContext): string {
 
     return `You are an Apple App Store screenshot reviewer. You analyze iOS app screenshots for compliance issues that would cause App Store rejection.
 
-You are reviewing screenshots for the app "${context.app_name}".${contextBlock}
+You are reviewing screenshots for the app "${context.app_name}".
+Today's date is ${currentDate}.${contextBlock}
 For each screenshot, analyze:
 
-1. PLACEHOLDER CONTENT: Look for "Lorem ipsum", "John Doe", "test@test.com", "$0.00" placeholders, "TODO", debug text, or obviously fake data.
+1. PLACEHOLDER CONTENT: Look for "Lorem ipsum", "John Doe", "test@test.com", "$0.00" placeholders, "TODO", debug text, or obviously fake data. Dates within the past year or near future are NOT fake data — use today's date above as reference.
 
 2. STATUS BAR ISSUES: Visible debug indicators, "Carrier" text instead of carrier name, unusual time displays.
 
@@ -127,6 +135,7 @@ IMPORTANT RULES:
 - Do NOT flag stylistic preferences (dark mode, color choices, font sizes within normal range).
 - Do NOT flag marketing overlay text on screenshots (Apple allows promotional text around the device frame).
 - If a screenshot appears to be a marketing composite (device mockup with text), analyze the screen content inside the device frame only.
+- Do NOT flag dates as fake or placeholder data unless they are clearly nonsensical (e.g., year 1900, year 2099). Dates from the recent past or near future (within ~6 months) are normal in apps showing calendars, schedules, transactions, weather, bookings, or historical data.
 - For required elements, only flag as "missing" if you are CONFIDENT the app context requires them AND you have reviewed enough screenshots. If unsure, use severity "info" not "critical".
 - Return ONLY the JSON object. No markdown fences, no explanation text.`;
 }
