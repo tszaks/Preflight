@@ -127,9 +127,9 @@ export const PLACEHOLDER_PATTERNS = [
 ] as const;
 
 export const SDK_REQUIREMENTS = {
-    minimum_xcode: '16.0',
-    minimum_sdk: 'iOS 18 SDK',
+    minimum_xcode: '26.0',
+    minimum_sdk: 'iOS 26 SDK',
     minimum_deployment_target: 'iOS 16.0',
-    deadline: '2026-04-01',
-    note: 'Starting April 2026, all apps must be built with Xcode 16+ and iOS 18 SDK. Apps targeting iOS below 16.0 may be flagged.',
+    deadline: '2026-04-28',
+    note: 'Starting April 28, 2026, all new app submissions and updates must be built with Xcode 26+ and the iOS 26 SDK. Apps targeting iOS below 16.0 may be flagged.',
 } as const;
