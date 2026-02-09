@@ -34,7 +34,7 @@ export default function Home() {
             <Link href="/auth/signup" className="vercel-btn-primary flex items-center justify-center gap-2">
               Get Started <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="#pricing" className="vercel-btn-secondary">
+            <Link href="/pricing" className="vercel-btn-secondary">
               View Pricing
             </Link>
           </div>
