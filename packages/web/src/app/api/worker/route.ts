@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { runAnalysis, fetchSubmissionFiles, type SoftRulesInput } from '@preflight/shared/engine';
+import { calculateAgeRatingFromAnswers } from '@preflight/shared/ai';
 import {
     getVersionDetails,
     getScreenshotStatus,
@@ -91,12 +92,26 @@ export async function POST(req: NextRequest) {
         const checklist = (typeof sub.checklist === 'object' && sub.checklist !== null) ? sub.checklist : {};
         const privacyDeclarations = (typeof sub.privacy_declarations === 'object' && sub.privacy_declarations !== null) ? sub.privacy_declarations : {};
         const ageRating = (typeof sub.age_rating === 'object' && sub.age_rating !== null) ? sub.age_rating : {};
-        const ageRatingString =
-            typeof sub.age_rating === 'string'
-                ? sub.age_rating
-                : (typeof (ageRating as Record<string, unknown>).rating === 'string'
-                    ? (ageRating as Record<string, unknown>).rating as string
-                    : null);
+        // Extract age rating string - handle both plain strings ("17+") and answers objects
+        let ageRatingString: string | null = null;
+        if (typeof sub.age_rating === 'string') {
+            const trimmed = (sub.age_rating as string).trim();
+            // If it looks like a plain rating string (e.g. "4+", "9+", "12+", "17+"), use directly
+            if (/^\d+\+?$/.test(trimmed)) {
+                ageRatingString = trimmed;
+            } else {
+                // It's likely a stringified JSON answers object - parse and compute
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (parsed && typeof parsed === 'object') {
+                        ageRatingString = calculateAgeRatingFromAnswers(parsed);
+                    }
+                } catch { /* not valid JSON, skip */ }
+            }
+        } else if (typeof sub.age_rating === 'object' && sub.age_rating !== null) {
+            // Direct object (JSONB column) - compute rating from answers
+            ageRatingString = calculateAgeRatingFromAnswers(sub.age_rating as Record<string, unknown>);
+        }
 
         // Cast to any for dynamic property access
         const cl = checklist as Record<string, boolean | undefined>;

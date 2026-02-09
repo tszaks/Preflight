@@ -76,7 +76,7 @@ function severityEmoji(sev: string | undefined | null): string {
     return '•'
 }
 
-function calculateAgeRatingFromAnswers(raw: unknown): string | null {
+export function calculateAgeRatingFromAnswers(raw: unknown): string | null {
     if (!raw || typeof raw !== 'object') return null
     const a = raw as Record<string, unknown>
     const n = (k: string): number => (typeof a[k] === 'number' ? (a[k] as number) : 0)
