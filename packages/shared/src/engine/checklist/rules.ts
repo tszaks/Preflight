@@ -513,7 +513,7 @@ export const SELF_REPORT_RULES: SelfReportRule[] = [
         severity: 'warning',
         title: 'EU Digital Services Act trader status not declared',
         description: 'App is distributed in the EU but trader status has not been declared in App Store Connect. The EU DSA requires business identification for all traders.',
-        guideline_ref: '5.5 — EU Digital Services Act',
+        guideline_ref: '5.5.1 — EU Digital Services Act',
         fix_suggestion: 'In App Store Connect, go to your developer account and declare your trader status. EU-based traders must provide business name, address, registration number, and contact details.',
         source: 'Apple Guideline 5.5 + EU DSA enforcement (135K+ apps removed Feb 2025)',
         trigger_field: 'distributes_in_eu',

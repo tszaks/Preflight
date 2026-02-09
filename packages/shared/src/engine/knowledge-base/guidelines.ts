@@ -233,6 +233,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Mobile Device Management',
         summary: 'MDM apps that offer Mobile Device Management services must request the MDM capability from Apple. MDM must only be used by commercial enterprises, educational institutions, or government agencies. MDM apps may not sell, use, or disclose data to third parties.',
     },
+    '5.5.1': {
+        section: '5.5.1',
+        title: 'EU Digital Services Act',
+        summary: 'Apps distributed in the EU must comply with the Digital Services Act. Developers must declare their trader status and provide required business information in App Store Connect. Non-compliance led to 135,000+ app removals in 2025.',
+    },
     '5.6': {
         section: '5.6',
         title: 'Developer Code of Conduct',

@@ -263,7 +263,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'biz-eu-dsa-trader',
-        guideline: '5.5',
+        guideline: '5.5.1',
         category: 'content_policy',
         title: 'Missing EU DSA trader status',
         trigger: 'Developer distributes app in the EU but has not declared trader status and provided required business information under the Digital Services Act',
