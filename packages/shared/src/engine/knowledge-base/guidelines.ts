@@ -22,7 +22,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '1.2': {
         section: '1.2',
         title: 'User-Generated Content',
-        summary: 'Apps with user-generated content must include content filtering, reporting mechanisms, blocking capabilities, and published contact info for concerns.',
+        summary: 'Apps with user-generated content must include content filtering, reporting mechanisms, blocking capabilities, and published contact info for concerns. As of February 2026, random or anonymous chat apps (Chatroulette-style, anonymous messaging) are explicitly prohibited and may be removed without notice.',
     },
     '1.3': {
         section: '1.3',
@@ -41,8 +41,8 @@ export const GUIDELINES: Record<string, Guideline> = {
     },
     '1.6': {
         section: '1.6',
-        title: 'Alternative Dispute Resolution',
-        summary: 'Developers may include information about alternative dispute resolution in their metadata.',
+        title: 'Data Security',
+        summary: 'Apps must implement appropriate security measures to ensure proper handling of user information collected pursuant to the Apple Developer Program License Agreement and these Guidelines.',
     },
     '1.7': {
         section: '1.7',
@@ -80,6 +80,17 @@ export const GUIDELINES: Record<string, Guideline> = {
         section: '2.5',
         title: 'Software Requirements',
         summary: 'Apps must be self-contained, use documented APIs, and not download executable code. Required frameworks must be embedded in the bundle.',
+    },
+
+    '2.5.14': {
+        section: '2.5.14',
+        title: 'Recording and Logging',
+        summary: 'Apps that record camera, microphone, screen, or user inputs must request explicit user consent and provide a clear visual or audible indication when recording is active. This includes analytics SDKs that capture screen recordings.',
+    },
+    '2.5.18': {
+        section: '2.5.18',
+        title: 'Display Advertising',
+        summary: 'Display ads must be limited to the main app binary (not extensions, App Clips, widgets, keyboards, or watchOS). Interstitial ads must have visible close buttons. Apps must include the ability to report ads. Behavioral/targeted ads based on health, medical, school, or children\'s data are prohibited.',
     },
 
     // Section 3: Business
@@ -162,13 +173,13 @@ export const GUIDELINES: Record<string, Guideline> = {
     },
     '4.9': {
         section: '4.9',
-        title: 'Streaming Games',
-        summary: 'Streaming game services can offer their games through the App Store. Individual games within the service must each appear as a separate listing.',
+        title: 'Apple Pay',
+        summary: 'Apps using Apple Pay must provide all material purchase information to the user prior to sale and must use Apple Pay branding and user interface elements correctly per Apple\'s guidelines and identity standards.',
     },
     '4.10': {
         section: '4.10',
-        title: 'Notarization for Sideloading (EU)',
-        summary: 'In the EU under the Digital Markets Act, apps distributed outside the App Store must still undergo Apple\'s notarization process for baseline security and privacy checks.',
+        title: 'Monetizing Built-In Capabilities',
+        summary: 'Apps may not monetize built-in hardware or OS capabilities (e.g., push notifications, camera, gyroscope) or Apple services. Apps that do so may be rejected.',
     },
 
     // Section 5: Legal
@@ -214,13 +225,13 @@ export const GUIDELINES: Record<string, Guideline> = {
     },
     '5.1.5': {
         section: '5.1.5',
-        title: 'Sign in with Apple',
-        summary: 'If your app exclusively uses a third-party or social login service to set up or authenticate the user, you must also offer Sign in with Apple as an equivalent option.',
+        title: 'Location Services',
+        summary: 'Use Location Services only when it is directly relevant to the features and services provided by the app. Location-based APIs should not be used to provide emergency services or for autonomous vehicle control.',
     },
     '5.5': {
         section: '5.5',
-        title: 'EU Digital Services Act',
-        summary: 'Apps distributed in the EU must comply with the Digital Services Act. Developers must declare their trader status and provide required business information. Non-compliance led to 135,000+ app removals in 2025.',
+        title: 'Mobile Device Management',
+        summary: 'MDM apps that offer Mobile Device Management services must request the MDM capability from Apple. MDM must only be used by commercial enterprises, educational institutions, or government agencies. MDM apps may not sell, use, or disclose data to third parties.',
     },
     '5.6': {
         section: '5.6',

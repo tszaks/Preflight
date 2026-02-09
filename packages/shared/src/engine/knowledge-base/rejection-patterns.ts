@@ -192,8 +192,8 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         guideline: '1.2',
         category: 'content_policy',
         title: 'UGC without moderation',
-        trigger: 'App has user-generated content without content filtering, reporting, or blocking mechanisms',
-        fix: 'Implement content moderation: filtering, user reporting, blocking, and published contact info.',
+        trigger: 'App has user-generated content without content filtering, reporting, or blocking mechanisms. As of Feb 2026, random or anonymous chat features are explicitly prohibited.',
+        fix: 'Implement content moderation: filtering, user reporting, blocking, and published contact info. Remove any anonymous/random chat features entirely.',
     },
     {
         id: 'content-medical-disclaimer',
@@ -276,5 +276,13 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         title: 'Mini app/HTML5 game non-compliance',
         trigger: 'App hosts mini apps, plugins, or HTML5 games that have not been individually reviewed or that download executable code',
         fix: 'All mini apps, HTML5 games, and plugins must be individually submitted for review. They cannot download or execute code not contained in the app bundle. See guideline 4.7.',
+    },
+    {
+        id: 'content-anonymous-chat',
+        guideline: '1.2',
+        category: 'content_policy',
+        title: 'Anonymous or random chat prohibited',
+        trigger: 'App provides random or anonymous chat functionality (Chatroulette-style, anonymous messaging, random stranger matching)',
+        fix: 'Anonymous/random chat apps are explicitly prohibited under guideline 1.2 as of February 2026. Remove these features entirely or implement full identity verification, content moderation, and reporting. Apps with anonymous chat "may be removed without notice."',
     },
 ] as const;
