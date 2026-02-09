@@ -46,10 +46,11 @@ body {
 
 .vercel-gradient-text {
   @apply bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent;
-  /* Prevent clipping issues with bg-clip-text */
+  /* Prevent clipping issues with bg-clip-text + negative letter-spacing */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   display: inline-block;
+  padding: 0 0.05em;
   will-change: transform;
 }
 
