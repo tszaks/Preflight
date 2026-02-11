@@ -65,14 +65,21 @@ const plans = [
 
 export default function PricingPage() {
     const [loading, setLoading] = useState<string | null>(null)
+    const [error, setError] = useState<string | null>(null)
 
     const handleBuy = async (planId: string) => {
         setLoading(planId)
+        setError(null)
         try {
             const { url } = await buyCredits(planId)
-            if (url) window.location.href = url
+            if (url) {
+                window.location.href = url
+                return
+            }
+            setError('Could not start checkout. Please try again.')
         } catch (err) {
             console.error(err)
+            setError('Could not start checkout. Please try again.')
         } finally {
             setLoading(null)
         }
@@ -91,6 +98,12 @@ export default function PricingPage() {
                     <span className="text-sm font-mono text-gray-500">Full review = 100 credits &middot; Recheck = 25 credits</span>
                 </p>
             </header>
+
+            {error && (
+                <div className="mb-8 text-sm text-red-500 bg-red-500/10 border border-red-500/20 p-4 rounded-md text-center">
+                    {error}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-24">
                 {plans.map((plan) => (

@@ -1,13 +1,10 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import Stripe from 'stripe'
 import { CREDIT_AMOUNTS } from '@preflight/shared/constants'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-10-10' as Stripe.LatestApiVersion, // Use actual current API version
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PRICE_IDS: Record<string, string> = {
     starter: 'price_1StuTwCatxMRYTXTOJusK3zi',
@@ -21,7 +18,7 @@ export async function buyCredits(planId: string) {
     // 1. Auth Check
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-        redirect(`/auth/signup?next=/pricing&plan=${planId}`)
+        return { url: `/auth/signup?next=/pricing&plan=${planId}` }
     }
 
     if (!PRICE_IDS[planId]) {
