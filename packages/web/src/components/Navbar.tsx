@@ -6,6 +6,17 @@ import { logout } from "@/app/auth/actions";
 export async function Navbar() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    let credits: number | null = null;
+
+    if (user) {
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("credits")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        credits = typeof profile?.credits === "number" ? profile.credits : 0;
+    }
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10 h-16 flex items-center">
@@ -24,6 +35,12 @@ export async function Navbar() {
                 <div className="flex items-center gap-6">
                     {user ? (
                         <>
+                            <Link
+                                href="/pricing"
+                                className="text-xs font-mono text-gray-300 border border-white/10 bg-white/5 px-2.5 py-1 rounded-md hover:border-white/30 transition-colors"
+                            >
+                                {credits?.toLocaleString() ?? 0} credits
+                            </Link>
                             <Link href="/dashboard" className="text-sm font-light text-gray-400 hover:text-white transition-colors">
                                 Dashboard
                             </Link>
