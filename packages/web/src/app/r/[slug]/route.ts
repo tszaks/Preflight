@@ -5,8 +5,23 @@ const SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{1,63}$/
 const PROMO_COOKIE = 'promo_slug'
 const PROMO_COOKIE_TTL_SECONDS = 60 * 60 * 24
 
+function getPublicOrigin(request: NextRequest): string {
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
+
+  if (process.env.NODE_ENV === 'development') {
+    return new URL(request.url).origin
+  }
+
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`
+  }
+
+  return new URL(request.url).origin
+}
+
 function buildSignupUrl(request: NextRequest, promoSlug?: string): URL {
-  const signupUrl = new URL('/auth/signup', request.url)
+  const signupUrl = new URL('/auth/signup', getPublicOrigin(request))
   if (promoSlug) {
     signupUrl.searchParams.set('promo', promoSlug)
   }
