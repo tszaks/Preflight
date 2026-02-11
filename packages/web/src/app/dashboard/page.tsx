@@ -14,7 +14,39 @@ type Submission = {
     is_rereviewing?: boolean | null;
 };
 
-export default async function DashboardPage() {
+type DashboardSearchParams = {
+    promo?: string;
+    credits?: string;
+    reason?: string;
+};
+
+function mapPromoFailureReason(reason?: string): string {
+    switch (reason) {
+        case 'not_eligible_existing_user':
+            return 'This promo is only for newly created accounts.';
+        case 'already_redeemed':
+            return 'This account has already redeemed this campaign.';
+        case 'cap_reached':
+            return 'This promo has reached its redemption limit.';
+        case 'expired':
+            return 'This promo has expired.';
+        case 'not_started':
+            return 'This promo is not active yet.';
+        case 'inactive':
+            return 'This promo is currently inactive.';
+        case 'not_found':
+            return 'This promo link is no longer valid.';
+        default:
+            return 'Promo could not be applied.';
+    }
+}
+
+export default async function DashboardPage({
+    searchParams,
+}: {
+    searchParams: Promise<DashboardSearchParams>
+}) {
+    const params = await searchParams
     const supabase = await createClient();
 
     // 1. Get User
@@ -37,6 +69,9 @@ export default async function DashboardPage() {
     const submissionRows = (submissions ?? []) as Submission[];
     const drafts = submissionRows.filter(s => s.status === 'draft' && !s.is_rereviewing);
     const active = submissionRows.filter(s => s.status !== 'draft' && !s.is_rereviewing);
+    const promoStatus = params.promo;
+    const promoCredits = Number(params.credits ?? '0');
+    const promoFailureReason = mapPromoFailureReason(params.reason);
 
     function formatDate(dateStr: string): string {
         return new Date(dateStr).toLocaleDateString("en-US", {
@@ -117,6 +152,18 @@ export default async function DashboardPage() {
                     </Link>
                 </div>
             </header>
+
+            {promoStatus === 'applied' && (
+                <div className="mb-8 text-sm text-green-500 bg-green-500/10 border border-green-500/20 p-4 rounded-md">
+                    +{Number.isFinite(promoCredits) && promoCredits > 0 ? promoCredits : 100} promo credits applied successfully.
+                </div>
+            )}
+
+            {promoStatus === 'not_applied' && (
+                <div className="mb-8 text-sm text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-md">
+                    {promoFailureReason}
+                </div>
+            )}
 
             {(!submissions || (active.length === 0 && drafts.length === 0)) ? (
                 <div className="vercel-card py-24 flex flex-col items-center text-center group">

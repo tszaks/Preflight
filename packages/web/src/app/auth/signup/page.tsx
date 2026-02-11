@@ -16,6 +16,7 @@ export default function SignupPage() {
     const [error, setError] = useState<string | null>(null)
     const [existing, setExisting] = useState(false)
     const [checkingAuth, setCheckingAuth] = useState(true)
+    const [promo, setPromo] = useState<string | null>(null)
 
     // Redirect if already logged in
     useEffect(() => {
@@ -30,6 +31,11 @@ export default function SignupPage() {
         }
         checkAuth()
     }, [router])
+
+    useEffect(() => {
+        const value = new URLSearchParams(window.location.search).get('promo')
+        setPromo(value)
+    }, [])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -72,6 +78,12 @@ export default function SignupPage() {
                 <div className="vercel-card">
                     <h1 className="text-2xl font-bold tracking-tighter mb-2">Create account</h1>
                     <p className="text-sm text-gray-500 font-light mb-8">Start scanning your iOS apps today</p>
+
+                    {promo && (
+                        <div className="text-xs text-green-500 bg-green-500/10 border border-green-500/20 p-3 rounded-md mb-6">
+                            Promo detected: sign up to receive +100 bonus credits on top of your 50 free signup credits.
+                        </div>
+                    )}
 
                     <OAuthButtons />
 
