@@ -32,24 +32,32 @@ export async function Navbar() {
                     />
                 </Link>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {user ? (
                         <>
-                            <Link
-                                href="/pricing"
-                                className="inline-flex items-center h-8 px-3 rounded-full bg-white/[0.06] border border-white/15 text-[11px] font-mono tracking-wide text-white/90 hover:bg-white/[0.1] hover:border-white/30 transition-colors"
-                            >
-                                <span className="text-white">{credits?.toLocaleString() ?? 0}</span>
-                                <span className="text-gray-400 ml-1">credits</span>
-                            </Link>
-                            <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
-                                Dashboard
-                            </Link>
-                            <form action={logout}>
-                                <button type="submit" className="vercel-btn-secondary h-8 px-3 text-xs">
-                                    Log out
-                                </button>
-                            </form>
+                            <div className="inline-flex items-center gap-1.5 p-1 rounded-xl border border-white/10 bg-white/[0.03]">
+                                <Link
+                                    href="/pricing"
+                                    className="inline-flex items-center h-8 px-3 rounded-lg border border-white/15 bg-white/[0.08] text-[11px] font-mono tracking-wide text-white hover:bg-white/[0.14] transition-colors"
+                                >
+                                    <span>{credits?.toLocaleString() ?? 0}</span>
+                                    <span className="text-gray-400 ml-1">credits</span>
+                                </Link>
+                                <Link
+                                    href="/dashboard"
+                                    className="inline-flex items-center h-8 px-3 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/[0.08] transition-colors"
+                                >
+                                    Dashboard
+                                </Link>
+                                <form action={logout}>
+                                    <button
+                                        type="submit"
+                                        className="inline-flex items-center h-8 px-3 rounded-lg border border-white/20 text-sm font-medium text-white hover:bg-white/[0.1] transition-colors"
+                                    >
+                                        Log out
+                                    </button>
+                                </form>
+                            </div>
                         </>
                     ) : (
                         <>
