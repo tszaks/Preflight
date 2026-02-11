@@ -81,7 +81,7 @@ export default function SignupPage() {
 
                     {promo && (
                         <div className="text-xs text-green-500 bg-green-500/10 border border-green-500/20 p-3 rounded-md mb-6">
-                            You came in through a promo link. If this campaign is live and your account is eligible, we'll automatically add 100 bonus credits after signup, on top of the 50 signup credits (150 total).
+                            You came in through a promo link. If this campaign is live and your account is eligible, we'll automatically add 100 bonus credits after signup, on top of the 100 signup credits (200 total).
                         </div>
                     )}
 

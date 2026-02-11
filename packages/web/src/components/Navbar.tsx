@@ -32,20 +32,21 @@ export async function Navbar() {
                     />
                 </Link>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                     {user ? (
                         <>
                             <Link
                                 href="/pricing"
-                                className="text-xs font-mono text-gray-300 border border-white/10 bg-white/5 px-2.5 py-1 rounded-md hover:border-white/30 transition-colors"
+                                className="inline-flex items-center h-8 px-3 rounded-full bg-white/[0.06] border border-white/15 text-[11px] font-mono tracking-wide text-white/90 hover:bg-white/[0.1] hover:border-white/30 transition-colors"
                             >
-                                {credits?.toLocaleString() ?? 0} credits
+                                <span className="text-white">{credits?.toLocaleString() ?? 0}</span>
+                                <span className="text-gray-400 ml-1">credits</span>
                             </Link>
-                            <Link href="/dashboard" className="text-sm font-light text-gray-400 hover:text-white transition-colors">
+                            <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors">
                                 Dashboard
                             </Link>
                             <form action={logout}>
-                                <button type="submit" className="vercel-btn-secondary py-1.5 px-3 text-xs">
+                                <button type="submit" className="vercel-btn-secondary h-8 px-3 text-xs">
                                     Log out
                                 </button>
                             </form>

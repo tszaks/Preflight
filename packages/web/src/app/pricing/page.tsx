@@ -9,7 +9,7 @@ const plans = [
     {
         id: "free",
         name: "Free",
-        credits: 50,
+        credits: 100,
         price: 0,
         description: "Try Preflight risk-free",
         free: true,
@@ -18,7 +18,7 @@ const plans = [
         creditsNote: "on signup",
         features: [
             { text: "Local compliance scan", hint: "Info.plist, privacy manifest, screenshots" },
-            { text: "50 credits on signup", hint: "1 full review at half price" },
+            { text: "100 credits on signup", hint: "1 full review included" },
             { text: "No credit card required" },
         ],
     },
