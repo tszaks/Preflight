@@ -13,7 +13,7 @@ export default function Home() {
         <div className="corner-decoration corner-tr opacity-30" />
 
         <div className="container mx-auto px-6 max-w-5xl relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-medium text-gray-400 mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-mono tracking-wide text-gray-400 mb-8">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
@@ -21,11 +21,11 @@ export default function Home() {
             App Store Review Simulator
           </div>
 
-          <h1 data-hero-title className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 vercel-gradient-text leading-[1]">
+          <h1 data-hero-title className="text-5xl md:text-7xl font-bold tracking-tight mb-6 vercel-gradient-text leading-[0.98]">
             Never get rejected <br /> for something you could catch.
           </h1>
 
-          <p data-hero-subtitle className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-light">
+          <p data-hero-subtitle className="text-gray-300 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-normal">
             Preflight runs Apple's review checks on your submission before you hit Send.
             Catch rejection risks before they cost you a week in review purgatory.
           </p>
@@ -39,7 +39,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="mt-12 flex items-center gap-2 text-sm text-gray-500">
+          <div className="mt-12 flex items-center gap-2 text-sm text-gray-400">
             <CheckCircle2 className="w-4 h-4 text-white" />
             <span>Built for indie iOS developers & small teams</span>
           </div>
@@ -50,20 +50,20 @@ export default function Home() {
         <div className="container mx-auto px-6 max-w-5xl">
           <div data-features className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="vercel-card">
-              <h3 className="text-lg font-medium mb-2">Metadata Analysis</h3>
-              <p className="text-sm text-gray-400 leading-relaxed font-light">
+              <h3 className="text-lg font-semibold tracking-tight mb-2">Metadata Analysis</h3>
+              <p className="text-sm text-gray-300 leading-relaxed font-normal">
                 Deep scans of app names, subtitles, and keywords for guideline violations and ASO optimization.
               </p>
             </div>
             <div className="vercel-card">
-              <h3 className="text-lg font-medium mb-2">Technical Validation</h3>
-              <p className="text-sm text-gray-400 leading-relaxed font-light">
+              <h3 className="text-lg font-semibold tracking-tight mb-2">Technical Validation</h3>
+              <p className="text-sm text-gray-300 leading-relaxed font-normal">
                 Validation of Info.plist keys, bundle identifiers, and privacy manifest requirements.
               </p>
             </div>
             <div className="vercel-card">
-              <h3 className="text-lg font-medium mb-2">AI Rule Review</h3>
-              <p className="text-sm text-gray-400 leading-relaxed font-light">
+              <h3 className="text-lg font-semibold tracking-tight mb-2">AI Rule Review</h3>
+              <p className="text-sm text-gray-300 leading-relaxed font-normal">
                 Claude-powered analysis of app descriptions and privacy policies against Apple's Human Interface Guidelines.
               </p>
             </div>
