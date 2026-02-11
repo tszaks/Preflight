@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
+import { logout } from "@/app/auth/actions";
 
 export async function Navbar() {
     const supabase = await createClient();
@@ -26,6 +27,11 @@ export async function Navbar() {
                             <Link href="/dashboard" className="text-sm font-light text-gray-400 hover:text-white transition-colors">
                                 Dashboard
                             </Link>
+                            <form action={logout}>
+                                <button type="submit" className="vercel-btn-secondary py-1.5 px-3 text-xs">
+                                    Log out
+                                </button>
+                            </form>
                         </>
                     ) : (
                         <>
