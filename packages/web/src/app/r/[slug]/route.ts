@@ -6,12 +6,24 @@ const PROMO_COOKIE = 'promo_slug'
 const PROMO_COOKIE_TTL_SECONDS = 60 * 60 * 24
 
 function getPublicOrigin(request: NextRequest): string {
-  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host')
-  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
-
   if (process.env.NODE_ENV === 'development') {
     return new URL(request.url).origin
   }
+
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_BASE_URL?.trim()
+  if (configuredBaseUrl) {
+    try {
+      const parsed = new URL(configuredBaseUrl)
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        return parsed.origin
+      }
+    } catch {
+      // Ignore invalid env and continue to header-based inference.
+    }
+  }
+
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
 
   if (forwardedHost) {
     return `${forwardedProto}://${forwardedHost}`
