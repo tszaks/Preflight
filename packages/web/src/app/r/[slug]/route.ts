@@ -54,7 +54,7 @@ export async function GET(
   let isLive = false
 
   try {
-    const supabase = createServiceClient() as any
+    const supabase = createServiceClient()
     const { data, error } = await supabase
       .from('credit_campaigns')
       .select('active, starts_at, ends_at, redemptions_count, max_redemptions')

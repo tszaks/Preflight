@@ -198,6 +198,90 @@ export type Database = {
           },
         ]
       }
+      credit_campaigns: {
+        Row: {
+          active: boolean
+          bonus_credits: number
+          created_at: string
+          ends_at: string
+          id: string
+          max_redemptions: number
+          name: string
+          redemptions_count: number
+          slug: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          bonus_credits: number
+          created_at?: string
+          ends_at: string
+          id?: string
+          max_redemptions: number
+          name: string
+          redemptions_count?: number
+          slug: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          bonus_credits?: number
+          created_at?: string
+          ends_at?: string
+          id?: string
+          max_redemptions?: number
+          name?: string
+          redemptions_count?: number
+          slug?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_redemptions: {
+        Row: {
+          campaign_id: string
+          credits_granted: number
+          id: string
+          redeemed_at: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          credits_granted: number
+          id?: string
+          redeemed_at?: string
+          source?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          credits_granted?: number
+          id?: string
+          redeemed_at?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_redemptions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "credit_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -714,6 +798,18 @@ export type Database = {
         Returns: {
           success: boolean
           remaining: number
+        }[]
+      }
+      redeem_credit_campaign: {
+        Args: {
+          p_slug: string
+          p_user_id: string
+        }
+        Returns: {
+          success: boolean
+          reason: string
+          credits_granted: number
+          new_balance: number | null
         }[]
       }
       refund_credits: {

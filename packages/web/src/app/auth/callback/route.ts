@@ -48,7 +48,7 @@ async function redeemPromoCampaign(
     return { status: 'not_applied', reason: 'no_user' }
   }
 
-  const { data, error } = await (supabase as any).rpc('redeem_credit_campaign', {
+  const { data, error } = await supabase.rpc('redeem_credit_campaign', {
     p_slug: promoSlug,
     p_user_id: user.id,
   })
