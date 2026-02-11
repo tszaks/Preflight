@@ -81,7 +81,7 @@ export default function SignupPage() {
 
                     {promo && (
                         <div className="text-xs text-green-500 bg-green-500/10 border border-green-500/20 p-3 rounded-md mb-6">
-                            Promo detected: sign up to receive +100 bonus credits on top of your 50 free signup credits.
+                            Promo link detected. If this campaign is active and your account is eligible, +100 bonus credits will be applied automatically after signup.
                         </div>
                     )}
 
