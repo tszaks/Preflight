@@ -63,6 +63,12 @@ export default async function DashboardPage({
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits")
+        .eq("id", user.id)
+        .maybeSingle();
+
     if (submissionsError) {
         console.error("Error fetching submissions:", submissionsError);
     }
@@ -74,6 +80,7 @@ export default async function DashboardPage({
     const promoCredits = Number(params.credits ?? '0');
     const promoFailureReason = mapPromoFailureReason(params.reason);
     const creditsPurchased = params.credits_purchased === 'true';
+    const availableCredits = typeof profile?.credits === "number" ? profile.credits : null;
 
     function formatDate(dateStr: string): string {
         return new Date(dateStr).toLocaleDateString("en-US", {
@@ -145,7 +152,13 @@ export default async function DashboardPage({
                         Monitor your iOS app compliance and rejection risks.
                     </p>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-1.5">
+                        <span className="text-[10px] font-mono tracking-widest uppercase text-gray-500">Credits</span>
+                        <span className="text-sm font-mono text-white">
+                            {availableCredits !== null ? availableCredits.toLocaleString() : "--"}
+                        </span>
+                    </div>
                     <Link href="/pricing" className="vercel-btn-secondary py-1.5 text-xs">
                         Buy Credits
                     </Link>

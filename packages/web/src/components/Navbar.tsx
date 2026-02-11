@@ -6,16 +6,22 @@ import { logout } from "@/app/auth/actions";
 export async function Navbar() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    let credits: number | null = null;
+    let creditsLabel = "0";
+    let creditsUnavailable = false;
 
     if (user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("credits")
             .eq("id", user.id)
             .maybeSingle();
 
-        credits = typeof profile?.credits === "number" ? profile.credits : 0;
+        if (profileError) {
+            creditsUnavailable = true;
+            creditsLabel = "--";
+        } else if (typeof profile?.credits === "number") {
+            creditsLabel = profile.credits.toLocaleString();
+        }
     }
 
     return (
@@ -34,31 +40,37 @@ export async function Navbar() {
 
                 <div className="flex items-center gap-3">
                     {user ? (
-                        <>
-                            <div className="inline-flex items-center gap-1.5 p-1 rounded-xl border border-white/10 bg-white/[0.03]">
-                                <Link
-                                    href="/pricing"
-                                    className="inline-flex items-center h-8 px-3 rounded-lg border border-white/15 bg-white/[0.08] text-[11px] font-mono tracking-wide text-white hover:bg-white/[0.14] transition-colors"
+                        <div className="inline-flex items-center gap-1 rounded-2xl border border-white/15 bg-black/70 p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+                            <Link
+                                href="/credits"
+                                className="inline-flex items-center h-9 px-3 rounded-xl border border-white/15 bg-white/[0.05] text-[12px] font-mono tracking-wide hover:bg-white/[0.12] transition-colors"
+                            >
+                                <span className={creditsUnavailable ? "text-gray-500" : "text-white"}>
+                                    {creditsLabel}
+                                </span>
+                                <span className="text-gray-400 ml-1">credits</span>
+                            </Link>
+                            <Link
+                                href="/pricing"
+                                className="inline-flex items-center h-9 px-3 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-300 hover:text-white hover:bg-white/[0.08] transition-colors"
+                            >
+                                Buy
+                            </Link>
+                            <Link
+                                href="/dashboard"
+                                className="inline-flex items-center h-9 px-3 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/[0.08] transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+                            <form action={logout}>
+                                <button
+                                    type="submit"
+                                    className="inline-flex items-center h-9 px-3 rounded-xl border border-white/20 text-sm font-semibold text-white hover:bg-white/[0.1] transition-colors"
                                 >
-                                    <span>{credits?.toLocaleString() ?? 0}</span>
-                                    <span className="text-gray-400 ml-1">credits</span>
-                                </Link>
-                                <Link
-                                    href="/dashboard"
-                                    className="inline-flex items-center h-8 px-3 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/[0.08] transition-colors"
-                                >
-                                    Dashboard
-                                </Link>
-                                <form action={logout}>
-                                    <button
-                                        type="submit"
-                                        className="inline-flex items-center h-8 px-3 rounded-lg border border-white/20 text-sm font-medium text-white hover:bg-white/[0.1] transition-colors"
-                                    >
-                                        Log out
-                                    </button>
-                                </form>
-                            </div>
-                        </>
+                                    Log out
+                                </button>
+                            </form>
+                        </div>
                     ) : (
                         <>
                             <Link href="/dashboard" className="text-sm font-light text-gray-400 hover:text-white transition-colors">
