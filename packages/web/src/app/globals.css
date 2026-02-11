@@ -7,8 +7,8 @@
   --muted: #888888;
   --border: #333333;
   --card: #0a0a0a;
-  --font-geist-sans: "SF Pro Text", "Helvetica Neue", Arial, system-ui, sans-serif;
-  --font-geist-mono: "SF Mono", "Menlo", "Monaco", "Courier New", monospace;
+  --font-geist-sans: "SF Mono", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+  --font-geist-mono: "SF Mono", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
 }
 
 @theme inline {
@@ -25,7 +25,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   overflow-y: auto;
