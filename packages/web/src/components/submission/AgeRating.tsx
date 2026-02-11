@@ -191,20 +191,29 @@ export function AgeRating({ value, onChange }: AgeRatingProps) {
                             {q.hint && <p className="text-xs text-gray-500 mt-1">{q.hint}</p>}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {q.options.map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => handleChange(q.id, opt.value)}
-                                    className={`
-                                        p-3 text-left rounded-md border text-sm transition-all
-                                        {(typeof value[q.id] === 'number' ? value[q.id] : 0) === opt.value
-                                            ? 'bg-white text-black border-white'
-                                            : 'bg-white/5 border-white/5 text-gray-400 hover:bg-white/10 hover:border-white/10'}
-                                    `}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
+                            {q.options.map((opt) => {
+                                const isSelected = typeof value[q.id] === 'number' && value[q.id] === opt.value
+
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        aria-pressed={isSelected}
+                                        onClick={() => handleChange(q.id, opt.value)}
+                                        className={`
+                                            p-3 text-left rounded-md border text-sm transform-gpu
+                                            transition-all duration-150 ease-out active:translate-y-0
+                                            hover:-translate-y-0.5
+                                            hover:shadow-[0_0_0_1px_rgba(255,255,255,0.25),0_8px_24px_rgba(0,0,0,0.35)]
+                                            ${isSelected
+                                                ? 'bg-white text-black border-white ring-1 ring-white/60 shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_8px_24px_rgba(0,0,0,0.35)] hover:border-white'
+                                                : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/70'}
+                                        `}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
                 ))}

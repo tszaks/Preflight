@@ -152,19 +152,23 @@ export function PrivacyDeclarations({ value, onChange }: PrivacyDeclarationsProp
                     </p>
                     <div className="flex gap-4">
                         <button
+                            type="button"
+                            aria-pressed={value.tracking === false}
                             onClick={() => setTracking(false)}
-                            className={`px-6 py-2 rounded text-sm font-medium border transition-colors ${value.tracking === false
-                                ? 'bg-white text-black border-white'
-                                : 'border-white/20 hover:border-white text-gray-400'
+                            className={`px-6 py-2 rounded text-sm font-medium border transform-gpu transition-all duration-150 ease-out active:translate-y-0 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.25),0_8px_24px_rgba(0,0,0,0.35)] ${value.tracking === false
+                                ? 'bg-white text-black border-white ring-1 ring-white/60 shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_8px_24px_rgba(0,0,0,0.35)] hover:border-white'
+                                : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/70'
                                 }`}
                         >
                             No
                         </button>
                         <button
+                            type="button"
+                            aria-pressed={value.tracking === true}
                             onClick={() => setTracking(true)}
-                            className={`px-6 py-2 rounded text-sm font-medium border transition-colors ${value.tracking === true
-                                ? 'bg-white text-black border-white'
-                                : 'border-white/20 hover:border-white text-gray-400'
+                            className={`px-6 py-2 rounded text-sm font-medium border transform-gpu transition-all duration-150 ease-out active:translate-y-0 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.25),0_8px_24px_rgba(0,0,0,0.35)] ${value.tracking === true
+                                ? 'bg-white text-black border-white ring-1 ring-white/60 shadow-[0_0_0_1px_rgba(255,255,255,0.2),0_8px_24px_rgba(0,0,0,0.35)] hover:border-white'
+                                : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/70'
                                 }`}
                         >
                             Yes
