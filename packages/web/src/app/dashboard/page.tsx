@@ -18,6 +18,7 @@ type DashboardSearchParams = {
     promo?: string;
     credits?: string;
     reason?: string;
+    credits_purchased?: string;
 };
 
 function mapPromoFailureReason(reason?: string): string {
@@ -72,6 +73,7 @@ export default async function DashboardPage({
     const promoStatus = params.promo;
     const promoCredits = Number(params.credits ?? '0');
     const promoFailureReason = mapPromoFailureReason(params.reason);
+    const creditsPurchased = params.credits_purchased === 'true';
 
     function formatDate(dateStr: string): string {
         return new Date(dateStr).toLocaleDateString("en-US", {
@@ -156,6 +158,12 @@ export default async function DashboardPage({
             {promoStatus === 'applied' && (
                 <div className="mb-8 text-sm text-green-500 bg-green-500/10 border border-green-500/20 p-4 rounded-md">
                     +{Number.isFinite(promoCredits) && promoCredits > 0 ? promoCredits : 100} promo credits applied successfully.
+                </div>
+            )}
+
+            {creditsPurchased && (
+                <div className="mb-8 text-sm text-green-500 bg-green-500/10 border border-green-500/20 p-4 rounded-md">
+                    Credits purchased successfully.
                 </div>
             )}
 

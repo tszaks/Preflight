@@ -14,7 +14,7 @@ const plans = [
         description: "Try Preflight risk-free",
         free: true,
         ctaLabel: "Get Started",
-        ctaLink: "/signup",
+        ctaLink: "/auth/signup",
         creditsNote: "on signup",
         features: [
             { text: "Local compliance scan", hint: "Info.plist, privacy manifest, screenshots" },
