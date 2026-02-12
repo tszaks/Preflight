@@ -76,6 +76,7 @@ export interface FeatureChecklist {
     miniAppsReviewed?: boolean    // Conditional: shown when miniApps=true
     euTraderDeclared?: boolean    // Conditional: shown when euDistribution=true
     externalLinkCompliant?: boolean // Conditional: shown when externalPayments=true
+    termsOfUseUrl?: string
     accountDeletion?: boolean
     restorePurchases?: boolean
     ugcModeration?: boolean
@@ -89,6 +90,8 @@ export interface FeatureChecklist {
     contextualPermissions?: boolean
     alternateIcons?: boolean
 }
+
+const DEFAULT_TERMS_OF_USE_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
 
 export interface ComplianceData {
     ageRatingAnswers: AgeRatingAnswers
@@ -787,6 +790,7 @@ export async function collectPrivacyData(): Promise<PrivacyDeclarations | null> 
 export async function collectFeatureChecklist(
     ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean },
     binaryDetections?: BinaryDetections,
+    defaultTermsOfUseUrl?: string,
 ): Promise<FeatureChecklist | null> {
     ui.log.step(subtext('Step 3 of 3: Features'))
 
@@ -814,6 +818,7 @@ export async function collectFeatureChecklist(
 
     let selectedFeatures: string[] = [...ascPrefilled, ...binaryPrefilled]
     let checklist: FeatureChecklist | null = null
+    let termsOfUseUrl: string | undefined = defaultTermsOfUseUrl
 
     // Build feature items with detection labels
     const featureItemsWithDetections = FEATURE_ITEMS.map(item => {
@@ -855,12 +860,14 @@ export async function collectFeatureChecklist(
         miniAppsReviewed: checklist?.miniAppsReviewed,
         euTraderDeclared: checklist?.euTraderDeclared,
         externalLinkCompliant: checklist?.externalLinkCompliant,
+        termsOfUseUrl: termsOfUseUrl,
     })
 
     const steps: Array<
         | { type: 'select' }
         | { type: 'confirm' } // Summary confirmation
         | { type: 'followup'; key: keyof FeatureChecklist; label: string; condition: (c: FeatureChecklist) => boolean }
+        | { type: 'terms_url' }
     > = [{ type: 'select' }]
 
     let currentStepIdx = 0
@@ -887,6 +894,9 @@ export async function collectFeatureChecklist(
                 }
                 selectedFeatures = result
                 checklist = buildChecklist(selectedFeatures)
+                if (!checklist.subscriptions) {
+                    termsOfUseUrl = undefined
+                }
 
                 // Re-build steps
                 steps.length = 0
@@ -947,6 +957,7 @@ export async function collectFeatureChecklist(
                         label: 'Can users access subscription status without account login?',
                         condition: () => true
                     })
+                    steps.push({ type: 'terms_url' })
                 }
                 if (checklist.iap || checklist.subscriptions || checklist.externalPayments) {
                     steps.push({
@@ -1055,7 +1066,36 @@ export async function collectFeatureChecklist(
                 currentStepIdx++
                 break
             }
+
+            case 'terms_url': {
+                const currentValue = termsOfUseUrl || DEFAULT_TERMS_OF_USE_URL
+                const entered = await ui.text({
+                    message: 'Terms of Use URL (EULA) for subscriptions',
+                    defaultValue: currentValue,
+                    placeholder: DEFAULT_TERMS_OF_USE_URL,
+                    validate: (value) => {
+                        const trimmed = value?.trim() || ''
+                        if (!trimmed) return 'Terms of Use URL is required for subscription apps'
+                        if (!/^https:\/\//i.test(trimmed)) return 'Use a valid HTTPS URL'
+                        return undefined
+                    },
+                })
+
+                if (entered === null) {
+                    currentStepIdx--
+                    break
+                }
+
+                termsOfUseUrl = entered.trim() || DEFAULT_TERMS_OF_USE_URL
+                checklist = buildChecklist(selectedFeatures)
+                currentStepIdx++
+                break
+            }
         }
+    }
+
+    if (checklist?.subscriptions && !checklist.termsOfUseUrl) {
+        checklist.termsOfUseUrl = defaultTermsOfUseUrl || DEFAULT_TERMS_OF_USE_URL
     }
 
     return checklist
@@ -1069,6 +1109,7 @@ export async function collectCompliance(
     ascPrivacyStatus?: { configured: boolean; privacyPolicyUrl: string | null },
     ascMonetization?: { hasSubscriptions: boolean; hasIAPs: boolean },
     binaryDetections?: BinaryDetections,
+    defaultTermsOfUseUrl?: string,
 ): Promise<ComplianceData | null> {
     // Track completion of each phase
     const state: {
@@ -1177,7 +1218,7 @@ export async function collectCompliance(
                 console.log()
                 break
             case 'features':
-                const featuresResult = await collectFeatureChecklist(ascMonetization, binaryDetections)
+                const featuresResult = await collectFeatureChecklist(ascMonetization, binaryDetections, defaultTermsOfUseUrl)
                 if (featuresResult !== null) state.checklist = featuresResult
                 console.log()
                 break
@@ -1269,6 +1310,10 @@ export function formatComplianceSummary(compliance: ComplianceData): string[] {
         lines.push(`  Features:   ${enabledFeatures.join(', ')}`)
     } else {
         lines.push(`  Features:   None selected`)
+    }
+
+    if (compliance.checklist.subscriptions && compliance.checklist.termsOfUseUrl) {
+        lines.push(`  Terms URL:  ${compliance.checklist.termsOfUseUrl}`)
     }
 
     return lines

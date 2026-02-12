@@ -130,6 +130,7 @@ async function autofillDraftFromAsc(draftState: DraftState): Promise<void> {
         if (!draftState.keywords && typeof d.keywords === 'string') draftState.keywords = d.keywords
         if (!draftState.category && typeof d.category === 'string') draftState.category = d.category
         if (!draftState.privacyPolicyUrl && typeof d.privacy_policy_url === 'string') draftState.privacyPolicyUrl = d.privacy_policy_url
+        if (!draftState.termsOfUseUrl && typeof d.terms_of_use_url === 'string') draftState.termsOfUseUrl = d.terms_of_use_url
         if (!draftState.supportUrl && typeof d.support_url === 'string') draftState.supportUrl = d.support_url
         if (!draftState.marketingUrl && typeof d.marketing_url === 'string') draftState.marketingUrl = d.marketing_url
         if (!draftState.promotionalText && typeof d.promotional_text === 'string') draftState.promotionalText = d.promotional_text
@@ -232,6 +233,8 @@ async function offerDraftSave(state: DraftState, skipConfirmation = false): Prom
         if (state.keywords) body.keywords = state.keywords
         if (state.category) body.category = state.category
         if (state.privacyPolicyUrl) body.privacy_policy_url = state.privacyPolicyUrl
+        const termsUrl = state.termsOfUseUrl || state.compliance?.checklist?.termsOfUseUrl
+        if (termsUrl) body.terms_url = termsUrl
         if (state.supportUrl) body.support_url = state.supportUrl
         if (state.promotionalText) body.promotional_text = state.promotionalText
         if (state.marketingUrl) body.marketing_url = state.marketingUrl
@@ -390,6 +393,7 @@ async function offerAscConnection(draftState: DraftState): Promise<'forward' | '
                             draftState.keywords = autofillData.keywords || draftState.keywords
                             draftState.category = autofillData.category || draftState.category
                             draftState.privacyPolicyUrl = autofillData.privacy_policy_url || draftState.privacyPolicyUrl
+                            draftState.termsOfUseUrl = autofillData.terms_of_use_url || draftState.termsOfUseUrl
                             draftState.supportUrl = autofillData.support_url || draftState.supportUrl
                             draftState.promotionalText =
                                 autofillData.promotional_text || draftState.promotionalText
@@ -809,6 +813,8 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
         if (draftState.keywords) submissionBody.keywords = draftState.keywords
         if (draftState.category) submissionBody.category = draftState.category
         if (draftState.privacyPolicyUrl) submissionBody.privacy_policy_url = draftState.privacyPolicyUrl
+        const termsUrl = draftState.termsOfUseUrl || draftState.compliance?.checklist?.termsOfUseUrl
+        if (termsUrl) submissionBody.terms_url = termsUrl
         if (draftState.supportUrl) submissionBody.support_url = draftState.supportUrl
         if (draftState.promotionalText) submissionBody.promotional_text = draftState.promotionalText
         if (draftState.marketingUrl) submissionBody.marketing_url = draftState.marketingUrl
@@ -1115,6 +1121,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         keywords: draft.keywords,
         category: draft.category,
         supportUrl: draft.support_url,
+        termsOfUseUrl: draft.terms_url,
         promotionalText: draft.promotional_text,
         marketingUrl: draft.marketing_url,
         signInRequired: draft.sign_in_required,
@@ -1124,6 +1131,10 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         _flowPosition: draft.flow_position,
         _screenshotPaths: draft.screenshot_paths || filesToUpload.filter(f => f.type === 'screenshot').map(f => f.path),
         _projectPath: dir
+    }
+
+    if (!draftState.termsOfUseUrl && draftState.compliance?.checklist?.termsOfUseUrl) {
+        draftState.termsOfUseUrl = draftState.compliance.checklist.termsOfUseUrl
     }
 
 
@@ -1179,6 +1190,9 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         if (draftState.description) submissionBody.description = draftState.description
         if (draftState.keywords) submissionBody.keywords = draftState.keywords
         if (draftState.category) submissionBody.category = draftState.category
+        if (draftState.privacyPolicyUrl) submissionBody.privacy_policy_url = draftState.privacyPolicyUrl
+        const updateTermsUrl = draftState.termsOfUseUrl || draftState.compliance?.checklist?.termsOfUseUrl
+        if (updateTermsUrl) submissionBody.terms_url = updateTermsUrl
         if (draftState.supportUrl) submissionBody.support_url = draftState.supportUrl
         if (draftState.promotionalText) submissionBody.promotional_text = draftState.promotionalText
         if (draftState.marketingUrl) submissionBody.marketing_url = draftState.marketingUrl
@@ -1465,6 +1479,7 @@ function formatForAi(
         submission.version = (draft as any).version ?? undefined
         submission.category = (draft as any).category ?? undefined
         submission.privacy_url = (draft as any).privacyPolicyUrl ?? (draft as any).privacy_policy_url ?? (draft as any).privacy_url ?? undefined
+        submission.terms_url = (draft as any).termsOfUseUrl ?? (draft as any).terms_of_use_url ?? (draft as any).terms_url ?? undefined
         submission.support_url = (draft as any).supportUrl ?? (draft as any).support_url ?? undefined
         submission.marketing_url = (draft as any).marketingUrl ?? (draft as any).marketing_url ?? undefined
         submission.sign_in_required = (draft as any).signInRequired ?? (draft as any).sign_in_required ?? undefined

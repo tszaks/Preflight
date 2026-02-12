@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
             keywords: body.keywords,
             category: body.category,
             privacy_url: body.privacy_policy_url || body.privacy_url || null,
+            terms_url: body.terms_of_use_url || body.terms_url || body.eula_url || null,
             support_url: body.support_url,
             marketing_url: body.marketing_url,
             sign_in_required: body.sign_in_required,

@@ -32,6 +32,7 @@ export interface HardRulesInput {
     category?: string | null;
     age_rating?: string | null;
     privacy_url?: string | null;
+    terms_url?: string | null;
     support_url?: string | null;
     marketing_url?: string | null;
     demo_username?: string | null;

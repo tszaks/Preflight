@@ -191,6 +191,7 @@ export class AscStep implements SubmissionStep {
                 state.promotionalText = data.promotional_text || state.promotionalText
                 state.marketingUrl = data.marketing_url || state.marketingUrl
                 state.privacyPolicyUrl = data.privacy_policy_url || state.privacyPolicyUrl
+                state.termsOfUseUrl = data.terms_of_use_url || state.termsOfUseUrl
 
                 // ─── Version Info ────────────────────────────────────────────
                 state.copyright = data.copyright || state.copyright

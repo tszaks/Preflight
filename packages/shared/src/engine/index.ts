@@ -64,6 +64,7 @@ export async function runAnalysis(
             category: input.category,
             age_rating: input.age_rating,
             privacy_url: input.privacy_url,
+            terms_url: input.terms_url,
             support_url: input.support_url,
             marketing_url: input.marketing_url,
             screenshot_paths: input.screenshot_paths,
