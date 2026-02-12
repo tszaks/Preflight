@@ -25,6 +25,22 @@ import {
 import { decryptPrivateKey } from '@/lib/asc-credential-store'
 import { getEncryptionKey } from '@/lib/asc-encryption'
 
+const STANDARD_APPLE_EULA_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
+
+function extractTermsUrl(text: string | null | undefined): string | null {
+    if (!text) return null
+
+    const urls = text.match(/https?:\/\/[^\s]+/gi) || []
+    for (const rawUrl of urls) {
+        const cleanUrl = rawUrl.replace(/[),.;]+$/g, '')
+        if (/terms|eula|license|agreement/i.test(cleanUrl)) {
+            return cleanUrl
+        }
+    }
+
+    return null
+}
+
 export async function POST(request: Request) {
     const supabase = await createAuthClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -101,6 +117,13 @@ export async function POST(request: Request) {
         allSubscriptions = subResults.flat()
     }
 
+    const extractedTermsUrl =
+        extractTermsUrl(metadata?.description) ||
+        extractTermsUrl(metadata?.promotionalText)
+    const termsOfUseUrl =
+        extractedTermsUrl ||
+        (allSubscriptions.length > 0 ? STANDARD_APPLE_EULA_URL : '')
+
     // ─── Update Selected App ─────────────────────────────────────────────────
     await serviceSupabase
         .from('asc_connections')
@@ -149,6 +172,7 @@ export async function POST(request: Request) {
             keywords: metadata?.keywords || '',
             promotional_text: metadata?.promotionalText || '',
             privacy_policy_url: privacyInfo?.privacyPolicyUrl || metadata?.privacyUrl || '',
+            terms_of_use_url: termsOfUseUrl,
             support_url: metadata?.supportUrl || '',
             marketing_url: metadata?.marketingUrl || '',
             category: appInfo?.categoryId ? categoryMap[appInfo.categoryId] || appInfo.categoryId : '',

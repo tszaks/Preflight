@@ -3,7 +3,7 @@ import { URL_REQUIREMENTS, PLACEHOLDER_PATTERNS } from '../knowledge-base/requir
 import { getGuidelineRef } from '../knowledge-base/guidelines';
 
 /**
- * Validates URLs (privacy policy, support, marketing).
+ * Validates URLs (privacy policy, terms/EULA, support, marketing).
  * Checks: HTTPS, reachability, placeholder detection.
  */
 export async function checkUrls(input: HardRulesInput): Promise<CheckResult[]> {
@@ -23,6 +23,24 @@ export async function checkUrls(input: HardRulesInput): Promise<CheckResult[]> {
             fix_suggestion: 'Add a privacy policy URL that describes how your app handles user data.',
             confidence: 100,
         });
+    }
+
+    if (input.has_subscriptions === true) {
+        if (input.terms_url) {
+            urlsToCheck.push({ url: input.terms_url, label: 'Terms of Use (EULA)', required: true });
+        } else {
+            results.push({
+                category: 'urls',
+                severity: 'critical',
+                title: 'Missing Terms of Use URL for subscriptions',
+                description: 'Apps with auto-renewable subscriptions must provide a functional Terms of Use (EULA) URL in App Store metadata.',
+                guideline_ref: getGuidelineRef('3.1.2'),
+                fix_suggestion: 'Add a Terms of Use URL (EULA). You may use Apple\'s standard EULA URL or a custom terms URL hosted on your domain.',
+                confidence: 100,
+            });
+        }
+    } else if (input.terms_url) {
+        urlsToCheck.push({ url: input.terms_url, label: 'Terms of Use (EULA)', required: false });
     }
 
     if (input.support_url) {

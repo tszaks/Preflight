@@ -597,6 +597,7 @@ export type Database = {
           paywall_screenshot_index: number | null
           plist_path: string | null
           privacy_url: string | null
+          terms_url: string | null
           promotional_text: string | null
           project_path: string | null
           flow_position: string | null
@@ -665,6 +666,7 @@ export type Database = {
           paywall_screenshot_index?: number | null
           plist_path?: string | null
           privacy_url?: string | null
+          terms_url?: string | null
           promotional_text?: string | null
           project_path?: string | null
           flow_position?: string | null
@@ -733,6 +735,7 @@ export type Database = {
           paywall_screenshot_index?: number | null
           plist_path?: string | null
           privacy_url?: string | null
+          terms_url?: string | null
           promotional_text?: string | null
           project_path?: string | null
           flow_position?: string | null

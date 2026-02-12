@@ -116,6 +116,12 @@ export async function POST(req: NextRequest) {
         // Cast to any for dynamic property access
         const cl = checklist as Record<string, boolean | undefined>;
         const pd = privacyDeclarations as Record<string, { collected?: boolean; linked?: boolean; tracking?: boolean } | boolean | undefined>;
+        const termsUrlFromChecklist = typeof (checklist as Record<string, unknown>).termsOfUseUrl === 'string'
+            ? String((checklist as Record<string, unknown>).termsOfUseUrl).trim()
+            : undefined;
+        const termsUrl = typeof sub.terms_url === 'string' && sub.terms_url.trim().length > 0
+            ? sub.terms_url.trim()
+            : termsUrlFromChecklist;
 
         // Transform privacy declarations to flat data_collection format
         const dataCollection: Record<string, boolean> = {};
@@ -134,6 +140,7 @@ export async function POST(req: NextRequest) {
             app_name: submissionData.app_name || 'Untitled App',
             review_type: (submissionData.review_type ?? 'full') as SoftRulesInput['review_type'],
             screenshot_paths: submissionData.screenshot_paths || [],
+            terms_url: termsUrl,
 
             // File contents from storage
             screenshots_data: files.screenshotsData,

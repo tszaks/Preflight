@@ -59,6 +59,7 @@ export interface DraftState {
     keywords?: string
     category?: string
     privacyPolicyUrl?: string
+    termsOfUseUrl?: string
     supportUrl?: string
     promotionalText?: string
     marketingUrl?: string

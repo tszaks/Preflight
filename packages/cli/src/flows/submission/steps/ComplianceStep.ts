@@ -11,13 +11,23 @@ export class ComplianceStep implements SubmissionStep {
             hasSubscriptions: (state.subscriptions?.length ?? 0) > 0,
             hasIAPs: (state.inAppPurchases?.length ?? 0) > 0,
         }
-        const compliance = await collectCompliance(state.compliance, state.ageRating, state.privacyStatus, ascMonetization)
+        const compliance = await collectCompliance(
+            state.compliance,
+            state.ageRating,
+            state.privacyStatus,
+            ascMonetization,
+            undefined,
+            state.termsOfUseUrl,
+        )
 
         if (compliance === null) {
             return { action: 'back' }
         }
 
         state.compliance = compliance
+        if (typeof compliance.checklist.termsOfUseUrl === 'string' && compliance.checklist.termsOfUseUrl.length > 0) {
+            state.termsOfUseUrl = compliance.checklist.termsOfUseUrl
+        }
         return { action: 'next' }
     }
 }
