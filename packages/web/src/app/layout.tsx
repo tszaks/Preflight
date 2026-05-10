@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { TerminalBanner } from "@/components/TerminalBanner";
@@ -36,6 +37,7 @@ export default function RootLayout({
         <div className="pt-16 min-h-screen">
           {children}
         </div>
+        <Script defer src="https://pulse.szakacsmedia.com/script.js" data-website-id="7a8b43eb-0f68-4b0b-84b9-31d58dde45e3" strategy="afterInteractive" />
       </body>
     </html>
   );
