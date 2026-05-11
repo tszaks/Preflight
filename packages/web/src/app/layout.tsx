@@ -37,7 +37,7 @@ export default function RootLayout({
         <div className="pt-16 min-h-screen">
           {children}
         </div>
-        <Script defer src="https://pulse.szakacsmedia.com/script.js" data-website-id="7a8b43eb-0f68-4b0b-84b9-31d58dde45e3" strategy="afterInteractive" />
+        <Script defer src="https://umami-production-fa9c.up.railway.app/script.js" data-website-id="7a8b43eb-0f68-4b0b-84b9-31d58dde45e3" strategy="afterInteractive" />
       </body>
     </html>
   );
