@@ -4,23 +4,31 @@ import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/auth/actions";
 
 export async function Navbar() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const hasSupabaseEnv = Boolean(
+        process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    let user = null;
     let creditsLabel = "0";
     let creditsUnavailable = false;
 
-    if (user) {
-        const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("credits")
-            .eq("id", user.id)
-            .maybeSingle();
+    if (hasSupabaseEnv) {
+        const supabase = await createClient();
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        user = currentUser;
 
-        if (profileError) {
-            creditsUnavailable = true;
-            creditsLabel = "--";
-        } else if (typeof profile?.credits === "number") {
-            creditsLabel = profile.credits.toLocaleString();
+        if (user) {
+            const { data: profile, error: profileError } = await supabase
+                .from("profiles")
+                .select("credits")
+                .eq("id", user.id)
+                .maybeSingle();
+
+            if (profileError) {
+                creditsUnavailable = true;
+                creditsLabel = "--";
+            } else if (typeof profile?.credits === "number") {
+                creditsLabel = profile.credits.toLocaleString();
+            }
         }
     }
 
