@@ -4,7 +4,7 @@ import { DEFAULT_API_URL } from './constants.js'
 interface PreflightConfig {
     accessToken?: string
     refreshToken?: string
-    apiUrl?: string
+    apiUrl: string
     userId?: string
     email?: string
     hasRunBefore?: boolean
@@ -26,9 +26,10 @@ const config = new Conf<PreflightConfig>({
     },
 })
 
-// Migrate existing users from old domain
+// Migrate existing users from the old development domain to the local/self-host default.
 try {
-    if (config.get('apiUrl') === 'https://preflight.dev') {
+    const apiUrl = config.get('apiUrl')
+    if (apiUrl === 'https://preflight.dev') {
         config.set('apiUrl', DEFAULT_API_URL)
     }
 } catch {
@@ -39,7 +40,7 @@ export function getConfig(): PreflightConfig {
     return {
         accessToken: config.get('accessToken'),
         refreshToken: config.get('refreshToken'),
-        apiUrl: config.get('apiUrl') || DEFAULT_API_URL,
+        apiUrl: process.env.PREFLIGHT_API_URL || config.get('apiUrl') || DEFAULT_API_URL,
         userId: config.get('userId'),
         email: config.get('email'),
         hasRunBefore: config.get('hasRunBefore') || false,

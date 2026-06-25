@@ -9,7 +9,7 @@ export async function creditsCommand() {
         process.exit(1)
     }
 
-    const spinner = createSpinner('Checking credits...')
+    const spinner = createSpinner('Checking backend quota...')
     spinner.start()
 
     try {
@@ -24,9 +24,9 @@ export async function creditsCommand() {
         }
 
         console.log()
-        console.log(chalk.bold('  Credit Balance'))
-        console.log(`  ${chalk.green.bold(data.credits)} credits available`)
-        console.log(chalk.dim('  Full review: 100 credits | Recheck: 25 credits'))
+        console.log(chalk.bold('  Backend Quota'))
+        console.log(`  ${chalk.green.bold(data.credits)} legacy credits available`)
+        console.log(chalk.dim('  Open-source Preflight is free by default. This command only applies to forks that keep credits enabled.'))
         console.log()
     } catch (err) {
         spinner.stop()

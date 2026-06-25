@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Github } from "lucide-react";
 import { CLIInstallSection } from "@/components/CLIInstallSection";
 import { HomeAnimations } from "./home-animations";
 
@@ -26,16 +26,16 @@ export default function Home() {
           </h1>
 
           <p data-hero-subtitle className="text-gray-300 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed font-normal">
-            Preflight runs Apple's review checks on your submission before you hit Send.
+            Preflight runs Apple&apos;s review checks on your submission before you hit Send.
             Catch rejection risks before they cost you a week in review purgatory.
           </p>
 
           <div data-hero-cta className="flex flex-col sm:flex-row gap-4">
-            <Link href="/auth/signup" className="vercel-btn-primary flex items-center justify-center gap-2">
-              Get Started <ArrowRight className="w-4 h-4" />
+            <Link href="/dashboard" className="vercel-btn-primary flex items-center justify-center gap-2">
+              Run Locally <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/pricing" className="vercel-btn-secondary">
-              View Pricing
+            <Link href="https://github.com/tszaks/Preflight" className="vercel-btn-secondary flex items-center justify-center gap-2">
+              Source <Github className="w-4 h-4" />
             </Link>
           </div>
 
@@ -64,7 +64,7 @@ export default function Home() {
             <div className="vercel-card">
               <h3 className="text-lg font-semibold tracking-tight mb-2">AI Rule Review</h3>
               <p className="text-sm text-gray-300 leading-relaxed font-normal">
-                Claude-powered analysis of app descriptions and privacy policies against Apple's Human Interface Guidelines.
+                Claude-powered analysis of app descriptions and privacy policies against Apple&apos;s Human Interface Guidelines.
               </p>
             </div>
           </div>

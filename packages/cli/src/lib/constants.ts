@@ -1,4 +1,4 @@
-export const SUPABASE_URL = 'https://cfqzdyktjhkalfrmcgmw.supabase.co'
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNmcXpkeWt0amhrYWxmcm1jZ213Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkyNzM4MjYsImV4cCI6MjA4NDg0OTgyNn0.O1bPUNHw7kzpWecAyT4Pizh2ITRSal3PJsrUIkZY04o'
 export const CALLBACK_PORT = 54321
-export const DEFAULT_API_URL = 'https://preflightlaunch.com'
+export const DEFAULT_API_URL = process.env.PREFLIGHT_API_URL || 'http://localhost:5173'
+export const DEFAULT_SUPABASE_URL = process.env.PREFLIGHT_SUPABASE_URL
+export const DEFAULT_SUPABASE_ANON_KEY = process.env.PREFLIGHT_SUPABASE_ANON_KEY

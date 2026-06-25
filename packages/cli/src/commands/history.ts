@@ -8,7 +8,7 @@ import { renderReport } from '../ui/report.js'
 import { subtext, brand } from '../ui/theme.js'
 import * as ui from '../ui/interactive.js'
 import { resumeSubmitCommand } from './submit.js'
-import { DEFAULT_API_URL } from '../lib/constants.js'
+import { getConfig } from '../lib/config.js'
 
 interface HistoryOptions {
     json?: boolean
@@ -98,6 +98,7 @@ export async function historyCommand(options: HistoryOptions) {
 
 // Interactive version for full-screen menu
 export async function interactiveHistory(): Promise<void> {
+    const { apiUrl } = getConfig()
     const s = ui.spinner()
     s.start('Loading your reviews...')
 
@@ -275,7 +276,7 @@ export async function interactiveHistory(): Promise<void> {
                 if (reportRes.ok) {
                     renderReport(reportData.report, reportData.items)
                     // Web report page is keyed by submission id (not report id).
-                    console.log(subtext(`  Full report: ${DEFAULT_API_URL}/report/${sub.id}`))
+                    console.log(subtext(`  Full report: ${apiUrl}/report/${sub.id}`))
                     console.log()
                 } else {
                     ui.log.error('Could not load this report.')
@@ -295,7 +296,7 @@ export async function interactiveHistory(): Promise<void> {
                             {
                                 value: 'rejection',
                                 label: 'Report Apple rejection',
-                                hint: 'Get 100 credits refunded',
+                                hint: 'Record the rejected version',
                             },
                             { value: 'back', label: 'Back to list', hint: '' },
                         ],
@@ -305,7 +306,7 @@ export async function interactiveHistory(): Promise<void> {
                 if (action === null || action === 'back') break
 
                 if (action === 'open') {
-                    await open(`${DEFAULT_API_URL}/report/${sub.id}`)
+                    await open(`${apiUrl}/report/${sub.id}`)
                     ui.log.success('Opened report in browser')
                     console.log()
                     continue

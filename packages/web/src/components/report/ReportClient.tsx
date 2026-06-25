@@ -628,9 +628,9 @@ export default function ReportClient({ initialSubmission, initialReport, initial
                         onClick={async () => {
                             try {
                                 const text = formatAiContext({
-                                    submission: submission as any,
-                                    report: report as any,
-                                    items: items as any,
+                                    submission,
+                                    report,
+                                    items,
                                     fileTypes: null,
                                     redactSensitive: true,
                                 })

@@ -9,7 +9,7 @@ const KNOWN_COMMANDS = [
     { name: 'login', description: 'Log in to your account' },
     { name: 'logout', description: 'Log out and clear credentials' },
     { name: 'whoami', description: 'Show current user info' },
-    { name: 'credits', description: 'Check credit balance' },
+    { name: 'credits', description: 'Check legacy backend quota' },
     { name: 'status', description: 'Check analysis status' },
     { name: 'report', description: 'View analysis report' },
     { name: 'history', description: 'List past submissions' },

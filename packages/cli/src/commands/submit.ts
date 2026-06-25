@@ -156,62 +156,6 @@ async function openUrl(url: string): Promise<void> {
     }
 }
 
-// Fetch current credit balance
-async function fetchCredits(): Promise<number | null> {
-    try {
-        const res = await apiRequest('/api/credits')
-        if (!res.ok) return null
-        const data = await res.json()
-        return data.credits ?? null
-    } catch {
-        return null
-    }
-}
-
-// Credit pre-check: ensure user has enough credits before proceeding
-async function creditPreCheck(): Promise<boolean> {
-    const credits = await fetchCredits()
-
-    if (credits === null) {
-        ui.log.warning('Could not verify credit balance. Proceeding anyway.')
-        return true
-    }
-
-    if (credits >= 100) return true
-
-    // Not enough credits
-    ui.log.warning(`You need 100 credits for a review. You currently have ${credits}.`)
-    console.log()
-
-    const wantsBuy = await ui.confirm('Would you like to buy more credits?')
-    if (wantsBuy === null || !wantsBuy) return false
-
-    await openUrl('https://preflightlaunch.com/pricing')
-    ui.log.info('Opened pricing page in browser.')
-    console.log()
-
-    // Auto-poll for credit purchase
-    ui.log.info(subtext('Waiting for credits... Press Enter to check now, or Esc to cancel.'))
-
-    let attempts = 0
-    const maxAttempts = 60 // 10 minutes at 10s intervals
-
-    while (attempts < maxAttempts) {
-        // Wait 10 seconds between checks
-        await new Promise(r => setTimeout(r, 10000))
-        attempts++
-
-        const newCredits = await fetchCredits()
-        if (newCredits !== null && newCredits >= 100) {
-            ui.log.success(`Credits updated! You now have ${newCredits} credits.`)
-            return true
-        }
-    }
-
-    ui.log.warning('Still waiting for credits. You can try again later.')
-    return false
-}
-
 // ─── Draft Save Helper (Phase 4) ──────────────────────────────────────────
 
 
@@ -439,6 +383,7 @@ async function offerAscConnection(draftState: DraftState): Promise<'forward' | '
 // collectComplianceWithNav moved to ComplianceStep.ts
 
 export async function submitCommand(path?: string, options: SubmitOptions = {}, fromMenu = false) {
+    const { apiUrl } = getConfig()
     const jsonMode = options.json === true
     const nonInteractive = options.nonInteractive === true
     // jsonMode must never prompt and must keep stdout clean for machine parsing.
@@ -486,12 +431,6 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             if (!jsonMode) ui.tip(`Run ${brand('preflight scan')} for a free preview.`)
             return
         }
-    }
-
-    // Credit pre-check (before any project selection or file work)
-    if (fromMenu) {
-        const hasCredits = await creditPreCheck()
-        if (!hasCredits) return
     }
 
     // Interactive mode: no path provided
@@ -739,7 +678,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
             }
         } catch { /* ignore */ }
 
-        // Fetch credits for dashboard display
+        // Fetch legacy quota for dashboard display if the backend still exposes it.
         try {
             const creditsRes = await apiRequest('/api/credits')
             if (creditsRes.ok) {
@@ -786,7 +725,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 
         ui.log.message(chalk.bold('Files to upload:') + '\n' + fileLines.join('\n'))
 
-        const shouldContinue = await ui.confirm('This will use 100 credits. Continue?')
+        const shouldContinue = await ui.confirm('This will upload files to your configured Preflight backend. Continue?')
         if (shouldContinue === null || !shouldContinue) {
             ui.outro('Submission cancelled.')
             return
@@ -926,29 +865,12 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 analyzeSpinner.stop()
 
                 if (!jsonMode) {
-                    log.warning(`Not enough credits. Need ${finalizeData.required ?? 100}, have ${finalizeData.credits ?? 0}.`)
+                    log.warning(finalizeData.message || 'The configured backend rejected this analysis request.')
                     console.log()
                 }
 
-                if (noPrompts) fail('Not enough credits to start analysis.', 1)
-
-                const wantsBuy = await ui.confirm('Would you like to buy more credits?')
-                if (wantsBuy === null || !wantsBuy) return
-
-                await openUrl('https://preflightlaunch.com/pricing')
-                ui.log.info('Opened pricing page. Press Enter when you\'ve purchased credits.')
-
-                // Wait for user to come back
-                const ready = await ui.confirm('Ready to continue?')
-                if (ready === null || !ready) return
-
-                // Brief delay to allow API to update
-                await new Promise(r => setTimeout(r, 3000))
-
-                analyzeSpinner.start()
-                activeSpinner = analyzeSpinner
-                analyzeSpinner.text = 'Retrying analysis...'
-                maxFinalizeRetries--
+                if (noPrompts) fail(finalizeData.message || 'Backend rejected this analysis request.', 1)
+                return
             } else {
                 analyzeSpinner.stop()
                 if (jsonMode) fail(finalizeData.message || 'Failed to finalize submission', 1)
@@ -986,7 +908,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                 console.log(JSON.stringify(reportData.data, null, 2))
             } else {
                 renderReport(reportData.data.report, reportData.data.items)
-                console.log(subtext(`  Full report: https://preflightlaunch.com/report/${submissionId}`))
+                console.log(subtext(`  Full report: ${apiUrl}/report/${submissionId}`))
                 console.log()
 
                 let copyMessage = ''
@@ -1007,7 +929,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
                     copyMessage = ''
 
                     if (next === 'open') {
-                        await openUrl(`https://preflightlaunch.com/report/${submissionId}`)
+                        await openUrl(`${apiUrl}/report/${submissionId}`)
                     } else if (next === 'copy') {
                         try {
                             const aiText = formatForAi(reportData.data.report, reportData.data.items, submissionId, draftState, filesToUpload.map(f => f.type))
@@ -1045,6 +967,7 @@ export async function submitCommand(path?: string, options: SubmitOptions = {}, 
 // ─── Resume Draft Command (Phase 2) ────────────────────────────────────────
 
 export async function resumeSubmitCommand(draft: Record<string, any>) {
+    const { apiUrl } = getConfig()
     const submissionId = draft.id
 
     ui.log.step(`Resuming draft: ${draft.app_name || 'Unknown'}`)
@@ -1152,7 +1075,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
         }
     } catch { /* ignore */ }
 
-    // Fetch credits for dashboard display
+        // Fetch legacy quota for dashboard display if the backend still exposes it.
     try {
         const creditsRes = await apiRequest('/api/credits')
         if (creditsRes.ok) {
@@ -1295,16 +1218,8 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
                 finalizeSuccess = true
             } else if (finalizeRes.status === 402) {
                 analyzeSpinner.stop()
-                ui.log.warning(`Not enough credits. Need ${finalizeData.required ?? 100}, have ${finalizeData.credits ?? 0}.`)
-                const wantsBuy = await ui.confirm('Would you like to buy more credits?')
-                if (wantsBuy === null || !wantsBuy) return
-                await openUrl('https://preflightlaunch.com/pricing')
-                ui.log.info('Opened pricing page. Press Enter when purchased.')
-                await ui.confirm('Ready to continue?')
-                await new Promise(r => setTimeout(r, 3000))
-                analyzeSpinner.start()
-                activeSpinner = analyzeSpinner
-                maxFinalizeRetries--
+                ui.log.warning(finalizeData.message || 'The configured backend rejected this analysis request.')
+                return
             } else {
                 analyzeSpinner.stop()
                 ui.log.error(finalizeData.message || 'Failed to finalize')
@@ -1331,7 +1246,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
 
         if (reportData.status === 'complete' && reportData.data) {
             renderReport(reportData.data.report, reportData.data.items)
-            console.log(subtext(`  Full report: https://preflightlaunch.com/report/${finalId}`))
+            console.log(subtext(`  Full report: ${apiUrl}/report/${finalId}`))
 
 
             // Loop until user chooses to be done
@@ -1346,7 +1261,7 @@ export async function resumeSubmitCommand(draft: Record<string, any>) {
                 })
 
                 if (next === 'open') {
-                    await openUrl(`https://preflightlaunch.com/report/${finalId}`)
+                    await openUrl(`${apiUrl}/report/${finalId}`)
                 } else if (next === 'copy') {
                     try {
                         const aiText = formatForAi(reportData.data.report, reportData.data.items, submissionId, draft, filesToUpload.map(f => f.type))

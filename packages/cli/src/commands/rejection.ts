@@ -93,8 +93,10 @@ export async function reportRejection(submissionId: string): Promise<void> {
         console.log()
         success('Rejection reported!')
         console.log()
-        console.log(chalk.green(`  [OK] ${data.refundedCredits} credits refunded`))
-        console.log(chalk.cyan(`  New balance: ${data.newCreditBalance} credits`))
+        if (data.refundedCredits > 0) {
+            console.log(chalk.green(`  [OK] ${data.refundedCredits} legacy credits refunded`))
+            console.log(chalk.cyan(`  New balance: ${data.newCreditBalance} legacy credits`))
+        }
         console.log()
         console.log(chalk.dim('  This data helps us improve our predictions for the future.'))
         console.log()

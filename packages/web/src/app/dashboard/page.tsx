@@ -16,9 +16,7 @@ type Submission = {
 
 type DashboardSearchParams = {
     promo?: string;
-    credits?: string;
     reason?: string;
-    credits_purchased?: string;
 };
 
 function mapPromoFailureReason(reason?: string): string {
@@ -63,12 +61,6 @@ export default async function DashboardPage({
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-    const { data: profile } = await supabase
-        .from("profiles")
-        .select("credits")
-        .eq("id", user.id)
-        .maybeSingle();
-
     if (submissionsError) {
         console.error("Error fetching submissions:", submissionsError);
     }
@@ -77,10 +69,7 @@ export default async function DashboardPage({
     const drafts = submissionRows.filter(s => s.status === 'draft' && !s.is_rereviewing);
     const active = submissionRows.filter(s => s.status !== 'draft' && !s.is_rereviewing);
     const promoStatus = params.promo;
-    const promoCredits = Number(params.credits ?? '0');
     const promoFailureReason = mapPromoFailureReason(params.reason);
-    const creditsPurchased = params.credits_purchased === 'true';
-    const availableCredits = typeof profile?.credits === "number" ? profile.credits : null;
 
     function formatDate(dateStr: string): string {
         return new Date(dateStr).toLocaleDateString("en-US", {
@@ -153,15 +142,6 @@ export default async function DashboardPage({
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-3 py-1.5">
-                        <span className="text-[10px] font-mono tracking-widest uppercase text-gray-500">Credits</span>
-                        <span className="text-sm font-mono text-white">
-                            {availableCredits !== null ? availableCredits.toLocaleString() : "--"}
-                        </span>
-                    </div>
-                    <Link href="/pricing" className="vercel-btn-secondary py-1.5 text-xs">
-                        Buy Credits
-                    </Link>
                     <Link href="/submit" className="vercel-btn-primary py-1.5 flex items-center gap-1.5 text-xs plus-hover-spin">
                         <Plus className="w-3.5 h-3.5" /> New Review
                     </Link>
@@ -170,13 +150,7 @@ export default async function DashboardPage({
 
             {promoStatus === 'applied' && (
                 <div className="mb-8 text-sm text-green-500 bg-green-500/10 border border-green-500/20 p-4 rounded-md">
-                    +{Number.isFinite(promoCredits) && promoCredits > 0 ? promoCredits : 100} promo credits applied successfully.
-                </div>
-            )}
-
-            {creditsPurchased && (
-                <div className="mb-8 text-sm text-green-500 bg-green-500/10 border border-green-500/20 p-4 rounded-md">
-                    Credits purchased successfully.
+                    Legacy promo applied successfully.
                 </div>
             )}
 

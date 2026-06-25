@@ -1,6 +1,6 @@
 {
   "name": "preflightlaunch",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",
   "bin": {
@@ -26,7 +26,7 @@
     "url": "git+https://github.com/tszaks/Preflight.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://preflightlaunch.com",
+  "homepage": "https://github.com/tszaks/Preflight",
   "author": "Tyler Szakacs <tylerszakacs@gmail.com>",
   "dependencies": {
     "@clack/prompts": "^1.0.0",
@@ -57,5 +57,5 @@
     "apple",
     "scanner"
   ],
-  "license": "MIT"
+  "license": "AGPL-3.0-only"
 }

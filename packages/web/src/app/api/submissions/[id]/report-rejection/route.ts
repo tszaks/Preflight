@@ -10,10 +10,18 @@ import {
     getBuildForVersion,
     type ASCCredentials,
 } from '@/lib/app-store-connect'
+import { CREDIT_COSTS } from '@preflight/shared/constants'
 
-const REFUND_AMOUNT = 100
+const REFUND_AMOUNT = CREDIT_COSTS.full
 const MAX_REJECTIONS_PER_MONTH = 5
 const REJECTED_ASC_STATES = new Set(['REJECTED', 'METADATA_REJECTED'])
+
+type SubmissionForRejection = {
+    bundle_id: string | null
+    bundle_version: string | null
+    build_number: string | null
+    version: string | null
+}
 
 const isLikelyBuildVariable = (value: string): boolean =>
     /\$\([^)]+\)|\$\{[^}]+\}/.test(value)
@@ -95,11 +103,12 @@ export async function POST(
         }
 
         // Fraud-resistant proof: verify rejection status via App Store Connect (ASC)
-        const submissionBundleId = (submission as any).bundle_id as string | null
+        const submissionRow = submission as SubmissionForRejection
+        const submissionBundleId = submissionRow.bundle_id
         const submissionVersionString =
-            ((submission as any).bundle_version as string | null) ||
-            ((submission as any).version as string | null)
-        const submissionBuildNumber = (submission as any).build_number as string | null
+            submissionRow.bundle_version ||
+            submissionRow.version
+        const submissionBuildNumber = submissionRow.build_number
 
         if (!submissionBundleId || !isValidBundleId(submissionBundleId) || isLikelyBuildVariable(submissionBundleId)) {
             return NextResponse.json(
@@ -124,7 +133,7 @@ export async function POST(
 
         if (connError || !conn?.selected_app_id) {
             return NextResponse.json(
-                { message: 'To get credits refunded, connect App Store Connect and select your app so we can verify the rejection.' },
+                { message: 'Connect App Store Connect and select your app so we can verify the rejection.' },
                 { status: 409 }
             )
         }
@@ -217,9 +226,9 @@ export async function POST(
         if (recentError) {
             console.error('Error checking rate limit:', {
                 message: recentError.message,
-                code: (recentError as any).code,
-                details: (recentError as any).details,
-                hint: (recentError as any).hint,
+                code: recentError.code,
+                details: recentError.details,
+                hint: recentError.hint,
             })
             return NextResponse.json(
                 { message: 'Failed to check rate limit' },
@@ -261,8 +270,7 @@ export async function POST(
             )
         }
 
-        // Insert rejection record AND refund credits atomically
-        // The rejection record is the source of truth for what was refunded
+        // Insert rejection record. Credits are legacy and disabled by default in OSS builds.
         const { data: rejection, error: insertError } = await serviceSupabase
             .from('apple_rejections')
             .insert({
@@ -294,18 +302,17 @@ export async function POST(
             )
         }
 
-        // Now refund credits (rejection record is committed, so we have backup)
-        const { error: refundError } = await serviceSupabase
-            .rpc('refund_credits', { p_user_id: user.id, p_amount: REFUND_AMOUNT })
+        if (REFUND_AMOUNT > 0) {
+            const { error: refundError } = await serviceSupabase
+                .rpc('refund_credits', { p_user_id: user.id, p_amount: REFUND_AMOUNT })
 
-        if (refundError) {
-            console.error('Error refunding credits:', refundError)
-            // Note: Rejection record exists but credits weren't refunded
-            // This is logged and can be manually reviewed/rectified
-            return NextResponse.json(
-                { message: 'Rejection recorded but credit refund failed. Please contact support.' },
-                { status: 500 }
-            )
+            if (refundError) {
+                console.error('Error refunding credits:', refundError)
+                return NextResponse.json(
+                    { message: 'Rejection recorded but credit refund failed. Please contact support.' },
+                    { status: 500 }
+                )
+            }
         }
 
         // Trigger pattern learning worker (async, don't block response)
@@ -327,7 +334,19 @@ export async function POST(
             }
         }
 
-        // Get updated credit balance
+        if (REFUND_AMOUNT === 0) {
+            return NextResponse.json(
+                {
+                    success: true,
+                    refundedCredits: 0,
+                    rejectionId: rejection?.id,
+                    newCreditBalance: null,
+                },
+                { status: 200 }
+            )
+        }
+
+        // Get updated credit balance when legacy credits are enabled.
         const { data: profile, error: profileError } = await serviceSupabase
             .from('profiles')
             .select('credits')

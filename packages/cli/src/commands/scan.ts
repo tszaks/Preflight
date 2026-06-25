@@ -376,9 +376,9 @@ export async function scanCommand(path?: string) {
 
     // Upsell for full analysis
     const upsellLines: string[] = []
-    upsellLines.push(chalk.bold('Unlock Full Analysis'))
-    upsellLines.push(`  ${muted('The free scan checks Info.plist, privacy manifest, and screenshots.')}`)
-    upsellLines.push(`  ${muted('Full AI-powered analysis adds:')}`)
+    upsellLines.push(chalk.bold('Full Analysis'))
+    upsellLines.push(`  ${muted('The local scan checks Info.plist, privacy manifest, and screenshots without any backend.')}`)
+    upsellLines.push(`  ${muted('If you run the self-hosted web app, full AI-powered analysis adds:')}`)
     upsellLines.push(`    ${brand(icons.arrow)} IPA binary scan ${subtext('(Mach-O, private APIs, SDK issues)')}`)
     upsellLines.push(`    ${brand(icons.arrow)} Screenshot AI review ${subtext('(UI compliance, missing elements)')}`)
     upsellLines.push(`    ${brand(icons.arrow)} Approval prediction ${subtext('(% chance of approval)')}`)
@@ -390,7 +390,7 @@ export async function scanCommand(path?: string) {
     const next = await ui.select<'submit' | 'done'>({
         message: 'What next?',
         options: [
-            { value: 'submit', label: 'Submit for full analysis', hint: '100 credits' },
+            { value: 'submit', label: 'Submit for full analysis', hint: 'requires configured backend' },
             { value: 'done', label: 'Done for now' },
         ],
     })

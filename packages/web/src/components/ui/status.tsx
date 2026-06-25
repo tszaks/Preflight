@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
- * Utiliy for merging tailwind classes with standard Vercel logic
+ * Utility for merging Tailwind classes.
  */
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));

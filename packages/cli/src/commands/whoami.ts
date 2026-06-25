@@ -29,7 +29,7 @@ export async function whoamiCommand() {
         console.log(`  Email:   ${brandDim(data.user.email)}`)
         console.log(`  ID:      ${chalk.dim(data.user.id)}`)
         if (data.user.credits != null) {
-            console.log(`  Credits: ${chalk.green(data.user.credits)}`)
+            console.log(`  Legacy quota: ${chalk.green(data.user.credits)}`)
         }
         console.log()
     } catch (err) {
