@@ -329,6 +329,37 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
             base_confidence: 50,
         },
     },
+    {
+        id: 'biz-low-value-saturated-category',
+        guideline: '4.3(b)',
+        category: 'content_policy',
+        title: 'Low-value app in saturated category',
+        trigger: 'App appears to be in a saturated category Apple calls out for indistinguishable or low-effort submissions',
+        fix: 'Make the differentiated value obvious in the app, first screenshots, and description. Avoid template clones, thin variants, and repeated submissions of low-effort apps.',
+        match: {
+            keywords: [
+                'dating', 'flashlight', 'sound effects', 'wallpaper', 'simple timer',
+                'fortune telling', 'drinking game', 'kama sutra', 'fart', 'burp',
+            ],
+            base_confidence: 55,
+        },
+    },
+    {
+        id: 'content-live-activities-spam',
+        guideline: '4.5.3',
+        category: 'content_policy',
+        title: 'Live Activities or Apple services used for spam',
+        trigger: 'App describes promotional, unsolicited, spam-like, or phishing-like messaging through Live Activities, notifications, Game Center, or other Apple services',
+        fix: 'Use Apple services only for user-requested, app-relevant updates. Remove promotional, phishing-like, or unsolicited messaging from Live Activities and notification surfaces.',
+        match: {
+            keywords: [
+                'live activities', 'live activity', 'push notifications', 'game center',
+                'promotion', 'promotional', 'marketing notification', 'unsolicited',
+                'phishing', 'spam',
+            ],
+            base_confidence: 50,
+        },
+    },
 
     // ============================================================
     // NEW: FINANCE-SPECIFIC PATTERNS

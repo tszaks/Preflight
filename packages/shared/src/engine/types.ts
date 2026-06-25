@@ -184,6 +184,9 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     // iPhone 6.3" / 6.1" accepted App Store Connect sizes
     { width: 1206, height: 2622, device: '6.3" iPhone' },
     { width: 1179, height: 2556, device: '6.1" iPhone' },
+    { width: 1170, height: 2532, device: '6.1" iPhone' },
+    { width: 1125, height: 2436, device: '6.1" iPhone' },
+    { width: 1080, height: 2340, device: '6.1" iPhone' },
     // iPhone 5.5" (iPhone 8 Plus - still accepted)
     { width: 1242, height: 2208, device: '5.5" iPhone' },
     // iPad Pro 13" (M4)
@@ -200,6 +203,9 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 2688, height: 1242, device: '6.5" iPhone (landscape)' },
     { width: 2622, height: 1206, device: '6.3" iPhone (landscape)' },
     { width: 2556, height: 1179, device: '6.1" iPhone (landscape)' },
+    { width: 2532, height: 1170, device: '6.1" iPhone (landscape)' },
+    { width: 2436, height: 1125, device: '6.1" iPhone (landscape)' },
+    { width: 2340, height: 1080, device: '6.1" iPhone (landscape)' },
     { width: 2208, height: 1242, device: '5.5" iPhone (landscape)' },
     { width: 2752, height: 2064, device: '13" iPad Pro (landscape)' },
     { width: 2732, height: 2048, device: '12.9" iPad Pro (landscape)' },
