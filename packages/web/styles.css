@@ -65,7 +65,7 @@ code { font-family: var(--font-mono); }
   border-bottom: 1px solid var(--border-soft);
 }
 
-.brand img { display: block; height: 26px; width: auto; }
+.brand img { display: block; height: 38px; width: auto; }
 
 .site-header nav { display: flex; align-items: center; gap: 22px; }
 
@@ -361,6 +361,7 @@ code { font-family: var(--font-mono); }
   .section-head h2 { font-size: 1.85rem; }
   .trust-copy h2 { font-size: 1.7rem; }
   .site-header { padding: 16px 20px; }
+  .brand img { height: 32px; }
   .corner { display: none; }
 }
 
