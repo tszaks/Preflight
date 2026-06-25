@@ -89,7 +89,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         category: 'screenshots',
         title: 'Invalid screenshot dimensions',
         trigger: 'Screenshots that don\'t match required dimensions for any supported device size',
-        fix: 'Use exact pixel dimensions required by App Store Connect. Primary sizes: 6.9" iPhone (1320x2868), 6.7" iPhone (1290x2796), 13" iPad Pro (2064x2752), 12.9" iPad Pro (2048x2732).',
+        fix: 'Use exact pixel dimensions accepted by App Store Connect. Current primary examples: 6.9" iPhone (1320x2868 or 1260x2736), 6.7"/6.5" iPhone (1290x2796, 1284x2778, or 1242x2688), 6.3"/6.1" iPhone (1206x2622 or 1179x2556), and 13" iPad (2064x2752 or 2048x2732).',
     },
 
     // Privacy rejections

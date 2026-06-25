@@ -11,13 +11,10 @@ node_modules
 # testing
 /coverage
 
-# next.js
-.next/
-/out/
-
 # production
 /build
 /dist
+packages/web/dist/
 
 # misc
 .DS_Store
@@ -31,18 +28,12 @@ yarn-error.log*
 
 # env files
 .env*
-!.env.example
-!packages/**/.env.example
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
-# supabase
-supabase/.temp/
 
 # cli
 packages/cli/dist/

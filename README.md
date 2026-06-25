@@ -2,60 +2,60 @@
 
 Open-source App Store review readiness checks for iOS apps.
 
-Preflight has two modes:
+Preflight is a CLI-first tool. It runs locally on your machine and uses the
+maintained rule set from this repository.
 
-- **Local CLI scan:** runs on your machine with no account, no hosted service, and no paid infrastructure.
-- **Self-hosted web workflow:** optional Next.js app for uploads, reports, App Store Connect integration, and AI analysis using your own Supabase project and Anthropic API key.
+## Install
 
-There is no official hosted Preflight Cloud service in this repository.
+```bash
+npm install -g preflightlaunch
+```
 
-## Quick Start
+You can also run it without a global install:
+
+```bash
+npx preflightlaunch scan ./MyApp
+```
+
+## Usage
+
+```bash
+preflight scan ./MyApp
+preflight scan ./MyApp.xcarchive
+preflight scan ./MyApp.ipa
+preflight update
+```
+
+## What It Checks
+
+- iOS project metadata, URLs, keywords, and category signals
+- Info.plist permissions, ATS settings, and required keys
+- PrivacyInfo.xcprivacy structure and required-reason API declarations
+- Screenshot file types, counts, and accepted Apple dimensions
+- IPA binary signals, frameworks, entitlements, architecture, and size
+- Local rejection-risk findings with fix suggestions
+
+## Rules
+
+The Preflight rule set is maintained in this repo and shipped through npm
+package updates. CLI users are not expected to maintain the rules themselves.
+
+Rule updates are based on official Apple sources first, then cross-verified
+community rejection patterns where useful.
+
+## Development
 
 ```bash
 npm install
+npm run build:shared
 npm run build:cli
 node packages/cli/dist/index.js scan ./MyApp
 ```
 
-For CLI development:
+For website development:
 
 ```bash
-npm run build:cli
-node packages/cli/dist/index.js --help
-```
-
-## Self-Hosted Web App
-
-The web app is optional. It needs your own infrastructure:
-
-- Supabase for auth, database, and file storage
-- Anthropic API key for AI analysis
-- App Store Connect API credentials if you want ASC autofill
-
-Copy the example env file before running the web app:
-
-```bash
-cp packages/web/.env.example packages/web/.env.local
 npm run dev
-```
-
-Then open `http://localhost:5173`.
-
-More detail is in [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md).
-
-## Configuration
-
-The CLI defaults to the local web app:
-
-```bash
-PREFLIGHT_API_URL=http://localhost:5173
-```
-
-If you use Supabase-backed CLI auth/session refresh, also set:
-
-```bash
-PREFLIGHT_SUPABASE_URL=https://your-project.supabase.co
-PREFLIGHT_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## License
