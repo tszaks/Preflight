@@ -278,6 +278,22 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'All mini apps, HTML5 games, and plugins must be individually submitted for review. They cannot download or execute code not contained in the app bundle. See guideline 4.7.',
     },
     {
+        id: 'biz-low-value-saturated-category',
+        guideline: '4.3(b)',
+        category: 'content_policy',
+        title: 'Low-value app in saturated category',
+        trigger: 'App is a dating, flashlight, sound effects, wallpaper, simple timer, fortune telling, drinking game, Kama Sutra, fart, or burp app without a meaningfully different or improved experience',
+        fix: 'Make the differentiated value obvious in the app, first screenshots, and description. Avoid template clones, thin variants, and repeated submissions of low-effort apps in saturated categories.',
+    },
+    {
+        id: 'content-live-activities-spam',
+        guideline: '4.5.3',
+        category: 'content_policy',
+        title: 'Live Activities or Apple services used for spam',
+        trigger: 'App uses Live Activities, Push Notifications, Game Center, or other Apple services to spam, phish, or send unsolicited messages',
+        fix: 'Use Apple services only for user-requested, app-relevant updates. Remove promotional, phishing-like, or unsolicited messaging from Live Activities and notification surfaces.',
+    },
+    {
         id: 'content-anonymous-chat',
         guideline: '1.2',
         category: 'content_policy',

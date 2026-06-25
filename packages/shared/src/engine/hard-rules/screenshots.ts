@@ -82,7 +82,7 @@ export function checkScreenshots(input: HardRulesInput, screenshotData?: Screens
                         description: `Dimensions ${screenshot.width}x${screenshot.height} don't match any required App Store size.`,
                         confidence: 100,
                         guideline_ref: getGuidelineRef('2.3.7'),
-                        fix_suggestion: `Use an App Store Connect accepted size such as 1320x2868 or 1260x2736 (6.9"), 1290x2796 or 1284x2778 (6.7"/6.5"), 1206x2622 or 1179x2556 (6.3"/6.1"), or 2064x2752 / 2048x2732 (13" iPad).`,
+                        fix_suggestion: `Use an App Store Connect accepted size such as 1320x2868 or 1260x2736 (6.9"), 1290x2796 or 1284x2778 (6.7"/6.5"), 1206x2622, 1179x2556, 1170x2532, 1125x2436, or 1080x2340 (6.3"/6.1"), or 2064x2752 / 2048x2732 (13" iPad).`,
                     });
                 }
             }

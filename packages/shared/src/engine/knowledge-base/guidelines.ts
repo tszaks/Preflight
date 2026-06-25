@@ -144,7 +144,17 @@ export const GUIDELINES: Record<string, Guideline> = {
     '4.3': {
         section: '4.3',
         title: 'Spam',
-        summary: 'Do not create multiple Bundle IDs for the same app. Apps that are essentially the same should be combined into a single app.',
+        summary: 'Do not create multiple Bundle IDs for the same app or submit apps that are indistinguishable from what is already widely available. Apple may reject or remove low-value apps in saturated categories.',
+    },
+    '4.3(a)': {
+        section: '4.3(a)',
+        title: 'Duplicate App Bundle IDs',
+        summary: 'Do not create multiple Bundle IDs for essentially the same app, such as separate city, team, school, or location variants. Use one app with in-app variation where possible.',
+    },
+    '4.3(b)': {
+        section: '4.3(b)',
+        title: 'Low-Value or Saturated App Categories',
+        summary: 'Apps must not be indistinguishable from popular or widely available categories. Dating, flashlight, sound effects, wallpaper, simple timer, and fortune telling apps need a meaningfully different or improved experience, and repeated low-effort submissions can put the developer account at risk.',
     },
     '4.1(c)': {
         section: '4.1(c)',
@@ -180,6 +190,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         section: '4.10',
         title: 'Monetizing Built-In Capabilities',
         summary: 'Apps may not monetize built-in hardware or OS capabilities (e.g., push notifications, camera, gyroscope) or Apple services. Apps that do so may be rejected.',
+    },
+    '4.5.3': {
+        section: '4.5.3',
+        title: 'Apple Services Misuse',
+        summary: 'Do not use Apple services, including Game Center, Push Notifications, or Live Activities, to spam, phish, send unsolicited messages, or exploit user identifiers.',
     },
 
     // Section 5: Legal
