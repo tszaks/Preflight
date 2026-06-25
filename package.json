@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w packages/web",
-    "build": "npm run build -w packages/shared && npm run build -w packages/web",
+    "build": "npm run build -w packages/shared && npm run build -w packages/cli && npm run build -w packages/web",
     "build:shared": "npm run build -w packages/shared",
     "build:web": "npm run build -w packages/web",
     "build:cli": "npm run build -w packages/cli",
@@ -19,11 +19,6 @@
     "typecheck:cli": "tsc --noEmit -p packages/cli/tsconfig.json",
     "typecheck:all": "npm run build:shared && npm run typecheck:cli"
   },
-  "dependencies": {
-    "bplist-parser": "^0.3.2",
-    "plist": "^3.1.0"
-  },
-  "devDependencies": {
-    "@types/plist": "^3.0.5"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

@@ -7,10 +7,10 @@ import { setLastScannedPath } from '../lib/config.js'
 import { interactiveProjectSelect } from '../lib/project-finder.js'
 import { getImageDimensions } from '../lib/image-dimensions.js'
 import * as ui from '../ui/interactive.js'
-import { ok, okBold, critical, criticalBold, warning, warningBold, info, subtext, brand, icons, muted } from '../ui/theme.js'
+import { ok, critical, criticalBold, warning, warningBold, info, subtext, icons, muted } from '../ui/theme.js'
 import { runHardRules } from '@preflight/shared/engine/hard-rules/index'
 import { autoDetect } from '@preflight/shared/engine/auto-detect/index'
-import type { CheckResult, ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
+import type { ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
 
 /** Question labels for unresolved fields */
 const UNRESOLVED_QUESTIONS: Record<string, { message: string; defaultValue: boolean }> = {
@@ -145,7 +145,6 @@ export async function scanCommand(path?: string) {
             importedSymbols: ipaImportedSymbols,
         } : undefined,
         plistContent,
-        // ASC data would go here when connected
     })
 
     // === Display auto-detected findings ===
@@ -163,13 +162,6 @@ export async function scanCommand(path?: string) {
         }
 
         ui.log.message(autoLines.join('\n'))
-    }
-
-    // ASC tip if not connected
-    if (!detectResult.detections.some(d => d.source === 'asc')) {
-        ui.log.message(
-            `  ${subtext(`Tip: Connect App Store Connect for more auto-detection (${brand('preflight asc')})`)}`
-        )
     }
 
     // === Collect minimal metadata from user ===
@@ -266,7 +258,7 @@ export async function scanCommand(path?: string) {
         app_name: appName,
         description: description ?? null,
         screenshot_paths: detected.screenshots,
-        // Auto-detected fields (from binary/plist/ASC)
+        // Auto-detected fields from local binary and plist data
         ...detectResult.fields,
         // User answers override auto-detected values
         ...(userAnswers.sign_in_required !== undefined && { sign_in_required: userAnswers.sign_in_required }),
@@ -286,7 +278,20 @@ export async function scanCommand(path?: string) {
         ipaBuffer,
     })
 
-    const allChecks = result.checks
+    const [{ runBehavioralHeuristics }, { matchRejectionPatterns }] = await Promise.all([
+        import('@preflight/shared/engine/behavioral-heuristics/index'),
+        import('@preflight/shared/engine/historical-patterns/index'),
+    ])
+    const [behavioralChecks, historicalChecks] = await Promise.all([
+        runBehavioralHeuristics(input),
+        matchRejectionPatterns(input),
+    ])
+
+    const allChecks = [
+        ...result.checks,
+        ...behavioralChecks,
+        ...historicalChecks,
+    ]
 
     s.stop('Compliance checks complete')
 
@@ -317,6 +322,7 @@ export async function scanCommand(path?: string) {
     }
     checkedLines.push(`  ${icons.check} URL reachability ${subtext('(privacy policy, support, marketing URLs)')}`)
     checkedLines.push(`  ${icons.check} Apple guideline compliance ${subtext('(account deletion, restore purchases, SIWA, etc.)')}`)
+    checkedLines.push(`  ${icons.check} Maintained rule patterns ${subtext('(category heuristics and rejection patterns)')}`)
     ui.log.message(checkedLines.join('\n'))
 
     // === Display findings by severity ===
@@ -374,40 +380,25 @@ export async function scanCommand(path?: string) {
 
     ui.log.message(summaryLines.join('\n'))
 
-    // Upsell for full analysis
-    const upsellLines: string[] = []
-    upsellLines.push(chalk.bold('Full Analysis'))
-    upsellLines.push(`  ${muted('The local scan checks Info.plist, privacy manifest, and screenshots without any backend.')}`)
-    upsellLines.push(`  ${muted('If you run the self-hosted web app, full AI-powered analysis adds:')}`)
-    upsellLines.push(`    ${brand(icons.arrow)} IPA binary scan ${subtext('(Mach-O, private APIs, SDK issues)')}`)
-    upsellLines.push(`    ${brand(icons.arrow)} Screenshot AI review ${subtext('(UI compliance, missing elements)')}`)
-    upsellLines.push(`    ${brand(icons.arrow)} Approval prediction ${subtext('(% chance of approval)')}`)
-    upsellLines.push(`    ${brand(icons.arrow)} Rejection pattern matching ${subtext('(historical Apple rejections)')}`)
-    upsellLines.push(`    ${brand(icons.arrow)} Detailed fix instructions ${subtext('(step-by-step remediation)')}`)
-
-    ui.log.message(upsellLines.join('\n'))
-
-    const next = await ui.select<'submit' | 'done'>({
-        message: 'What next?',
-        options: [
-            { value: 'submit', label: 'Submit for full analysis', hint: 'requires configured backend' },
-            { value: 'done', label: 'Done for now' },
-        ],
-    })
-
-    if (next === 'submit') {
-        // Dynamic import to avoid circular dependency
-        const { submitCommand } = await import('./submit.js')
-        await submitCommand(dir, {})
-    } else {
-        ui.tip(`Run ${brand('preflight submit')} anytime for AI-powered analysis.`)
+    const nextStepsLines: string[] = []
+    nextStepsLines.push(chalk.bold('Next Steps'))
+    if (criticals.length > 0) {
+        nextStepsLines.push(`  ${icons.arrow} Fix critical issues first. These are the highest rejection-risk items.`)
     }
+    if (warnings.length > 0) {
+        nextStepsLines.push(`  ${icons.arrow} Review warnings before submitting to Apple.`)
+    }
+    if (criticals.length === 0 && warnings.length === 0) {
+        nextStepsLines.push(`  ${icons.arrow} No critical or warning findings from the local checks.`)
+    }
+    nextStepsLines.push(`  ${icons.arrow} Re-run ${info('preflight scan')} after changes.`)
+    nextStepsLines.push(`  ${icons.arrow} Keep your App Store Connect metadata and screenshots aligned with the files scanned here.`)
+    ui.log.message(nextStepsLines.join('\n'))
 }
 
 /** Format detection source for display */
 function formatSourceLabel(source: string): string {
     switch (source) {
-        case 'asc': return 'App Store Connect'
         case 'ipa_framework': return 'Binary'
         case 'ipa_entitlement': return 'Entitlement'
         case 'ipa_symbol': return 'Binary'

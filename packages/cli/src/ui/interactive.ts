@@ -27,8 +27,8 @@ export function tip(message: string) {
     console.log()
 }
 
-// Full-screen branded header for the interactive app
-export function renderHeader(email?: string, credits?: number) {
+// Full-screen branded header for the interactive scanner
+export function renderHeader() {
     clearScreen()
     console.log()
 
@@ -38,24 +38,7 @@ export function renderHeader(email?: string, credits?: number) {
     }
     console.log()
 
-    // Premium outlined status bar segments
-    if (email || credits !== undefined) {
-        const segments: string[] = []
-
-        if (email) {
-            segments.push(brand('┌─') + brand(` ${email} `) + brand('─┐'))
-        }
-
-        if (credits !== undefined) {
-            segments.push(brand('┌─') + brand(` ${credits.toLocaleString()} legacy quota `) + brand('─┐'))
-        }
-
-        segments.push(brand('┌─') + brand(` v${APP_VERSION} `) + brand('─┐'))
-
-        console.log(`       ${segments.join('  ')}`)
-    } else {
-        console.log(subtext(`       ${APP_TAGLINE}`))
-    }
+    console.log(subtext(`       ${APP_TAGLINE} · v${APP_VERSION}`))
     console.log()
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "preflightlaunch",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "type": "module",
   "description": "Preflight CLI - App Store Review Scanner from your terminal",
   "bin": {
@@ -30,17 +30,12 @@
   "author": "Tyler Szakacs <tylerszakacs@gmail.com>",
   "dependencies": {
     "@clack/prompts": "^1.0.0",
-    "@supabase/supabase-js": "^2.93.3",
     "chalk": "^5.4.1",
-    "cli-progress": "^3.12.0",
-    "cli-table3": "^0.6.5",
     "commander": "^13.1.0",
     "conf": "^13.1.0",
-    "open": "^10.1.0",
     "ora": "^8.2.0"
   },
   "devDependencies": {
-    "@types/cli-progress": "^3.11.6",
     "@types/node": "^20",
     "tsup": "^8.4.0",
     "typescript": "^5"

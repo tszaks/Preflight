@@ -20,9 +20,13 @@ export const SCREENSHOT_LIMITS = {
 } as const;
 
 export const PRIMARY_SCREENSHOT_DIMENSIONS = {
-    'iPhone_6_9': { width: 1320, height: 2868, label: '6.9" iPhone (iPhone 16 Pro Max)' },
+    'iPhone_6_9': { width: 1320, height: 2868, label: '6.9" iPhone accepted size' },
+    'iPhone_6_9_alt': { width: 1260, height: 2736, label: '6.9" iPhone accepted size' },
     'iPhone_6_7': { width: 1290, height: 2796, label: '6.7" iPhone (iPhone 16 Plus / 15 Pro Max)' },
     'iPhone_6_5': { width: 1284, height: 2778, label: '6.5" iPhone (iPhone 14 Plus / 13 Pro Max)' },
+    'iPhone_6_5_alt': { width: 1242, height: 2688, label: '6.5" iPhone accepted size' },
+    'iPhone_6_3': { width: 1206, height: 2622, label: '6.3" iPhone accepted size' },
+    'iPhone_6_1': { width: 1179, height: 2556, label: '6.1" iPhone accepted size' },
     'iPhone_5_5': { width: 1242, height: 2208, label: '5.5" iPhone (iPhone 8 Plus)' },
     'iPad_13': { width: 2064, height: 2752, label: '13" iPad Pro (M4)' },
     'iPad_12_9': { width: 2048, height: 2732, label: '12.9" iPad Pro' },

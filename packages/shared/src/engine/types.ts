@@ -1,14 +1,14 @@
-import type { Database } from '../types/database';
+export type CheckCategory =
+    | 'metadata'
+    | 'description'
+    | 'screenshots'
+    | 'privacy_manifest'
+    | 'info_plist'
+    | 'ipa_binary'
+    | 'urls'
+    | 'content_policy';
 
-// Re-export DB types for convenience
-export type Submission = Database['public']['Tables']['submissions']['Row'];
-export type Report = Database['public']['Tables']['reports']['Row'];
-export type ReportItem = Database['public']['Tables']['report_items']['Row'];
-export type AnalysisJob = Database['public']['Tables']['analysis_jobs']['Row'];
-
-export type CheckCategory = Database['public']['Enums']['check_category'];
-export type SeverityLevel = Database['public']['Enums']['severity_level'];
-export type ReviewType = Database['public']['Enums']['review_type'];
+export type SeverityLevel = 'pass' | 'info' | 'warning' | 'critical';
 
 // Engine-specific types
 export interface CheckResult {
@@ -123,7 +123,7 @@ export interface DataCollectionDeclaration {
 }
 
 /**
- * Parses raw data_collection JSON from the database into a flat DataCollectionDeclaration.
+ * Parses raw data collection JSON into a flat DataCollectionDeclaration.
  * Handles both formats:
  * - Nested (from form): { contactInfo: { collected: true, linked: false, tracking: false }, ... }
  * - Flat (expected):     { contactInfo: true, ... }
@@ -163,71 +163,6 @@ export function parseDataCollection(raw: string | null | undefined): DataCollect
     }
 }
 
-export interface SoftRulesInput extends HardRulesInput {
-    review_type: ReviewType;
-    // File contents (fetched from storage)
-    screenshots_data?: ScreenshotData[];
-    manifest_content?: string;
-    plist_content?: string | Buffer;
-    privacy_policy_text?: string;
-    /** IPA binary as ArrayBuffer (fetched from storage) */
-    ipa_buffer?: ArrayBuffer;
-
-    // ─── ASC-Fetched Data ────────────────────────────────────────────────────
-    /** Screenshot status from ASC (per device type) */
-    asc_screenshots?: AscScreenshotStatus[];
-    /** Subscriptions configured in ASC */
-    asc_subscriptions?: AscSubscription[];
-    /** In-app purchases configured in ASC */
-    asc_in_app_purchases?: AscInAppPurchase[];
-    /** Age rating declaration from ASC */
-    asc_age_rating?: AscAgeRating;
-    /** Review contact info from ASC */
-    asc_review_contact?: AscReviewContact;
-    /** Copyright string from ASC version */
-    asc_copyright?: string;
-    /** App Store state of current version */
-    asc_app_store_state?: string;
-}
-
-// ─── ASC Data Types ──────────────────────────────────────────────────────────
-
-export interface AscScreenshotStatus {
-    deviceType: string;
-    count: number;
-}
-
-export interface AscSubscription {
-    id: string;
-    name: string;
-    productId: string;
-    state: string;
-    groupName?: string;
-}
-
-export interface AscInAppPurchase {
-    id: string;
-    name: string;
-    productId: string;
-    type: string;
-    state: string;
-}
-
-export interface AscAgeRating {
-    rating: string | null;
-    gambling: boolean;
-    unrestrictedWebAccess: boolean;
-    kidsAgeBand: string | null;
-    seventeenPlus: boolean;
-}
-
-export interface AscReviewContact {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-}
-
 export interface ScreenshotData {
     path: string;
     base64: string;
@@ -237,61 +172,17 @@ export interface ScreenshotData {
     size_bytes: number;
 }
 
-/**
- * Evidence extracted from screenshot AI analysis.
- * Used to cross-reference conditional warnings — if the AI sees a feature
- * in a screenshot, we can resolve the corresponding warning.
- */
-export interface ScreenshotEvidence {
-    account_deletion_seen: boolean;
-    restore_purchases_seen: boolean;
-    subscription_terms_seen: boolean;
-    sign_in_with_apple_seen: boolean;
-    /** Maps evidence key to screenshot indices (0-based) where the feature was observed */
-    evidence_locations: Record<string, number[]>;
-}
-
-export interface EngineResult {
-    checks: CheckResult[];
-    hard_rules_completed: boolean;
-    soft_rules_completed: boolean;
-}
-
-export interface ScoreResult {
-    score_metadata: number;
-    score_screenshots: number | null;
-    score_privacy: number | null;
-    score_plist: number | null;
-    score_urls: number;
-    score_content: number;
-    score_ipa_binary: number | null;
-    score_overall: number;
-}
-
-// ASO (App Store Optimization) Analysis Types
-export interface CharacterOptimization {
-    field: string;
-    current: number;
-    max: number;
-    tip: string;
-}
-
-export interface ASOAnalysisResult {
-    optimized_description: string;
-    suggested_keywords: string[];
-    character_optimization: CharacterOptimization[];
-    positioning_statement: string;
-}
-
 // Valid screenshot dimensions (points × scale factor)
 export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number; device: string }> = [
-    // iPhone 6.9" (iPhone 16 Pro Max)
+    // iPhone 6.9" accepted App Store Connect sizes
     { width: 1320, height: 2868, device: '6.9" iPhone' },
-    // iPhone 6.7" (iPhone 15 Pro Max, 14 Pro Max)
+    { width: 1260, height: 2736, device: '6.9" iPhone' },
+    // iPhone 6.7" / 6.5" accepted App Store Connect sizes
     { width: 1290, height: 2796, device: '6.7" iPhone' },
-    // iPhone 6.5" (iPhone 14 Plus, 13 Pro Max)
     { width: 1284, height: 2778, device: '6.5" iPhone' },
-    // iPhone 6.1" (iPhone 15 Pro, 14 Pro)
+    { width: 1242, height: 2688, device: '6.5" iPhone' },
+    // iPhone 6.3" / 6.1" accepted App Store Connect sizes
+    { width: 1206, height: 2622, device: '6.3" iPhone' },
     { width: 1179, height: 2556, device: '6.1" iPhone' },
     // iPhone 5.5" (iPhone 8 Plus - still accepted)
     { width: 1242, height: 2208, device: '5.5" iPhone' },
@@ -303,8 +194,11 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 1668, height: 2388, device: '11" iPad Pro' },
     // Also allow landscape (swapped)
     { width: 2868, height: 1320, device: '6.9" iPhone (landscape)' },
+    { width: 2736, height: 1260, device: '6.9" iPhone (landscape)' },
     { width: 2796, height: 1290, device: '6.7" iPhone (landscape)' },
     { width: 2778, height: 1284, device: '6.5" iPhone (landscape)' },
+    { width: 2688, height: 1242, device: '6.5" iPhone (landscape)' },
+    { width: 2622, height: 1206, device: '6.3" iPhone (landscape)' },
     { width: 2556, height: 1179, device: '6.1" iPhone (landscape)' },
     { width: 2208, height: 1242, device: '5.5" iPhone (landscape)' },
     { width: 2752, height: 2064, device: '13" iPad Pro (landscape)' },

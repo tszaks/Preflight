@@ -1,11 +1,8 @@
 /**
- * Progress Event Types for Real-Time Analysis Streaming
- *
- * These types define the SSE (Server-Sent Events) protocol for
- * streaming analysis progress to the client.
+ * Progress event types for local scanner callbacks.
  */
 
-export type ProgressPhase = 'hard_rules' | 'soft_rules' | 'cross_reference' | 'report_generation' | 'checklist';
+export type ProgressPhase = 'hard_rules';
 
 export type ProgressEventType =
     | 'phase_start'
@@ -25,11 +22,8 @@ export interface ProgressEvent {
     data?: {
         screenshotIndex?: number;
         totalScreenshots?: number;
-        reportId?: string;
         error?: string;
         checksFound?: number;
-        resolved?: number;
-        evidence?: unknown;
     };
 }
 
@@ -60,57 +54,29 @@ export function createProgressEvent(
  * Pre-defined check identifiers for consistent progress tracking
  */
 export const PROGRESS_CHECKS = {
-    // Hard Rules (0-40%)
     METADATA: 'metadata',
     SCREENSHOTS: 'screenshots',
     PRIVACY_MANIFEST: 'privacy_manifest',
     INFO_PLIST: 'info_plist',
     URLS: 'urls',
     IPA_SCAN: 'ipa_scan',
-
-    // Soft Rules (40-85%)
-    DESCRIPTION: 'description',
-    CONTENT_POLICY: 'content_policy',
-    SCREENSHOTS_AI: 'screenshots_ai',
-    PRIVACY_POLICY: 'privacy_policy',
-    METADATA_QUALITY: 'metadata_quality',
-    ASO_ANALYSIS: 'aso_analysis',
-
-    // Report (85-100%)
-    SCORING: 'scoring',
-    SAVING: 'saving',
 } as const;
 
 /**
  * Progress percentage ranges for each phase
  */
 export const PROGRESS_RANGES = {
-    hard_rules: { start: 0, end: 40 },
-    soft_rules: { start: 40, end: 85 },
-    report_generation: { start: 85, end: 100 },
+    hard_rules: { start: 0, end: 100 },
 } as const;
 
 /**
  * Human-readable messages for each check
  */
 export const PROGRESS_MESSAGES: Record<string, string> = {
-    // Hard rules
     [PROGRESS_CHECKS.METADATA]: 'Validating app name and keywords...',
     [PROGRESS_CHECKS.SCREENSHOTS]: 'Checking screenshots...',
     [PROGRESS_CHECKS.PRIVACY_MANIFEST]: 'Analyzing privacy manifest...',
     [PROGRESS_CHECKS.INFO_PLIST]: 'Parsing Info.plist configuration...',
     [PROGRESS_CHECKS.URLS]: 'Testing URL reachability...',
     [PROGRESS_CHECKS.IPA_SCAN]: 'Scanning IPA binary...',
-
-    // Soft rules
-    [PROGRESS_CHECKS.DESCRIPTION]: 'AI analyzing app description...',
-    [PROGRESS_CHECKS.CONTENT_POLICY]: 'Checking content guidelines...',
-    [PROGRESS_CHECKS.SCREENSHOTS_AI]: 'AI reviewing screenshots...',
-    [PROGRESS_CHECKS.PRIVACY_POLICY]: 'Cross-checking privacy policy...',
-    [PROGRESS_CHECKS.METADATA_QUALITY]: 'Generating ASO recommendations...',
-    [PROGRESS_CHECKS.ASO_ANALYSIS]: 'Running ASO analysis...',
-
-    // Report
-    [PROGRESS_CHECKS.SCORING]: 'Calculating scores...',
-    [PROGRESS_CHECKS.SAVING]: 'Saving report...',
 };

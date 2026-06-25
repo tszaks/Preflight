@@ -2,23 +2,11 @@ import * as p from '@clack/prompts'
 import chalk from 'chalk'
 import { brand, brandDim } from './theme.js'
 
-// Known commands for fuzzy matching
 const KNOWN_COMMANDS = [
-    { name: 'scan', description: 'Scan your app (free preview)' },
-    { name: 'submit', description: 'Submit for full AI analysis' },
-    { name: 'login', description: 'Log in to your account' },
-    { name: 'logout', description: 'Log out and clear credentials' },
-    { name: 'whoami', description: 'Show current user info' },
-    { name: 'credits', description: 'Check legacy backend quota' },
-    { name: 'status', description: 'Check analysis status' },
-    { name: 'report', description: 'View analysis report' },
-    { name: 'history', description: 'List past submissions' },
-    { name: 'setup', description: 'Run guided setup' },
-    { name: 'asc', description: 'App Store Connect integration' },
-    { name: 'update', description: 'Update to the latest version' },
+    { name: 'scan', description: 'Scan an iOS project locally' },
+    { name: 'update', description: 'Update to the latest npm version' },
 ]
 
-// Levenshtein distance for fuzzy matching
 function levenshtein(a: string, b: string): number {
     const matrix: number[][] = []
     for (let i = 0; i <= b.length; i++) matrix[i] = [i]
@@ -40,7 +28,6 @@ function levenshtein(a: string, b: string): number {
     return matrix[b.length]![a.length]!
 }
 
-// Find similar commands
 export function findSimilarCommands(input: string, maxSuggestions = 3): typeof KNOWN_COMMANDS {
     const scored = KNOWN_COMMANDS
         .map((cmd) => ({
@@ -50,7 +37,6 @@ export function findSimilarCommands(input: string, maxSuggestions = 3): typeof K
         }))
         .filter((cmd) => cmd.distance <= 3 || cmd.isSubstring)
         .sort((a, b) => {
-            // Substring matches first, then by distance
             if (a.isSubstring && !b.isSubstring) return -1
             if (!a.isSubstring && b.isSubstring) return 1
             return a.distance - b.distance
@@ -59,7 +45,6 @@ export function findSimilarCommands(input: string, maxSuggestions = 3): typeof K
     return scored.slice(0, maxSuggestions)
 }
 
-// Handle unknown commands with friendly suggestions
 export function handleUnknownCommand(cmdName: string) {
     const suggestions = findSimilarCommands(cmdName)
 
@@ -70,33 +55,15 @@ export function handleUnknownCommand(cmdName: string) {
         console.log()
         console.log(chalk.dim('  Did you mean:'))
         for (const s of suggestions) {
-            console.log(`    ${brandDim('\u2192')} ${brand(`preflight ${s.name}`)}    ${chalk.dim(s.description)}`)
+            console.log(`    ${brandDim('->')} ${brand(`preflight ${s.name}`)}    ${chalk.dim(s.description)}`)
         }
     }
 
     console.log()
-    console.log(chalk.dim('  Run ') + brand('preflight') + chalk.dim(' for the interactive menu.'))
+    console.log(chalk.dim('  Run ') + brand('preflight scan <path>') + chalk.dim(' or ') + brand('preflight --help') + chalk.dim('.'))
     console.log()
 }
 
-// Friendly "not logged in" prompt — returns true if user wants to login
-export async function promptLogin(): Promise<boolean> {
-    const result = await p.select({
-        message: "You're not logged in yet.",
-        options: [
-            { value: 'login', label: 'Log in now', hint: 'Opens browser' },
-            { value: 'skip', label: 'Continue without login', hint: 'Scan still works' },
-        ],
-    })
-
-    if (p.isCancel(result)) {
-        p.cancel('Cancelled.')
-        return false
-    }
-    return result === 'login'
-}
-
-// Friendly error with optional action
 export function friendlyError(title: string, suggestion?: string) {
     console.log()
     p.log.error(title)

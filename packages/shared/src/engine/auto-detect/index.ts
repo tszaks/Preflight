@@ -1,30 +1,27 @@
 /**
  * Auto-Detection Engine
  *
- * Analyzes all available data sources (ASC, IPA binary, Info.plist) to pre-fill
+ * Analyzes local project data sources (IPA binary, Info.plist) to pre-fill
  * compliance fields before asking the user. The cascade order reflects confidence:
- *   1. ASC data (95) - Apple's own source of truth
- *   2. IPA binary (70-95) - framework/entitlement/symbol analysis
- *   3. Info.plist (85-95) - declared capabilities and usage descriptions
- *   4. Ask user (last resort) - only for what can't be detected
+ *   1. IPA binary (70-95) - framework/entitlement/symbol analysis
+ *   2. Info.plist (85-95) - declared capabilities and usage descriptions
+ *   3. Ask user (last resort) - only for what can't be detected
  *
  * When multiple sources detect the same field, the highest-confidence one wins.
  */
 
 import type { HardRulesInput } from '../types';
-import { detectFromAsc, type AscDetectionInput } from './detect-from-asc';
 import { detectFromBinary, type BinaryDetectionInput } from './detect-from-binary';
 import { detectFromPlist } from './detect-from-plist';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
 export interface AutoDetectInput {
-    asc?: AscDetectionInput;
     ipa?: BinaryDetectionInput;
     plistContent?: string | Buffer;
 }
 
-export type DetectionSourceType = 'asc' | 'ipa_framework' | 'ipa_entitlement' | 'ipa_symbol' | 'plist';
+export type DetectionSourceType = 'ipa_framework' | 'ipa_entitlement' | 'ipa_symbol' | 'plist';
 
 export interface DetectionSource {
     /** Which HardRulesInput field this detection maps to */
@@ -77,17 +74,12 @@ const FOLLOW_UP_RULES: FollowUpRule[] = [
 export function autoDetect(input: AutoDetectInput): AutoDetectResult {
     const allDetections: DetectionSource[] = [];
 
-    // Stage 1: ASC (highest confidence)
-    if (input.asc) {
-        allDetections.push(...detectFromAsc(input.asc));
-    }
-
-    // Stage 2: IPA binary
+    // Stage 1: IPA binary
     if (input.ipa) {
         allDetections.push(...detectFromBinary(input.ipa));
     }
 
-    // Stage 3: Info.plist
+    // Stage 2: Info.plist
     if (input.plistContent) {
         allDetections.push(...detectFromPlist(input.plistContent));
     }
@@ -212,6 +204,4 @@ function computeUnresolved(resolved: Map<string, DetectionSource>): string[] {
     return unresolved;
 }
 
-// Re-export sub-module types
-export type { AscDetectionInput } from './detect-from-asc';
 export type { BinaryDetectionInput } from './detect-from-binary';
