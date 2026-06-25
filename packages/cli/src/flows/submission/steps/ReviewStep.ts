@@ -63,9 +63,9 @@ export class ReviewStep implements SubmissionStep {
         }
 
         const action = await ui.select<'submit' | 'back' | 'save' | 'exit'>({
-            message: `Submit review? (100 credits)`,
+            message: 'Submit review?',
             options: [
-                { value: 'submit', label: 'Submit review', hint: '100 credits will be deducted' },
+                { value: 'submit', label: 'Submit review', hint: 'Uses your configured backend' },
                 { value: 'back', label: 'Go back to edit', hint: 'Change app details or compliance' },
                 { value: 'save', label: 'Save draft & exit', hint: 'Save progress and exit' },
                 { value: 'exit', label: chalk.red('Exit without saving'), hint: 'Your progress will be lost' },

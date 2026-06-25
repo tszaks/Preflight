@@ -48,7 +48,7 @@ program
 
 program
     .command('whoami')
-    .description('Show current user and credit balance')
+    .description('Show current user and legacy backend quota')
     .action(whoamiCommand)
 
 // Analysis commands
@@ -95,7 +95,7 @@ program
 
 program
     .command('credits')
-    .description('Show credit balance')
+    .description('Show legacy backend quota')
     .action(creditsCommand)
 
 program
@@ -141,7 +141,7 @@ program.on('command:*', (operands) => {
 
 // ─── Full-Screen Interactive App ─────────────────────────────────────────
 
-// Fetch credit balance (cached between menu renders)
+// Fetch legacy backend quota, if a fork still exposes it.
 async function fetchCredits(): Promise<number | undefined> {
     try {
         const res = await apiRequest('/api/credits')
@@ -150,16 +150,6 @@ async function fetchCredits(): Promise<number | undefined> {
         return data.credits ?? undefined
     } catch {
         return undefined
-    }
-}
-
-// Open URL with fallback
-async function openUrl(url: string): Promise<void> {
-    try {
-        const open = (await import('open')).default
-        await open(url)
-    } catch {
-        console.log(subtext(`  Visit: ${url}`))
     }
 }
 
@@ -284,7 +274,7 @@ async function interactiveMenu() {
     let cachedCredits: number | undefined
     let updateInfo: UpdateInfo | null = null
 
-    // Initial credit fetch and background update check
+    // Initial legacy quota fetch and background update check
     const [credits, update] = await Promise.all([
         fetchCredits(),
         checkForUpdates()
@@ -303,12 +293,11 @@ async function interactiveMenu() {
             console.log()
         }
 
-        const choice = await ui.select<'review' | 'history' | 'buy' | 'settings'>({
+        const choice = await ui.select<'review' | 'history' | 'settings'>({
             message: 'What would you like to do?',
             options: [
                 { value: 'review', label: 'New Review', hint: 'Scan your app for App Store issues' },
                 { value: 'history', label: 'View Reviews', hint: 'See your past review reports' },
-                { value: 'buy', label: 'Buy Credits', hint: 'Get more credits at preflightlaunch.com' },
                 { value: 'settings', label: 'Settings', hint: 'Preferences and account' },
             ],
         })
@@ -322,20 +311,12 @@ async function interactiveMenu() {
         switch (choice) {
             case 'review':
                 await submitCommand(undefined, {}, true)
-                // Refresh credits after submission (may have been spent)
+                // Refresh legacy quota after submission if the backend exposes it.
                 cachedCredits = await fetchCredits()
                 break
 
             case 'history':
                 await interactiveHistory()
-                break
-
-            case 'buy':
-                await openUrl('https://preflightlaunch.com/pricing')
-                ui.log.info('Opened pricing page in browser.')
-                // Refresh credits (user may have purchased)
-                await new Promise(r => setTimeout(r, 2000))
-                cachedCredits = await fetchCredits()
                 break
 
             case 'settings':
@@ -348,7 +329,7 @@ async function interactiveMenu() {
                     // Show auth screen again
                     const authenticated = await showAuthScreen()
                     if (!authenticated) return
-                    // Refresh credits for new user
+                    // Refresh legacy quota for new user if the backend exposes it.
                     cachedCredits = await fetchCredits()
                 }
                 break

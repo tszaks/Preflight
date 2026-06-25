@@ -693,7 +693,7 @@ function SubmitPageContent() {
                         </div>
 
                         <div className="bg-white/5 border border-white/10 p-4 rounded-md text-xs text-gray-400 leading-relaxed font-light">
-                            By submitting this review, you agree to our terms. 100 credits will be deducted from your account.
+                            By submitting this review, you agree to process the selected app data in this self-hosted Preflight instance.
                             The analysis usually takes 2-5 minutes.
                         </div>
                     </div>
@@ -904,7 +904,7 @@ function SubmitPageContent() {
                 return
             }
 
-            // Phase 3: Finalize — update file paths, deduct credits, trigger worker
+            // Phase 3: Finalize — update file paths and trigger worker
             await handleFinalize(submissionId)
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Something went wrong'

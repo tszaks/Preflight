@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClientFromRequest } from '@/lib/supabase/from-request'
 
+type ReportItemForSort = {
+    title?: string | null
+    severity?: string | null
+    confidence?: number | null
+}
+
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -55,7 +61,7 @@ export async function GET(
     const isHistorical = (title: string | null | undefined) =>
         (title || '').trimStart().toLowerCase().startsWith('historical pattern:')
 
-    const sortedItems = (items || []).slice().sort((a: any, b: any) => {
+    const sortedItems = ((items || []) as ReportItemForSort[]).slice().sort((a, b) => {
         const am = isManualReview(a?.title)
         const bm = isManualReview(b?.title)
         if (am !== bm) return am ? 1 : -1

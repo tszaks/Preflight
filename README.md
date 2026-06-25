@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Preflight
 
-## Getting Started
+Open-source App Store review readiness checks for iOS apps.
 
-First, run the development server:
+Preflight has two modes:
+
+- **Local CLI scan:** runs on your machine with no account, no hosted service, and no paid infrastructure.
+- **Self-hosted web workflow:** optional Next.js app for uploads, reports, App Store Connect integration, and AI analysis using your own Supabase project and Anthropic API key.
+
+There is no official hosted Preflight Cloud service in this repository.
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run build:cli
+node packages/cli/dist/index.js scan ./MyApp
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For CLI development:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build:cli
+node packages/cli/dist/index.js --help
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Self-Hosted Web App
 
-## Learn More
+The web app is optional. It needs your own infrastructure:
 
-To learn more about Next.js, take a look at the following resources:
+- Supabase for auth, database, and file storage
+- Anthropic API key for AI analysis
+- App Store Connect API credentials if you want ASC autofill
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copy the example env file before running the web app:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cp packages/web/.env.example packages/web/.env.local
+npm run dev
+```
 
-## Deploy on Vercel
+Then open `http://localhost:5173`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+More detail is in [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Configuration
+
+The CLI defaults to the local web app:
+
+```bash
+PREFLIGHT_API_URL=http://localhost:5173
+```
+
+If you use Supabase-backed CLI auth/session refresh, also set:
+
+```bash
+PREFLIGHT_SUPABASE_URL=https://your-project.supabase.co
+PREFLIGHT_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## License
+
+Preflight is licensed under AGPL-3.0-only. See [LICENSE](LICENSE).

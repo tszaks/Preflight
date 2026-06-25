@@ -1,13 +1,17 @@
 import { getConfig, setTokens, clearAuth } from './config.js'
 import { createClient } from '@supabase/supabase-js'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants.js'
+import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from './constants.js'
 
 const API_TIMEOUT_MS = 30_000
 const API_MAX_RETRIES = 3
 
 export function getSupabaseClient() {
     const { accessToken } = getConfig()
-    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    if (!DEFAULT_SUPABASE_URL || !DEFAULT_SUPABASE_ANON_KEY) {
+        throw new Error('Set PREFLIGHT_SUPABASE_URL and PREFLIGHT_SUPABASE_ANON_KEY to use Supabase-backed CLI features.')
+    }
+
+    return createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY, {
         global: {
             headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         },
@@ -17,8 +21,9 @@ export function getSupabaseClient() {
 export async function refreshSession(): Promise<boolean> {
     const { refreshToken } = getConfig()
     if (!refreshToken) return false
+    if (!DEFAULT_SUPABASE_URL || !DEFAULT_SUPABASE_ANON_KEY) return false
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    const supabase = createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY)
     const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken })
 
     if (error || !data.session) return false

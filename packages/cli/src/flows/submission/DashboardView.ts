@@ -206,7 +206,7 @@ export class DashboardView {
                     options.push({
                         value: 'review',
                         label: chalk.bold.green('Approve and Submit!'),
-                        hint: 'Final step - 100 Credits',
+                        hint: 'Uses your configured backend',
                     })
 
                     // 2. Make changes submenu

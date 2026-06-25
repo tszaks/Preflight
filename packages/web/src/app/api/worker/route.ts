@@ -83,7 +83,6 @@ export async function POST(req: NextRequest) {
         const ascData = await fetchAscDataForUser(submission.user_id);
 
         // 4. Transform form data to engine expected format
-        // Cast to any for fields that may not be in generated types yet
         const submissionData = submission as Partial<SoftRulesInput>;
         const sub = submission as Record<string, unknown>;
         const userId = typeof sub.user_id === 'string' ? sub.user_id : undefined;
@@ -91,7 +90,6 @@ export async function POST(req: NextRequest) {
         // Parse stored JSON fields (with safe fallbacks)
         const checklist = (typeof sub.checklist === 'object' && sub.checklist !== null) ? sub.checklist : {};
         const privacyDeclarations = (typeof sub.privacy_declarations === 'object' && sub.privacy_declarations !== null) ? sub.privacy_declarations : {};
-        const ageRating = (typeof sub.age_rating === 'object' && sub.age_rating !== null) ? sub.age_rating : {};
         // Extract age rating string - handle both plain strings ("17+") and answers objects
         let ageRatingString: string | null = null;
         if (typeof sub.age_rating === 'string') {

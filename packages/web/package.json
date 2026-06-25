@@ -2,6 +2,7 @@
   "name": "@preflight/web",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev -p 5173",
     "build": "next build --webpack",
@@ -18,10 +19,9 @@
     "jose": "^6.1.3",
     "jszip": "^3.10.1",
     "lucide-react": "^0.563.0",
-    "next": "16.1.6",
+    "next": "^16.2.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "stripe": "^20.3.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
@@ -31,7 +31,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.2.9",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

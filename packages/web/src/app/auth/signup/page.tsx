@@ -16,7 +16,10 @@ export default function SignupPage() {
     const [error, setError] = useState<string | null>(null)
     const [existing, setExisting] = useState(false)
     const [checkingAuth, setCheckingAuth] = useState(true)
-    const [promo, setPromo] = useState<string | null>(null)
+    const [promo] = useState<string | null>(() => {
+        if (typeof window === 'undefined') return null
+        return new URLSearchParams(window.location.search).get('promo')
+    })
 
     // Redirect if already logged in
     useEffect(() => {
@@ -31,11 +34,6 @@ export default function SignupPage() {
         }
         checkAuth()
     }, [router])
-
-    useEffect(() => {
-        const value = new URLSearchParams(window.location.search).get('promo')
-        setPromo(value)
-    }, [])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -81,7 +79,7 @@ export default function SignupPage() {
 
                     {promo && (
                         <div className="text-xs text-green-500 bg-green-500/10 border border-green-500/20 p-3 rounded-md mb-6">
-                            You came in through a promo link. If this campaign is live and your account is eligible, we'll automatically add 100 bonus credits after signup, on top of the 100 signup credits (200 total).
+                            You came in through a legacy promo link. Open-source Preflight does not sell credits by default.
                         </div>
                     )}
 

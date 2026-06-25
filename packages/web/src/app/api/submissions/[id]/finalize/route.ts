@@ -85,23 +85,25 @@ export async function POST(
 
         screenshotPaths.sort()
 
-        // Atomic credit deduction via RPC (prevents TOCTOU race condition)
+        // Open-source/self-hosted Preflight is free by default.
+        // If a fork sets a non-zero credit cost, keep the legacy RPC path working.
         const creditCost = CREDIT_COSTS.full
+        if (creditCost > 0) {
+            const { data: creditResult, error: creditError } = await supabase
+                .rpc('deduct_credits', { p_user_id: user.id, p_cost: creditCost })
 
-        const { data: creditResult, error: creditError } = await supabase
-            .rpc('deduct_credits', { p_user_id: user.id, p_cost: creditCost })
+            if (creditError) {
+                return NextResponse.json({ message: 'Failed to process credits' }, { status: 500 })
+            }
 
-        if (creditError) {
-            return NextResponse.json({ message: 'Failed to process credits' }, { status: 500 })
-        }
-
-        const row = creditResult?.[0]
-        if (!row?.success) {
-            return NextResponse.json({
-                message: `Insufficient credits. You have ${row?.remaining ?? 0} credits but need ${creditCost} for a full review.`,
-                credits: row?.remaining ?? 0,
-                required: creditCost,
-            }, { status: 402 })
+            const row = creditResult?.[0]
+            if (!row?.success) {
+                return NextResponse.json({
+                    message: `Insufficient credits. You have ${row?.remaining ?? 0} credits but need ${creditCost} for a full review.`,
+                    credits: row?.remaining ?? 0,
+                    required: creditCost,
+                }, { status: 402 })
+            }
         }
 
         // Update submission with server-generated file paths and set status
@@ -118,7 +120,9 @@ export async function POST(
             .eq('id', submissionId)
 
         if (updateError) {
-            await supabase.rpc('refund_credits', { p_user_id: user.id, p_amount: creditCost })
+            if (creditCost > 0) {
+                await supabase.rpc('refund_credits', { p_user_id: user.id, p_amount: creditCost })
+            }
             return NextResponse.json({ message: 'Failed to update submission' }, { status: 500 })
         }
 
@@ -133,7 +137,9 @@ export async function POST(
         if (jobError) {
             // Revert submission status and refund credits
             await supabase.from('submissions').update({ status: 'draft' }).eq('id', submissionId)
-            await supabase.rpc('refund_credits', { p_user_id: user.id, p_amount: creditCost })
+            if (creditCost > 0) {
+                await supabase.rpc('refund_credits', { p_user_id: user.id, p_amount: creditCost })
+            }
             return NextResponse.json({ message: 'Failed to create analysis job' }, { status: 500 })
         }
 
@@ -160,7 +166,9 @@ export async function POST(
         // Attempt rollback: revert status and refund credits
         try {
             await supabase.from('submissions').update({ status: 'draft' }).eq('id', submissionId)
-            await supabase.rpc('refund_credits', { p_user_id: user.id, p_amount: CREDIT_COSTS.full })
+            if (CREDIT_COSTS.full > 0) {
+                await supabase.rpc('refund_credits', { p_user_id: user.id, p_amount: CREDIT_COSTS.full })
+            }
         } catch (rollbackErr) {
             console.error('Rollback failed:', rollbackErr)
         }

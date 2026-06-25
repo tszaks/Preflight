@@ -2,15 +2,12 @@
  * Credit costs per review type
  */
 export const CREDIT_COSTS = {
-    full: 100,
-    recheck: 25,
+    full: 0,
+    recheck: 0,
 } as const
 
 /**
- * Credit amounts per pricing plan
+ * Legacy credit amounts. Open-source/self-hosted Preflight is free by default.
  */
 export const CREDIT_AMOUNTS: Record<string, number> = {
-    starter: 200,
-    pro: 600,
-    agency: 2000,
 }

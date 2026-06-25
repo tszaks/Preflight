@@ -31,6 +31,8 @@ yarn-error.log*
 
 # env files
 .env*
+!.env.example
+!packages/**/.env.example
 
 # vercel
 .vercel
@@ -44,3 +46,14 @@ supabase/.temp/
 
 # cli
 packages/cli/dist/
+packages/cli/*.tgz
+
+# local agent/workspace notes
+.claude/
+.serena/
+Claude_Conversations/
+CLAUDE.md
+AUDIT_*.md
+AUDIT_*.txt
+ERROR_HANDLING_*.md
+Marketing/

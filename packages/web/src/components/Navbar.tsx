@@ -8,28 +8,11 @@ export async function Navbar() {
         process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
     let user = null;
-    let creditsLabel = "0";
-    let creditsUnavailable = false;
 
     if (hasSupabaseEnv) {
         const supabase = await createClient();
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         user = currentUser;
-
-        if (user) {
-            const { data: profile, error: profileError } = await supabase
-                .from("profiles")
-                .select("credits")
-                .eq("id", user.id)
-                .maybeSingle();
-
-            if (profileError) {
-                creditsUnavailable = true;
-                creditsLabel = "--";
-            } else if (typeof profile?.credits === "number") {
-                creditsLabel = profile.credits.toLocaleString();
-            }
-        }
     }
 
     return (
@@ -49,21 +32,6 @@ export async function Navbar() {
                 <div className="flex items-center gap-3">
                     {user ? (
                         <div className="inline-flex items-center gap-1 rounded-2xl border border-white/15 bg-black/70 p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
-                            <Link
-                                href="/credits"
-                                className="inline-flex items-center h-9 px-3 rounded-xl border border-white/15 bg-white/[0.05] text-[12px] font-mono tracking-wide hover:bg-white/[0.12] transition-colors"
-                            >
-                                <span className={creditsUnavailable ? "text-gray-500" : "text-white"}>
-                                    {creditsLabel}
-                                </span>
-                                <span className="text-gray-400 ml-1">credits</span>
-                            </Link>
-                            <Link
-                                href="/pricing"
-                                className="inline-flex items-center h-9 px-3 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-300 hover:text-white hover:bg-white/[0.08] transition-colors"
-                            >
-                                Buy
-                            </Link>
                             <Link
                                 href="/dashboard"
                                 className="inline-flex items-center h-9 px-3 rounded-xl text-sm text-gray-300 hover:text-white hover:bg-white/[0.08] transition-colors"

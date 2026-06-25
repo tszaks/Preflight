@@ -4,7 +4,7 @@ import { isLoggedIn } from '../lib/config.js'
 import { apiRequest } from '../lib/api-client.js'
 import { createSpinner, error } from '../ui/spinner.js'
 import { renderReport, renderReportJson } from '../ui/report.js'
-import { DEFAULT_API_URL } from '../lib/constants.js'
+import { getConfig } from '../lib/config.js'
 
 interface ReportOptions {
     json?: boolean
@@ -14,6 +14,8 @@ interface ReportOptions {
 }
 
 export async function reportCommand(id: string, options: ReportOptions) {
+    const { apiUrl } = getConfig()
+
     if (!isLoggedIn()) {
         error('Not logged in. Run `preflight login` first.')
         process.exit(1)
@@ -33,14 +35,14 @@ export async function reportCommand(id: string, options: ReportOptions) {
             const data = await res.json().catch(() => null)
 
             if (res.ok && data?.report?.submission_id) {
-                await open(`${DEFAULT_API_URL}/report/${data.report.submission_id}`)
+                await open(`${apiUrl}/report/${data.report.submission_id}`)
             } else {
-                await open(`${DEFAULT_API_URL}/report/${id}`)
+                await open(`${apiUrl}/report/${id}`)
             }
         } catch {
-            await open(`${DEFAULT_API_URL}/report/${id}`)
+            await open(`${apiUrl}/report/${id}`)
         }
-        console.log(chalk.dim(`  Opened report: ${DEFAULT_API_URL}/report/${id}`))
+        console.log(chalk.dim(`  Opened report: ${apiUrl}/report/${id}`))
         return
     }
 
@@ -89,7 +91,7 @@ export async function reportCommand(id: string, options: ReportOptions) {
         } else {
             renderReport(data.report, data.items, { showInfo: options.showInfo === true, showAll: options.showAll === true })
             const submissionId = data?.report?.submission_id || id
-            console.log(chalk.dim(`  Full report: ${DEFAULT_API_URL}/report/${submissionId}`))
+            console.log(chalk.dim(`  Full report: ${apiUrl}/report/${submissionId}`))
             console.log()
         }
     } catch (err) {

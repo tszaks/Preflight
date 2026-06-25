@@ -47,7 +47,7 @@ export function renderHeader(email?: string, credits?: number) {
         }
 
         if (credits !== undefined) {
-            segments.push(brand('┌─') + brand(` ${credits.toLocaleString()} credits `) + brand('─┐'))
+            segments.push(brand('┌─') + brand(` ${credits.toLocaleString()} legacy quota `) + brand('─┐'))
         }
 
         segments.push(brand('┌─') + brand(` v${APP_VERSION} `) + brand('─┐'))

@@ -33,7 +33,7 @@ body {
   overflow-y: auto;
 }
 
-/* Custom utilities for Vercel look */
+/* Custom utilities for the dark Preflight UI */
 .vercel-card {
   @apply bg-card border border-border rounded-lg p-6 transition-colors hover:border-gray-500;
 }

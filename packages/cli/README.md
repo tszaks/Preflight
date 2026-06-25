@@ -1,31 +1,36 @@
-# preflightlaunch
+# Preflight CLI
 
-**Preflight** - App Store Review Scanner from your terminal. Catch rejection reasons before Apple does.
+Preflight CLI checks iOS projects for App Store review risks from your terminal.
 
 ## Install
 
 ```bash
-# npm
 npm install -g preflightlaunch
-
-# Homebrew
-brew tap tszaks/preflight
-brew install preflight
 ```
 
-## Quick Start
+## Local Scan
 
 ```bash
-# Log in to your Preflight account
-preflight login
-
-# Scan your iOS project (dry run - no credits used)
 preflight scan ./MyApp
+```
 
-# Submit for full AI-powered analysis
+Local scans do not need an account, backend, or hosted Preflight service.
+
+## Self-Hosted Full Analysis
+
+If you run the optional Preflight web app yourself, point the CLI at it:
+
+```bash
+export PREFLIGHT_API_URL=http://localhost:5173
+export PREFLIGHT_SUPABASE_URL=https://your-project.supabase.co
+export PREFLIGHT_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Then:
+
+```bash
+preflight login
 preflight submit ./MyApp --app-name "My App"
-
-# View your report
 preflight report <submission-id>
 ```
 
@@ -33,31 +38,15 @@ preflight report <submission-id>
 
 | Command | Description |
 |---------|-------------|
-| `preflight login` | Authenticate via browser |
+| `preflight scan [path]` | Local scan of iOS project files |
+| `preflight login` | Authenticate with your configured self-hosted web app |
 | `preflight logout` | Clear stored credentials |
-| `preflight whoami` | Show current user and credits |
-| `preflight scan [path]` | Dry-run scan of iOS project files |
-| `preflight submit [path]` | Submit project for AI analysis |
-| `preflight status [id]` | Check submission status (`--watch` for live updates) |
-| `preflight report [id]` | View analysis results (`--json`, `--open`) |
-| `preflight history` | List past submissions |
-| `preflight credits` | Show credit balance |
+| `preflight submit [path]` | Submit project to your configured backend for full analysis |
+| `preflight status [id]` | Check submission status |
+| `preflight report [id]` | View analysis results |
+| `preflight history` | List past submissions from your configured backend |
+| `preflight credits` | Show legacy backend quota if your fork keeps credits enabled |
 
-## What It Scans
+## License
 
-Preflight analyzes your iOS project for common App Store rejection reasons:
-
-- **Info.plist** - Missing keys, incorrect values, permission descriptions
-- **Privacy Manifest** (`PrivacyInfo.xcprivacy`) - Required API declarations
-- **Screenshots** - Resolution and format compliance
-- **Entitlements** - Capability misconfigurations
-
-## Requirements
-
-- Node.js 18+
-- A [Preflight](https://preflightlaunch.com) account
-
-## Links
-
-- [Website](https://preflightlaunch.com)
-- [GitHub](https://github.com/tszaks/Preflight)
+AGPL-3.0-only.
