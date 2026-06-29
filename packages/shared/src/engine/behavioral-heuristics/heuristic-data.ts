@@ -42,6 +42,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['subscription', 'monthly', 'annual', 'yearly', 'plan'],
             },
             {
+                guideline: '2.1(b)',
+                description: 'Apps with first-time in-app purchases or subscriptions must submit complete, reviewable products with the app version so reviewers can fetch and test the paywall.',
+                frequency: 'common',
+                trigger_keywords: ['subscription', 'premium', 'paywall', 'in-app purchase', 'iap'],
+            },
+            {
                 guideline: '5.2.5',
                 description: 'Financial apps must not provide personal financial advice without proper disclaimers and licensing disclosures.',
                 frequency: 'common',
@@ -63,6 +69,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
         required_features: [
             'Privacy policy covering financial data handling',
             'Subscription terms displayed on paywall (if applicable)',
+            'Reviewable in-app purchase products submitted with the app version when applicable',
             'Account deletion capability (5.1.1)',
         ],
         advisory_notes: [
@@ -200,16 +207,24 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 frequency: 'very_common',
                 trigger_keywords: ['photo', 'video', 'live', 'stream'],
             },
+            {
+                guideline: 'ASC-Australia-Social-Media',
+                description: 'Certain social media platforms operating in Australia must prevent people under 16 from having accounts and should surface age assurance and age suitability details in App Store metadata.',
+                frequency: 'occasional',
+                trigger_keywords: ['australia', 'under 16', 'teen', 'social media', 'age assurance'],
+            },
         ],
         required_features: [
             'Content reporting mechanism',
             'User blocking functionality',
             'Content moderation system (human or AI)',
             'Terms of service and community guidelines',
+            'Age assurance and Australia under-16 account handling when applicable',
         ],
         advisory_notes: [
             'Apple reviewers will test reporting and blocking flows. Ensure they work in the review build.',
             'If the app includes live streaming, additional content moderation requirements apply.',
+            'For impacted social media platforms in Australia, document under-16 account restrictions through the app description, age rating questionnaire, and Age Suitability URL where appropriate.',
         ],
     },
 
@@ -241,11 +256,18 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 frequency: 'common',
                 trigger_keywords: ['coins', 'gems', 'currency', 'credits', 'tokens'],
             },
+            {
+                guideline: '2.1(b)',
+                description: 'Games with first-time IAP products must make those products complete, submitted for review, and fetchable by the reviewer build.',
+                frequency: 'common',
+                trigger_keywords: ['battle pass', 'premium', 'coins', 'gems', 'iap', 'subscription'],
+            },
         ],
         required_features: [
             'Odds disclosure for randomized purchases (if applicable)',
             'Accurate age rating reflecting content',
             'IAP for all digital goods',
+            'Reviewable IAP products submitted with the app version when applicable',
         ],
         advisory_notes: [
             'Simulated gambling (no real money) is allowed but must not target children.',

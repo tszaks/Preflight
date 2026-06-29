@@ -520,6 +520,21 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'content-australia-social-under16',
+        guideline: 'ASC-Australia-Social-Media',
+        category: 'content_policy',
+        title: 'Australia social media under-16 access not addressed',
+        trigger: 'Social media platform operates in Australia but does not prevent users under 16 from having accounts or disclose age assurance and age suitability details',
+        fix: 'If the Australian social media law applies, block under-16 account access for Australia, monitor new signups, use the Declared Age Range API or another age-assurance method where appropriate, and document age restrictions through App Store metadata or an Age Suitability URL.',
+        match: {
+            categories: ['social-networking'],
+            keywords: ['australia', 'under 16', 'under-16', 'age assurance', 'declared age range', 'social media'],
+            features_required: ['has_ugc'],
+            min_matches: 2,
+            base_confidence: 55,
+        },
+    },
+    {
         id: 'social-login-requirement',
         guideline: '4.0',
         category: 'content_policy',
@@ -588,6 +603,19 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
             features_required: ['has_iap'],
             features_absent: ['has_restore_purchases'],
             base_confidence: 65,
+        },
+    },
+    {
+        id: 'biz-iap-products-not-reviewable',
+        guideline: '2.1(b)',
+        category: 'content_policy',
+        title: 'In-app purchase products not reviewable',
+        trigger: 'App includes in-app purchases or subscriptions, but products are missing from the review submission, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
+        fix: 'Before submission, make sure every first-time IAP or subscription is complete in App Store Connect, included in the app review submission or reviewSubmission items, has required review metadata/screenshots, is fetchable by the review build, and is explained in App Review notes if any configured product cannot be found or reviewed.',
+        match: {
+            features_required: ['has_iap'],
+            keywords: ['subscription', 'paywall', 'in-app purchase', 'iap', 'premium', 'restore purchases'],
+            base_confidence: 60,
         },
     },
     {
