@@ -270,6 +270,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Add a clearly visible "Restore Purchases" button accessible from your paywall or settings. This is required for all apps with non-consumable IAP or subscriptions.',
     },
     {
+        id: 'biz-iap-products-not-reviewable',
+        guideline: '2.1(b)',
+        category: 'content_policy',
+        title: 'In-app purchase products not reviewable',
+        trigger: 'App includes in-app purchases or subscriptions, but products are missing from the review submission, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
+        fix: 'Before submission, make sure every first-time IAP or subscription is complete in App Store Connect, included in the app review submission or reviewSubmission items, has required review metadata/screenshots, is fetchable by the review build, and is explained in App Review notes if any configured product cannot be found or reviewed.',
+    },
+    {
         id: 'biz-eu-dsa-trader',
         guideline: '5.5.1',
         category: 'content_policy',
@@ -316,5 +324,13 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         title: 'Social media capabilities not declared for Time Allowances',
         trigger: 'App includes a social feed or similar user-generated content surface that redistributes, amplifies, or lets users interact with content visible to many users, but the App Store Connect age rating questionnaire is not updated to declare social media capabilities',
         fix: 'Starting September 2026, answer the App Store Connect social media capabilities question before submitting updates. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges and keep the age rating answers aligned with that behavior.',
+    },
+    {
+        id: 'content-australia-social-under16',
+        guideline: 'ASC-Australia-Social-Media',
+        category: 'content_policy',
+        title: 'Australia social media under-16 access not addressed',
+        trigger: 'Social media platform operates in Australia but does not prevent users under 16 from having accounts, does not deactivate underage accounts, or does not disclose age assurance and age suitability details in App Store metadata',
+        fix: 'If the Australian social media law applies, block under-16 account access for Australia, monitor new signups, consider the Declared Age Range API or another age-assurance method, disclose age controls in the age rating questionnaire, and add an Age Suitability URL or description text for region-specific restrictions.',
     },
 ] as const;

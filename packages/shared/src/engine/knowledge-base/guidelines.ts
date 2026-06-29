@@ -59,12 +59,17 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Time Allowances Social Media Declaration',
         summary: 'Starting September 2026, apps and games must indicate in App Store Connect whether they include social media capabilities. Apps that redistribute, amplify, or interact with user-generated content through feeds or similar discovery methods may be classified as Social Media for Time Allowances and receive a minimum 13+ age rating unless under-13 access is disabled and checked with the Declared Age Range API.',
     },
+    'ASC-Australia-Social-Media': {
+        section: 'ASC-Australia-Social-Media',
+        title: 'Australia Social Media Age Restrictions',
+        summary: 'Beginning December 10, 2025, certain social media platforms operating in Australia must prevent people under 16 from having a social media account. Apple recommends using age assurance such as the Declared Age Range API, accurate App Store description text, in-app controls disclosures, higher age ratings when appropriate, and an Age Suitability URL for region-specific details.',
+    },
 
     // Section 2: Performance
     '2.1': {
         section: '2.1',
         title: 'App Completeness',
-        summary: 'Submissions must be final versions with all necessary metadata and URLs fully functional. Test and placeholder content must be removed.',
+        summary: 'Submissions must be final versions with all necessary metadata and URLs fully functional. Test and placeholder content must be removed. In-app purchase products must be complete, visible, functional, and submitted with the app or explained in review notes when they cannot be found or reviewed.',
     },
     '2.3': {
         section: '2.3',
