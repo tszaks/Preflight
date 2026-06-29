@@ -218,8 +218,8 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         guideline: '3.1.1',
         category: 'content_policy',
         title: 'External purchase for digital goods',
-        trigger: 'App directs users to purchase digital content/subscriptions outside of In-App Purchase',
-        fix: 'Digital goods and subscriptions must use Apple\'s In-App Purchase system. Note: As of the May 2025 Epic v. Apple ruling, US apps may include external payment links without Apple\'s commission. However, you must still comply with Apple\'s external link requirements (clear disclosure, link-out sheet, etc.).',
+        trigger: 'App directs users to purchase digital content/subscriptions outside of In-App Purchase without qualifying for and implementing Apple\'s regional external-purchase requirements',
+        fix: 'Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements. Brazil support applies to iOS 26.5 or later and requires Apple IAP to be offered at least as prominently when alternative in-app payment options are merchandised.',
     },
     {
         id: 'biz-minimum-functionality',

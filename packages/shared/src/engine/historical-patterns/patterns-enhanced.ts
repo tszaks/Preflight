@@ -310,8 +310,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '3.1.1',
         category: 'content_policy',
         title: 'External purchase for digital goods',
-        trigger: "App directs users to purchase digital content/subscriptions outside of In-App Purchase",
-        fix: "Digital goods and subscriptions must use Apple's In-App Purchase system.",
+        trigger: "App directs users to purchase digital content/subscriptions outside of In-App Purchase without qualifying for and implementing Apple's regional external-purchase requirements",
+        fix: "Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements.",
         match: {
             features_required: ['sells_digital_outside_iap'],
             base_confidence: 70,
@@ -395,8 +395,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '3.1.1',
         category: 'content_policy',
         title: 'Finance app subscription via IAP',
-        trigger: 'Finance apps with premium features must use Apple IAP for subscriptions',
-        fix: 'Ensure all digital subscriptions are offered through In-App Purchase. Physical goods/services are exempt.',
+        trigger: 'Finance apps with premium features must use Apple IAP for subscriptions unless a regional external-purchase exception applies',
+        fix: 'Ensure digital subscriptions are offered through In-App Purchase unless a regional external-purchase exception applies and is fully implemented. Physical goods/services are exempt.',
         match: {
             categories: ['finance'],
             features_required: ['has_subscriptions'],

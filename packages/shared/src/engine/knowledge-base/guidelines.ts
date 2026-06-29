@@ -102,17 +102,17 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1': {
         section: '3.1',
         title: 'Payments',
-        summary: 'In-app purchases must use the In-App Purchase API. Digital content and services must be purchased through Apple. Physical goods/services can use external payment.',
+        summary: 'In-app purchases must use the In-App Purchase API unless a regional external-purchase exception applies. Physical goods/services can use external payment.',
     },
     '3.1.1': {
         section: '3.1.1',
         title: 'In-App Purchase',
-        summary: 'Apps offering digital goods or services for purchase must use In-App Purchase. This includes subscriptions, premium features, and digital content.',
+        summary: 'Apps offering digital goods or services for purchase must use In-App Purchase unless they qualify for and correctly implement a regional external-purchase option. This includes subscriptions, premium features, and digital content.',
     },
     '3.1.1(a)': {
         section: '3.1.1(a)',
-        title: 'External Payment Links (US)',
-        summary: 'Per the Epic v. Apple ruling (May 2025), US apps may include links to external payment methods for digital goods. Must use StoreKit External Link Account API and display Apple\'s required disclosure sheet.',
+        title: 'External Purchase Links and Alternative Payments',
+        summary: 'Apps may communicate or offer alternative purchase methods for digital goods only where Apple permits them, such as the United States storefront, EU storefronts with the required StoreKit External Purchase Link entitlement, and Brazil on iOS 26.5 or later with the StoreKit External Purchases or Offers entitlement. Follow regional disclosure, eligibility, review-note, reporting, and child-safety requirements.',
     },
     '3.1.5': {
         section: '3.1.5',
