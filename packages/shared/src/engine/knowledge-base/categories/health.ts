@@ -8,11 +8,13 @@ export const HEALTH_CONTEXT: CategoryContext = {
         'Integration with Apple HealthKit is expected and requires proper usage descriptions',
         'Workout tracking, meal logging, and body metrics are standard features',
         'Sleep tracking and mindfulness content are normal health app features',
+        'Apps distributed in the EEA, UK, or U.S. may need an App Store Connect regulated medical device status when they qualify as medical devices',
     ],
     specific_guidelines: [
         'Section 1.4.1 - Medical apps must clearly disclaim they are not a substitute for professional medical advice',
         'Section 5.1.3 - Health data is sensitive and requires explicit consent for collection',
         'Section 2.5.1 - HealthKit usage must be clearly tied to health/fitness functionality',
+        'App Store Connect - Health & Fitness or Medical apps, or apps with frequent Medical or Treatment Information, may need regulated medical device status for EEA, UK, or U.S. distribution',
     ],
     false_positive_overrides: [
         'Calorie counts, step counts, and heart rate displays are NOT unverifiable health claims',

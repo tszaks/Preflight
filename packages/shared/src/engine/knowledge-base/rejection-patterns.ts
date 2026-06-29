@@ -203,6 +203,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         trigger: 'Health/fitness app making medical claims without appropriate disclaimers',
         fix: 'Add clear disclaimers that the app is not a medical device and doesn\'t replace professional advice.',
     },
+    {
+        id: 'content-regulated-medical-device-status',
+        guideline: 'ASC-Regulated-Medical-Device',
+        category: 'content_policy',
+        title: 'Regulated medical device status missing',
+        trigger: 'Health & Fitness or Medical app distributed in the EEA, UK, or U.S. has regulated medical device functionality, or frequent Medical or Treatment Information in the age rating questionnaire, but App Store Connect regulated medical device status is not provided',
+        fix: 'If the app qualifies, provide regulated medical device status in App Store Connect with relevant regulatory information, contact details, and safety information. If it is not a regulated medical device, select No. Existing qualifying apps must declare by early 2027 to keep submitting updates.',
+    },
 
     // Business model rejections
     {

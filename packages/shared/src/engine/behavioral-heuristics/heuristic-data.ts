@@ -89,6 +89,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['cure', 'treat', 'diagnose', 'heal', 'remedy', 'medical'],
             },
             {
+                guideline: 'ASC-Regulated-Medical-Device',
+                description: 'Health & Fitness apps that qualify as regulated medical devices, or report frequent medical/treatment information, may need regulated medical device status in App Store Connect for EEA, UK, or U.S. distribution.',
+                frequency: 'occasional',
+                trigger_keywords: ['diagnose', 'treatment', 'monitor', 'medical device', 'clinical'],
+            },
+            {
                 guideline: '5.1.1',
                 description: 'Health data is considered sensitive. Apps must clearly disclose what data is collected and how it is used.',
                 frequency: 'common',
@@ -105,6 +111,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Health data disclaimer (if making health claims)',
             'HealthKit privacy policy description (if using HealthKit)',
             'Purpose string for health data access',
+            'Regulated medical device status in App Store Connect when applicable for EEA, UK, or U.S. distribution',
         ],
         advisory_notes: [
             'If using HealthKit, ensure NSHealthShareUsageDescription and NSHealthUpdateUsageDescription are set.',
@@ -121,6 +128,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 description: 'Medical apps providing diagnostic or treatment functionality may be classified as medical devices requiring FDA clearance.',
                 frequency: 'very_common',
                 trigger_keywords: ['diagnose', 'diagnosis', 'treatment', 'prescribe', 'clinical'],
+            },
+            {
+                guideline: 'ASC-Regulated-Medical-Device',
+                description: 'Medical apps distributed in the EEA, UK, or U.S. may need regulated medical device status in App Store Connect, including relevant regulatory information, contact details, and safety information.',
+                frequency: 'common',
+                trigger_keywords: ['diagnose', 'diagnosis', 'treatment', 'monitor', 'medical device', 'clinical'],
             },
             {
                 guideline: '5.1.3',
@@ -144,6 +157,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Medical disclaimer prominently displayed',
             'HIPAA compliance documentation (if handling PHI)',
             'Professional vs. consumer use designation',
+            'Regulated medical device status in App Store Connect for EEA, UK, or U.S. distribution when applicable',
         ],
         advisory_notes: [
             'Medical apps have the highest rejection rate of any category. Plan for extended review times (5-10 days).',

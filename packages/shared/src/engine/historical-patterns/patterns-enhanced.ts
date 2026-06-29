@@ -435,6 +435,19 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'health-regulated-medical-device-status',
+        guideline: 'ASC-Regulated-Medical-Device',
+        category: 'content_policy',
+        title: 'Regulated medical device status',
+        trigger: 'Health & Fitness or Medical apps distributed in the EEA, UK, or U.S. may need to provide regulated medical device status in App Store Connect',
+        fix: 'If the app qualifies as a regulated medical device, provide the status and regulatory details in App Store Connect. If it does not qualify, select No. Existing qualifying apps must declare by early 2027 to keep submitting updates.',
+        match: {
+            categories: ['health-fitness', 'medical'],
+            keywords: ['diagnos', 'treatment', 'clinical', 'medical device', 'patient', 'monitor'],
+            base_confidence: 45,
+        },
+    },
+    {
         id: 'health-data-sensitivity',
         guideline: '5.1.2',
         category: 'content_policy',
