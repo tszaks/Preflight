@@ -238,6 +238,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Health and Health Research',
         summary: 'Health research apps must obtain informed consent and approval from an ethics review board. Health data must be handled with extra care and not shared with third parties for non-health purposes.',
     },
+    'ASC-Regulated-Medical-Device': {
+        section: 'ASC-Regulated-Medical-Device',
+        title: 'Regulated Medical Device Status',
+        summary: 'Health & Fitness or Medical apps, and apps marked as containing frequent Medical or Treatment Information, may need to provide a regulated medical device status in App Store Connect for distribution in the EEA, UK, or U.S. New qualifying apps require this status now; existing qualifying apps must provide it by early 2027 to continue submitting updates.',
+    },
     '5.1.4': {
         section: '5.1.4',
         title: 'Kids',
