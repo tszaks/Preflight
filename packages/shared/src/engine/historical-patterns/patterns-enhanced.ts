@@ -493,6 +493,20 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'content-social-media-time-allowance',
+        guideline: 'ASC-Time-Allowances',
+        category: 'content_policy',
+        title: 'Social media capabilities declaration required',
+        trigger: 'Apps with social feeds or similar user-generated content discovery surfaces must declare social media capabilities in App Store Connect for Time Allowances starting September 2026',
+        fix: 'Update the App Store Connect age rating questionnaire to declare social media capabilities before submitting updates. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges.',
+        match: {
+            categories: ['social-networking'],
+            keywords: ['feed', 'follow', 'followers', 'post', 'comment', 'share', 'community', 'profile'],
+            min_matches: 1,
+            base_confidence: 55,
+        },
+    },
+    {
         id: 'social-login-requirement',
         guideline: '4.0',
         category: 'content_policy',
