@@ -301,4 +301,12 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         trigger: 'App provides random or anonymous chat functionality (Chatroulette-style, anonymous messaging, random stranger matching)',
         fix: 'Anonymous/random chat apps are explicitly prohibited under guideline 1.2 as of February 2026. Remove these features entirely or implement full identity verification, content moderation, and reporting. Apps with anonymous chat "may be removed without notice."',
     },
+    {
+        id: 'content-social-media-time-allowance',
+        guideline: 'ASC-Time-Allowances',
+        category: 'content_policy',
+        title: 'Social media capabilities not declared for Time Allowances',
+        trigger: 'App includes a social feed or similar user-generated content surface that redistributes, amplifies, or lets users interact with content visible to many users, but the App Store Connect age rating questionnaire is not updated to declare social media capabilities',
+        fix: 'Starting September 2026, answer the App Store Connect social media capabilities question before submitting updates. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges and keep the age rating answers aligned with that behavior.',
+    },
 ] as const;
