@@ -106,8 +106,8 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         guideline: '5.1',
         category: 'privacy_manifest',
         title: 'Missing privacy manifest',
-        trigger: 'App uses required-reason APIs without a PrivacyInfo.xcprivacy file',
-        fix: 'Add a PrivacyInfo.xcprivacy file declaring all required-reason API usage with valid reason codes.',
+        trigger: 'App or bundled third-party SDK uses required-reason APIs without the required PrivacyInfo.xcprivacy manifest in the owning app, framework, or dynamic library bundle',
+        fix: 'Add a PrivacyInfo.xcprivacy file for your app code, and update or replace third-party SDKs so each SDK bundle declares its own required-reason API usage with valid reason codes.',
     },
     {
         id: 'privacy-wrong-reasons',

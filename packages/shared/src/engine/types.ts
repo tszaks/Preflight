@@ -189,12 +189,27 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 1080, height: 2340, device: '6.1" iPhone' },
     // iPhone 5.5" (iPhone 8 Plus - still accepted)
     { width: 1242, height: 2208, device: '5.5" iPhone' },
+    // Older iPhone displays still listed by App Store Connect
+    { width: 750, height: 1334, device: '4.7" iPhone' },
+    { width: 640, height: 1096, device: '4" iPhone (without status bar)' },
+    { width: 640, height: 1136, device: '4" iPhone' },
+    { width: 640, height: 920, device: '3.5" iPhone (without status bar)' },
+    { width: 640, height: 960, device: '3.5" iPhone' },
     // iPad Pro 13" (M4)
     { width: 2064, height: 2752, device: '13" iPad Pro' },
     // iPad Pro 12.9"
     { width: 2048, height: 2732, device: '12.9" iPad Pro' },
-    // iPad Pro 11"
+    // iPad 11" accepted App Store Connect sizes
+    { width: 1488, height: 2266, device: '11" iPad' },
+    { width: 1668, height: 2420, device: '11" iPad' },
     { width: 1668, height: 2388, device: '11" iPad Pro' },
+    { width: 1640, height: 2360, device: '11" iPad' },
+    // Older iPad displays still listed by App Store Connect
+    { width: 1668, height: 2224, device: '10.5" iPad' },
+    { width: 1536, height: 2008, device: '9.7" iPad (without status bar)' },
+    { width: 1536, height: 2048, device: '9.7" iPad' },
+    { width: 768, height: 1004, device: '9.7" iPad (without status bar)' },
+    { width: 768, height: 1024, device: '9.7" iPad' },
     // Also allow landscape (swapped)
     { width: 2868, height: 1320, device: '6.9" iPhone (landscape)' },
     { width: 2736, height: 1260, device: '6.9" iPhone (landscape)' },
@@ -207,9 +222,22 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 2436, height: 1125, device: '6.1" iPhone (landscape)' },
     { width: 2340, height: 1080, device: '6.1" iPhone (landscape)' },
     { width: 2208, height: 1242, device: '5.5" iPhone (landscape)' },
+    { width: 1334, height: 750, device: '4.7" iPhone (landscape)' },
+    { width: 1096, height: 640, device: '4" iPhone (landscape without status bar)' },
+    { width: 1136, height: 640, device: '4" iPhone (landscape)' },
+    { width: 920, height: 640, device: '3.5" iPhone (landscape without status bar)' },
+    { width: 960, height: 640, device: '3.5" iPhone (landscape)' },
     { width: 2752, height: 2064, device: '13" iPad Pro (landscape)' },
     { width: 2732, height: 2048, device: '12.9" iPad Pro (landscape)' },
+    { width: 2266, height: 1488, device: '11" iPad (landscape)' },
+    { width: 2420, height: 1668, device: '11" iPad (landscape)' },
     { width: 2388, height: 1668, device: '11" iPad Pro (landscape)' },
+    { width: 2360, height: 1640, device: '11" iPad (landscape)' },
+    { width: 2224, height: 1668, device: '10.5" iPad (landscape)' },
+    { width: 2008, height: 1536, device: '9.7" iPad (landscape without status bar)' },
+    { width: 2048, height: 1536, device: '9.7" iPad (landscape)' },
+    { width: 1004, height: 768, device: '9.7" iPad (landscape without status bar)' },
+    { width: 1024, height: 768, device: '9.7" iPad (landscape)' },
 ];
 
 // === Confidence-Severity Capping ===
