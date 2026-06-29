@@ -263,9 +263,9 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
         purpose: 'Payment processing',
         severity: 'info',
         title: 'Stripe payment SDK detected',
-        description: 'Stripe is embedded for payment processing. If selling digital content or services consumed within the app, you must use Apple\'s In-App Purchase instead.',
+        description: 'Stripe is embedded for payment processing. If selling digital content or services consumed within the app, you usually need Apple In-App Purchase unless a regional external-purchase option applies.',
         guideline_ref: 'Section 3.1.1 - In-App Purchase',
-        fix_suggestion: 'Ensure Stripe is only used for physical goods/services or out-of-app consumption. Digital content consumed in-app must use Apple IAP.',
+        fix_suggestion: 'Ensure Stripe is only used for physical goods/services, out-of-app consumption, or a storefront where Apple permits alternative payment options and you have implemented the required entitlement, disclosures, eligibility checks, and reporting. Otherwise, digital content consumed in-app must use Apple IAP.',
     },
     {
         pattern: /^(Plaid|LinkKit)/i,
