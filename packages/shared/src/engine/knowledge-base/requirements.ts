@@ -27,9 +27,16 @@ export const PRIMARY_SCREENSHOT_DIMENSIONS = {
     'iPhone_6_5_alt': { width: 1242, height: 2688, label: '6.5" iPhone accepted size' },
     'iPhone_6_3': { width: 1206, height: 2622, label: '6.3" iPhone accepted size' },
     'iPhone_6_1': { width: 1179, height: 2556, label: '6.1" iPhone accepted size' },
+    'iPhone_6_1_alt': { width: 1170, height: 2532, label: '6.1" iPhone accepted size' },
+    'iPhone_6_1_alt2': { width: 1125, height: 2436, label: '6.1" iPhone accepted size' },
+    'iPhone_6_1_alt3': { width: 1080, height: 2340, label: '6.1" iPhone accepted size' },
     'iPhone_5_5': { width: 1242, height: 2208, label: '5.5" iPhone (iPhone 8 Plus)' },
-    'iPad_13': { width: 2064, height: 2752, label: '13" iPad Pro (M4)' },
+    'iPad_13': { width: 2064, height: 2752, label: '13" iPad accepted size' },
     'iPad_12_9': { width: 2048, height: 2732, label: '12.9" iPad Pro' },
+    'iPad_11': { width: 1488, height: 2266, label: '11" iPad accepted size' },
+    'iPad_11_alt': { width: 1668, height: 2420, label: '11" iPad accepted size' },
+    'iPad_11_alt2': { width: 1668, height: 2388, label: '11" iPad accepted size' },
+    'iPad_11_alt3': { width: 1640, height: 2360, label: '11" iPad accepted size' },
 } as const;
 
 export const URL_REQUIREMENTS = {

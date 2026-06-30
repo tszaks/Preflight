@@ -107,7 +107,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1.1(a)': {
         section: '3.1.1(a)',
         title: 'External Payment Links (US)',
-        summary: 'Per the Epic v. Apple ruling (May 2025), US apps may include links to external payment methods for digital goods. Must use StoreKit External Link Account API and display Apple\'s required disclosure sheet.',
+        summary: 'Apps may apply for StoreKit External Purchase Link entitlements in specific regions. For the United States storefront, Apple does not require an entitlement for buttons, external links, or other calls to action that direct users to external purchase methods.',
     },
     '3.1.5': {
         section: '3.1.5',
@@ -144,7 +144,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '4.3': {
         section: '4.3',
         title: 'Spam',
-        summary: 'Do not create multiple Bundle IDs for the same app. Apps that are essentially the same should be combined into a single app.',
+        summary: 'Do not create multiple Bundle IDs for the same app or submit apps that are indistinguishable from what is already widely available. Saturated or low-effort app categories must offer a meaningfully different or improved experience.',
     },
     '4.1(c)': {
         section: '4.1(c)',
@@ -180,6 +180,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         section: '4.10',
         title: 'Monetizing Built-In Capabilities',
         summary: 'Apps may not monetize built-in hardware or OS capabilities (e.g., push notifications, camera, gyroscope) or Apple services. Apps that do so may be rejected.',
+    },
+    '4.5.3': {
+        section: '4.5.3',
+        title: 'Apple Services Messaging Abuse',
+        summary: 'Do not use Apple services, including Live Activities, Game Center, or Push Notifications, to spam, phish, or send unsolicited messages to customers.',
     },
 
     // Section 5: Legal
