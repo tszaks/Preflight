@@ -64,6 +64,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Australia Social Media Age Restrictions',
         summary: 'Beginning December 10, 2025, certain social media platforms operating in Australia must prevent people under 16 from having a social media account. Apple recommends using age assurance such as the Declared Age Range API, accurate App Store description text, in-app controls disclosures, higher age ratings when appropriate, and an Age Suitability URL for region-specific details.',
     },
+    'ASC-Regional-Age-Ratings': {
+        section: 'ASC-Regional-Age-Ratings',
+        title: 'Regional Age Rating Values',
+        summary: 'App Store Connect maps age rating questionnaire answers into global ratings and region-specific ratings. Australia now maps loot boxes to 16+ and infrequent simulated gambling to R 18+; Vietnam uses 00+, 12+, 16+, and 18+ regional ratings based on existing content descriptors.',
+    },
 
     // Section 2: Performance
     '2.1': {
