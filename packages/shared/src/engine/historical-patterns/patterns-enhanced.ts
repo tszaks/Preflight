@@ -318,6 +318,20 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'biz-brazil-betting-license',
+        guideline: 'ASC-Brazil-Betting-License',
+        category: 'content_policy',
+        title: 'Brazil fixed-odds betting license missing',
+        trigger: 'App appears to offer fixed-odds betting or real-money wagering that may need Brazil SPA license documentation',
+        fix: 'If distributing fixed-odds betting in Brazil, submit a new app version with SPA license details in App Review notes and attach supporting documents. Keep age rating answers and gambling-risk disclosures accurate.',
+        match: {
+            categories: ['games', 'sports', 'entertainment'],
+            keywords: ['fixed odds', 'fixed-odds', 'betting', 'sportsbook', 'wager', 'real money gambling', 'brazil'],
+            min_matches: 2,
+            base_confidence: 50,
+        },
+    },
+    {
         id: 'biz-minimum-functionality',
         guideline: '4.2',
         category: 'content_policy',

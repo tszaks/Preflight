@@ -8,11 +8,13 @@ export const GAMES_CONTEXT: CategoryContext = {
         'Leaderboards and player rankings are standard competitive features',
         'Season passes and battle passes are common monetization models',
         'Multiplayer matchmaking and chat are standard online gaming features',
+        'Fixed-odds betting apps distributed in Brazil require a valid SPA license and App Review documentation',
     ],
     specific_guidelines: [
         'Section 3.1.1 - All in-game purchases must use IAP (virtual currency, power-ups, cosmetics)',
         'Section 3.1.2 - Auto-renewable subscriptions for game passes must clearly disclose terms',
         'Section 5.3 - Gambling mechanics require proper licensing and geo-restriction',
+        'App Store Connect - Fixed-odds betting apps in Brazil require SPA license details and supporting documents in App Review Information',
         'Section 1.1.7 - Realistic violence must be age-rated appropriately (12+ or 17+)',
     ],
     false_positive_overrides: [

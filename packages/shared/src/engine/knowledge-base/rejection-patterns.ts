@@ -278,6 +278,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Before submission, make sure every first-time IAP or subscription is complete in App Store Connect, included in the app review submission or reviewSubmission items, has required review metadata/screenshots, is fetchable by the review build, and is explained in App Review notes if any configured product cannot be found or reviewed.',
     },
     {
+        id: 'biz-brazil-betting-license',
+        guideline: 'ASC-Brazil-Betting-License',
+        category: 'content_policy',
+        title: 'Brazil fixed-odds betting license missing',
+        trigger: 'App includes fixed-odds betting or real-money gambling features and is distributed in Brazil, but does not provide a valid SPA license and supporting documentation in App Review Information',
+        fix: 'If distributing fixed-odds betting in Brazil, submit a new app version, enter the SPA license details in App Review notes, attach supporting documentation, and ensure age-rating answers and gambling-risk disclosures are accurate. Updating App Review Information alone does not start license verification.',
+    },
+    {
         id: 'biz-eu-dsa-trader',
         guideline: '5.5.1',
         category: 'content_policy',
