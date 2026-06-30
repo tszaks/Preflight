@@ -195,10 +195,9 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 640, height: 1136, device: '4" iPhone' },
     { width: 640, height: 920, device: '3.5" iPhone (without status bar)' },
     { width: 640, height: 960, device: '3.5" iPhone' },
-    // iPad Pro 13" (M4)
-    { width: 2064, height: 2752, device: '13" iPad Pro' },
-    // iPad Pro 12.9"
-    { width: 2048, height: 2732, device: '12.9" iPad Pro' },
+    // iPad 13" accepted App Store Connect sizes
+    { width: 2064, height: 2752, device: '13" iPad Pro / iPad Air' },
+    { width: 2048, height: 2732, device: '13" / 12.9" iPad' },
     // iPad 11" accepted App Store Connect sizes
     { width: 1488, height: 2266, device: '11" iPad' },
     { width: 1668, height: 2420, device: '11" iPad' },
@@ -227,8 +226,8 @@ export const VALID_SCREENSHOT_DIMENSIONS: Array<{ width: number; height: number;
     { width: 1136, height: 640, device: '4" iPhone (landscape)' },
     { width: 920, height: 640, device: '3.5" iPhone (landscape without status bar)' },
     { width: 960, height: 640, device: '3.5" iPhone (landscape)' },
-    { width: 2752, height: 2064, device: '13" iPad Pro (landscape)' },
-    { width: 2732, height: 2048, device: '12.9" iPad Pro (landscape)' },
+    { width: 2752, height: 2064, device: '13" iPad Pro / iPad Air (landscape)' },
+    { width: 2732, height: 2048, device: '13" / 12.9" iPad (landscape)' },
     { width: 2266, height: 1488, device: '11" iPad (landscape)' },
     { width: 2420, height: 1668, device: '11" iPad (landscape)' },
     { width: 2388, height: 1668, device: '11" iPad Pro (landscape)' },
