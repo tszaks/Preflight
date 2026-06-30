@@ -132,6 +132,15 @@ export const APP_CATEGORIES = [
 
 export const AGE_RATINGS = ['4+', '9+', '12+', '13+', '16+', '17+', '18+'] as const;
 
+export const CURRENT_GLOBAL_AGE_RATINGS = ['4+', '9+', '13+', '16+', '18+'] as const;
+
+export const REGIONAL_AGE_RATINGS = {
+    australia: ['16+', 'R 18+'],
+    vietnam: ['00+', '12+', '16+', '18+'],
+    korea: ['All', '12+', '15+', '19+'],
+    brazil_self_rated: ['AL', 'A6', 'A10', 'A12', 'A14', 'A16', 'A18'],
+} as const;
+
 // Common placeholder/test strings to flag
 export const PLACEHOLDER_PATTERNS = [
     /lorem ipsum/i,

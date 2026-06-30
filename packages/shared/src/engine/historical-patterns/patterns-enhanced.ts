@@ -276,7 +276,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         category: 'content_policy',
         title: 'Incorrect age rating',
         trigger: "App content doesn't match the selected age rating (e.g., mature content with 4+ rating)",
-        fix: 'Select an age rating that accurately reflects your app\'s content. When in doubt, rate higher.',
+        fix: 'Select an age rating that accurately reflects your app\'s content and keep the App Store Connect content descriptors current. Current global ratings are 4+, 9+, 13+, 16+, and 18+, with additional region-specific values in some storefronts such as Australia and Vietnam. When in doubt, rate higher.',
         // No simple auto-match
     },
     {
