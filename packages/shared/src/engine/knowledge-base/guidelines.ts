@@ -127,7 +127,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1.1(a)': {
         section: '3.1.1(a)',
         title: 'External Purchase Links and Alternative Payments',
-        summary: 'Apps may communicate or offer alternative purchase methods for digital goods only where Apple permits them, such as the United States storefront, EU storefronts with the required StoreKit External Purchase Link entitlement, and Brazil on iOS 26.5 or later with the StoreKit External Purchases or Offers entitlement. Follow regional disclosure, eligibility, review-note, reporting, and child-safety requirements.',
+        summary: 'Apps may communicate or offer alternative purchase methods for digital goods only where Apple permits them, such as the United States storefront, EU storefronts with the required StoreKit External Purchase Link entitlement, and Brazil on iOS 26.5 or later with the StoreKit External Purchases or Offers entitlement. Follow regional disclosure, eligibility, review-note, reporting, and child-safety requirements, including parental gates or consent where required and StoreKit canMakePayments checks before purchase or payment-information flows.',
     },
     '3.1.5': {
         section: '3.1.5',

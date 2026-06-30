@@ -311,7 +311,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         category: 'content_policy',
         title: 'External purchase for digital goods',
         trigger: "App directs users to purchase digital content/subscriptions outside of In-App Purchase without qualifying for and implementing Apple's regional external-purchase requirements",
-        fix: "Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements.",
+        fix: "Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements. In Brazil, use parental gates or consent where required and call StoreKit canMakePayments before purchase or payment-information flows.",
         match: {
             features_required: ['sells_digital_outside_iap'],
             base_confidence: 70,
