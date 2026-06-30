@@ -549,6 +549,21 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'content-regional-age-assurance',
+        guideline: 'ASC-Regional-Age-Assurance',
+        category: 'content_policy',
+        title: 'Regional age assurance obligations not addressed',
+        trigger: 'Apps with age-sensitive social, UGC, 18+, or significant-update flows may need region-specific age assurance in Brazil, Australia, Singapore, Utah, or Louisiana',
+        fix: 'Where regional law applies, align App Store Connect age-rating answers, App Review notes, Declared Age Range requests, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications with your age-assurance flow.',
+        match: {
+            categories: ['social-networking', 'games', 'entertainment'],
+            keywords: ['brazil', 'australia', 'singapore', 'utah', 'louisiana', '18+', 'age assurance', 'declared age range', 'significant update', 'parental consent'],
+            features_required: ['has_ugc'],
+            min_matches: 2,
+            base_confidence: 50,
+        },
+    },
+    {
         id: 'social-login-requirement',
         guideline: '4.0',
         category: 'content_policy',

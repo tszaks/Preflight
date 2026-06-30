@@ -341,4 +341,12 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         trigger: 'Social media platform operates in Australia but does not prevent users under 16 from having accounts, does not deactivate underage accounts, or does not disclose age assurance and age suitability details in App Store metadata',
         fix: 'If the Australian social media law applies, block under-16 account access for Australia, monitor new signups, consider the Declared Age Range API or another age-assurance method, disclose age controls in the age rating questionnaire, and add an Age Suitability URL or description text for region-specific restrictions.',
     },
+    {
+        id: 'content-regional-age-assurance',
+        guideline: 'ASC-Regional-Age-Assurance',
+        category: 'content_policy',
+        title: 'Regional age assurance obligations not addressed',
+        trigger: 'App is distributed in Brazil, Australia, Singapore, Utah, or Louisiana and includes age-sensitive social, UGC, 18+, or significant-update flows without using available age-assurance signals or documenting how parent or guardian consent is handled where required',
+        fix: 'Review regional obligations with counsel, then use Apple-supported tools where applicable: Declared Age Range for age category and regulatory signals, PermissionKit Significant Update actions for parent or guardian permission, StoreKit age rating properties, and App Store Server Notifications. Keep App Store Connect age-rating answers and App Review notes aligned with the implemented age-assurance behavior.',
+    },
 ] as const;

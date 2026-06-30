@@ -69,6 +69,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Regional Age Rating Values',
         summary: 'App Store Connect maps age rating questionnaire answers into global ratings and region-specific ratings. Australia now maps loot boxes to 16+ and infrequent simulated gambling to R 18+; Vietnam uses 00+, 12+, 16+, and 18+ regional ratings based on existing content descriptors.',
     },
+    'ASC-Regional-Age-Assurance': {
+        section: 'ASC-Regional-Age-Assurance',
+        title: 'Regional Age Assurance Requirements',
+        summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Brazil, Australia, Singapore, Utah, and Louisiana. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
+    },
 
     // Section 2: Performance
     '2.1': {
