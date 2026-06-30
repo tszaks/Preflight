@@ -245,6 +245,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['gamble', 'bet', 'casino', 'poker', 'slot', 'wager'],
             },
             {
+                guideline: 'ASC-Brazil-Betting-License',
+                description: 'Fixed-odds betting apps distributed in Brazil need a valid SPA license and supporting documents in App Review Information.',
+                frequency: 'common',
+                trigger_keywords: ['fixed odds', 'fixed-odds', 'betting', 'sportsbook', 'wager', 'brazil'],
+            },
+            {
                 guideline: '2.3.7',
                 description: 'Age rating must accurately reflect game content: violence, language, sexual themes.',
                 frequency: 'common',
@@ -268,10 +274,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Accurate age rating reflecting content',
             'IAP for all digital goods',
             'Reviewable IAP products submitted with the app version when applicable',
+            'Brazil SPA license details and supporting documents for fixed-odds betting distribution in Brazil',
         ],
         advisory_notes: [
             'Simulated gambling (no real money) is allowed but must not target children.',
             'If the game features ads, ensure they are clearly distinguished from gameplay.',
+            'Brazil fixed-odds betting license verification starts only with a new app version submission, not by editing App Review Information alone.',
         ],
     },
 

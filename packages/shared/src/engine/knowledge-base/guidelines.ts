@@ -231,7 +231,12 @@ export const GUIDELINES: Record<string, Guideline> = {
     '5.3': {
         section: '5.3',
         title: 'Gaming, Gambling, and Lotteries',
-        summary: 'Gambling apps must be geo-restricted to jurisdictions where legal and require appropriate licenses.',
+        summary: 'Gambling apps must be geo-restricted to jurisdictions where legal and require appropriate licenses. Fixed-odds betting apps distributed in Brazil require a valid SPA license and supporting details in App Review Information.',
+    },
+    'ASC-Brazil-Betting-License': {
+        section: 'ASC-Brazil-Betting-License',
+        title: 'Brazil Fixed-Odds Betting License',
+        summary: 'Apps with fixed-odds betting features can be distributed on the App Store in Brazil only with a valid fixed-odds betting license from the Secretariat of Prizes and Bets (SPA). Developers must submit a new app version, enter license details in App Review notes, and attach supporting documents to start license verification.',
     },
     '5.4': {
         section: '5.4',
