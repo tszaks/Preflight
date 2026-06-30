@@ -7,7 +7,7 @@
  * - Feature flag requirements (has_iap, has_ugc, sign_in_required, etc.)
  *
  * Sources: r/iOSProgramming, Apple Developer Forums, Stack Overflow [app-store-rejection],
- * Apple's published App Review Guidelines (2024-2025).
+ * Apple's published App Review Guidelines and App Store Connect documentation.
  */
 
 export interface EnhancedRejectionPattern {

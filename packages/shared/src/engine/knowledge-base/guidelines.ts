@@ -22,7 +22,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '1.2': {
         section: '1.2',
         title: 'User-Generated Content',
-        summary: 'Apps with user-generated content must include content filtering, reporting mechanisms, blocking capabilities, and published contact info for concerns. As of February 2026, random or anonymous chat apps (Chatroulette-style, anonymous messaging) are explicitly prohibited and may be removed without notice.',
+        summary: 'Apps with user-generated content must include content filtering, reporting mechanisms, blocking capabilities, and published contact info for concerns. Developers are responsible for removing content that violates Guideline 1.2 and may need to provide an improvement plan after App Review identifies violative content. Random or anonymous chat apps (Chatroulette-style, anonymous messaging) are explicitly prohibited and may be removed without notice.',
     },
     '1.3': {
         section: '1.3',
