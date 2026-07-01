@@ -491,6 +491,19 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'privacy-ai-data-sharing',
+        guideline: '5.1.2(i)',
+        category: 'content_policy',
+        title: 'Third-party AI data sharing consent missing',
+        trigger: 'App sends personal data to third-party AI services without explicit pre-transmission consent that names the provider and data shared',
+        fix: 'Before sending personal data to third-party AI, show in-app consent that names each provider, describes what data is sent and why, links to the privacy policy, and lets users decline. Keep the privacy policy and App Review notes aligned.',
+        match: {
+            keywords: ['openai', 'anthropic', 'claude', 'gemini', 'mistral', 'third-party ai', 'llm', 'chatbot'],
+            features_required: ['generates_ai_content'],
+            base_confidence: 55,
+        },
+    },
+    {
         id: 'ai-transparency',
         guideline: '2.3',
         category: 'metadata',

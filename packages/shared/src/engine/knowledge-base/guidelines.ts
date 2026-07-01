@@ -196,12 +196,12 @@ export const GUIDELINES: Record<string, Guideline> = {
     '5.1.1': {
         section: '5.1.1',
         title: 'Data Collection and Storage',
-        summary: 'Apps that collect personal data must have a privacy policy and secure user consent. Only collect data necessary for the app\'s core functionality. Apps using AI features must disclose data sharing with third-party AI services.',
+        summary: 'Apps that collect personal data must have a privacy policy and secure user consent. Only collect data necessary for the app\'s core functionality. Apps using third-party AI services must disclose what user data is shared and identify those services in the privacy policy.',
     },
     '5.1.2': {
         section: '5.1.2',
         title: 'Data Use and Sharing',
-        summary: 'Data collected for one purpose must not be repurposed without user consent. Data must not be shared with third parties without disclosure. Per 5.1.2(i), apps must obtain explicit consent before sending user data to third-party AI/ML services.',
+        summary: 'Data collected for one purpose must not be repurposed without user consent. Per 5.1.2(i), apps must clearly disclose where personal data will be shared, including with third-party AI, and obtain explicit permission before sharing it.',
     },
     '5.2': {
         section: '5.2',
