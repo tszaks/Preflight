@@ -224,10 +224,10 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     {
         id: 'privacy-ai-data-sharing',
         guideline: '5.1.2(i)',
-        category: 'privacy_manifest',
+        category: 'content_policy',
         title: 'AI feature sends data without consent',
-        trigger: 'App sends user data to third-party AI/ML services without explicit user consent or disclosure in the privacy manifest',
-        fix: 'Disclose all AI data sharing in your privacy manifest and privacy policy. Obtain explicit user consent before sending data to third-party AI services per guideline 5.1.2(i).',
+        trigger: 'App sends personal data to third-party AI services without first explaining what data is sent, naming who receives it, and asking permission before transmission',
+        fix: 'Show explicit in-app consent before any personal data is sent to third-party AI. Name each AI provider, describe the data shared and purpose, offer a denial path, and mirror the disclosure in the privacy policy. Do not rely on privacy policy or terms text alone.',
     },
     {
         id: 'biz-loan-apr-violation',
