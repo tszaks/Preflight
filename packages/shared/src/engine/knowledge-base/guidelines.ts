@@ -72,7 +72,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     'ASC-Regional-Age-Assurance': {
         section: 'ASC-Regional-Age-Assurance',
         title: 'Regional Age Assurance Requirements',
-        summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Brazil, Australia, Singapore, Utah, and Louisiana. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
+        summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Texas, Brazil, Australia, Singapore, Utah, and Louisiana. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
     },
 
     // Section 2: Performance

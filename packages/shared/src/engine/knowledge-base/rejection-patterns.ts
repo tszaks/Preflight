@@ -346,7 +346,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         guideline: 'ASC-Regional-Age-Assurance',
         category: 'content_policy',
         title: 'Regional age assurance obligations not addressed',
-        trigger: 'App is distributed in Brazil, Australia, Singapore, Utah, or Louisiana and includes age-sensitive social, UGC, 18+, or significant-update flows without using available age-assurance signals or documenting how parent or guardian consent is handled where required',
+        trigger: 'App is distributed in Texas, Brazil, Australia, Singapore, Utah, or Louisiana and includes age-sensitive social, UGC, 18+, or significant-update flows without using available age-assurance signals or documenting how parent or guardian consent is handled where required',
         fix: 'Review regional obligations with counsel, then use Apple-supported tools where applicable: Declared Age Range for age category and regulatory signals, PermissionKit Significant Update actions for parent or guardian permission, StoreKit age rating properties, and App Store Server Notifications. Keep App Store Connect age-rating answers and App Review notes aligned with the implemented age-assurance behavior.',
     },
 ] as const;
