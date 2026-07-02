@@ -22,7 +22,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '1.2': {
         section: '1.2',
         title: 'User-Generated Content',
-        summary: 'Apps with user-generated content must include content filtering, reporting mechanisms, blocking capabilities, and published contact info for concerns. As of February 2026, random or anonymous chat apps (Chatroulette-style, anonymous messaging) are explicitly prohibited and may be removed without notice.',
+        summary: 'Apps with user-generated content must include content filtering, reporting mechanisms, blocking capabilities, and published contact info for concerns. Developers are responsible for removing content that violates Guideline 1.2 and may need to provide an improvement plan after App Review identifies violative content. Random or anonymous chat apps (Chatroulette-style, anonymous messaging) are explicitly prohibited and may be removed without notice.',
     },
     '1.3': {
         section: '1.3',
@@ -54,12 +54,32 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Creator Age Requirements',
         summary: 'Apps with user-generated content must verify that content creators meet the minimum age requirement (13+ or local minimum). Added November 2025.',
     },
+    'ASC-Time-Allowances': {
+        section: 'ASC-Time-Allowances',
+        title: 'Time Allowances Social Media Declaration',
+        summary: 'Starting September 2026, apps and games must indicate in App Store Connect whether they include social media capabilities. Apps that redistribute, amplify, or interact with user-generated content through feeds or similar discovery methods may be classified as Social Media for Time Allowances and receive a minimum 13+ age rating unless under-13 access is disabled and checked with the Declared Age Range API.',
+    },
+    'ASC-Australia-Social-Media': {
+        section: 'ASC-Australia-Social-Media',
+        title: 'Australia Social Media Age Restrictions',
+        summary: 'Beginning December 10, 2025, certain social media platforms operating in Australia must prevent people under 16 from having a social media account. Apple recommends using age assurance such as the Declared Age Range API, accurate App Store description text, in-app controls disclosures, higher age ratings when appropriate, and an Age Suitability URL for region-specific details.',
+    },
+    'ASC-Regional-Age-Ratings': {
+        section: 'ASC-Regional-Age-Ratings',
+        title: 'Regional Age Rating Values',
+        summary: 'App Store Connect maps age rating questionnaire answers into global ratings and region-specific ratings. Australia now maps loot boxes to 16+ and infrequent simulated gambling to R 18+; Vietnam uses 00+, 12+, 16+, and 18+ regional ratings based on existing content descriptors.',
+    },
+    'ASC-Regional-Age-Assurance': {
+        section: 'ASC-Regional-Age-Assurance',
+        title: 'Regional Age Assurance Requirements',
+        summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Brazil, Australia, Singapore, Utah, and Louisiana. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
+    },
 
     // Section 2: Performance
     '2.1': {
         section: '2.1',
         title: 'App Completeness',
-        summary: 'Submissions must be final versions with all necessary metadata and URLs fully functional. Test and placeholder content must be removed.',
+        summary: 'Submissions must be final versions with all necessary metadata and URLs fully functional. Test and placeholder content must be removed. In-app purchase products must be complete, visible, functional, and submitted with the app or explained in review notes when they cannot be found or reviewed.',
     },
     '2.3': {
         section: '2.3',
@@ -97,17 +117,17 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1': {
         section: '3.1',
         title: 'Payments',
-        summary: 'In-app purchases must use the In-App Purchase API. Digital content and services must be purchased through Apple. Physical goods/services can use external payment.',
+        summary: 'In-app purchases must use the In-App Purchase API unless a regional external-purchase exception applies. Physical goods/services can use external payment.',
     },
     '3.1.1': {
         section: '3.1.1',
         title: 'In-App Purchase',
-        summary: 'Apps offering digital goods or services for purchase must use In-App Purchase. This includes subscriptions, premium features, and digital content.',
+        summary: 'Apps offering digital goods or services for purchase must use In-App Purchase unless they qualify for and correctly implement a regional external-purchase option. This includes subscriptions, premium features, and digital content.',
     },
     '3.1.1(a)': {
         section: '3.1.1(a)',
-        title: 'External Payment Links (US)',
-        summary: 'Apps may apply for StoreKit External Purchase Link entitlements in specific regions. For the United States storefront, Apple does not require an entitlement for buttons, external links, or other calls to action that direct users to external purchase methods.',
+        title: 'External Purchase Links and Alternative Payments',
+        summary: 'Apps may communicate or offer alternative purchase methods for digital goods only where Apple permits them, such as the United States storefront, EU storefronts with the required StoreKit External Purchase Link entitlement, and Brazil on iOS 26.5 or later with the StoreKit External Purchases or Offers entitlement. Follow regional disclosure, eligibility, review-note, reporting, and child-safety requirements, including parental gates or consent where required and StoreKit canMakePayments checks before purchase or payment-information flows.',
     },
     '3.1.5': {
         section: '3.1.5',
@@ -144,7 +164,17 @@ export const GUIDELINES: Record<string, Guideline> = {
     '4.3': {
         section: '4.3',
         title: 'Spam',
-        summary: 'Do not create multiple Bundle IDs for the same app or submit apps that are indistinguishable from what is already widely available. Saturated or low-effort app categories must offer a meaningfully different or improved experience.',
+        summary: 'Do not create multiple Bundle IDs for the same app or submit apps that are indistinguishable from what is already widely available. Apple may reject or remove low-value apps in saturated categories.',
+    },
+    '4.3(a)': {
+        section: '4.3(a)',
+        title: 'Duplicate App Bundle IDs',
+        summary: 'Do not create multiple Bundle IDs for essentially the same app, such as separate city, team, school, or location variants. Use one app with in-app variation where possible.',
+    },
+    '4.3(b)': {
+        section: '4.3(b)',
+        title: 'Low-Value or Saturated App Categories',
+        summary: 'Apps must not be indistinguishable from popular or widely available categories. Dating, flashlight, sound effects, wallpaper, simple timer, and fortune telling apps need a meaningfully different or improved experience, and repeated low-effort submissions can put the developer account at risk.',
     },
     '4.1(c)': {
         section: '4.1(c)',
@@ -183,8 +213,8 @@ export const GUIDELINES: Record<string, Guideline> = {
     },
     '4.5.3': {
         section: '4.5.3',
-        title: 'Apple Services Messaging Abuse',
-        summary: 'Do not use Apple services, including Live Activities, Game Center, or Push Notifications, to spam, phish, or send unsolicited messages to customers.',
+        title: 'Apple Services Misuse',
+        summary: 'Do not use Apple services, including Game Center, Push Notifications, or Live Activities, to spam, phish, send unsolicited messages, or exploit user identifiers.',
     },
 
     // Section 5: Legal
@@ -211,7 +241,12 @@ export const GUIDELINES: Record<string, Guideline> = {
     '5.3': {
         section: '5.3',
         title: 'Gaming, Gambling, and Lotteries',
-        summary: 'Gambling apps must be geo-restricted to jurisdictions where legal and require appropriate licenses.',
+        summary: 'Gambling apps must be geo-restricted to jurisdictions where legal and require appropriate licenses. Fixed-odds betting apps distributed in Brazil require a valid SPA license and supporting details in App Review Information.',
+    },
+    'ASC-Brazil-Betting-License': {
+        section: 'ASC-Brazil-Betting-License',
+        title: 'Brazil Fixed-Odds Betting License',
+        summary: 'Apps with fixed-odds betting features can be distributed on the App Store in Brazil only with a valid fixed-odds betting license from the Secretariat of Prizes and Bets (SPA). Developers must submit a new app version, enter license details in App Review notes, and attach supporting documents to start license verification.',
     },
     '5.4': {
         section: '5.4',
@@ -222,6 +257,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         section: '5.1.3',
         title: 'Health and Health Research',
         summary: 'Health research apps must obtain informed consent and approval from an ethics review board. Health data must be handled with extra care and not shared with third parties for non-health purposes.',
+    },
+    'ASC-Regulated-Medical-Device': {
+        section: 'ASC-Regulated-Medical-Device',
+        title: 'Regulated Medical Device Status',
+        summary: 'Health & Fitness or Medical apps, and apps marked as containing frequent Medical or Treatment Information, may need to provide a regulated medical device status in App Store Connect for distribution in the EEA, UK, or U.S. New qualifying apps require this status now; existing qualifying apps must provide it by early 2027 to continue submitting updates.',
     },
     '5.1.4': {
         section: '5.1.4',

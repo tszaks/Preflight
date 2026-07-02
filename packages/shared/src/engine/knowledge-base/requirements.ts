@@ -20,23 +20,33 @@ export const SCREENSHOT_LIMITS = {
 } as const;
 
 export const PRIMARY_SCREENSHOT_DIMENSIONS = {
-    'iPhone_6_9': { width: 1320, height: 2868, label: '6.9" iPhone accepted size' },
-    'iPhone_6_9_alt': { width: 1260, height: 2736, label: '6.9" iPhone accepted size' },
-    'iPhone_6_7': { width: 1290, height: 2796, label: '6.7" iPhone (iPhone 16 Plus / 15 Pro Max)' },
+    'iPhone_6_9': { width: 1320, height: 2868, label: '6.9" iPhone (iPhone 17 Pro Max / 16 Pro Max)' },
+    'iPhone_6_9_alt': { width: 1260, height: 2736, label: '6.9" iPhone (iPhone Air / Plus / Pro Max)' },
+    'iPhone_6_7': { width: 1290, height: 2796, label: '6.9" iPhone accepted size' },
     'iPhone_6_5': { width: 1284, height: 2778, label: '6.5" iPhone (iPhone 14 Plus / 13 Pro Max)' },
     'iPhone_6_5_alt': { width: 1242, height: 2688, label: '6.5" iPhone accepted size' },
-    'iPhone_6_3': { width: 1206, height: 2622, label: '6.3" iPhone accepted size' },
-    'iPhone_6_1': { width: 1179, height: 2556, label: '6.1" iPhone accepted size' },
+    'iPhone_6_3': { width: 1206, height: 2622, label: '6.3" iPhone (iPhone 17 Pro / 17 / 16 Pro / 16)' },
+    'iPhone_6_1': { width: 1179, height: 2556, label: '6.3" iPhone accepted size' },
     'iPhone_6_1_alt': { width: 1170, height: 2532, label: '6.1" iPhone accepted size' },
-    'iPhone_6_1_alt2': { width: 1125, height: 2436, label: '6.1" iPhone accepted size' },
-    'iPhone_6_1_alt3': { width: 1080, height: 2340, label: '6.1" iPhone accepted size' },
+    'iPhone_6_1_legacy': { width: 1125, height: 2436, label: '6.1" iPhone accepted size' },
+    'iPhone_6_1_e': { width: 1080, height: 2340, label: '6.1" iPhone (iPhone 17e / 16e)' },
     'iPhone_5_5': { width: 1242, height: 2208, label: '5.5" iPhone (iPhone 8 Plus)' },
-    'iPad_13': { width: 2064, height: 2752, label: '13" iPad accepted size' },
-    'iPad_12_9': { width: 2048, height: 2732, label: '12.9" iPad Pro' },
-    'iPad_11': { width: 1488, height: 2266, label: '11" iPad accepted size' },
-    'iPad_11_alt': { width: 1668, height: 2420, label: '11" iPad accepted size' },
-    'iPad_11_alt2': { width: 1668, height: 2388, label: '11" iPad accepted size' },
-    'iPad_11_alt3': { width: 1640, height: 2360, label: '11" iPad accepted size' },
+    'iPhone_4_7': { width: 750, height: 1334, label: '4.7" iPhone accepted size' },
+    'iPhone_4_no_status': { width: 640, height: 1096, label: '4" iPhone accepted size without status bar' },
+    'iPhone_4': { width: 640, height: 1136, label: '4" iPhone accepted size with status bar' },
+    'iPhone_3_5_no_status': { width: 640, height: 920, label: '3.5" iPhone accepted size without status bar' },
+    'iPhone_3_5': { width: 640, height: 960, label: '3.5" iPhone accepted size with status bar' },
+    'iPad_13': { width: 2064, height: 2752, label: '13" iPad Pro (M5 / M4)' },
+    'iPad_12_9': { width: 2048, height: 2732, label: '13" / 12.9" iPad accepted size' },
+    'iPad_11_small': { width: 1488, height: 2266, label: '11" iPad Pro / Air / mini accepted size' },
+    'iPad_11': { width: 1668, height: 2420, label: '11" iPad accepted size' },
+    'iPad_11_legacy': { width: 1668, height: 2388, label: '11" iPad accepted size' },
+    'iPad_11_air': { width: 1640, height: 2360, label: '11" iPad accepted size' },
+    'iPad_10_5': { width: 1668, height: 2224, label: '10.5" iPad accepted size' },
+    'iPad_9_7_no_status': { width: 1536, height: 2008, label: '9.7" iPad accepted size without status bar' },
+    'iPad_9_7': { width: 1536, height: 2048, label: '9.7" iPad accepted size with status bar' },
+    'iPad_9_7_small_no_status': { width: 768, height: 1004, label: '9.7" iPad accepted size without status bar' },
+    'iPad_9_7_small': { width: 768, height: 1024, label: '9.7" iPad accepted size with status bar' },
 } as const;
 
 export const URL_REQUIREMENTS = {
@@ -121,6 +131,15 @@ export const APP_CATEGORIES = [
 ] as const;
 
 export const AGE_RATINGS = ['4+', '9+', '12+', '13+', '16+', '17+', '18+'] as const;
+
+export const CURRENT_GLOBAL_AGE_RATINGS = ['4+', '9+', '13+', '16+', '18+'] as const;
+
+export const REGIONAL_AGE_RATINGS = {
+    australia: ['16+', 'R 18+'],
+    vietnam: ['00+', '12+', '16+', '18+'],
+    korea: ['All', '12+', '15+', '19+'],
+    brazil_self_rated: ['AL', 'A6', 'A10', 'A12', 'A14', 'A16', 'A18'],
+} as const;
 
 // Common placeholder/test strings to flag
 export const PLACEHOLDER_PATTERNS = [

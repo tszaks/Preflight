@@ -42,6 +42,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['subscription', 'monthly', 'annual', 'yearly', 'plan'],
             },
             {
+                guideline: '2.1(b)',
+                description: 'Apps with first-time in-app purchases or subscriptions must submit complete, reviewable products with the app version so reviewers can fetch and test the paywall.',
+                frequency: 'common',
+                trigger_keywords: ['subscription', 'premium', 'paywall', 'in-app purchase', 'iap'],
+            },
+            {
                 guideline: '5.2.5',
                 description: 'Financial apps must not provide personal financial advice without proper disclaimers and licensing disclosures.',
                 frequency: 'common',
@@ -63,6 +69,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
         required_features: [
             'Privacy policy covering financial data handling',
             'Subscription terms displayed on paywall (if applicable)',
+            'Reviewable in-app purchase products submitted with the app version when applicable',
             'Account deletion capability (5.1.1)',
         ],
         advisory_notes: [
@@ -89,6 +96,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['cure', 'treat', 'diagnose', 'heal', 'remedy', 'medical'],
             },
             {
+                guideline: 'ASC-Regulated-Medical-Device',
+                description: 'Health & Fitness apps that qualify as regulated medical devices, or report frequent medical/treatment information, may need regulated medical device status in App Store Connect for EEA, UK, or U.S. distribution.',
+                frequency: 'occasional',
+                trigger_keywords: ['diagnose', 'treatment', 'monitor', 'medical device', 'clinical'],
+            },
+            {
                 guideline: '5.1.1',
                 description: 'Health data is considered sensitive. Apps must clearly disclose what data is collected and how it is used.',
                 frequency: 'common',
@@ -105,6 +118,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Health data disclaimer (if making health claims)',
             'HealthKit privacy policy description (if using HealthKit)',
             'Purpose string for health data access',
+            'Regulated medical device status in App Store Connect when applicable for EEA, UK, or U.S. distribution',
         ],
         advisory_notes: [
             'If using HealthKit, ensure NSHealthShareUsageDescription and NSHealthUpdateUsageDescription are set.',
@@ -121,6 +135,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 description: 'Medical apps providing diagnostic or treatment functionality may be classified as medical devices requiring FDA clearance.',
                 frequency: 'very_common',
                 trigger_keywords: ['diagnose', 'diagnosis', 'treatment', 'prescribe', 'clinical'],
+            },
+            {
+                guideline: 'ASC-Regulated-Medical-Device',
+                description: 'Medical apps distributed in the EEA, UK, or U.S. may need regulated medical device status in App Store Connect, including relevant regulatory information, contact details, and safety information.',
+                frequency: 'common',
+                trigger_keywords: ['diagnose', 'diagnosis', 'treatment', 'monitor', 'medical device', 'clinical'],
             },
             {
                 guideline: '5.1.3',
@@ -144,6 +164,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Medical disclaimer prominently displayed',
             'HIPAA compliance documentation (if handling PHI)',
             'Professional vs. consumer use designation',
+            'Regulated medical device status in App Store Connect for EEA, UK, or U.S. distribution when applicable',
         ],
         advisory_notes: [
             'Medical apps have the highest rejection rate of any category. Plan for extended review times (5-10 days).',
@@ -186,16 +207,32 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 frequency: 'very_common',
                 trigger_keywords: ['photo', 'video', 'live', 'stream'],
             },
+            {
+                guideline: 'ASC-Australia-Social-Media',
+                description: 'Certain social media platforms operating in Australia must prevent people under 16 from having accounts and should surface age assurance and age suitability details in App Store metadata.',
+                frequency: 'occasional',
+                trigger_keywords: ['australia', 'under 16', 'teen', 'social media', 'age assurance'],
+            },
+            {
+                guideline: 'ASC-Regional-Age-Assurance',
+                description: 'Apps with age-sensitive social, UGC, 18+, or significant-update flows may need regional age-assurance handling in Brazil, Australia, Singapore, Utah, or Louisiana.',
+                frequency: 'occasional',
+                trigger_keywords: ['brazil', 'australia', 'singapore', 'utah', 'louisiana', '18+', 'age assurance', 'declared age range', 'significant update'],
+            },
         ],
         required_features: [
             'Content reporting mechanism',
             'User blocking functionality',
             'Content moderation system (human or AI)',
             'Terms of service and community guidelines',
+            'Age assurance and Australia under-16 account handling when applicable',
+            'Regional age-assurance handling for Brazil, Australia, Singapore, Utah, or Louisiana when applicable',
         ],
         advisory_notes: [
             'Apple reviewers will test reporting and blocking flows. Ensure they work in the review build.',
             'If the app includes live streaming, additional content moderation requirements apply.',
+            'For impacted social media platforms in Australia, document under-16 account restrictions through the app description, age rating questionnaire, and Age Suitability URL where appropriate.',
+            'For regionally age-sensitive apps, keep Declared Age Range, PermissionKit significant-update behavior, age-rating answers, and App Review notes consistent.',
         ],
     },
 
@@ -216,6 +253,12 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['gamble', 'bet', 'casino', 'poker', 'slot', 'wager'],
             },
             {
+                guideline: 'ASC-Brazil-Betting-License',
+                description: 'Fixed-odds betting apps distributed in Brazil need a valid SPA license and supporting documents in App Review Information.',
+                frequency: 'common',
+                trigger_keywords: ['fixed odds', 'fixed-odds', 'betting', 'sportsbook', 'wager', 'brazil'],
+            },
+            {
                 guideline: '2.3.7',
                 description: 'Age rating must accurately reflect game content: violence, language, sexual themes.',
                 frequency: 'common',
@@ -227,15 +270,24 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 frequency: 'common',
                 trigger_keywords: ['coins', 'gems', 'currency', 'credits', 'tokens'],
             },
+            {
+                guideline: '2.1(b)',
+                description: 'Games with first-time IAP products must make those products complete, submitted for review, and fetchable by the reviewer build.',
+                frequency: 'common',
+                trigger_keywords: ['battle pass', 'premium', 'coins', 'gems', 'iap', 'subscription'],
+            },
         ],
         required_features: [
             'Odds disclosure for randomized purchases (if applicable)',
             'Accurate age rating reflecting content',
             'IAP for all digital goods',
+            'Reviewable IAP products submitted with the app version when applicable',
+            'Brazil SPA license details and supporting documents for fixed-odds betting distribution in Brazil',
         ],
         advisory_notes: [
             'Simulated gambling (no real money) is allowed but must not target children.',
             'If the game features ads, ensure they are clearly distinguished from gameplay.',
+            'Brazil fixed-odds betting license verification starts only with a new app version submission, not by editing App Review Information alone.',
         ],
     },
 
