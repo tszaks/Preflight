@@ -19,9 +19,9 @@ export function checkPrivacyManifest(manifestContent: string | null | undefined)
             category: 'privacy_manifest',
             severity: 'warning',
             title: 'No privacy manifest provided',
-            description: 'A PrivacyInfo.xcprivacy file was not uploaded. If your app uses required-reason APIs, this will cause rejection.',
+            description: 'A PrivacyInfo.xcprivacy file was not uploaded. If your app or a bundled SDK uses required-reason APIs, this can cause rejection.',
             guideline_ref: getGuidelineRef('5.1'),
-            fix_suggestion: 'If your app uses any required-reason APIs (file timestamps, disk space, user defaults, etc.), add a PrivacyInfo.xcprivacy file.',
+            fix_suggestion: 'If your app code uses required-reason APIs, add a PrivacyInfo.xcprivacy file. If a third-party SDK uses them, update or replace the SDK so its bundle includes its own manifest.',
             confidence: 100,
         });
         return results;
