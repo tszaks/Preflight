@@ -9,7 +9,7 @@ export const SOCIAL_CONTEXT: CategoryContext = {
         'Photo/video sharing with filters and editing is expected functionality',
         'Location sharing and check-ins are common social features',
         'Social media platforms operating in Australia may need under-16 account restrictions and age-assurance disclosures',
-        'Age-sensitive social apps distributed in Brazil, Australia, Singapore, Utah, or Louisiana may need region-specific age-assurance handling',
+        'Age-sensitive social apps distributed in Texas, Brazil, Australia, Singapore, Utah, or Louisiana may need region-specific age-assurance handling',
     ],
     specific_guidelines: [
         'Section 1.2 - User-generated content requires filtering, reporting, blocking, and published contact info',

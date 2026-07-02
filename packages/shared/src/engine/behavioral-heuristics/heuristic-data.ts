@@ -215,9 +215,9 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             },
             {
                 guideline: 'ASC-Regional-Age-Assurance',
-                description: 'Apps with age-sensitive social, UGC, 18+, or significant-update flows may need regional age-assurance handling in Brazil, Australia, Singapore, Utah, or Louisiana.',
+                description: 'Apps with age-sensitive social, UGC, 18+, or significant-update flows may need regional age-assurance handling in Texas, Brazil, Australia, Singapore, Utah, or Louisiana.',
                 frequency: 'occasional',
-                trigger_keywords: ['brazil', 'australia', 'singapore', 'utah', 'louisiana', '18+', 'age assurance', 'declared age range', 'significant update'],
+                trigger_keywords: ['texas', 'brazil', 'australia', 'singapore', 'utah', 'louisiana', '18+', 'age assurance', 'declared age range', 'significant update'],
             },
         ],
         required_features: [
@@ -226,7 +226,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Content moderation system (human or AI)',
             'Terms of service and community guidelines',
             'Age assurance and Australia under-16 account handling when applicable',
-            'Regional age-assurance handling for Brazil, Australia, Singapore, Utah, or Louisiana when applicable',
+            'Regional age-assurance handling for Texas, Brazil, Australia, Singapore, Utah, or Louisiana when applicable',
         ],
         advisory_notes: [
             'Apple reviewers will test reporting and blocking flows. Ensure they work in the review build.',
