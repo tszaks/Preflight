@@ -278,6 +278,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Before submission, make sure every first-time IAP or subscription is complete in App Store Connect, included in the app review submission or reviewSubmission items, has required review metadata/screenshots, is fetchable by the review build, and is explained in App Review notes if any configured product cannot be found or reviewed.',
     },
     {
+        id: 'binary-downloads-executable-code',
+        guideline: '2.5.2',
+        category: 'content_policy',
+        title: 'Downloaded or remotely changed executable code',
+        trigger: 'App downloads, installs, or executes code, remote UI definitions, plug-ins, hot patches, or app-preview flows that can change app features or functionality after App Review',
+        fix: 'Keep executable code and feature behavior in the reviewed app bundle. Remove hot-patching or remote-code systems, limit remote content to data/config that does not alter core functionality, and explain any educational coding exception in App Review notes with proof that source code is fully viewable and editable before execution.',
+    },
+    {
         id: 'biz-brazil-betting-license',
         guideline: 'ASC-Brazil-Betting-License',
         category: 'content_policy',

@@ -101,6 +101,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Software Requirements',
         summary: 'Apps must be self-contained, use documented APIs, and not download executable code. Required frameworks must be embedded in the bundle.',
     },
+    '2.5.2': {
+        section: '2.5.2',
+        title: 'Self-Contained App Bundle',
+        summary: 'Apps must be self-contained and may not download, install, or execute code that introduces or changes app features or functionality after App Review. Educational coding apps have a limited exception only when downloaded code is used solely for education and the source is completely viewable and editable by the user.',
+    },
 
     '2.5.14': {
         section: '2.5.14',
