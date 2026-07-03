@@ -270,6 +270,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Add a clearly visible "Restore Purchases" button accessible from your paywall or settings. This is required for all apps with non-consumable IAP or subscriptions.',
     },
     {
+        id: 'biz-confusing-free-trial-toggle',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Confusing free trial toggle on paywall',
+        trigger: 'Subscription paywall uses a free-trial toggle, separate trial switch, or visual hierarchy that hides post-trial price, renewal terms, or actual trial eligibility from the user',
+        fix: 'Remove trial/non-trial toggles. Show one clear purchase path per offer, check introductory offer eligibility before promising a trial, and display the post-trial price, billing period, auto-renewal terms, and cancellation details before purchase.',
+    },
+    {
         id: 'biz-iap-products-not-reviewable',
         guideline: '2.1(b)',
         category: 'content_policy',

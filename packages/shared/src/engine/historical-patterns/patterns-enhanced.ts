@@ -662,15 +662,15 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'sub-free-trial-clarity',
-        guideline: '3.1.2(a)',
+        guideline: '3.1.2',
         category: 'content_policy',
-        title: 'Free trial terms unclear',
-        trigger: 'Free trial offers must clearly state what happens when the trial ends',
-        fix: 'Clearly state the post-trial price, auto-renewal behavior, and how to cancel before the trial ends.',
+        title: 'Free trial terms or toggle flow unclear',
+        trigger: 'Free trial offers must clearly state what happens when the trial ends and must not use confusing trial/non-trial toggles that hide actual price, renewal terms, or eligibility',
+        fix: 'Remove free-trial toggles, check introductory offer eligibility before rendering trial copy, and clearly state the post-trial price, auto-renewal behavior, billing period, and how to cancel before purchase.',
         match: {
             features_required: ['has_subscriptions'],
-            keywords: ['free trial', 'try free', 'trial period', 'days free'],
-            base_confidence: 55,
+            keywords: ['free trial', 'try free', 'trial period', 'days free', 'trial toggle', 'paywall toggle'],
+            base_confidence: 60,
         },
     },
 

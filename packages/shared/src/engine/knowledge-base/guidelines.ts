@@ -129,6 +129,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'In-App Purchase',
         summary: 'Apps offering digital goods or services for purchase must use In-App Purchase unless they qualify for and correctly implement a regional external-purchase option. This includes subscriptions, premium features, and digital content.',
     },
+    '3.1.2': {
+        section: '3.1.2',
+        title: 'Subscriptions',
+        summary: 'Auto-renewable subscription apps must clearly describe subscription terms, pricing, billing duration, renewal behavior, and free trial conditions before purchase. Paywalls should not use confusing trial toggles, hidden trial terms, misleading visual hierarchy, or unclear eligibility flows that could prevent users from understanding what they will be charged.',
+    },
     '3.1.1(a)': {
         section: '3.1.1(a)',
         title: 'External Purchase Links and Alternative Payments',
