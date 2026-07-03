@@ -452,7 +452,8 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             title: 'IPA file is very large',
             description: `The IPA is ${toMB(buffer.byteLength)} MB. Apple recommends keeping app size under 200 MB for cellular downloads. Apps over 4 GB are rejected.`,
             guideline_ref: 'App Thinning and Download Size',
-            fix_suggestion: 'Use App Thinning (bitcode, sliced assets) and review asset sizes. Consider on-demand resources for large content.',
+            fix_suggestion:
+                'Use App Thinning and review asset sizes. For large downloadable content, prefer Apple-Hosted/Managed Background Assets; On-Demand Resources are deprecated starting with iOS-family 27.',
             confidence: 100,
         });
     }
@@ -648,7 +649,8 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             severity: 'info',
             title: 'Large app bundle size',
             description: `The IPA is ${toMB(extracted.totalSize)} MB. Apps over 200 MB cannot be downloaded over cellular data without user confirmation.`,
-            fix_suggestion: 'Consider App Thinning and on-demand resources to reduce initial download size.',
+            fix_suggestion:
+                'Consider App Thinning and Apple-Hosted/Managed Background Assets to reduce initial download size; plan migration away from On-Demand Resources for iOS-family 27.',
             confidence: 100,
         });
     }
@@ -706,10 +708,11 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
                     title: 'Code-heavy binary (executable + frameworks > 60%)',
                     description:
                         `Executable and framework code make up ${codePct.toFixed(0)}% of the app. ` +
-                        `This suggests significant code weight. Consider App Thinning and On-Demand Resources to reduce download size.`,
+                        `This suggests significant code weight. Consider App Thinning and Apple-Hosted/Managed Background Assets to reduce download size.`,
                     fix_suggestion:
-                        'Enable App Thinning in Xcode to generate optimized variants. Use On-Demand Resources for content ' +
-                        'that isn\'t needed at launch. Strip unused architectures and debug symbols from release builds.',
+                        'Enable App Thinning in Xcode to generate optimized variants. Use Apple-Hosted/Managed Background Assets ' +
+                        'for content that isn\'t needed at launch, and plan migration away from On-Demand Resources for iOS-family 27. ' +
+                        'Strip unused architectures and debug symbols from release builds.',
                     guideline_ref: 'App Thinning and Download Size',
                     confidence: 85,
                 });
