@@ -51,8 +51,8 @@ export const GUIDELINES: Record<string, Guideline> = {
     },
     '1.2.1': {
         section: '1.2.1',
-        title: 'Creator Age Requirements',
-        summary: 'Apps with user-generated content must verify that content creators meet the minimum age requirement (13+ or local minimum). Added November 2025.',
+        title: 'Creator Content Age Rating Controls',
+        summary: 'Creator-content apps must moderate user-generated creator content, communicate which content requires additional purchases, and provide a way for users to identify content that exceeds the app age rating. Under 1.2.1(a), creator apps must use an age restriction mechanism based on verified or declared age to limit underage access to content above the app rating.',
     },
     'ASC-Time-Allowances': {
         section: 'ASC-Time-Allowances',
