@@ -273,9 +273,9 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         id: 'content-creator-age-restriction',
         guideline: '1.2.1',
         category: 'content_policy',
-        title: 'UGC missing creator age verification',
-        trigger: 'App allows content creation or posting without verifying the creator is at least 13 years old (or local minimum age)',
-        fix: 'Implement age verification for content creators. Users under 13 (or local minimum) must not be able to create, post, or share content publicly. See guideline 1.2.1(a).',
+        title: 'Creator content lacks age-rating controls',
+        trigger: 'Creator-content app does not let users identify content that exceeds the app age rating, or does not restrict underage users from accessing above-rating creator content using verified or declared age',
+        fix: 'Add clear age-rating signals for creator content and gate above-rating creator content with verified or declared age. Keep the standard UGC moderation controls in place and communicate which creator content requires additional purchases.',
     },
     {
         id: 'biz-restore-purchases',
