@@ -57,7 +57,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     'ASC-Time-Allowances': {
         section: 'ASC-Time-Allowances',
         title: 'Time Allowances Social Media Declaration',
-        summary: 'Starting September 2026, apps and games must indicate in App Store Connect whether they include social media capabilities. Apps that redistribute, amplify, or interact with user-generated content through feeds or similar discovery methods may be classified as Social Media for Time Allowances and receive a minimum 13+ age rating unless under-13 access is disabled and checked with the Declared Age Range API.',
+        summary: 'Starting July 2026, the App Store Connect age rating questionnaire lets developers indicate whether apps or games include social media capabilities. Starting September 2026, apps and games must provide this declaration when submitting new versions or updates. Apps that redistribute, amplify, or interact with user-generated content through feeds or similar discovery methods may be classified as Social Media for Time Allowances and receive a minimum 13+ age rating unless under-13 access is disabled and checked with the Declared Age Range API.',
     },
     'ASC-Australia-Social-Media': {
         section: 'ASC-Australia-Social-Media',
