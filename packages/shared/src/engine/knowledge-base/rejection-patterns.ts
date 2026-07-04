@@ -363,7 +363,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         category: 'content_policy',
         title: 'Social media capabilities not declared for Time Allowances',
         trigger: 'App includes a social feed or similar user-generated content surface that redistributes, amplifies, or lets users interact with content visible to many users, but the App Store Connect age rating questionnaire is not updated to declare social media capabilities',
-        fix: 'Starting September 2026, answer the App Store Connect social media capabilities question before submitting updates. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges and keep the age rating answers aligned with that behavior.',
+        fix: 'Starting July 2026, update the App Store Connect age rating questionnaire to answer the social media capabilities question. Starting September 2026, this declaration is required before submitting updates. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges and keep the age rating answers aligned with that behavior.',
     },
     {
         id: 'content-australia-social-under16',
