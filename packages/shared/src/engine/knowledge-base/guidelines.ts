@@ -74,6 +74,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Regional Age Assurance Requirements',
         summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Texas, Brazil, Australia, Singapore, Utah, and Louisiana. Since June 4, 2026, new Apple Accounts in Texas are subject to SB2420 age assurance, parent or guardian consent for downloads, Apple In-App Purchases, and significant changes, plus consent-revocation notifications. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
     },
+    'ASC-Accessibility-Nutrition-Labels': {
+        section: 'ASC-Accessibility-Nutrition-Labels',
+        title: 'Accessibility Nutrition Labels',
+        summary: 'App Store Connect lets developers publish Accessibility Nutrition Labels for supported device families. Labels are voluntary at launch, but Apple says accessibility support details will eventually be required for new apps and updates. Developers should audit common tasks before claiming support, keep responses current, and avoid misleading accessibility metadata under Guideline 2.3.',
+    },
 
     // Section 2: Performance
     '2.1': {
@@ -132,7 +137,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1.2': {
         section: '3.1.2',
         title: 'Subscriptions',
-        summary: 'Auto-renewable subscription apps must clearly describe subscription terms, pricing, billing duration, renewal behavior, and free trial conditions before purchase. Paywalls should not use confusing trial toggles, hidden trial terms, misleading visual hierarchy, or unclear eligibility flows that could prevent users from understanding what they will be charged.',
+        summary: 'Auto-renewable subscription apps must clearly describe subscription terms, pricing, billing duration, renewal behavior, and free trial conditions before purchase. Variations of the same subscription service should be configured inside one App Store Connect subscription group so customers can upgrade, downgrade, and crossgrade cleanly. Paywalls should not use confusing trial toggles, hidden trial terms, misleading visual hierarchy, or unclear eligibility flows that could prevent users from understanding what they will be charged.',
     },
     '3.1.1(a)': {
         section: '3.1.1(a)',
