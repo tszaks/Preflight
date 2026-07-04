@@ -106,6 +106,22 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         fix: "Remove competitor references. Describe your own app's unique value instead.",
         // No auto-match: would need a competitor name database
     },
+    {
+        id: 'meta-accessibility-labels-inaccurate',
+        guideline: 'ASC-Accessibility-Nutrition-Labels',
+        category: 'metadata',
+        title: 'Accessibility labels do not match app support',
+        trigger: 'App Store Connect Accessibility Nutrition Label responses claim support that users cannot complete across the app\'s common tasks, or the responses are not kept current after app changes',
+        fix: 'Audit common tasks for each supported device family before publishing accessibility labels. Only claim VoiceOver, Voice Control, Larger Text, Dark Interface, Differentiate Without Color Alone, Sufficient Contrast, Reduced Motion, Captions, or Audio Descriptions support when Apple\'s criteria are met, and update labels when app behavior changes.',
+        match: {
+            keywords: [
+                'accessibility nutrition label', 'accessibility labels', 'voiceover',
+                'voice control', 'larger text', 'dynamic type', 'captions',
+                'reduced motion', 'sufficient contrast',
+            ],
+            base_confidence: 45,
+        },
+    },
 
     // ============================================================
     // SCREENSHOT PATTERNS
@@ -315,6 +331,20 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         match: {
             features_required: ['sells_digital_outside_iap'],
             base_confidence: 70,
+        },
+    },
+    {
+        id: 'biz-subscription-products-separate-groups',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Subscription variations split across groups',
+        trigger: 'Auto-renewable subscription durations, prices, or tiers for the same service are configured as separate subscription groups instead of products or levels within one group',
+        fix: 'Put monthly, annual, trial, and tier variations for the same subscription service in the same App Store Connect subscription group. Use separate groups only for independent services a customer can hold at the same time, and make sure the reviewed app version exposes the submitted products.',
+        match: {
+            features_required: ['has_subscriptions'],
+            keywords: ['subscription group', 'monthly', 'annual', 'yearly', 'tier', 'upgrade', 'downgrade', 'crossgrade'],
+            min_matches: 2,
+            base_confidence: 55,
         },
     },
     {

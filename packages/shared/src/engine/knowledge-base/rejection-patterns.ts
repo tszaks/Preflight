@@ -65,6 +65,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         trigger: 'Mentioning competitor app names in title, subtitle, keywords, or description',
         fix: 'Remove competitor references. Describe your own app\'s unique value instead.',
     },
+    {
+        id: 'meta-accessibility-labels-inaccurate',
+        guideline: 'ASC-Accessibility-Nutrition-Labels',
+        category: 'metadata',
+        title: 'Accessibility labels do not match app support',
+        trigger: 'App Store Connect Accessibility Nutrition Label responses claim support that users cannot complete across the app\'s common tasks, or the responses are not kept current after app changes',
+        fix: 'Audit common tasks for each supported device family before publishing accessibility labels. Only claim VoiceOver, Voice Control, Larger Text, Dark Interface, Differentiate Without Color Alone, Sufficient Contrast, Reduced Motion, Captions, or Audio Descriptions support when Apple\'s criteria are met, and update labels when app behavior changes.',
+    },
 
     // Screenshot rejections
     {
@@ -220,6 +228,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         title: 'External purchase for digital goods',
         trigger: 'App directs users to purchase digital content/subscriptions outside of In-App Purchase without qualifying for and implementing Apple\'s regional external-purchase requirements',
         fix: 'Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements. Japan support applies to iOS 26.2 or later and Brazil support applies to iOS 26.5 or later; both require Apple IAP to be offered at least as prominently when alternative in-app payment options are merchandised. In Japan and Brazil, use parental gates or consent where required, call StoreKit canMakePayments before purchase or payment-information flows, and follow Apple transaction reporting deadlines.',
+    },
+    {
+        id: 'biz-subscription-products-separate-groups',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Subscription variations split across groups',
+        trigger: 'Auto-renewable subscription durations, prices, or tiers for the same service are configured as separate subscription groups instead of products or levels within one group',
+        fix: 'Put monthly, annual, trial, and tier variations for the same subscription service in the same App Store Connect subscription group. Use separate groups only for independent services a customer can hold at the same time, and make sure the reviewed app version exposes the submitted products.',
     },
     {
         id: 'biz-minimum-functionality',

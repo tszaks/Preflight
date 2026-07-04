@@ -141,6 +141,18 @@ export const REGIONAL_AGE_RATINGS = {
     brazil_self_rated: ['AL', 'A6', 'A10', 'A12', 'A14', 'A16', 'A18'],
 } as const;
 
+export const ACCESSIBILITY_NUTRITION_LABEL_FEATURES = [
+    'VoiceOver',
+    'Voice Control',
+    'Larger Text',
+    'Dark Interface',
+    'Differentiate Without Color Alone',
+    'Sufficient Contrast',
+    'Reduced Motion',
+    'Captions',
+    'Audio Descriptions',
+] as const;
+
 // Common placeholder/test strings to flag
 export const PLACEHOLDER_PATTERNS = [
     /lorem ipsum/i,
