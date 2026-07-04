@@ -298,8 +298,8 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         guideline: '2.1(b)',
         category: 'content_policy',
         title: 'In-app purchase products not reviewable',
-        trigger: 'App includes in-app purchases or subscriptions, but products are missing from the review submission, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
-        fix: 'Before submission, make sure every first-time IAP or subscription is complete in App Store Connect, included in the app review submission or reviewSubmission items, has required review metadata/screenshots, is fetchable by the review build, and is explained in App Review notes if any configured product cannot be found or reviewed.',
+        trigger: 'App includes in-app purchases or subscriptions, but products are not submitted through Apple\'s IAP/subscription review flow, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
+        fix: 'Before submission, make sure every IAP or subscription is complete in App Store Connect, has required review metadata/screenshots, is submitted through Apple\'s separate IAP/subscription review process, and is fetchable by the review build. First-time IAPs and subscriptions must be submitted with a new app version; they are not generic App Review submission items.',
     },
     {
         id: 'binary-downloads-executable-code',

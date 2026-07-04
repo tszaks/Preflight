@@ -43,7 +43,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             },
             {
                 guideline: '2.1(b)',
-                description: 'Apps with first-time in-app purchases or subscriptions must submit complete, reviewable products with the app version so reviewers can fetch and test the paywall.',
+                description: 'Apps with first-time in-app purchases or subscriptions must submit complete, reviewable products with a new app version through Apple\'s separate IAP/subscription review flow so reviewers can fetch and test the paywall.',
                 frequency: 'common',
                 trigger_keywords: ['subscription', 'premium', 'paywall', 'in-app purchase', 'iap'],
             },
@@ -272,7 +272,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             },
             {
                 guideline: '2.1(b)',
-                description: 'Games with first-time IAP products must make those products complete, submitted for review, and fetchable by the reviewer build.',
+                description: 'Games with first-time IAP products must make those products complete, submitted with a new app version through Apple\'s separate IAP review flow, and fetchable by the reviewer build.',
                 frequency: 'common',
                 trigger_keywords: ['battle pass', 'premium', 'coins', 'gems', 'iap', 'subscription'],
             },

@@ -84,7 +84,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '2.1': {
         section: '2.1',
         title: 'App Completeness',
-        summary: 'Submissions must be final versions with all necessary metadata and URLs fully functional. Test and placeholder content must be removed. In-app purchase products must be complete, visible, functional, and submitted with the app or explained in review notes when they cannot be found or reviewed.',
+        summary: 'Submissions must be final versions with all necessary metadata and URLs fully functional. Test and placeholder content must be removed. In-app purchase products and subscriptions must be complete, visible, functional, in a reviewable App Store Connect state, and submitted through Apple\'s separate IAP/subscription review flow; first-time IAPs and subscriptions must be submitted with a new app version.',
     },
     '2.3': {
         section: '2.3',
