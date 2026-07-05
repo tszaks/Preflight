@@ -67,7 +67,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     'ASC-Regional-Age-Ratings': {
         section: 'ASC-Regional-Age-Ratings',
         title: 'Regional Age Rating Values',
-        summary: 'App Store Connect maps age rating questionnaire answers into global ratings and region-specific ratings. Developers must answer the updated questionnaire, including in-app controls, capabilities, medical or wellness topics, violent themes, and the effect of AI assistants or chatbot functionality on sensitive-content frequency. Australia now maps loot boxes to 16+ and infrequent simulated gambling to R 18+; Vietnam uses 00+, 12+, 16+, and 18+ regional ratings based on existing content descriptors.',
+        summary: 'App Store Connect maps age rating questionnaire answers into global ratings and region-specific ratings. Developers must answer the updated questionnaire, including in-app controls, capabilities, medical or wellness topics, violent themes, and the effect of AI assistants or chatbot functionality on sensitive-content frequency. Australia now maps loot boxes to 16+ and infrequent simulated gambling to R 18+; Vietnam uses 00+, 12+, 16+, and 18+ regional ratings; and Korea can show GRAC-driven All, 12+, 15+, or 19+ regional ratings for Games, Entertainment, or simulated-gambling apps.',
     },
     'ASC-Regional-Age-Assurance': {
         section: 'ASC-Regional-Age-Assurance',
