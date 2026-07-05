@@ -193,7 +193,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         category: 'content_policy',
         title: 'Incorrect age rating',
         trigger: 'App content doesn\'t match the selected age rating (e.g., mature content with 4+ rating)',
-        fix: 'Select an age rating that accurately reflects your app\'s content using Apple\'s current questionnaire. Global ratings for current OS releases use 4+, 9+, 13+, 16+, and 18+, while some storefronts display region-specific ratings such as Australia 16+/R 18+ and Vietnam 00+/12+/16+/18+. Keep content descriptors accurate and rate higher when needed.',
+        fix: 'Select an age rating that accurately reflects your app\'s content using Apple\'s current questionnaire, including in-app controls, capabilities, medical or wellness topics, violent themes, and any sensitive content surfaced by AI assistants or chatbot functionality. Global ratings for current OS releases use 4+, 9+, 13+, 16+, and 18+, while some storefronts display region-specific ratings such as Australia 16+/R 18+ and Vietnam 00+/12+/16+/18+. Keep content descriptors accurate and rate higher when needed.',
     },
     {
         id: 'content-ugc-no-moderation',
