@@ -162,8 +162,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '5.1',
         category: 'privacy_manifest',
         title: 'Missing privacy manifest',
-        trigger: 'App or bundled third-party SDK uses required-reason APIs without the required PrivacyInfo.xcprivacy manifest in the owning app, framework, or dynamic library bundle',
-        fix: 'Add a PrivacyInfo.xcprivacy file for your app code, and update or replace third-party SDKs so each SDK bundle declares its own required-reason API usage with valid reason codes.',
+        trigger: 'App or bundled third-party SDK uses required-reason APIs without the required PrivacyInfo.xcprivacy manifest in the owning app, framework, or dynamic library bundle, or a listed commonly used SDK is added as a binary dependency without the required valid signature',
+        fix: 'Add a PrivacyInfo.xcprivacy file for your app code, and update or replace third-party SDKs so each SDK bundle declares its own required-reason API usage with valid reason codes. For Apple-listed commonly used SDKs added as binary dependencies, use an SDK version that also includes the required valid signature.',
         // Handled by hard rules
     },
     {

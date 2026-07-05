@@ -241,7 +241,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '5.1': {
         section: '5.1',
         title: 'Privacy',
-        summary: 'Apps must comply with applicable privacy laws and include a privacy policy. Data collection must be disclosed and limited to what is necessary.',
+        summary: 'Apps must comply with applicable privacy laws and include a privacy policy. Data collection must be disclosed and limited to what is necessary. Developers are responsible for third-party SDK code included in the app, including privacy manifests for Apple-listed commonly used SDKs and valid signatures when those listed SDKs are added as binary dependencies.',
     },
     '5.1.1': {
         section: '5.1.1',

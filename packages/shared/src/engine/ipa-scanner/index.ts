@@ -501,7 +501,7 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             title: `${missing.length} SDK${missing.length > 1 ? 's' : ''} missing privacy manifest`,
             description: `The following embedded framework${missing.length > 1 ? 's are' : ' is'} missing a PrivacyInfo.xcprivacy file: ${missing.join(', ')}. Since Spring 2024, Apple requires every third-party SDK to include its own privacy manifest declaring API usage reasons.`,
             guideline_ref: 'ITMS-91061',
-            fix_suggestion: `Update ${missing.length > 1 ? 'these SDKs' : 'this SDK'} to the latest version (most maintainers have added privacy manifests). If the SDK is unmaintained, you may need to create a PrivacyInfo.xcprivacy for it manually or find an alternative.`,
+            fix_suggestion: `Update ${missing.length > 1 ? 'these SDKs' : 'this SDK'} to the latest version (most maintainers have added privacy manifests). If this is an Apple-listed commonly used SDK added as a binary dependency, use a version with the required valid signature as well. If the SDK is unmaintained, you may need to create a PrivacyInfo.xcprivacy for it manually or find an alternative.`,
             confidence: 95,
         });
     }
