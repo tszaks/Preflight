@@ -72,7 +72,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     'ASC-Regional-Age-Assurance': {
         section: 'ASC-Regional-Age-Assurance',
         title: 'Regional Age Assurance Requirements',
-        summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Texas, Brazil, Australia, Singapore, Utah, and Louisiana. Since June 4, 2026, new Apple Accounts in Texas are subject to SB2420 age assurance, parent or guardian consent for downloads, Apple In-App Purchases, and significant changes, plus consent-revocation notifications. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
+        summary: 'Apple provides Declared Age Range, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications to help developers meet regional age-assurance obligations in Texas, Brazil, Australia, Singapore, Utah, and Louisiana. Since June 4, 2026, new Apple Accounts in Texas are subject to SB2420 age assurance, parent or guardian consent for downloads, Apple In-App Purchases, and significant changes, plus consent-revocation notifications. For new Apple Accounts in Utah as of May 6, 2026, and Louisiana as of July 1, 2026, age categories are shared with apps when requested through the Declared Age Range API. Since February 24, 2026, the App Store blocks 18+ downloads in Australia, Brazil, and Singapore unless users are confirmed adults, and developers may still have separate obligations to independently confirm age or obtain parent or guardian permission for significant updates.',
     },
     'ASC-Accessibility-Nutrition-Labels': {
         section: 'ASC-Accessibility-Nutrition-Labels',
@@ -142,7 +142,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1.1(a)': {
         section: '3.1.1(a)',
         title: 'External Purchase Links and Alternative Payments',
-        summary: 'Apps may communicate or offer alternative purchase methods for digital goods only where Apple permits them, such as the United States storefront, EU storefronts with the required StoreKit External Purchase Link entitlement, Japan on iOS 26.2 or later, and Brazil on iOS 26.5 or later with the StoreKit External Purchases or Offers entitlement. Follow regional disclosure, eligibility, review-note, reporting, and child-safety requirements, including parental gates or consent where required and StoreKit canMakePayments checks before purchase or payment-information flows.',
+        summary: 'Apps may communicate or offer alternative purchase methods for digital goods only where Apple permits them, such as the United States storefront, EU storefronts with the required StoreKit External Purchase Link entitlement, Japan on iOS 26.2 or later, and Brazil on iOS 26.5 or later with the StoreKit External Purchases or Offers entitlement. Current Apple Developer Program members must accept the updated agreement terms for Brazil options by July 6, 2026. Follow regional disclosure, eligibility, review-note, reporting, and child-safety requirements, including parental gates or consent where required and StoreKit canMakePayments checks before purchase or payment-information flows.',
     },
     '3.1.5': {
         section: '3.1.5',
