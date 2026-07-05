@@ -302,6 +302,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Before submission, make sure every IAP or subscription is complete in App Store Connect, has required review metadata/screenshots, is submitted through Apple\'s separate IAP/subscription review process, and is fetchable by the review build. First-time IAPs and subscriptions must be submitted with a new app version; they are not generic App Review submission items.',
     },
     {
+        id: 'biz-promoted-iap-image',
+        guideline: '2.3.2',
+        category: 'metadata',
+        title: 'Promoted IAP image is duplicated or misleading',
+        trigger: 'Promoted in-app purchase, subscription, or win-back offer uses the app icon, an app screenshot, duplicate images across promoted products, or artwork that does not clearly represent the associated purchase or offer',
+        fix: 'Use a unique 1024x1024 PNG or high-quality JPEG promotional image for each promoted IAP, subscription, or win-back offer. Do not reuse the app icon, app screenshots, or identical artwork across different promoted purchases, and remove promotion if the product should not appear on the App Store.',
+    },
+    {
         id: 'binary-downloads-executable-code',
         guideline: '2.5.2',
         category: 'content_policy',

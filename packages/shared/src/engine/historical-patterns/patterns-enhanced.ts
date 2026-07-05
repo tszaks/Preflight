@@ -691,6 +691,22 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'biz-promoted-iap-image',
+        guideline: '2.3.2',
+        category: 'metadata',
+        title: 'Promoted IAP image is duplicated or misleading',
+        trigger: 'Promoted in-app purchase, subscription, or win-back offer uses the app icon, an app screenshot, duplicate images across promoted products, or artwork that does not clearly represent the associated purchase or offer',
+        fix: 'Use a unique 1024x1024 PNG or high-quality JPEG promotional image for each promoted IAP, subscription, or win-back offer. Do not reuse the app icon, app screenshots, or identical artwork across different promoted purchases, and remove promotion if the product should not appear on the App Store.',
+        match: {
+            features_required: ['has_iap'],
+            keywords: [
+                'promoted in-app purchase', 'promoted iap', 'promotional image',
+                'win-back offer', 'win back offer', 'subscription image', 'app icon',
+            ],
+            base_confidence: 45,
+        },
+    },
+    {
         id: 'sub-free-trial-clarity',
         guideline: '3.1.2',
         category: 'content_policy',
