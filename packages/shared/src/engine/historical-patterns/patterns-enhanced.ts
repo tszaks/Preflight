@@ -327,7 +327,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         category: 'content_policy',
         title: 'External purchase for digital goods',
         trigger: "App directs users to purchase digital content/subscriptions outside of In-App Purchase without qualifying for and implementing Apple's regional external-purchase requirements",
-        fix: "Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements. Japan support applies to iOS 26.2 or later and Brazil support applies to iOS 26.5 or later. In Japan and Brazil, use parental gates or consent where required, call StoreKit canMakePayments before purchase or payment-information flows, and follow Apple transaction reporting deadlines.",
+        fix: "Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements. Japan support applies to iOS 26.2 or later and Brazil support applies to iOS 26.5 or later. Current Apple Developer Program members must accept the updated agreement terms for Brazil options by July 6, 2026. In Japan and Brazil, use parental gates or consent where required, call StoreKit canMakePayments before purchase or payment-information flows, and follow Apple transaction reporting deadlines.",
         match: {
             features_required: ['sells_digital_outside_iap'],
             base_confidence: 70,
@@ -584,7 +584,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         category: 'content_policy',
         title: 'Regional age assurance obligations not addressed',
         trigger: 'Apps with age-sensitive social, UGC, 18+, Apple In-App Purchase, or significant-update flows may need region-specific age assurance in Texas, Brazil, Australia, Singapore, Utah, or Louisiana',
-        fix: 'Where regional law applies, align App Store Connect age-rating answers, App Review notes, Declared Age Range requests, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications including consent revocation with your age-assurance flow. In Texas, new Apple Accounts are subject to SB2420 obligations starting June 4, 2026.',
+        fix: 'Where regional law applies, align App Store Connect age-rating answers, App Review notes, Declared Age Range requests, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications including consent revocation with your age-assurance flow. New Apple Accounts are subject to state-specific age-assurance handling in Utah as of May 6, 2026, Texas as of June 4, 2026, and Louisiana as of July 1, 2026.',
         match: {
             categories: ['social-networking', 'games', 'entertainment'],
             keywords: ['texas', 'brazil', 'australia', 'singapore', 'utah', 'louisiana', '18+', 'age assurance', 'declared age range', 'significant update', 'parental consent', 'consent revocation'],
