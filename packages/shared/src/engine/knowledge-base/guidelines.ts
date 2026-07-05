@@ -91,6 +91,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Accurate Metadata',
         summary: 'Metadata must accurately reflect app functionality. App name, description, screenshots must not include misleading content, pricing info in the name, or reference other platforms.',
     },
+    '2.3.2': {
+        section: '2.3.2',
+        title: 'In-App Purchase Metadata',
+        summary: 'Apps with in-app purchases must make descriptions, screenshots, previews, display names, promotional images, and other public IAP metadata appropriate and accurate. Promoted IAP and win-back offer images should uniquely represent the product or offer and must not reuse the app icon, app screenshots, or duplicate images across promoted items.',
+    },
     '2.3.7': {
         section: '2.3.7',
         title: 'Accurate Screenshots',
