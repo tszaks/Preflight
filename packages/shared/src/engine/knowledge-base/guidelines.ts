@@ -236,6 +236,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Apple Services Misuse',
         summary: 'Do not use Apple services, including Game Center, Push Notifications, or Live Activities, to spam, phish, send unsolicited messages, or exploit user identifiers.',
     },
+    'ASC-Game-Center-Entitlement': {
+        section: 'ASC-Game-Center-Entitlement',
+        title: 'Game Center Entitlement and Configuration',
+        summary: 'New apps and app updates for iOS, iPadOS, or tvOS that offer Game Center features must include the Game Center entitlement in the entitlements plist and configure Game Center features in App Store Connect before submission.',
+    },
 
     // Section 5: Legal
     '5.1': {

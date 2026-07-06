@@ -5,8 +5,9 @@
  *
  * Checks:
  *   1. Entitlement → Framework consistency (unused capabilities)
- *   2. Entitlement → Privacy manifest consistency (missing data declarations)
- *   3. Unused entitlement count threshold
+ *   2. Framework → Entitlement consistency (missing required capabilities)
+ *   3. Entitlement → Privacy manifest consistency (missing data declarations)
+ *   4. Unused entitlement count threshold
  */
 
 import type { CheckResult } from '../types';
@@ -50,6 +51,22 @@ interface EntitlementPrivacyRule {
     /** Display name for the entitlement */
     displayName: string;
 }
+
+const REQUIRED_FRAMEWORK_ENTITLEMENTS: Array<{
+    framework: string;
+    entitlement: string;
+    displayName: string;
+    guidelineRef: string;
+    source: string;
+}> = [
+    {
+        framework: 'GameKit',
+        entitlement: 'com.apple.developer.game-center',
+        displayName: 'Game Center (GameKit)',
+        guidelineRef: 'ASC-Game-Center-Entitlement',
+        source: 'https://developer.apple.com/news/upcoming-requirements/?id=06262023a',
+    },
+];
 
 const ENTITLEMENT_TO_PRIVACY: Record<string, EntitlementPrivacyRule> = {
     'com.apple.developer.healthkit': {
@@ -112,7 +129,32 @@ export function auditEntitlements(
         }
     }
 
-    // --- 2. Entitlement → Privacy manifest consistency ---
+    // --- 2. Framework → Entitlement consistency ---
+    for (const rule of REQUIRED_FRAMEWORK_ENTITLEMENTS) {
+        if (!frameworkSet.has(rule.framework)) {
+            continue;
+        }
+
+        if (entitlementsXml.includes(rule.entitlement)) {
+            continue;
+        }
+
+        results.push({
+            category: 'ipa_binary',
+            severity: 'warning',
+            title: `${rule.displayName} framework detected without required entitlement`,
+            description:
+                `${rule.framework} is linked, but '${rule.entitlement}' was not found in the entitlements. ` +
+                'Apple requires new apps and app updates that offer Game Center features to include the Game Center entitlement and configure Game Center in App Store Connect.',
+            guideline_ref: rule.guidelineRef,
+            fix_suggestion:
+                'If the app uses Game Center, add the Game Center capability in Xcode and configure Game Center features in App Store Connect before submitting. ' +
+                `If Game Center is not used, remove the ${rule.framework} dependency. Source: ${rule.source}`,
+            confidence: 85,
+        });
+    }
+
+    // --- 3. Entitlement → Privacy manifest consistency ---
     for (const [entitlementKey, rule] of Object.entries(ENTITLEMENT_TO_PRIVACY)) {
         if (!entitlementsXml.includes(entitlementKey)) {
             continue;
@@ -156,7 +198,7 @@ export function auditEntitlements(
         }
     }
 
-    // --- 3. Unused entitlement count threshold ---
+    // --- 4. Unused entitlement count threshold ---
     if (unusedEntitlementCount > 2) {
         results.push({
             category: 'ipa_binary',
