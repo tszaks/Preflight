@@ -657,8 +657,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '3.1.2',
         category: 'content_policy',
         title: 'Subscription terms not visible',
-        trigger: 'Subscription apps must clearly display price, duration, and auto-renewal terms on the paywall',
-        fix: 'Show subscription price, billing period, and "Payment will be charged to iTunes Account" text on the paywall.',
+        trigger: 'Subscription apps must clearly display price, duration, auto-renewal terms, and any commitment-plan terms on the paywall',
+        fix: 'Show subscription price, billing period, and "Payment will be charged to iTunes Account" text on the paywall. For monthly billing with a 12-month commitment, also show the total commitment price, number of required payments, and cancellation/renewal behavior.',
         match: {
             features_required: ['has_subscriptions'],
             base_confidence: 55,
@@ -716,6 +716,19 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         match: {
             features_required: ['has_subscriptions'],
             keywords: ['free trial', 'try free', 'trial period', 'days free', 'trial toggle', 'paywall toggle'],
+            base_confidence: 60,
+        },
+    },
+    {
+        id: 'sub-commitment-plan-clarity',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Subscription commitment plan terms unclear',
+        trigger: 'Subscription paywall offers monthly billing with a 12-month commitment but does not make the monthly price, total commitment price, required payment count, or cancellation/renewal behavior clear before purchase',
+        fix: 'Use StoreKit pricingTerms and commitmentInfo to merchandise the monthly billing plan accurately. Show both the monthly billed amount and total 12-month commitment, explain remaining payments and cancellation behavior, test the billing plan in Xcode/App Store sandbox, and keep server entitlement logic aware of billingPlanType and commitmentInfo.',
+        match: {
+            features_required: ['has_subscriptions'],
+            keywords: ['12-month commitment', '12 month commitment', 'monthly billing', 'billing plan', 'billingPlanType', 'pricingTerms', 'commitmentInfo'],
             base_confidence: 60,
         },
     },

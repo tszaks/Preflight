@@ -186,13 +186,13 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 description:
                     'You indicated subscription terms are NOT displayed on your paywall. Apple requires all apps ' +
                     'with auto-renewable subscriptions to clearly display terms including price, duration, and ' +
-                    'that payment will be charged to iTunes Account.',
+                    'that payment will be charged to iTunes Account. Subscription commitment plans also need clear commitment pricing and cancellation terms.',
                 guideline_ref: '3.1.2',
                 fix_suggestion:
                     'On your paywall/subscription screen, display: (1) Price per period, ' +
                     '(2) Subscription duration, (3) "Payment will be charged to your Apple ID account", ' +
                     '(4) "Subscription automatically renews unless canceled at least 24 hours before the end of the current period", ' +
-                    '(5) Link to Terms of Service and Privacy Policy.',
+                    '(5) Link to Terms of Service and Privacy Policy. If using monthly billing with a 12-month commitment, also show the total commitment price, required payment count, and cancellation behavior.',
                 confidence: 90,
             });
         } else {
@@ -203,13 +203,13 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
                 description:
                     'Apps with auto-renewable subscriptions must clearly display subscription terms ' +
                     'including price, duration, and that payment will be charged to iTunes Account. ' +
-                    'Cancellation and renewal information must also be visible.',
+                    'Cancellation and renewal information must also be visible. If the app offers monthly billing with a 12-month commitment, the total commitment price and required payment count should be clear before purchase.',
                 guideline_ref: '3.1.2',
                 fix_suggestion:
                     'On your paywall/subscription screen, display: (1) Price per period, ' +
                     '(2) Subscription duration, (3) "Payment will be charged to your Apple ID account", ' +
                     '(4) "Subscription automatically renews unless canceled at least 24 hours before the end of the current period", ' +
-                    '(5) Link to Terms of Service and Privacy Policy.',
+                    '(5) Link to Terms of Service and Privacy Policy. If using monthly billing with a 12-month commitment, also show the total commitment price, required payment count, and cancellation behavior.',
                 confidence: 50,
             });
         }
