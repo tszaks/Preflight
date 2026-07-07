@@ -777,6 +777,23 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
             base_confidence: 65,
         },
     },
+    {
+        id: 'account-gates-non-account-features',
+        guideline: '5.1.1(v)',
+        category: 'content_policy',
+        title: 'Login required for non-account features',
+        trigger: 'App requires users to register, sign in, or provide personal information before they can access features that are not specifically account-based',
+        fix: 'Let users access non-account-based browsing, previews, purchases, or basic functionality before registration. Require sign-in only when the user reaches account-specific features such as saved history, personalization, private content, sync, messaging, or legally required identity checks, and explain that flow in App Review notes.',
+        match: {
+            features_required: ['sign_in_required'],
+            keywords: [
+                'browse', 'preview', 'catalog', 'pricing', 'public content',
+                'explore', 'guest', 'basic features', 'purchase before login',
+            ],
+            min_matches: 2,
+            base_confidence: 55,
+        },
+    },
 
     // ============================================================
     // NEW: PERMISSION PATTERNS

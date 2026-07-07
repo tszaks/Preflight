@@ -111,6 +111,23 @@ export function checkConditionalWarnings(input: ConditionalWarningsInput): Check
             });
         }
 
+        results.push({
+            category: 'content_policy',
+            severity: 'info',
+            title: 'Confirm sign-in only gates account-based features',
+            description:
+                'Your app requires sign-in. Apple Guideline 5.1.1(v) allows sign-in when it is directly relevant ' +
+                'to core account functionality or required by law, but rejects apps that require registration before ' +
+                'users can access non-account-based browsing, previews, purchases, or basic features.',
+            guideline_ref: '5.1.1(v)',
+            fix_suggestion:
+                'If any useful features do not depend on a user account, offer a guest path before registration. ' +
+                'If the entire product is account-dependent, explain the account-based functionality and provide ' +
+                'demo credentials or demo mode in App Review notes.',
+            confidence: 70,
+            pattern_id: 'privacy-account-gates-non-account-features',
+        });
+
     }
 
     // === 2. Restore Purchases Requirement ===
