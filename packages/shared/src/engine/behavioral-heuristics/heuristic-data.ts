@@ -232,7 +232,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Apple reviewers will test reporting and blocking flows. Ensure they work in the review build.',
             'If the app includes live streaming, additional content moderation requirements apply.',
             'For impacted social media platforms in Australia, document under-16 account restrictions through the app description, age rating questionnaire, and Age Suitability URL where appropriate.',
-            'For regionally age-sensitive apps, keep Declared Age Range, PermissionKit significant-update behavior, consent-revocation handling, age-rating answers, and App Review notes consistent.',
+            'For regionally age-sensitive apps, keep Declared Age Range, PermissionKit significant-update behavior, consent-revocation handling, age-rating answers, App Review notes, and age-assurance sandbox tests consistent. Apple says the full framework set requires Xcode 26.2 and the iOS/iPadOS 26.2 SDK or later, with additional significant-update APIs in iOS/iPadOS 26.4.',
         ],
     },
 
