@@ -294,6 +294,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Remove trial/non-trial toggles. Show one clear purchase path per offer, check introductory offer eligibility before promising a trial, and display the post-trial price, billing period, auto-renewal terms, and cancellation details before purchase.',
     },
     {
+        id: 'biz-subscription-commitment-plan-clarity',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Subscription commitment plan terms unclear',
+        trigger: 'Subscription paywall offers monthly billing with a 12-month commitment but does not make the monthly price, total commitment price, required payment count, or cancellation/renewal behavior clear before purchase',
+        fix: 'Use StoreKit pricingTerms and commitmentInfo to merchandise the monthly billing plan accurately. Show both the monthly billed amount and total 12-month commitment, explain remaining payments and cancellation behavior, test the billing plan in Xcode/App Store sandbox, and keep server entitlement logic aware of billingPlanType and commitmentInfo.',
+    },
+    {
         id: 'biz-iap-products-not-reviewable',
         guideline: '2.1(b)',
         category: 'content_policy',

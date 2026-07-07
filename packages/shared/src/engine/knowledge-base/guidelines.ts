@@ -142,7 +142,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.1.2': {
         section: '3.1.2',
         title: 'Subscriptions',
-        summary: 'Auto-renewable subscription apps must clearly describe subscription terms, pricing, billing duration, renewal behavior, and free trial conditions before purchase. Variations of the same subscription service should be configured inside one App Store Connect subscription group so customers can upgrade, downgrade, and crossgrade cleanly. Paywalls should not use confusing trial toggles, hidden trial terms, misleading visual hierarchy, or unclear eligibility flows that could prevent users from understanding what they will be charged.',
+        summary: 'Auto-renewable subscription apps must clearly describe subscription terms, pricing, billing duration, renewal behavior, and free trial conditions before purchase. Variations of the same subscription service should be configured inside one App Store Connect subscription group so customers can upgrade, downgrade, and crossgrade cleanly. Paywalls should not use confusing trial toggles, hidden trial terms, misleading visual hierarchy, or unclear eligibility flows that could prevent users from understanding what they will be charged. If offering monthly billing with a 12-month commitment, disclose the monthly price, total commitment price, number of required payments, and cancellation/renewal behavior, and handle StoreKit commitment metadata correctly.',
     },
     '3.1.1(a)': {
         section: '3.1.1(a)',
