@@ -251,7 +251,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '5.1.1': {
         section: '5.1.1',
         title: 'Data Collection and Storage',
-        summary: 'Apps that collect personal data must have a privacy policy and secure user consent. Only collect data necessary for the app\'s core functionality. Apps using third-party AI services must disclose what user data is shared and identify those services in the privacy policy.',
+        summary: 'Apps that collect personal data must have a privacy policy and secure user consent. Only collect data necessary for the app\'s core functionality. Under 5.1.1(v), apps may not require sign-in or personal information before users access features that are not account-based; account registration must be optional unless directly relevant to core functionality or required by law. Apps using third-party AI services must disclose what user data is shared and identify those services in the privacy policy.',
     },
     '5.1.2': {
         section: '5.1.2',

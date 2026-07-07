@@ -286,6 +286,14 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         fix: 'Add a clearly visible "Restore Purchases" button accessible from your paywall or settings. This is required for all apps with non-consumable IAP or subscriptions.',
     },
     {
+        id: 'privacy-account-gates-non-account-features',
+        guideline: '5.1.1(v)',
+        category: 'content_policy',
+        title: 'Login required for non-account features',
+        trigger: 'App requires users to register, sign in, or provide personal information before they can access features that are not specifically account-based',
+        fix: 'Let users access non-account-based browsing, previews, purchases, or basic functionality before registration. Require sign-in only when the user reaches account-specific features such as saved history, personalization, private content, sync, messaging, or legally required identity checks, and explain that flow in App Review notes.',
+    },
+    {
         id: 'biz-confusing-free-trial-toggle',
         guideline: '3.1.2',
         category: 'content_policy',
