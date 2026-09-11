@@ -7,7 +7,7 @@
  * - Feature flag requirements (has_iap, has_ugc, sign_in_required, etc.)
  *
  * Sources: r/iOSProgramming, Apple Developer Forums, Stack Overflow [app-store-rejection],
- * Apple's published App Review Guidelines (2024-2025).
+ * Apple's published App Review Guidelines and App Store Connect documentation.
  */
 
 export interface EnhancedRejectionPattern {
@@ -106,6 +106,22 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         fix: "Remove competitor references. Describe your own app's unique value instead.",
         // No auto-match: would need a competitor name database
     },
+    {
+        id: 'meta-accessibility-labels-inaccurate',
+        guideline: 'ASC-Accessibility-Nutrition-Labels',
+        category: 'metadata',
+        title: 'Accessibility labels do not match app support',
+        trigger: 'App Store Connect Accessibility Nutrition Label responses claim support that users cannot complete across the app\'s common tasks, or the responses are not kept current after app changes',
+        fix: 'Audit common tasks for each supported device family before publishing accessibility labels. Only claim VoiceOver, Voice Control, Larger Text, Dark Interface, Differentiate Without Color Alone, Sufficient Contrast, Reduced Motion, Captions, or Audio Descriptions support when Apple\'s criteria are met, and update labels when app behavior changes.',
+        match: {
+            keywords: [
+                'accessibility nutrition label', 'accessibility labels', 'voiceover',
+                'voice control', 'larger text', 'dynamic type', 'captions',
+                'reduced motion', 'sufficient contrast',
+            ],
+            base_confidence: 45,
+        },
+    },
 
     // ============================================================
     // SCREENSHOT PATTERNS
@@ -146,8 +162,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '5.1',
         category: 'privacy_manifest',
         title: 'Missing privacy manifest',
-        trigger: 'App uses required-reason APIs without a PrivacyInfo.xcprivacy file',
-        fix: 'Add a PrivacyInfo.xcprivacy file declaring all required-reason API usage with valid reason codes.',
+        trigger: 'App or bundled third-party SDK uses required-reason APIs without the required PrivacyInfo.xcprivacy manifest in the owning app, framework, or dynamic library bundle, or a listed commonly used SDK is added as a binary dependency without the required valid signature',
+        fix: 'Add a PrivacyInfo.xcprivacy file for your app code, and update or replace third-party SDKs so each SDK bundle declares its own required-reason API usage with valid reason codes. For Apple-listed commonly used SDKs added as binary dependencies, use an SDK version that also includes the required valid signature.',
         // Handled by hard rules
     },
     {
@@ -276,7 +292,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         category: 'content_policy',
         title: 'Incorrect age rating',
         trigger: "App content doesn't match the selected age rating (e.g., mature content with 4+ rating)",
-        fix: 'Select an age rating that accurately reflects your app\'s content. When in doubt, rate higher.',
+        fix: 'Select an age rating that accurately reflects your app\'s content and keep the App Store Connect content descriptors current, including in-app controls, capabilities, medical or wellness topics, violent themes, and any sensitive content surfaced by AI assistants or chatbot functionality. Current global ratings are 4+, 9+, 13+, 16+, and 18+, with additional region-specific values in some storefronts such as Australia, Vietnam, and Korea. When in doubt, rate higher.',
         // No simple auto-match
     },
     {
@@ -310,11 +326,39 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '3.1.1',
         category: 'content_policy',
         title: 'External purchase for digital goods',
-        trigger: "App directs users to purchase digital content/subscriptions outside of In-App Purchase",
-        fix: "Digital goods and subscriptions must use Apple's In-App Purchase system.",
+        trigger: "App directs users to purchase digital content/subscriptions outside of In-App Purchase without qualifying for and implementing Apple's regional external-purchase requirements",
+        fix: "Use Apple In-App Purchase unless a regional exception applies. For permitted storefronts, implement the required StoreKit external-purchase entitlement/API, disclosure sheet, eligibility checks, review-note details, transaction reporting, and child-safety requirements. Japan support applies to iOS 26.2 or later and Brazil support applies to iOS 26.5 or later. Current Apple Developer Program members must accept the updated agreement terms for Brazil options by July 6, 2026. In Japan and Brazil, use parental gates or consent where required, call StoreKit canMakePayments before purchase or payment-information flows, and follow Apple transaction reporting deadlines. For Japan transactions, complete reports manually on iOS 26.2 and 26.3, then use the External Purchase Server API on iOS 26.4 or later.",
         match: {
             features_required: ['sells_digital_outside_iap'],
             base_confidence: 70,
+        },
+    },
+    {
+        id: 'biz-subscription-products-separate-groups',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Subscription variations split across groups',
+        trigger: 'Auto-renewable subscription durations, prices, or tiers for the same service are configured as separate subscription groups instead of products or levels within one group',
+        fix: 'Put monthly, annual, trial, and tier variations for the same subscription service in the same App Store Connect subscription group. Use separate groups only for independent services a customer can hold at the same time, and make sure the reviewed app version exposes the submitted products.',
+        match: {
+            features_required: ['has_subscriptions'],
+            keywords: ['subscription group', 'monthly', 'annual', 'yearly', 'tier', 'upgrade', 'downgrade', 'crossgrade'],
+            min_matches: 2,
+            base_confidence: 55,
+        },
+    },
+    {
+        id: 'biz-brazil-betting-license',
+        guideline: 'ASC-Brazil-Betting-License',
+        category: 'content_policy',
+        title: 'Brazil fixed-odds betting license missing',
+        trigger: 'App appears to offer fixed-odds betting or real-money wagering that may need Brazil SPA license documentation',
+        fix: 'If distributing fixed-odds betting in Brazil, submit a new app version with SPA license details in App Review notes and attach supporting documents. Keep age rating answers and gambling-risk disclosures accurate.',
+        match: {
+            categories: ['games', 'sports', 'entertainment'],
+            keywords: ['fixed odds', 'fixed-odds', 'betting', 'sportsbook', 'wager', 'real money gambling', 'brazil'],
+            min_matches: 2,
+            base_confidence: 50,
         },
     },
     {
@@ -326,6 +370,37 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         fix: 'Add meaningful native functionality. The app should provide value beyond what a website offers.',
         match: {
             keywords: ['webview', 'web view', 'wrapper', 'hybrid app', 'website app'],
+            base_confidence: 50,
+        },
+    },
+    {
+        id: 'biz-low-value-saturated-category',
+        guideline: '4.3(b)',
+        category: 'content_policy',
+        title: 'Low-value app in saturated category',
+        trigger: 'App appears to be in a saturated category Apple calls out for indistinguishable or low-effort submissions',
+        fix: 'Make the differentiated value obvious in the app, first screenshots, and description. Avoid template clones, thin variants, and repeated submissions of low-effort apps.',
+        match: {
+            keywords: [
+                'dating', 'flashlight', 'sound effects', 'wallpaper', 'simple timer',
+                'fortune telling', 'drinking game', 'kama sutra', 'fart', 'burp',
+            ],
+            base_confidence: 55,
+        },
+    },
+    {
+        id: 'content-live-activities-spam',
+        guideline: '4.5.3',
+        category: 'content_policy',
+        title: 'Live Activities or Apple services used for spam',
+        trigger: 'App describes promotional, unsolicited, spam-like, or phishing-like messaging through Live Activities, notifications, Game Center, or other Apple services',
+        fix: 'Use Apple services only for user-requested, app-relevant updates. Remove promotional, phishing-like, or unsolicited messaging from Live Activities and notification surfaces.',
+        match: {
+            keywords: [
+                'live activities', 'live activity', 'push notifications', 'game center',
+                'promotion', 'promotional', 'marketing notification', 'unsolicited',
+                'phishing', 'spam',
+            ],
             base_confidence: 50,
         },
     },
@@ -364,8 +439,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '3.1.1',
         category: 'content_policy',
         title: 'Finance app subscription via IAP',
-        trigger: 'Finance apps with premium features must use Apple IAP for subscriptions',
-        fix: 'Ensure all digital subscriptions are offered through In-App Purchase. Physical goods/services are exempt.',
+        trigger: 'Finance apps with premium features must use Apple IAP for subscriptions unless a regional external-purchase exception applies',
+        fix: 'Ensure digital subscriptions are offered through In-App Purchase unless a regional external-purchase exception applies and is fully implemented. Physical goods/services are exempt.',
         match: {
             categories: ['finance'],
             features_required: ['has_subscriptions'],
@@ -401,6 +476,19 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
             categories: ['health-fitness', 'medical'],
             keywords: ['diagnos', 'treatment', 'blood pressure', 'heart rate monitor', 'glucose', 'medical'],
             base_confidence: 50,
+        },
+    },
+    {
+        id: 'health-regulated-medical-device-status',
+        guideline: 'ASC-Regulated-Medical-Device',
+        category: 'content_policy',
+        title: 'Regulated medical device status',
+        trigger: 'Health & Fitness or Medical apps distributed in the EEA, UK, or U.S. may need to provide regulated medical device status in App Store Connect',
+        fix: 'If the app qualifies as a regulated medical device, provide the status and regulatory details in App Store Connect. If it does not qualify, select No. Existing qualifying apps must declare by early 2027 to keep submitting updates.',
+        match: {
+            categories: ['health-fitness', 'medical'],
+            keywords: ['diagnos', 'treatment', 'clinical', 'medical device', 'patient', 'monitor'],
+            base_confidence: 45,
         },
     },
     {
@@ -462,6 +550,50 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'content-social-media-time-allowance',
+        guideline: 'ASC-Time-Allowances',
+        category: 'content_policy',
+        title: 'Social media capabilities declaration required',
+        trigger: 'Apps with social feeds or similar user-generated content discovery surfaces should answer the App Store Connect social media capabilities question starting July 2026 and must declare social media capabilities for Time Allowances before submitting updates starting September 2026',
+        fix: 'Update the App Store Connect age rating questionnaire to declare social media capabilities. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges.',
+        match: {
+            categories: ['social-networking'],
+            keywords: ['feed', 'follow', 'followers', 'post', 'comment', 'share', 'community', 'profile'],
+            min_matches: 1,
+            base_confidence: 55,
+        },
+    },
+    {
+        id: 'content-australia-social-under16',
+        guideline: 'ASC-Australia-Social-Media',
+        category: 'content_policy',
+        title: 'Australia social media under-16 access not addressed',
+        trigger: 'Social media platform operates in Australia but does not prevent users under 16 from having accounts or disclose age assurance and age suitability details',
+        fix: 'If the Australian social media law applies, block under-16 account access for Australia, monitor new signups, use the Declared Age Range API or another age-assurance method where appropriate, and document age restrictions through App Store metadata or an Age Suitability URL.',
+        match: {
+            categories: ['social-networking'],
+            keywords: ['australia', 'under 16', 'under-16', 'age assurance', 'declared age range', 'social media'],
+            features_required: ['has_ugc'],
+            min_matches: 2,
+            base_confidence: 55,
+        },
+    },
+    {
+        id: 'content-regional-age-assurance',
+        guideline: 'ASC-Regional-Age-Assurance',
+        category: 'content_policy',
+        title: 'Regional age assurance obligations not addressed',
+        trigger: 'Apps with age-sensitive social, UGC, 18+, Apple In-App Purchase, or significant-update flows may need region-specific age assurance in Texas, Brazil, Australia, Singapore, Utah, or Louisiana',
+        fix: 'Where regional law applies, align App Store Connect age-rating answers, App Review notes, Declared Age Range requests, PermissionKit Significant Update actions, StoreKit age rating properties, and App Store Server Notifications including consent revocation with your age-assurance flow. Build with Xcode 26.2 and the iOS/iPadOS 26.2 SDK or later for the full framework set; iOS/iPadOS 26.4 adds required-regulatory-feature and significant-update acknowledgement APIs. New Apple Accounts are subject to state-specific age-assurance handling in Utah as of May 6, 2026, Texas as of June 4, 2026, and Louisiana as of July 1, 2026. Test age ranges, location restrictions, approval states, and consent revocation in sandbox where supported.',
+        match: {
+            categories: ['social-networking', 'games', 'entertainment'],
+            keywords: ['texas', 'brazil', 'australia', 'singapore', 'utah', 'louisiana', '18+', 'age assurance', 'declared age range', 'significant update', 'parental consent', 'consent revocation'],
+            features_required: ['has_ugc'],
+            min_matches: 2,
+            base_confidence: 50,
+        },
+    },
+    {
         id: 'social-login-requirement',
         guideline: '4.0',
         category: 'content_policy',
@@ -491,6 +623,19 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
+        id: 'privacy-ai-data-sharing',
+        guideline: '5.1.2(i)',
+        category: 'content_policy',
+        title: 'Third-party AI data sharing consent missing',
+        trigger: 'App sends personal data to third-party AI services without explicit pre-transmission consent that names the provider and data shared',
+        fix: 'Before sending personal data to third-party AI, show in-app consent that names each provider, describes what data is sent and why, links to the privacy policy, and lets users decline. Keep the privacy policy and App Review notes aligned.',
+        match: {
+            keywords: ['openai', 'anthropic', 'claude', 'gemini', 'mistral', 'third-party ai', 'llm', 'chatbot'],
+            features_required: ['generates_ai_content'],
+            base_confidence: 55,
+        },
+    },
+    {
         id: 'ai-transparency',
         guideline: '2.3',
         category: 'metadata',
@@ -512,8 +657,8 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         guideline: '3.1.2',
         category: 'content_policy',
         title: 'Subscription terms not visible',
-        trigger: 'Subscription apps must clearly display price, duration, and auto-renewal terms on the paywall',
-        fix: 'Show subscription price, billing period, and "Payment will be charged to iTunes Account" text on the paywall.',
+        trigger: 'Subscription apps must clearly display price, duration, auto-renewal terms, and any commitment-plan terms on the paywall',
+        fix: 'Show subscription price, billing period, and "Payment will be charged to iTunes Account" text on the paywall. For monthly billing with a 12-month commitment, also show the total commitment price, number of required payments, and cancellation/renewal behavior.',
         match: {
             features_required: ['has_subscriptions'],
             base_confidence: 55,
@@ -533,16 +678,58 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
         },
     },
     {
-        id: 'sub-free-trial-clarity',
-        guideline: '3.1.2(a)',
+        id: 'biz-iap-products-not-reviewable',
+        guideline: '2.1(b)',
         category: 'content_policy',
-        title: 'Free trial terms unclear',
-        trigger: 'Free trial offers must clearly state what happens when the trial ends',
-        fix: 'Clearly state the post-trial price, auto-renewal behavior, and how to cancel before the trial ends.',
+        title: 'In-app purchase products not reviewable',
+        trigger: 'App includes in-app purchases or subscriptions, but products are not submitted through Apple\'s IAP/subscription review flow, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
+        fix: 'Before submission, make sure every IAP or subscription is complete in App Store Connect, has required review metadata/screenshots, is submitted through Apple\'s separate IAP/subscription review process, and is fetchable by the review build. First-time IAPs and subscriptions must be submitted with a new app version; they are not generic App Review submission items.',
+        match: {
+            features_required: ['has_iap'],
+            keywords: ['subscription', 'paywall', 'in-app purchase', 'iap', 'premium', 'restore purchases'],
+            base_confidence: 60,
+        },
+    },
+    {
+        id: 'biz-promoted-iap-image',
+        guideline: '2.3.2',
+        category: 'metadata',
+        title: 'Promoted IAP image is duplicated or misleading',
+        trigger: 'Promoted in-app purchase, subscription, or win-back offer uses the app icon, an app screenshot, duplicate images across promoted products, or artwork that does not clearly represent the associated purchase or offer',
+        fix: 'Use a unique 1024x1024 PNG or high-quality JPEG promotional image for each promoted IAP, subscription, or win-back offer. Do not reuse the app icon, app screenshots, or identical artwork across different promoted purchases, and remove promotion if the product should not appear on the App Store.',
+        match: {
+            features_required: ['has_iap'],
+            keywords: [
+                'promoted in-app purchase', 'promoted iap', 'promotional image',
+                'win-back offer', 'win back offer', 'subscription image', 'app icon',
+            ],
+            base_confidence: 45,
+        },
+    },
+    {
+        id: 'sub-free-trial-clarity',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Free trial terms or toggle flow unclear',
+        trigger: 'Free trial offers must clearly state what happens when the trial ends and must not use confusing trial/non-trial toggles that hide actual price, renewal terms, or eligibility',
+        fix: 'Remove free-trial toggles, check introductory offer eligibility before rendering trial copy, and clearly state the post-trial price, auto-renewal behavior, billing period, and how to cancel before purchase.',
         match: {
             features_required: ['has_subscriptions'],
-            keywords: ['free trial', 'try free', 'trial period', 'days free'],
-            base_confidence: 55,
+            keywords: ['free trial', 'try free', 'trial period', 'days free', 'trial toggle', 'paywall toggle'],
+            base_confidence: 60,
+        },
+    },
+    {
+        id: 'sub-commitment-plan-clarity',
+        guideline: '3.1.2',
+        category: 'content_policy',
+        title: 'Subscription commitment plan terms unclear',
+        trigger: 'Subscription paywall offers monthly billing with a 12-month commitment but does not make the monthly price, total commitment price, required payment count, or cancellation/renewal behavior clear before purchase',
+        fix: 'Use StoreKit pricingTerms and commitmentInfo to merchandise the monthly billing plan accurately. Show both the monthly billed amount and total 12-month commitment, explain remaining payments and cancellation behavior, test the billing plan in Xcode/App Store sandbox, and keep server entitlement logic aware of billingPlanType and commitmentInfo.',
+        match: {
+            features_required: ['has_subscriptions'],
+            keywords: ['12-month commitment', '12 month commitment', 'monthly billing', 'billing plan', 'billingPlanType', 'pricingTerms', 'commitmentInfo'],
+            base_confidence: 60,
         },
     },
 
@@ -588,6 +775,23 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
             features_required: ['sign_in_required'],
             features_absent: ['has_account_deletion'],
             base_confidence: 65,
+        },
+    },
+    {
+        id: 'account-gates-non-account-features',
+        guideline: '5.1.1(v)',
+        category: 'content_policy',
+        title: 'Login required for non-account features',
+        trigger: 'App requires users to register, sign in, or provide personal information before they can access features that are not specifically account-based',
+        fix: 'Let users access non-account-based browsing, previews, purchases, or basic functionality before registration. Require sign-in only when the user reaches account-specific features such as saved history, personalization, private content, sync, messaging, or legally required identity checks, and explain that flow in App Review notes.',
+        match: {
+            features_required: ['sign_in_required'],
+            keywords: [
+                'browse', 'preview', 'catalog', 'pricing', 'public content',
+                'explore', 'guest', 'basic features', 'purchase before login',
+            ],
+            min_matches: 2,
+            base_confidence: 55,
         },
     },
 

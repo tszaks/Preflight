@@ -27,10 +27,12 @@ function bundleSelftestModules(tmp) {
   const bundlePath = path.join(tmp, 'selftest-bundle.mjs')
   const conditionalPath = path.join(root, 'packages', 'shared', 'src', 'engine', 'hard-rules', 'conditional-warnings.ts')
   const patternsPath = path.join(root, 'packages', 'shared', 'src', 'engine', 'historical-patterns', 'index.ts')
+  const entitlementsAuditPath = path.join(root, 'packages', 'shared', 'src', 'engine', 'ipa-scanner', 'entitlements-audit.ts')
 
   fs.writeFileSync(entryPath, `
 export { checkConditionalWarnings } from ${JSON.stringify(conditionalPath)};
 export { matchRejectionPatterns } from ${JSON.stringify(patternsPath)};
+export { auditEntitlements } from ${JSON.stringify(entitlementsAuditPath)};
 `)
 
   execFileSync(esbuildPath, [
@@ -52,7 +54,7 @@ async function main() {
 
   const bundleUrl = pathToFileURL(bundleSelftestModules(tmp)).href
 
-  const { checkConditionalWarnings, matchRejectionPatterns } = await import(bundleUrl)
+  const { checkConditionalWarnings, matchRejectionPatterns, auditEntitlements } = await import(bundleUrl)
 
   // Historical patterns: blank category must not match category-only patterns.
   {
@@ -90,6 +92,15 @@ async function main() {
     assert.ok(siwa, 'expected a 4.8 item')
     assert.equal(siwa.severity, 'critical')
     assert.match(String(siwa.title || ''), /likely missing/i)
+  }
+
+  // GameKit requires the Game Center entitlement for App Store submissions.
+  {
+    const res = auditEntitlements('<plist><dict></dict></plist>', ['GameKit'], undefined)
+    const gameCenter = res.find((x) => String(x.title || '').includes('Game Center'))
+    assert.ok(gameCenter, 'expected a Game Center entitlement warning')
+    assert.equal(gameCenter.severity, 'warning')
+    assert.match(String(gameCenter.fix_suggestion || ''), /Game Center capability/i)
   }
 
   console.log('selftest: ok')

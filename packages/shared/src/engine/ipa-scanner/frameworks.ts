@@ -83,9 +83,9 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
         purpose: 'Over-the-air code updates',
         severity: 'warning',
         title: 'CodePush OTA update framework detected',
-        description: 'CodePush enables over-the-air JavaScript updates. Apple may reject apps that download and execute code outside of WebKit. Ensure updates only change JavaScript/assets, not native functionality.',
-        guideline_ref: 'Section 2.5.2 - Software Requirements',
-        fix_suggestion: 'Verify CodePush is only used for JS bundle updates. Do not use it to add new native features or change app behavior significantly.',
+        description: 'CodePush enables over-the-air JavaScript updates. Apple may reject apps that download or execute code that changes features or functionality after App Review.',
+        guideline_ref: 'Section 2.5.2 - Self-Contained App Bundle',
+        fix_suggestion: 'Verify CodePush is only used for permitted JavaScript and asset updates. Do not use it to add native functionality or materially change app behavior after review.',
     },
 
     // WebView-based frameworks
@@ -127,7 +127,7 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
         severity: 'critical',
         title: 'Banned hot-patching SDK detected: JSPatch',
         description: 'JSPatch enables runtime modification of native code via JavaScript. Apple explicitly bans hot-patching frameworks that can change native behavior after review.',
-        guideline_ref: 'Section 2.5.2 - Software Requirements',
+        guideline_ref: 'Section 2.5.2 - Self-Contained App Bundle',
         fix_suggestion: 'Remove JSPatch entirely. Apple will reject any submission containing this framework. Use standard App Store updates to deliver code changes.',
     },
     {
@@ -137,7 +137,7 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
         severity: 'critical',
         title: 'Banned hot-code push SDK detected: Rollout.io',
         description: 'Rollout.io enables over-the-air native code modifications. Apple bans frameworks that can alter native app behavior outside of the review process.',
-        guideline_ref: 'Section 2.5.2 - Software Requirements',
+        guideline_ref: 'Section 2.5.2 - Self-Contained App Bundle',
         fix_suggestion: 'Remove Rollout.io entirely. Use standard App Store updates or permitted JavaScript-only OTA solutions instead.',
     },
     {
@@ -147,8 +147,8 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
         severity: 'warning',
         title: 'Expo OTA update framework detected',
         description: 'Expo Updates enables over-the-air JavaScript updates. While generally tolerated for JS bundle updates, Apple may scrutinize apps that significantly change behavior post-review.',
-        guideline_ref: 'Section 2.5.2 - Software Requirements',
-        fix_suggestion: 'Ensure Expo Updates only delivers JavaScript and asset changes. Do not use OTA updates to add native functionality or significantly alter app behavior.',
+        guideline_ref: 'Section 2.5.2 - Self-Contained App Bundle',
+        fix_suggestion: 'Ensure Expo Updates only delivers permitted JavaScript and asset changes. Do not use OTA updates to add native functionality or materially change app behavior after review.',
     },
 
     // Encryption / Export compliance
@@ -263,9 +263,9 @@ const FRAMEWORK_RULES: FrameworkRule[] = [
         purpose: 'Payment processing',
         severity: 'info',
         title: 'Stripe payment SDK detected',
-        description: 'Stripe is embedded for payment processing. If selling digital content or services consumed within the app, you must use Apple\'s In-App Purchase instead.',
+        description: 'Stripe is embedded for payment processing. If selling digital content or services consumed within the app, you usually need Apple In-App Purchase unless a regional external-purchase option applies.',
         guideline_ref: 'Section 3.1.1 - In-App Purchase',
-        fix_suggestion: 'Ensure Stripe is only used for physical goods/services or out-of-app consumption. Digital content consumed in-app must use Apple IAP.',
+        fix_suggestion: 'Ensure Stripe is only used for physical goods/services, out-of-app consumption, or a storefront where Apple permits alternative payment options and you have implemented the required entitlement, disclosures, eligibility checks, reporting, and child-safety controls. In Japan and Brazil, call StoreKit canMakePayments before purchase or payment-information flows. Otherwise, digital content consumed in-app must use Apple IAP.',
     },
     {
         pattern: /^(Plaid|LinkKit)/i,
