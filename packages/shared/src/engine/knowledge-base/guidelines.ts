@@ -59,6 +59,11 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Time Allowances Social Media Declaration',
         summary: 'The App Store Connect age rating questionnaire has included social media capability questions since July 9, 2026. As of September 2026 this declaration is REQUIRED to submit new apps or updates to the App Store, or to submit an app for notarization for alternative distribution, so a missing answer now blocks submission rather than merely being advisable. A social media capability is the ability to redistribute, amplify, or interact with user-generated content through a social feed or similar discovery method, and it is assessed regardless of the App Store category selected. Declaring the capability places the app in the Social Media Time Allowance category and sets a minimum 13+ age rating, unless those capabilities are disabled for anyone under 13 and the app checks age ranges with at least the Declared Age Range API, in which case the wider questionnaire determines the rating. Declared apps also show a Social Media content descriptor on their product page.',
     },
+    '5.1.1(ix)': {
+        section: '5.1.1(ix)',
+        title: 'Highly Regulated Fields',
+        summary: 'Apps providing services in highly regulated fields — banking and financial services, healthcare, lending, air travel, gambling, and crypto exchanges — must be submitted by a legal entity providing the service, not by an individual developer, and must hold the necessary licensing and permissions in every location where the app is available.',
+    },
     'EU-Unified-Business-Terms': {
         section: 'EU-Unified-Business-Terms',
         title: 'EU Unified Business Terms (effective October 1, 2026)',
@@ -162,7 +167,7 @@ export const GUIDELINES: Record<string, Guideline> = {
     '3.2.2(ix)': {
         section: '3.2.2(ix)',
         title: 'Lending APR Cap',
-        summary: 'Loan and lending apps must not offer annual percentage rates exceeding 36%. All rates, fees, and repayment terms must be clearly disclosed before the user commits.',
+        summary: 'Loan and lending apps must not charge a maximum annual percentage rate higher than 36%, INCLUDING costs and fees, and may not require repayment in full in 60 days or less. All rates, fees, and repayment terms must be clearly disclosed before the user commits.',
     },
     '3.2': {
         section: '3.2',
