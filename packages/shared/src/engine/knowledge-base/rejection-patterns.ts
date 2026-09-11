@@ -386,8 +386,16 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
         guideline: 'ASC-Time-Allowances',
         category: 'content_policy',
         title: 'Social media capabilities not declared for Time Allowances',
-        trigger: 'App includes a social feed or similar user-generated content surface that redistributes, amplifies, or lets users interact with content visible to many users, but the App Store Connect age rating questionnaire is not updated to declare social media capabilities',
-        fix: 'Starting July 2026, update the App Store Connect age rating questionnaire to answer the social media capabilities question. Starting September 2026, this declaration is required before submitting updates. If social features are disabled for users under 13, use at least the Declared Age Range API to check age ranges and keep the age rating answers aligned with that behavior.',
+        trigger: 'App includes a social feed or similar user-generated content surface that redistributes, amplifies, or lets users interact with content visible to many users, but the App Store Connect age rating questionnaire has no answer to the social media capabilities question. As of September 2026 this blocks submission outright.',
+        fix: 'Answer the social media capabilities question in the App Store Connect age rating questionnaire. As of September 2026 an answer is required to submit a new app or update, or to submit for notarization for alternative distribution, so an unanswered question is a hard submission blocker rather than a risk. Declaring the capability sets a minimum 13+ rating and adds a Social Media content descriptor. If the social features are disabled for everyone under 13, say so and use at least the Declared Age Range API to check age ranges, which lets the wider questionnaire set the rating instead. Keep the answer aligned with what the shipping build actually does, since App Review checks it against real behavior.',
+    },
+    {
+        id: 'biz-eu-unified-terms-not-accepted',
+        guideline: 'EU-Unified-Business-Terms',
+        category: 'content_policy',
+        title: 'EU business terms not migrated to Attachment 14',
+        trigger: 'App is distributed in the EU, or uses EU alternative distribution or alternative payments, while the account still relies on the Alternative Terms Addendum for Apps in the EU or the StoreKit External Purchase Link Entitlement (EU) Addendum. Both are superseded by Attachment 14 of the Apple Developer Program License Agreement on October 1, 2026.',
+        fix: 'Have the Account Holder accept the Apple Developer Program License Agreement updated August 18, 2026, which adds Attachment 14. From October 1, 2026 the account moves to unified EU terms: the per-install Core Technology Fee becomes a 5% Core Technology Commission on digital transactions in apps distributed outside the App Store, and the Initial Acquisition Fee and Store Services Fee are removed. Accepting also unlocks the entitlement for offering alternative payment options in EU storefronts alongside Apple In-App Purchase. If you offer alternative payments, keep the chosen set of payment options in place for 12 months and implement the added child-safety protections. Fees accrued under the discontinued addenda remain payable.',
     },
     {
         id: 'content-australia-social-under16',
