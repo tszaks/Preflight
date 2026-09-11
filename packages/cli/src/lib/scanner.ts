@@ -21,6 +21,18 @@ export function scanProject(dir: string): DetectedFiles {
         xcodeProject: null,
     }
 
+    // Pointed straight at an .ipa. The README documents this, and it is the
+    // natural thing to try with a build artifact, but every lookup below
+    // walks a DIRECTORY — so an .ipa path used to produce a scan that found
+    // nothing at all and still reported "Scan complete", including the
+    // absurd "No IPA found". A compliance tool reporting an empty scan as a
+    // clean one is worse than refusing to run, so handle the file directly.
+    if (existsSync(absDir) && statSync(absDir).isFile() && extname(absDir) === '.ipa') {
+        result.ipa = absDir
+        result.projectName = basename(absDir).replace(/\.ipa$/, '')
+        return result
+    }
+
     // Find Xcode project
     const xcodeProjects = findFiles(absDir, (f) =>
         f.endsWith('.xcodeproj') || f.endsWith('.xcworkspace'), 2)
@@ -44,7 +56,9 @@ export function scanProject(dir: string): DetectedFiles {
     )
     result.privacyManifest = filteredManifests[0] || manifests[0] || null
 
-    // Find IPA - search deeper since users may have IPAs in various nested locations
+    // Find IPA - search deeper since users may have IPAs in various nested
+    // locations. An .xcarchive never contains one (it holds a .app), so
+    // archive scans correctly report no binary to analyze.
     const ipas = findFiles(absDir, (f) => f.endsWith('.ipa'), 10)
     // Prefer recent ones in build/ or DerivedData/
     const sortedIPAs = ipas.sort((a, b) => {
