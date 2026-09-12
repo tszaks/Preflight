@@ -1,23 +1,18 @@
 import { Command } from 'commander'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
 import { scanCommand } from './commands/scan.js'
 import { updateCommand } from './commands/update.js'
 import { handleUnknownCommand } from './ui/errors.js'
 import { applyThemePatch } from './ui/theme.js'
+import { PREFLIGHT_VERSION } from './version.js'
 
 applyThemePatch()
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const pkg = JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf-8'))
 
 const program = new Command()
 
 program
     .name('preflight')
     .description('Preflight - local App Store review scanner')
-    .version(pkg.version)
+    .version(PREFLIGHT_VERSION)
 
 program
     .command('scan [path]')
@@ -58,7 +53,7 @@ program
             ascKeyId: opts.ascKeyId as string | undefined,
             ascIssuerId: opts.ascIssuerId as string | undefined,
             ascKey: opts.ascKey as string | undefined,
-            version: pkg.version,
+            version: PREFLIGHT_VERSION,
         })
     })
 
@@ -67,13 +62,13 @@ program
     .description('Run Preflight as an MCP server over stdio, for use by coding agents')
     .action(async () => {
         const { mcpCommand } = await import('./commands/mcp.js')
-        await mcpCommand(pkg.version)
+        await mcpCommand(PREFLIGHT_VERSION)
     })
 
 program
     .command('update')
     .description('Update Preflight to the latest npm version')
-    .action(() => updateCommand(pkg.version))
+    .action(() => updateCommand(PREFLIGHT_VERSION))
 
 program.on('command:*', (operands) => {
     handleUnknownCommand(operands[0])
@@ -84,7 +79,7 @@ if (process.argv.length <= 2) {
     // Bare `preflight`. Interactive when a human is present; when piped or run in
     // CI this refuses with a usage message rather than guessing a subject, since
     // scanning the wrong thing and exiting 0 is indistinguishable from success.
-    scanCommand(undefined, { version: pkg.version })
+    scanCommand(undefined, { version: PREFLIGHT_VERSION })
         .then((code) => { process.exitCode = code })
         .catch((err) => {
             console.error(err)

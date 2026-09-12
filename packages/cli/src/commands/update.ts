@@ -1,20 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
 import * as ui from '../ui/interactive.js'
 import { brand, subtext, brandDim } from '../ui/theme.js'
+import { PREFLIGHT_VERSION } from '../version.js'
 
 // Small delay for visual feedback
 const wait = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-// Get current installed version from package.json
 function getCurrentVersion(): string {
-    const __filename = fileURLToPath(import.meta.url)
-    const __dirname = dirname(__filename)
-    const pkgPath = resolve(__dirname, '..', 'package.json')
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
-    return pkg.version
+    return PREFLIGHT_VERSION
 }
 
 // Fetch latest version from npm registry
