@@ -57,6 +57,14 @@ program
     })
 
 program
+    .command('mcp')
+    .description('Run Preflight as an MCP server over stdio, for use by coding agents')
+    .action(async () => {
+        const { mcpCommand } = await import('./commands/mcp.js')
+        await mcpCommand(pkg.version)
+    })
+
+program
     .command('update')
     .description('Update Preflight to the latest npm version')
     .action(() => updateCommand(pkg.version))
