@@ -33,6 +33,9 @@ program
     .option('--marketing-url <url>', 'Marketing URL to validate and reach')
     .option('--category <category>', 'App Store category, for category-specific rules')
     .option('--screenshots <dir>', 'Directory of App Store screenshots (never inferred)')
+    .option('--asc-key-id <id>', 'App Store Connect API key ID (or ASC_KEY_ID)')
+    .option('--asc-issuer-id <id>', 'App Store Connect issuer ID (or ASC_ISSUER_ID)')
+    .option('--asc-key <pathOrPem>', 'Path to the .p8 key, or its contents (or ASC_PRIVATE_KEY_PATH)')
     .action(async (path: string | undefined, opts: Record<string, unknown>) => {
         const failOn = opts.failOn as 'critical' | 'warning' | 'info'
         if (!['critical', 'warning', 'info'].includes(failOn)) {
@@ -52,6 +55,9 @@ program
             marketingUrl: opts.marketingUrl as string | undefined,
             category: opts.category as string | undefined,
             screenshots: opts.screenshots as string | undefined,
+            ascKeyId: opts.ascKeyId as string | undefined,
+            ascIssuerId: opts.ascIssuerId as string | undefined,
+            ascKey: opts.ascKey as string | undefined,
             version: pkg.version,
         })
     })

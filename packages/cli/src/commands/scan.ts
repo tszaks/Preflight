@@ -22,6 +22,8 @@ import { ok, critical, criticalBold, warning, warningBold, info, subtext, icons,
 import { runHardRules } from '@preflight/shared/engine/hard-rules/index'
 import { autoDetect } from '@preflight/shared/engine/auto-detect/index'
 import { parseApplePlist } from '@preflight/shared/engine/utils/parse-apple-plist'
+import { resolveAscCredentials, ASC_NOT_CONFIGURED_REASON } from '../lib/asc-credentials.js'
+import type { AscSubmissionMetadata } from '@preflight/shared/engine/app-store-connect/client'
 import type { ScreenshotData, HardRulesInput, CheckResult } from '@preflight/shared/engine/types'
 
 /** Question labels for unresolved fields */
@@ -52,6 +54,10 @@ export interface ScanOptions {
     screenshots?: string
     /** Injected so the result can report which version produced it. */
     version?: string
+    // App Store Connect, opt-in and read-only.
+    ascKeyId?: string
+    ascIssuerId?: string
+    ascKey?: string
 }
 
 /**
@@ -274,6 +280,63 @@ export async function runScan(path: string, options: ScanOptions = {}): Promise<
         userAnswers[field] = await resolveField(field, interactive, assumptions)
     }
 
+    // === App Store Connect (opt-in, read-only) ===
+    // This is the surface a local scan is structurally blind to, and in practice
+    // it is where first submissions die: review notes, the privacy label, and the
+    // IDFA answer all live here and none of them exist on disk.
+    const ascCredentials = resolveAscCredentials(options)
+    let ascChecks: CheckResult[] = []
+    let ascMetadata: AscSubmissionMetadata | null = null
+    const bundleId = plistContent ? readBundleIdFromPlist(plistContent) : null
+
+    if (!ascCredentials) {
+        coverage.push({ area: 'app_store_connect', status: 'not_checked', reason: ASC_NOT_CONFIGURED_REASON })
+        // The label reminder does not need credentials: everything it compares
+        // against comes from the binary. Emitting it unconditionally is
+        // deliberate, because a stale App Privacy label is invisible, common,
+        // and was a real near-rejection.
+        if (manifestContent) {
+            const { checkPrivacyLabelReminder } = await import('@preflight/shared/engine/app-store-connect/rules')
+            ascChecks = checkPrivacyLabelReminder(readDeclaredDataTypes(manifestContent))
+        }
+    } else if (!bundleId) {
+        coverage.push({
+            area: 'app_store_connect',
+            status: 'not_checked',
+            reason: 'Could not determine the bundle identifier, so the app could not be looked up. Scan a built .ipa, or pass --app-name with a project whose plist has a literal CFBundleIdentifier.',
+        })
+    } else {
+        s.start('Reading App Store Connect metadata...')
+        try {
+            const { createAscToken, fetchSubmissionMetadata } = await import('@preflight/shared/engine/app-store-connect/client')
+            const { checkAppStoreConnect } = await import('@preflight/shared/engine/app-store-connect/rules')
+            const token = createAscToken(ascCredentials)
+            ascMetadata = await fetchSubmissionMetadata(bundleId, { token })
+
+            if (!ascMetadata) {
+                coverage.push({
+                    area: 'app_store_connect',
+                    status: 'not_checked',
+                    reason: `No app with bundle ID ${bundleId} is visible to these credentials.`,
+                })
+                s.stop('App Store Connect: app not found')
+            } else {
+                ascChecks = checkAppStoreConnect(ascMetadata, {
+                    signInWithApple: detectResult.fields.detected_sign_in_with_apple === true
+                        || ipaFrameworks.some((f) => /AuthenticationServices/i.test(f)),
+                    signInRequired: resolvedSignInForAsc(detectResult.fields.sign_in_required, userAnswers.sign_in_required),
+                    declaredDataTypes: manifestContent ? readDeclaredDataTypes(manifestContent) : [],
+                })
+                coverage.push({ area: 'app_store_connect', status: 'checked' })
+                s.stop(`App Store Connect: read ${ascMetadata.appName} ${ascMetadata.versionString ?? ''}`.trim())
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Unknown error'
+            coverage.push({ area: 'app_store_connect', status: 'inconclusive', reason: message })
+            s.stop('App Store Connect: could not read metadata')
+        }
+    }
+
     // === Run local hard rules analysis ===
     s.start('Running compliance checks...')
 
@@ -295,13 +358,23 @@ export async function runScan(path: string, options: ScanOptions = {}): Promise<
 
     const input: HardRulesInput = {
         app_name: appName,
+        screenshot_paths: detected.screenshots,
+        // App Store Connect first, so the metadata rules check the values Apple
+        // actually holds rather than nothing at all. This is what finally lets
+        // the URL reachability and description rules run on a real submission.
+        ...(ascMetadata?.description !== undefined && { description: ascMetadata.description }),
+        ...(ascMetadata?.keywords !== undefined && { keywords: ascMetadata.keywords }),
+        ...(ascMetadata?.privacyPolicyUrl !== undefined && { privacy_url: ascMetadata.privacyPolicyUrl }),
+        ...(ascMetadata?.supportUrl !== undefined && { support_url: ascMetadata.supportUrl }),
+        ...(ascMetadata?.marketingUrl !== undefined && { marketing_url: ascMetadata.marketingUrl }),
+        // Explicit flags win: someone passing a value is stating intent, and may
+        // be checking a URL before putting it into App Store Connect.
+        // `undefined` still means "nobody told us", which the rules report as not
+        // checked rather than as a violation.
         // Deliberately omitted rather than nulled when absent. `null` means "we
         // looked and there is none", which is a violation; `undefined` means
         // nobody supplied it, which is a coverage gap.
         ...(description !== undefined && description !== '' && { description }),
-        screenshot_paths: detected.screenshots,
-        // Only set when supplied. `undefined` means "nobody told us", which the
-        // URL rules now report as not checked rather than as a violation.
         ...(options.privacyUrl !== undefined && { privacy_url: options.privacyUrl }),
         ...(options.termsUrl !== undefined && { terms_url: options.termsUrl }),
         ...(options.supportUrl !== undefined && { support_url: options.supportUrl }),
@@ -337,6 +410,7 @@ export async function runScan(path: string, options: ScanOptions = {}): Promise<
         ...result.checks,
         ...behavioralChecks,
         ...historicalChecks,
+        ...ascChecks,
     ]
 
     s.stop('Compliance checks complete')
@@ -364,7 +438,6 @@ export async function runScan(path: string, options: ScanOptions = {}): Promise<
             ? { area: 'url_reachability', status: 'checked' }
             : { area: 'url_reachability', status: 'not_checked', reason: 'No URLs supplied. Pass --privacy-url / --support-url.' }
     )
-    coverage.push({ area: 'app_store_connect', status: 'not_checked', reason: 'App Store Connect integration not configured' })
 
     const findings = allChecks.map(toFinding)
     const failOn: FailOnThreshold = options.failOn ?? 'critical'
@@ -609,6 +682,36 @@ function readAppNameFromPlist(plistContent: Buffer): string | null {
         }
     }
     return null
+}
+
+/** Read CFBundleIdentifier, rejecting unexpanded build variables. */
+function readBundleIdFromPlist(plistContent: Buffer): string | null {
+    const parsed = parseApplePlist(plistContent)
+    const value = parsed?.CFBundleIdentifier
+    if (typeof value !== 'string' || value.length === 0) return null
+    // A source plist often holds `$(PRODUCT_BUNDLE_IDENTIFIER)`, which is not an
+    // identifier and would look up nothing.
+    if (value.includes('$(') || value.includes('${')) return null
+    return value
+}
+
+/** Collected data types declared in the binary's privacy manifest. */
+function readDeclaredDataTypes(manifestContent: string): string[] {
+    const parsed = parseApplePlist(manifestContent)
+    const declared = parsed?.NSPrivacyCollectedDataTypes
+    if (!Array.isArray(declared)) return []
+    return declared
+        .map((entry) => {
+            if (!entry || typeof entry !== 'object') return null
+            const type = (entry as Record<string, unknown>).NSPrivacyCollectedDataType
+            return typeof type === 'string' ? type : null
+        })
+        .filter((t): t is string => t !== null)
+}
+
+/** Sign-in state for the App Store Connect cross-checks. */
+function resolvedSignInForAsc(detected: boolean | undefined, answered: boolean | undefined): boolean {
+    return detected ?? answered ?? false
 }
 
 /** Format detection source for display */
