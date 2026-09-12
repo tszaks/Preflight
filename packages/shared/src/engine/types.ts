@@ -11,6 +11,20 @@ export type CheckCategory =
 export type SeverityLevel = 'pass' | 'info' | 'warning' | 'critical';
 
 // Engine-specific types
+/**
+ * Whether a check actually ran.
+ *
+ * This exists because the dangerous failure mode of a compliance scanner is not
+ * a wrong answer, it is silence that reads as approval. A rule that could not
+ * run must say so: an agent consuming this output has no way to tell "we looked
+ * and it is fine" from "we never looked" unless the result says which.
+ *
+ * - `checked`: the rule ran against real data.
+ * - `not_checked`: the input the rule needs was never supplied. Not a finding.
+ * - `inconclusive`: the input was supplied but could not be read or parsed.
+ */
+export type CheckStatus = 'checked' | 'not_checked' | 'inconclusive';
+
 export interface CheckResult {
     category: CheckCategory;
     severity: SeverityLevel;
@@ -22,6 +36,12 @@ export interface CheckResult {
     confidence: number;
     /** Optional pattern ID for linking to historical rejection patterns */
     pattern_id?: string;
+    /** Defaults to 'checked' when absent, so existing rules keep their meaning. */
+    status?: CheckStatus;
+    /** File this finding refers to, so an agent can act without searching. */
+    file?: string;
+    /** 1-indexed line within `file`, where a rule can determine one. */
+    line?: number;
 }
 
 export interface HardRulesInput {

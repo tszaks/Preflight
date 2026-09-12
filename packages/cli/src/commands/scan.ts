@@ -6,11 +6,23 @@ import { scanProject } from '../lib/scanner.js'
 import { setLastScannedPath } from '../lib/config.js'
 import { interactiveProjectSelect } from '../lib/project-finder.js'
 import { getImageDimensions } from '../lib/image-dimensions.js'
+import {
+    SCAN_SCHEMA_VERSION,
+    EXIT,
+    computeExitCode,
+    summarize,
+    toFinding,
+    type CoverageEntry,
+    type FailOnThreshold,
+    type ScanAssumption,
+    type ScanResult,
+} from '../lib/scan-result.js'
 import * as ui from '../ui/interactive.js'
 import { ok, critical, criticalBold, warning, warningBold, info, subtext, icons, muted } from '../ui/theme.js'
 import { runHardRules } from '@preflight/shared/engine/hard-rules/index'
 import { autoDetect } from '@preflight/shared/engine/auto-detect/index'
-import type { ScreenshotData, HardRulesInput } from '@preflight/shared/engine/types'
+import { parseApplePlist } from '@preflight/shared/engine/utils/parse-apple-plist'
+import type { ScreenshotData, HardRulesInput, CheckResult } from '@preflight/shared/engine/types'
 
 /** Question labels for unresolved fields */
 const UNRESOLVED_QUESTIONS: Record<string, { message: string; defaultValue: boolean }> = {
@@ -23,103 +35,126 @@ const UNRESOLVED_QUESTIONS: Record<string, { message: string; defaultValue: bool
     has_health_disclaimers: { message: 'Does your app include health disclaimers?', defaultValue: true },
 }
 
-export async function scanCommand(path?: string) {
-    // Interactive mode: no path provided
-    if (!path) {
-        ui.intro('Scan your app')
-        const resolvedPath = await interactiveProjectSelect()
-        if (!resolvedPath) return
-        path = resolvedPath
-    } else {
-        ui.intro('Scanning project')
-    }
+export interface ScanOptions {
+    /** Emit the machine-readable result on stdout and nothing else. */
+    json?: boolean
+    /** Accept defaults without prompting. Implied when stdin is not a TTY. */
+    yes?: boolean
+    failOn?: FailOnThreshold
+    appName?: string
+    description?: string
+    privacyUrl?: string
+    termsUrl?: string
+    supportUrl?: string
+    marketingUrl?: string
+    category?: string
+    /** Directory of App Store screenshots. Never inferred. */
+    screenshots?: string
+    /** Injected so the result can report which version produced it. */
+    version?: string
+}
 
+/**
+ * True when we may block on a prompt.
+ *
+ * Piping used to leave the prompt renderer half-drawn and exit early after
+ * printing "Files Found", which produced a partial scan that looked like a clean
+ * one. That is the single most dangerous output a compliance tool can produce, so
+ * a non-TTY run now always takes the non-interactive path instead.
+ */
+function canPrompt(options: ScanOptions): boolean {
+    if (options.json || options.yes) return false
+    return Boolean(process.stdin.isTTY && process.stdout.isTTY)
+}
+
+type Spinner = { start: (m?: string) => void; stop: (m?: string) => void }
+
+function nullSpinner(): Spinner {
+    return { start: () => {}, stop: () => {} }
+}
+
+/**
+ * Run a scan and return the machine-readable result, rendering nothing.
+ *
+ * Kept separate from `scanCommand` so the MCP server and any future integration
+ * share exactly one implementation. If the two ever disagree, that is a bug.
+ */
+export async function runScan(path: string, options: ScanOptions = {}): Promise<ScanResult> {
+    const interactive = canPrompt(options)
+    const quiet = Boolean(options.json)
     const dir = resolve(path)
-    setLastScannedPath(dir)
+    const s: Spinner = quiet ? nullSpinner() : ui.spinner()
+    const coverage: CoverageEntry[] = []
+    const assumptions: ScanAssumption[] = []
 
-    const s = ui.spinner()
     s.start('Looking for App Store files...')
-
-    const detected = scanProject(dir)
-
+    const detected = scanProject(dir, { screenshotsDir: options.screenshots })
     s.stop('Scan complete')
 
-    // Project name
-    ui.log.step(chalk.bold(detected.projectName || 'Unknown Project'))
-
-    // Files found section
-    const lines: string[] = []
-    lines.push(chalk.bold('Files Found'))
-
-    if (detected.xcodeProject) {
-        lines.push(`  ${icons.check} Xcode project ${subtext('(' + detected.xcodeProject + ')')}`)
-    } else {
-        lines.push(`  ${icons.cross} No .xcodeproj or .xcworkspace found`)
+    if (!quiet) {
+        ui.log.step(chalk.bold(options.appName || detected.projectName || 'Unknown Project'))
+        ui.log.message(renderFilesFound(detected))
     }
-
-    if (detected.infoPlist) {
-        lines.push(`  ${icons.check} Info.plist`)
-    } else {
-        lines.push(`  ${icons.cross} No Info.plist found`)
-    }
-
-    if (detected.privacyManifest) {
-        lines.push(`  ${icons.check} PrivacyInfo.xcprivacy`)
-    } else {
-        lines.push(`  ${icons.cross} No PrivacyInfo.xcprivacy found`)
-    }
-
-    if (detected.screenshots.length > 0) {
-        lines.push(`  ${icons.check} ${detected.screenshots.length} screenshot${detected.screenshots.length === 1 ? '' : 's'}`)
-    } else {
-        lines.push(`  ${chalk.dim('-')} No screenshots found ${subtext('(optional)')}`)
-    }
-
-    if (detected.ipa) {
-        lines.push(`  ${icons.check} IPA file`)
-    } else {
-        lines.push(`  ${chalk.dim('-')} No IPA found ${subtext('(optional)')}`)
-    }
-
-    ui.log.message(lines.join('\n'))
 
     // === Read file contents for analysis & auto-detection ===
     let plistContent: Buffer | undefined
+    let plistSource: string | null = detected.infoPlist
     if (detected.infoPlist) {
         try {
             plistContent = readFileSync(detected.infoPlist)
-        } catch { /* skip if unreadable */ }
+        } catch {
+            coverage.push({ area: 'info_plist', status: 'inconclusive', reason: 'Info.plist could not be read' })
+        }
     }
 
     let manifestContent: string | undefined
+    let manifestSource: string | null = detected.privacyManifest
     if (detected.privacyManifest) {
         try {
             manifestContent = readFileSync(detected.privacyManifest, 'utf-8')
-        } catch { /* skip if unreadable */ }
+        } catch {
+            coverage.push({ area: 'privacy_manifest', status: 'inconclusive', reason: 'Privacy manifest could not be read' })
+        }
     }
 
-    // === Extract IPA data for auto-detection (if IPA found) ===
+    // === Extract IPA data (if IPA found) ===
     let ipaBuffer: ArrayBuffer | undefined
     let ipaFrameworks: string[] = []
     let ipaEntitlements: string | undefined
     let ipaImportedSymbols: string[] | undefined
+    let machoStatus: 'checked' | 'not_checked' | 'inconclusive' = 'not_checked'
+    let machoReason: string | undefined = 'No IPA supplied'
 
     if (detected.ipa) {
         s.start('Analyzing IPA binary...')
         try {
             const ipaData = readFileSync(detected.ipa)
-            // Check size guard (500 MB)
             if (ipaData.byteLength > 500 * 1024 * 1024) {
+                machoStatus = 'inconclusive'
+                machoReason = 'IPA larger than 500 MB, binary analysis skipped'
                 s.stop('IPA too large for analysis (>500 MB), skipping binary detection')
             } else {
                 ipaBuffer = ipaData.buffer.slice(ipaData.byteOffset, ipaData.byteOffset + ipaData.byteLength)
-                // Quick extraction for auto-detection (full scan runs later in hard rules)
                 const { extractIPA } = await import('@preflight/shared/engine/ipa-scanner/extract')
                 const extracted = await extractIPA(ipaBuffer)
                 ipaFrameworks = extracted.frameworks
                 ipaEntitlements = extracted.entitlements
 
-                // Try Mach-O for imported symbols (best-effort)
+                // The archive carries the real Info.plist and PrivacyInfo.xcprivacy
+                // at Payload/<App>.app/, and extractIPA already returns both. They
+                // used to be discarded here, so scanning a shipped .ipa reported
+                // "No Info.plist found" and "No PrivacyInfo.xcprivacy found" for an
+                // app that contained both. These are also the *app bundle's* copies
+                // rather than an embedded extension's, which is what we want.
+                if (extracted.infoPlist && !plistContent) {
+                    plistContent = extracted.infoPlist
+                    plistSource = `${detected.ipa}!/Payload/${extracted.bundleName}/Info.plist`
+                }
+                if (extracted.privacyManifest && !manifestContent) {
+                    manifestContent = extracted.privacyManifest
+                    manifestSource = `${detected.ipa}!/Payload/${extracted.bundleName}/PrivacyInfo.xcprivacy`
+                }
+
                 if (extracted.zip && extracted.appDir && extracted.bundleName) {
                     try {
                         const { analyzeMachOFromIPA } = await import('@preflight/shared/engine/ipa-scanner/macho/index')
@@ -127,12 +162,24 @@ export async function scanCommand(path?: string) {
                             extracted.zip, extracted.appDir, extracted.bundleName
                         )
                         ipaImportedSymbols = machoResult.metadata.importedSymbols
-                    } catch { /* Mach-O analysis is optional for auto-detect */ }
+                        machoStatus = 'checked'
+                        machoReason = undefined
+                    } catch (err) {
+                        // Previously a bare `catch {}`: the private-API check
+                        // silently never ran and the report still looked clean.
+                        machoStatus = 'inconclusive'
+                        machoReason = `Mach-O analysis failed: ${err instanceof Error ? err.message : 'unknown error'}`
+                    }
+                } else {
+                    machoStatus = 'inconclusive'
+                    machoReason = 'App binary could not be located inside the IPA'
                 }
 
                 s.stop(`IPA analyzed: ${ipaFrameworks.length} frameworks detected`)
             }
         } catch {
+            machoStatus = 'inconclusive'
+            machoReason = 'IPA could not be read'
             s.stop('Could not read IPA file')
         }
     }
@@ -147,43 +194,48 @@ export async function scanCommand(path?: string) {
         plistContent,
     })
 
-    // === Display auto-detected findings ===
-    const displayableDetections = detectResult.detections.filter(
-        d => typeof d.value === 'boolean' ? d.value === true : true
-    )
-
-    if (displayableDetections.length > 0) {
-        const autoLines: string[] = []
-        autoLines.push(chalk.bold('Auto-detected'))
-
-        for (const d of displayableDetections) {
-            const sourceLabel = formatSourceLabel(d.source)
-            autoLines.push(`  ${ok(icons.check)} ${d.evidence} ${subtext(`(${sourceLabel})`)}`)
+    if (!quiet) {
+        const displayable = detectResult.detections.filter(
+            d => typeof d.value === 'boolean' ? d.value === true : true
+        )
+        if (displayable.length > 0) {
+            const autoLines = [chalk.bold('Auto-detected')]
+            for (const d of displayable) {
+                autoLines.push(`  ${ok(icons.check)} ${d.evidence} ${subtext(`(${formatSourceLabel(d.source)})`)}`)
+            }
+            ui.log.message(autoLines.join('\n'))
         }
-
-        ui.log.message(autoLines.join('\n'))
     }
 
-    // === Collect minimal metadata from user ===
-    const detectedName = detected.projectName || basename(dir)
+    // === Metadata: flags first, prompts only when we may prompt ===
+    // For an .ipa the filename is a build artifact name ("Payday-1.0-9112029"),
+    // not the app's name, so read the real one out of the bundle. Metadata rules
+    // check the name, so feeding them the artifact name checks the wrong string.
+    const bundleName = plistContent ? readAppNameFromPlist(plistContent) : null
+    const detectedName = options.appName || bundleName || detected.projectName || basename(dir)
+    let appName = detectedName
+    let description = options.description
 
-    const appNameResult = await ui.text({
-        message: 'App name',
-        placeholder: detectedName,
-        defaultValue: detectedName,
-    })
-    const appName = appNameResult || detectedName
+    if (interactive) {
+        const appNameResult = await ui.text({
+            message: 'App name',
+            placeholder: detectedName,
+            defaultValue: detectedName,
+        })
+        appName = appNameResult || detectedName
 
-    const descriptionResult = await ui.text({
-        message: 'Brief description (optional, press Enter to skip)',
-        placeholder: 'e.g. A fitness tracking app',
-    })
-    const description = descriptionResult || undefined
+        if (description === undefined) {
+            const descriptionResult = await ui.text({
+                message: 'Brief description (optional, press Enter to skip)',
+                placeholder: 'e.g. A fitness tracking app',
+            })
+            description = descriptionResult || undefined
+        }
+    }
 
-    // === Two-phase questioning: core fields first, then follow-ups ===
+    // === Unresolved fields ===
     const userAnswers: Record<string, boolean> = {}
 
-    // Phase 1: Ask core unresolved questions (sign-in, subscriptions, IAP)
     const coreFields = detectResult.unresolved.filter(
         f => ['sign_in_required', 'has_subscriptions', 'has_iap'].includes(f)
     )
@@ -191,27 +243,20 @@ export async function scanCommand(path?: string) {
         f => !['sign_in_required', 'has_subscriptions', 'has_iap'].includes(f)
     )
 
-    const hasQuestions = coreFields.length > 0 || initialFollowUps.length > 0
-    if (hasQuestions) {
+    if (interactive && (coreFields.length > 0 || initialFollowUps.length > 0)) {
         ui.log.message(chalk.bold('Confirming a few things'))
     }
 
     for (const field of coreFields) {
-        const question = UNRESOLVED_QUESTIONS[field]
-        if (question) {
-            const answer = await ui.confirm(question.message, question.defaultValue)
-            userAnswers[field] = answer ?? question.defaultValue
-        }
+        userAnswers[field] = await resolveField(field, interactive, assumptions)
     }
 
-    // Phase 2: Compute follow-up questions based on combined detected + answered data
     const resolvedSignIn = detectResult.fields.sign_in_required ?? userAnswers.sign_in_required ?? false
     const resolvedSubscriptions = detectResult.fields.has_subscriptions ?? userAnswers.has_subscriptions ?? false
     const resolvedIAP = detectResult.fields.has_iap ?? userAnswers.has_iap ?? false
     const resolvedHealthKit = detectResult.fields.detected_healthkit ?? false
 
     const followUpFields: string[] = [...initialFollowUps]
-
     if (resolvedSignIn && !followUpFields.includes('has_account_deletion')) {
         followUpFields.push('has_account_deletion')
     }
@@ -226,17 +271,12 @@ export async function scanCommand(path?: string) {
     }
 
     for (const field of followUpFields) {
-        const question = UNRESOLVED_QUESTIONS[field]
-        if (question) {
-            const answer = await ui.confirm(question.message, question.defaultValue)
-            userAnswers[field] = answer ?? question.defaultValue
-        }
+        userAnswers[field] = await resolveField(field, interactive, assumptions)
     }
 
     // === Run local hard rules analysis ===
     s.start('Running compliance checks...')
 
-    // Build screenshot data with dimensions from local files
     const screenshotData: ScreenshotData[] = []
     for (const screenshotPath of detected.screenshots) {
         try {
@@ -245,7 +285,7 @@ export async function scanCommand(path?: string) {
             const dimensions = getImageDimensions(screenshotPath)
             screenshotData.push({
                 path: screenshotPath,
-                base64: '', // Not needed for local checks
+                base64: '',
                 mime_type: ext === '.png' ? 'image/png' : 'image/jpeg',
                 size_bytes: stat.size,
                 ...(dimensions ? { width: dimensions.width, height: dimensions.height } : {}),
@@ -253,14 +293,21 @@ export async function scanCommand(path?: string) {
         } catch { /* skip unreadable files */ }
     }
 
-    // Merge auto-detected fields + user answers into HardRulesInput
     const input: HardRulesInput = {
         app_name: appName,
-        description: description ?? null,
+        // Deliberately omitted rather than nulled when absent. `null` means "we
+        // looked and there is none", which is a violation; `undefined` means
+        // nobody supplied it, which is a coverage gap.
+        ...(description !== undefined && description !== '' && { description }),
         screenshot_paths: detected.screenshots,
-        // Auto-detected fields from local binary and plist data
+        // Only set when supplied. `undefined` means "nobody told us", which the
+        // URL rules now report as not checked rather than as a violation.
+        ...(options.privacyUrl !== undefined && { privacy_url: options.privacyUrl }),
+        ...(options.termsUrl !== undefined && { terms_url: options.termsUrl }),
+        ...(options.supportUrl !== undefined && { support_url: options.supportUrl }),
+        ...(options.marketingUrl !== undefined && { marketing_url: options.marketingUrl }),
+        ...(options.category !== undefined && { category: options.category }),
         ...detectResult.fields,
-        // User answers override auto-detected values
         ...(userAnswers.sign_in_required !== undefined && { sign_in_required: userAnswers.sign_in_required }),
         ...(userAnswers.has_subscriptions !== undefined && { has_subscriptions: userAnswers.has_subscriptions }),
         ...(userAnswers.has_iap !== undefined && { has_iap: userAnswers.has_iap }),
@@ -270,7 +317,6 @@ export async function scanCommand(path?: string) {
         ...(userAnswers.has_health_disclaimers !== undefined && { has_health_disclaimers: userAnswers.has_health_disclaimers }),
     }
 
-    // Run all hard rules through the unified engine
     const result = await runHardRules(input, {
         screenshotData: screenshotData.length > 0 ? screenshotData : undefined,
         manifestContent,
@@ -287,7 +333,7 @@ export async function scanCommand(path?: string) {
         matchRejectionPatterns(input),
     ])
 
-    const allChecks = [
+    const allChecks: CheckResult[] = [
         ...result.checks,
         ...behavioralChecks,
         ...historicalChecks,
@@ -295,65 +341,200 @@ export async function scanCommand(path?: string) {
 
     s.stop('Compliance checks complete')
 
-    // === What We Checked section ===
-    const checkedLines: string[] = []
-    checkedLines.push(chalk.bold('What We Checked'))
-    checkedLines.push(`  ${icons.check} App metadata ${subtext('(name, description, keywords)')}`)
-    if (detected.screenshots.length > 0) {
-        checkedLines.push(`  ${icons.check} ${detected.screenshots.length} screenshot${detected.screenshots.length === 1 ? '' : 's'} ${subtext('(dimensions, file size)')}`)
-    } else {
-        checkedLines.push(`  ${chalk.dim('-')} Screenshots ${subtext('(none found)')}`)
+    // === Coverage ===
+    coverage.push({ area: 'metadata', status: 'checked' })
+    coverage.push(
+        detected.screenshotsSupplied
+            ? { area: 'screenshots', status: 'checked' }
+            : { area: 'screenshots', status: 'not_checked', reason: 'No screenshot directory supplied. Pass --screenshots <dir>.' }
+    )
+    coverage.push(
+        plistContent
+            ? { area: 'info_plist', status: 'checked' }
+            : { area: 'info_plist', status: 'not_checked', reason: 'No Info.plist found' }
+    )
+    coverage.push(
+        manifestContent
+            ? { area: 'privacy_manifest', status: 'checked' }
+            : { area: 'privacy_manifest', status: 'not_checked', reason: 'No PrivacyInfo.xcprivacy found' }
+    )
+    coverage.push({ area: 'macho_private_api', status: machoStatus, ...(machoReason ? { reason: machoReason } : {}) })
+    coverage.push(
+        options.privacyUrl
+            ? { area: 'url_reachability', status: 'checked' }
+            : { area: 'url_reachability', status: 'not_checked', reason: 'No URLs supplied. Pass --privacy-url / --support-url.' }
+    )
+    coverage.push({ area: 'app_store_connect', status: 'not_checked', reason: 'App Store Connect integration not configured' })
+
+    const findings = allChecks.map(toFinding)
+    const failOn: FailOnThreshold = options.failOn ?? 'critical'
+
+    return {
+        schemaVersion: SCAN_SCHEMA_VERSION,
+        preflightVersion: options.version ?? '0.0.0',
+        scannedAt: new Date().toISOString(),
+        subject: { path: dir, kind: detected.subjectKind, appName },
+        inputs: {
+            xcodeProject: detected.xcodeProject,
+            infoPlist: plistSource,
+            privacyManifest: manifestSource,
+            ipa: detected.ipa,
+            screenshotCount: detected.screenshots.length,
+            screenshotsSupplied: detected.screenshotsSupplied,
+        },
+        coverage,
+        assumptions,
+        findings,
+        summary: summarize(findings),
+        exitCode: computeExitCode(findings, failOn),
     }
-    if (plistContent) {
-        checkedLines.push(`  ${icons.check} Info.plist ${subtext('(permissions, build settings, usage descriptions)')}`)
-    } else {
-        checkedLines.push(`  ${chalk.dim('-')} Info.plist ${subtext('(not found)')}`)
+}
+
+/**
+ * Resolve an unresolved boolean field.
+ *
+ * Non-interactive runs cannot ask, so they take the documented default and
+ * record that they did. An unrecorded assumption is indistinguishable from
+ * evidence, which is how a scan ends up claiming a clean bill of health it never
+ * earned.
+ */
+async function resolveField(
+    field: string,
+    interactive: boolean,
+    assumptions: ScanAssumption[]
+): Promise<boolean> {
+    const question = UNRESOLVED_QUESTIONS[field]
+    if (!question) return false
+
+    if (interactive) {
+        const answer = await ui.confirm(question.message, question.defaultValue)
+        return answer ?? question.defaultValue
     }
-    if (manifestContent) {
-        checkedLines.push(`  ${icons.check} PrivacyInfo.xcprivacy ${subtext('(privacy manifest, API declarations)')}`)
-    } else {
-        checkedLines.push(`  ${chalk.dim('-')} Privacy manifest ${subtext('(not found)')}`)
+
+    assumptions.push({
+        field,
+        assumed: question.defaultValue,
+        reason: 'Not supplied and not interactive; used the default. Pass the value explicitly to check it properly.',
+    })
+    return question.defaultValue
+}
+
+export async function scanCommand(path?: string, options: ScanOptions = {}): Promise<number> {
+    const quiet = Boolean(options.json)
+
+    if (!path) {
+        if (!canPrompt(options)) {
+            // Refuse rather than scan the wrong thing. Guessing the subject in a
+            // scripted context is how a green run ends up meaning nothing.
+            const message = 'No path given. Pass a project directory or .ipa, e.g. `preflight scan .`'
+            if (quiet) {
+                process.stdout.write(JSON.stringify({ error: message, exitCode: EXIT.COULD_NOT_RUN }, null, 2) + '\n')
+            } else {
+                console.error(message)
+            }
+            return EXIT.COULD_NOT_RUN
+        }
+        ui.intro('Scan your app')
+        const resolvedPath = await interactiveProjectSelect()
+        if (!resolvedPath) return EXIT.COULD_NOT_RUN
+        path = resolvedPath
+    } else if (!quiet) {
+        ui.intro('Scanning project')
     }
-    if (ipaBuffer) {
-        checkedLines.push(`  ${icons.check} IPA binary ${subtext('(frameworks, entitlements, Mach-O symbols)')}`)
-        checkedLines.push(`  ${icons.check} Privacy cross-reference ${subtext('(manifest vs detected SDKs)')}`)
-    } else {
-        checkedLines.push(`  ${chalk.dim('-')} IPA binary analysis ${subtext('(no IPA found)')}`)
+
+    const dir = resolve(path)
+    setLastScannedPath(dir)
+
+    let scan: ScanResult
+    try {
+        scan = await runScan(dir, options)
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        if (quiet) {
+            process.stdout.write(JSON.stringify({ error: message, exitCode: EXIT.COULD_NOT_RUN }, null, 2) + '\n')
+        } else {
+            console.error(`Scan failed: ${message}`)
+        }
+        return EXIT.COULD_NOT_RUN
     }
-    checkedLines.push(`  ${icons.check} URL reachability ${subtext('(privacy policy, support, marketing URLs)')}`)
-    checkedLines.push(`  ${icons.check} Apple guideline compliance ${subtext('(account deletion, restore purchases, SIWA, etc.)')}`)
-    checkedLines.push(`  ${icons.check} Maintained rule patterns ${subtext('(category heuristics and rejection patterns)')}`)
+
+    if (quiet) {
+        // stdout carries the contract and nothing else.
+        process.stdout.write(JSON.stringify(scan, null, 2) + '\n')
+        return scan.exitCode
+    }
+
+    renderHuman(scan)
+    return scan.exitCode
+}
+
+function renderFilesFound(detected: ReturnType<typeof scanProject>): string {
+    const lines: string[] = [chalk.bold('Files Found')]
+
+    lines.push(detected.xcodeProject
+        ? `  ${icons.check} Xcode project ${subtext('(' + detected.xcodeProject + ')')}`
+        : `  ${icons.cross} No .xcodeproj or .xcworkspace found`)
+
+    if (detected.subjectKind === 'ipa') {
+        lines.push(`  ${icons.check} IPA file ${subtext('(reading Info.plist and privacy manifest from the bundle)')}`)
+    } else {
+        lines.push(detected.infoPlist ? `  ${icons.check} Info.plist` : `  ${icons.cross} No Info.plist found`)
+        lines.push(detected.privacyManifest ? `  ${icons.check} PrivacyInfo.xcprivacy` : `  ${icons.cross} No PrivacyInfo.xcprivacy found`)
+        lines.push(detected.ipa ? `  ${icons.check} IPA file` : `  ${chalk.dim('-')} No IPA found ${subtext('(optional)')}`)
+    }
+
+    lines.push(detected.screenshotsSupplied
+        ? `  ${icons.check} ${detected.screenshots.length} screenshot${detected.screenshots.length === 1 ? '' : 's'}`
+        : `  ${chalk.dim('-')} Screenshots ${subtext('(not checked; pass --screenshots <dir>)')}`)
+
+    return lines.join('\n')
+}
+
+function renderHuman(scan: ScanResult): void {
+    // === What We Checked ===
+    const checkedLines: string[] = [chalk.bold('What We Checked')]
+    for (const entry of scan.coverage) {
+        const label = COVERAGE_LABELS[entry.area] ?? entry.area
+        if (entry.status === 'checked') {
+            checkedLines.push(`  ${icons.check} ${label}`)
+        } else if (entry.status === 'inconclusive') {
+            checkedLines.push(`  ${warningBold('?')} ${label} ${subtext(`(inconclusive: ${entry.reason ?? 'unknown'})`)}`)
+        } else {
+            checkedLines.push(`  ${chalk.dim('-')} ${label} ${subtext(`(not checked: ${entry.reason ?? 'not supplied'})`)}`)
+        }
+    }
     ui.log.message(checkedLines.join('\n'))
 
-    // === Display findings by severity ===
-    const criticals = allChecks.filter(c => c.severity === 'critical')
-    const warnings = allChecks.filter(c => c.severity === 'warning')
-    const infos = allChecks.filter(c => c.severity === 'info')
-    const passes = allChecks.filter(c => c.severity === 'pass')
+    if (scan.assumptions.length > 0) {
+        const lines = [chalk.bold('Assumed')]
+        for (const a of scan.assumptions) {
+            lines.push(`  ${chalk.dim('-')} ${a.field} = ${a.assumed} ${subtext('(not supplied)')}`)
+        }
+        ui.log.message(lines.join('\n'))
+    }
 
-    // Show findings
+    // === Findings ===
+    const actionable = scan.findings.filter(f => f.status === 'checked')
+    const criticals = actionable.filter(f => f.severity === 'critical')
+    const warnings = actionable.filter(f => f.severity === 'warning')
+    const infos = actionable.filter(f => f.severity === 'info')
+    const gaps = scan.findings.filter(f => f.status !== 'checked')
+
     if (criticals.length > 0 || warnings.length > 0 || infos.length > 0) {
-        const findingsLines: string[] = []
-        findingsLines.push(chalk.bold('Compliance Findings'))
+        const findingsLines: string[] = [chalk.bold('Compliance Findings')]
 
         for (const check of criticals) {
             findingsLines.push(`  ${criticalBold('CRITICAL')} ${check.title}`)
             findingsLines.push(`  ${muted(check.description)}`)
-            if (check.fix_suggestion) {
-                findingsLines.push(`  ${muted('Fix:')} ${check.fix_suggestion}`)
-            }
+            if (check.fix) findingsLines.push(`  ${muted('Fix:')} ${check.fix}`)
             findingsLines.push('')
         }
-
         for (const check of warnings) {
             findingsLines.push(`  ${warningBold('WARNING')}  ${check.title}`)
             findingsLines.push(`  ${muted(check.description)}`)
-            if (check.fix_suggestion) {
-                findingsLines.push(`  ${muted('Fix:')} ${check.fix_suggestion}`)
-            }
+            if (check.fix) findingsLines.push(`  ${muted('Fix:')} ${check.fix}`)
             findingsLines.push('')
         }
-
         for (const check of infos) {
             findingsLines.push(`  ${info('INFO')}     ${check.title}`)
             findingsLines.push(`  ${muted(check.description)}`)
@@ -363,37 +544,71 @@ export async function scanCommand(path?: string) {
         ui.log.message(findingsLines.join('\n'))
     }
 
-    // Summary bar
-    const summaryLines: string[] = [chalk.bold('Summary')]
-    if (passes.length > 0) {
-        summaryLines.push(`  ${ok(`${passes.length} check${passes.length === 1 ? '' : 's'} passed`)}`)
-    }
-    if (criticals.length > 0) {
-        summaryLines.push(`  ${critical(`${criticals.length} critical issue${criticals.length === 1 ? '' : 's'}`)}`)
-    }
-    if (warnings.length > 0) {
-        summaryLines.push(`  ${warning(`${warnings.length} warning${warnings.length === 1 ? '' : 's'}`)}`)
-    }
-    if (infos.length > 0) {
-        summaryLines.push(`  ${subtext(`${infos.length} info`)}`)
+    if (gaps.length > 0) {
+        const gapLines = [chalk.bold('Not Checked')]
+        for (const gap of gaps) {
+            gapLines.push(`  ${chalk.dim('-')} ${gap.title}`)
+            if (gap.fix) gapLines.push(`    ${muted(gap.fix)}`)
+        }
+        ui.log.message(gapLines.join('\n'))
     }
 
+    // === Summary ===
+    const summaryLines: string[] = [chalk.bold('Summary')]
+    if (scan.summary.pass > 0) summaryLines.push(`  ${ok(`${scan.summary.pass} check${scan.summary.pass === 1 ? '' : 's'} passed`)}`)
+    if (scan.summary.critical > 0) summaryLines.push(`  ${critical(`${scan.summary.critical} critical issue${scan.summary.critical === 1 ? '' : 's'}`)}`)
+    if (scan.summary.warning > 0) summaryLines.push(`  ${warning(`${scan.summary.warning} warning${scan.summary.warning === 1 ? '' : 's'}`)}`)
+    if (scan.summary.info > 0) summaryLines.push(`  ${subtext(`${scan.summary.info} info`)}`)
+    if (scan.summary.notChecked > 0) summaryLines.push(`  ${subtext(`${scan.summary.notChecked} not checked`)}`)
+    if (scan.summary.inconclusive > 0) summaryLines.push(`  ${subtext(`${scan.summary.inconclusive} inconclusive`)}`)
     ui.log.message(summaryLines.join('\n'))
 
-    const nextStepsLines: string[] = []
-    nextStepsLines.push(chalk.bold('Next Steps'))
-    if (criticals.length > 0) {
+    const nextStepsLines: string[] = [chalk.bold('Next Steps')]
+    if (scan.summary.critical > 0) {
         nextStepsLines.push(`  ${icons.arrow} Fix critical issues first. These are the highest rejection-risk items.`)
     }
-    if (warnings.length > 0) {
+    if (scan.summary.warning > 0) {
         nextStepsLines.push(`  ${icons.arrow} Review warnings before submitting to Apple.`)
     }
-    if (criticals.length === 0 && warnings.length === 0) {
-        nextStepsLines.push(`  ${icons.arrow} No critical or warning findings from the local checks.`)
+    if (scan.summary.critical === 0 && scan.summary.warning === 0) {
+        nextStepsLines.push(`  ${icons.arrow} No critical or warning findings from the checks that ran.`)
+    }
+    if (scan.summary.notChecked > 0 || scan.summary.inconclusive > 0) {
+        nextStepsLines.push(`  ${icons.arrow} Some checks did not run. A clean result only covers what was checked.`)
     }
     nextStepsLines.push(`  ${icons.arrow} Re-run ${info('preflight scan')} after changes.`)
-    nextStepsLines.push(`  ${icons.arrow} Keep your App Store Connect metadata and screenshots aligned with the files scanned here.`)
     ui.log.message(nextStepsLines.join('\n'))
+}
+
+const COVERAGE_LABELS: Record<string, string> = {
+    metadata: 'App metadata (name, description, keywords)',
+    screenshots: 'Screenshots (dimensions, file size)',
+    info_plist: 'Info.plist (permissions, build settings, usage descriptions)',
+    privacy_manifest: 'PrivacyInfo.xcprivacy (privacy manifest, API declarations)',
+    macho_private_api: 'IPA binary (frameworks, entitlements, Mach-O symbols)',
+    url_reachability: 'URL reachability (privacy policy, support, marketing)',
+    app_store_connect: 'App Store Connect metadata (review notes, privacy label, IDFA)',
+}
+
+/**
+ * Read the user-visible app name out of an Info.plist.
+ *
+ * Prefers CFBundleDisplayName, which is what appears under the icon, and falls
+ * back to CFBundleName. Xcode build variables like `$(PRODUCT_NAME)` are
+ * rejected: a source-level plist often contains those rather than a literal, and
+ * "$(PRODUCT_NAME)" is not an app name.
+ */
+function readAppNameFromPlist(plistContent: Buffer): string | null {
+    const parsed = parseApplePlist(plistContent)
+    if (!parsed) return null
+
+    for (const key of ['CFBundleDisplayName', 'CFBundleName']) {
+        const value = parsed[key]
+        if (typeof value === 'string' && value.length > 0 && !value.includes('$(') && !value.includes('${')) {
+            return value
+        }
+    }
+    return null
 }
 
 /** Format detection source for display */

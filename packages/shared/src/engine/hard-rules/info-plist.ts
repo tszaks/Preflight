@@ -21,6 +21,68 @@ function isXcodeBuildVariable(value: string): boolean {
 }
 
 /**
+ * Keys Xcode writes into a built Info.plist and that never appear in a
+ * hand-maintained or generator-produced source plist.
+ */
+const BUILT_PLIST_MARKER_KEYS = [
+    'DTPlatformName',
+    'DTSDKName',
+    'DTXcode',
+    'BuildMachineOSBuild',
+    'CFBundleSupportedPlatforms',
+];
+
+/**
+ * True when this plist is a source file rather than the one inside a built app.
+ *
+ * The test is the absence of the keys Xcode injects during a build. That is
+ * decisive in both directions: a built plist always has them, and a source plist
+ * never does, whether it was hand-written or produced by a generator.
+ *
+ * Verified against a real project: the source plist had zero marker keys (and
+ * eight unexpanded `$(...)` values), while the plist inside its shipped .ipa had
+ * three marker keys and no placeholders.
+ */
+function isSourcePlist(parsed: Record<string, unknown>): boolean {
+    return !BUILT_PLIST_MARKER_KEYS.some((key) => key in parsed);
+}
+
+/** Words that mean "I never changed this from the template". */
+const PLACEHOLDER_BUNDLE_WORDS = [
+    'example',
+    'test',
+    'tests',
+    'placeholder',
+    'yourcompany',
+    'yourname',
+    'mycompany',
+    'untitled',
+    'changeme',
+    'todo',
+];
+
+/**
+ * True when a bundle ID segment is a placeholder word.
+ *
+ * Substring matching was the bug here: `bundleId.includes('test')` flags
+ * `com.fastestapps.tracker` and `com.contestapp.ios`, both of which are
+ * perfectly good shipping identifiers, as CRITICAL at 100% confidence. A false
+ * positive at that severity is worse than a miss, because an agent acting on it
+ * will rewrite a correct bundle ID and break code signing.
+ *
+ * Bundle IDs are dot-delimited, so match whole segments, plus hyphen- and
+ * underscore-delimited words inside a segment so `com.acme.test-app` is still
+ * caught. `fastestapps` has no such boundary around "test" and passes.
+ */
+function hasPlaceholderSegment(bundleId: string): boolean {
+    return bundleId
+        .toLowerCase()
+        .split('.')
+        .flatMap((segment) => segment.split(/[-_]/))
+        .some((word) => PLACEHOLDER_BUNDLE_WORDS.includes(word));
+}
+
+/**
  * Validates Info.plist file content.
  * The file is XML plist format.
  */
@@ -55,17 +117,40 @@ export function checkInfoPlist(
     }
 
     // Check required keys
+    //
+    // A source-level Info.plist is not the one Apple receives. With
+    // GENERATE_INFOPLIST_FILE (the default for new targets), Xcode merges the
+    // INFOPLIST_KEY_* build settings into the plist at build time, so the file in
+    // the repository legitimately lacks keys the shipped app has. Calling those
+    // absences CRITICAL produced a run of false findings on exactly the modern
+    // project layouts this tool exists to serve — and an agent acting on them
+    // would add duplicate keys that then conflict with the build settings.
+    const sourcePlist = isSourcePlist(parsed);
     for (const key of REQUIRED_PLIST_KEYS) {
         if (!(key in parsed)) {
-            results.push({
-                category: 'info_plist',
-                severity: 'critical',
-                title: `Missing required key: ${key}`,
-                description: `The required key "${key}" is not present in Info.plist.`,
-                confidence: 100,
-                guideline_ref: getGuidelineRef('2.5'),
-                fix_suggestion: `Add the "${key}" key with an appropriate value to your Info.plist.`,
-            });
+            if (sourcePlist) {
+                results.push({
+                    category: 'info_plist',
+                    severity: 'info',
+                    title: `Required key not verified: ${key}`,
+                    description: `"${key}" is absent from this Info.plist, but this looks like a source plist rather than a built one, so Xcode may inject it at build time from an INFOPLIST_KEY_${key} build setting.`,
+                    confidence: 100,
+                    guideline_ref: getGuidelineRef('2.5'),
+                    fix_suggestion: 'Scan the built .ipa to check the plist Apple actually receives.',
+                    status: 'not_checked',
+                });
+            } else {
+                results.push({
+                    category: 'info_plist',
+                    severity: 'critical',
+                    title: `Missing required key: ${key}`,
+                    description: `The required key "${key}" is not present in Info.plist.`,
+                    confidence: 100,
+                    guideline_ref: getGuidelineRef('2.5'),
+                    fix_suggestion: `Add the "${key}" key with an appropriate value to your Info.plist.`,
+                    status: 'checked',
+                });
+            }
         }
     }
 
@@ -88,8 +173,7 @@ export function checkInfoPlist(
         }
 
         // Check for placeholder bundle IDs (skip if build variable)
-        if (!isXcodeBuildVariable(bundleId) &&
-            (bundleId.includes('example') || bundleId.includes('test') || bundleId.includes('placeholder'))) {
+        if (!isXcodeBuildVariable(bundleId) && hasPlaceholderSegment(bundleId)) {
             results.push({
                 category: 'info_plist',
                 severity: 'critical',
@@ -98,6 +182,7 @@ export function checkInfoPlist(
                 confidence: 100,
                 guideline_ref: getGuidelineRef('2.1'),
                 fix_suggestion: 'Replace with your actual registered bundle identifier from Apple Developer portal.',
+                status: 'checked',
             });
         }
     }

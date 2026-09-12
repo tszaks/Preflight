@@ -14,17 +14,34 @@ export function checkMetadata(input: HardRulesInput): CheckResult[] {
     }
 
     // Description checks
-    if (input.description) {
+    // Three states, same reasoning as the URL rules. The description lives in
+    // App Store Connect, never in the project or the binary, so a local scan
+    // usually has no way to see it. Reporting an unsupplied description as a
+    // missing one made "Missing app description" a guaranteed CRITICAL on every
+    // scan of a real app, which is noise that crowds out real findings.
+    if (typeof input.description === 'string' && input.description.length > 0) {
         results.push(...checkDescription(input.description));
-    } else {
+    } else if (input.description === null) {
         results.push({
             category: 'metadata',
             severity: 'critical',
             title: 'Missing app description',
-            description: 'An app description is required for App Store submission.',
+            description: 'An app description is required for App Store submission, and this app has none set.',
             guideline_ref: getGuidelineRef('2.3'),
             fix_suggestion: 'Add a description between 100-4000 characters that accurately describes your app\'s features.',
             confidence: 100,
+            status: 'checked',
+        });
+    } else {
+        results.push({
+            category: 'metadata',
+            severity: 'info',
+            title: 'App description not checked',
+            description: 'No description was supplied, so it could not be checked. Apple requires one for every submission.',
+            guideline_ref: getGuidelineRef('2.3'),
+            fix_suggestion: 'Pass --description to check it, or use App Store Connect integration to read it from your submission.',
+            confidence: 100,
+            status: 'not_checked',
         });
     }
 

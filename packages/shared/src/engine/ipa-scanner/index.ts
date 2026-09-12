@@ -529,7 +529,10 @@ export async function scanIPA(buffer: ArrayBuffer): Promise<IPAScanResult> {
             if (machoResult.metadata.minOS) {
                 extracted.minOSVersion = machoResult.metadata.minOS;
             }
-            console.log(
+            // Diagnostics belong on stderr. This was console.log, which put a
+            // "[IPA] Mach-O analysis: ..." line onto stdout and corrupted the
+            // JSON contract for anything parsing the output.
+            console.error(
                 `[IPA] Mach-O analysis: ${machoResult.checks.length} findings, ` +
                 `${machoResult.metadata.importedSymbolCount} symbols analyzed, ` +
                 `arch=${machoResult.metadata.arch}`

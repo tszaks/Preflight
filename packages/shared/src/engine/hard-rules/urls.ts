@@ -11,32 +11,70 @@ export async function checkUrls(input: HardRulesInput): Promise<CheckResult[]> {
 
     const urlsToCheck: Array<{ url: string; label: string; required: boolean }> = [];
 
-    if (input.privacy_url) {
+    // Three states, not two. A privacy policy URL lives in App Store Connect, not
+    // in the project, so a local scan usually has no way to know it. Treating
+    // "nobody told us" as "you don't have one" made this rule fire CRITICAL on
+    // every single CLI run, for every user, forever — which also meant the
+    // reachability checks below never ran once, because there was never a URL to
+    // reach. A rule that always fires carries no information.
+    //
+    //   undefined -> not supplied. Report as not checked, never as a finding.
+    //   null      -> supplied and known to be absent (e.g. App Store Connect
+    //                returned an empty field). That is a real violation.
+    //   string    -> validate and reach it.
+    if (typeof input.privacy_url === 'string' && input.privacy_url.length > 0) {
         urlsToCheck.push({ url: input.privacy_url, label: 'Privacy Policy', required: true });
-    } else {
+    } else if (input.privacy_url === null) {
         results.push({
             category: 'urls',
             severity: 'critical',
             title: 'Missing privacy policy URL',
-            description: 'A privacy policy URL is required for all App Store submissions.',
+            description: 'A privacy policy URL is required for all App Store submissions, and this app has none set.',
             guideline_ref: getGuidelineRef('5.1.1'),
             fix_suggestion: 'Add a privacy policy URL that describes how your app handles user data.',
             confidence: 100,
+            status: 'checked',
+        });
+    } else {
+        results.push({
+            category: 'urls',
+            severity: 'info',
+            title: 'Privacy policy URL not checked',
+            description: 'No privacy policy URL was supplied, so it could not be verified. Apple requires one for every submission.',
+            guideline_ref: getGuidelineRef('5.1.1'),
+            fix_suggestion: 'Pass --privacy-url to check it, or use App Store Connect integration to read it from your submission.',
+            confidence: 100,
+            status: 'not_checked',
         });
     }
 
     if (input.has_subscriptions === true) {
-        if (input.terms_url) {
+        if (typeof input.terms_url === 'string' && input.terms_url.length > 0) {
             urlsToCheck.push({ url: input.terms_url, label: 'Terms of Use (EULA)', required: true });
-        } else {
+        } else if (input.terms_url === null) {
             results.push({
                 category: 'urls',
                 severity: 'critical',
                 title: 'Missing Terms of Use URL for subscriptions',
-                description: 'Apps with auto-renewable subscriptions must provide a functional Terms of Use (EULA) URL in App Store metadata.',
+                description: 'Apps with auto-renewable subscriptions must provide a functional Terms of Use (EULA) URL in App Store metadata, and this app has none set.',
                 guideline_ref: getGuidelineRef('3.1.2'),
                 fix_suggestion: 'Add a Terms of Use URL (EULA). You may use Apple\'s standard EULA URL or a custom terms URL hosted on your domain.',
                 confidence: 100,
+                status: 'checked',
+            });
+        } else {
+            // Same reasoning as privacy_url above: subscriptions being detected does
+            // not mean we were ever told the terms URL, and inventing a violation
+            // from an unasked question is how a scanner loses its credibility.
+            results.push({
+                category: 'urls',
+                severity: 'info',
+                title: 'Terms of Use URL not checked',
+                description: 'This app appears to have subscriptions, which require a Terms of Use (EULA) URL, but none was supplied so it could not be verified.',
+                guideline_ref: getGuidelineRef('3.1.2'),
+                fix_suggestion: 'Pass --terms-url to check it, or use App Store Connect integration to read it from your submission.',
+                confidence: 100,
+                status: 'not_checked',
             });
         }
     } else if (input.terms_url) {

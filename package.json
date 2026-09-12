@@ -1,24 +1,27 @@
 {
-  "name": "preflight",
-  "version": "0.1.0",
-  "private": true,
-  "license": "AGPL-3.0-only",
-  "workspaces": [
-    "packages/shared",
-    "packages/web",
-    "packages/cli"
-  ],
-  "scripts": {
-    "dev": "npm run dev -w packages/web",
-    "build": "npm run build -w packages/shared && npm run build -w packages/cli && npm run build -w packages/web",
-    "build:shared": "npm run build -w packages/shared",
-    "build:web": "npm run build -w packages/web",
-    "build:cli": "npm run build -w packages/cli",
-    "lint": "npm run lint -w packages/web",
-    "selftest": "node scripts/selftest.mjs",
-    "typecheck:cli": "tsc --noEmit -p packages/cli/tsconfig.json",
-    "typecheck:all": "npm run build:shared && npm run typecheck:cli"
-  },
-  "dependencies": {},
-  "devDependencies": {}
+    "name": "preflight",
+    "version": "0.1.0",
+    "private": true,
+    "license": "AGPL-3.0-only",
+    "workspaces": [
+        "packages/shared",
+        "packages/web",
+        "packages/cli"
+    ],
+    "scripts": {
+        "dev": "npm run dev -w packages/web",
+        "build": "npm run build -w packages/shared && npm run build -w packages/cli && npm run build -w packages/web",
+        "build:shared": "npm run build -w packages/shared",
+        "build:web": "npm run build -w packages/web",
+        "build:cli": "npm run build -w packages/cli",
+        "lint": "npm run lint -w packages/web",
+        "selftest": "node scripts/selftest.mjs",
+        "typecheck:cli": "tsc --noEmit -p packages/cli/tsconfig.json",
+        "typecheck:all": "npm run build:shared && npm run typecheck:cli",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "devDependencies": {
+        "vitest": "^5.0.0"
+    }
 }
