@@ -122,7 +122,18 @@ function hasKeywordMatch(
     corpus: string,
 ): boolean {
     if (!triggers || triggers.length === 0) return false;
-    return triggers.some((kw) => corpus.includes(kw.toLowerCase()));
+    return triggers.some((kw) => {
+        const normalized = kw.toLowerCase().trim();
+        if (!normalized) return false;
+
+        // Metadata matching should find words and phrases, not arbitrary
+        // substrings. For example, `pro` must not match `projection`, and
+        // `plan` must not match `Plan the Week` unless it is being used as the
+        // standalone subscription term itself. Word boundaries also keep
+        // punctuation-separated phrases working as expected.
+        const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(corpus);
+    });
 }
 
 /**

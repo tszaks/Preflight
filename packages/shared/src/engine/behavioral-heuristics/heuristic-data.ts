@@ -39,7 +39,9 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 guideline: '3.1.2',
                 description: 'Subscription apps must clearly display pricing, duration, and auto-renewal terms on the paywall.',
                 frequency: 'very_common',
-                trigger_keywords: ['subscription', 'monthly', 'annual', 'yearly', 'plan'],
+                // `plan` alone is too broad for metadata: phrases such as
+                // "plan the week" describe app functionality, not billing.
+                trigger_keywords: ['subscription', 'monthly', 'annual', 'yearly'],
             },
             {
                 guideline: '2.1',
