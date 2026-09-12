@@ -48,3 +48,8 @@ AUDIT_*.md
 AUDIT_*.txt
 ERROR_HANDLING_*.md
 Marketing/
+
+# Local agent/harness state. A 14 MB Pallium index and a scratch harness with
+# absolute home paths were committed here once; neither belongs in a public repo.
+.pallium/
+.tmp-harness/
