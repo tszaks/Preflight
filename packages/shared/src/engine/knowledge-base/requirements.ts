@@ -168,10 +168,37 @@ export const PLACEHOLDER_PATTERNS = [
     /https?:\/\/192\.168\./i,
 ] as const;
 
+/**
+ * The build requirement Apple actually publishes.
+ *
+ * Everything here is Apple policy and is separated from the deployment-target
+ * heuristic below on purpose. They used to sit in one object, which made an
+ * inference look like a rule.
+ */
 export const SDK_REQUIREMENTS = {
+    /**
+     * Verified 2026-09-12 against Apple's Upcoming Requirements page, which
+     * states: "Since April 28, 2026 - Apps uploaded to App Store Connect must
+     * be built with Xcode 26 or later using an SDK for iOS 26, iPadOS 26,
+     * tvOS 26, visionOS 26, or watchOS 26."
+     */
+    source: 'https://developer.apple.com/news/upcoming-requirements/',
     minimum_xcode: '26.0',
     minimum_sdk: 'iOS 26 SDK',
-    minimum_deployment_target: 'iOS 16.0',
     deadline: '2026-04-28',
-    note: 'Starting April 28, 2026, all new app submissions and updates must be built with Xcode 26+ and the iOS 26 SDK. Apps targeting iOS below 16.0 may be flagged.',
+    note: 'Starting April 28, 2026, all new app submissions and updates must be built with Xcode 26 or later and the iOS 26 SDK.',
+} as const;
+
+/**
+ * Preflight's own suggestion, NOT an Apple requirement.
+ *
+ * Apple sets no minimum deployment target: an app targeting iOS 13 is perfectly
+ * submittable. This entry previously lived inside SDK_REQUIREMENTS next to the
+ * real April 28 SDK deadline and claimed apps below iOS 16 "may be flagged",
+ * which Apple has never said. Kept because a very old target is worth a look,
+ * but labelled as opinion so it cannot borrow Apple's authority.
+ */
+export const DEPLOYMENT_TARGET_HEURISTIC = {
+    suggested_minimum: 'iOS 16.0',
+    rationale: 'Most actively maintained apps target iOS 16 or later in 2026. A much older target is usually unintentional, and is worth confirming rather than fixing.',
 } as const;

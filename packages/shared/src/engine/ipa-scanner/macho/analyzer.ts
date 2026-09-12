@@ -14,7 +14,7 @@
 import type { CheckResult } from '../../types';
 import type { MachOParseResult } from './parser';
 import { PRIVATE_API_BLOCKLIST, PRIVATE_FRAMEWORKS, type PrivateAPIEntry } from './private-api-blocklist';
-import { SDK_REQUIREMENTS } from '../../knowledge-base/requirements';
+import { SDK_REQUIREMENTS, DEPLOYMENT_TARGET_HEURISTIC } from '../../knowledge-base/requirements';
 
 export interface MachOAnalysisResult {
     checks: CheckResult[];
@@ -132,20 +132,24 @@ export function analyzeMachOBinary(parseResult: MachOParseResult, binaryName?: s
     // 5. Check deployment target
     if (parseResult.buildVersion?.minOS) {
         const minOS = parseVersionNumber(parseResult.buildVersion.minOS);
-        const minRequired = parseVersionNumber(SDK_REQUIREMENTS.minimum_deployment_target);
+        const minRequired = parseVersionNumber(DEPLOYMENT_TARGET_HEURISTIC.suggested_minimum);
         if (minOS !== null && minRequired !== null && minOS < minRequired) {
             checks.push({
                 category: 'ipa_binary',
                 severity: 'info',
                 title: `Low minimum deployment target: iOS ${parseResult.buildVersion.minOS}`,
+                // Explicitly not an Apple rule. Apple sets no minimum deployment
+                // target, and the old wording ("may encounter additional review
+                // scrutiny") implied one. Saying whose opinion this is costs a
+                // sentence and stops the tool borrowing Apple's authority.
                 description:
-                    `The binary's minimum deployment target is iOS ${parseResult.buildVersion.minOS}. ` +
-                    `While not a rejection reason, apps targeting very old iOS versions may encounter ` +
-                    `additional review scrutiny. As of 2026, most apps target iOS ${SDK_REQUIREMENTS.minimum_deployment_target} or higher.`,
+                    `Preflight heuristic, not an Apple rule: the binary targets iOS ${parseResult.buildVersion.minOS}. ` +
+                    `Apple sets no minimum deployment target and will not reject this. ` +
+                    `${DEPLOYMENT_TARGET_HEURISTIC.rationale}`,
                 guideline_ref: 'Build Settings',
                 fix_suggestion:
-                    `Consider raising the minimum deployment target to iOS ${SDK_REQUIREMENTS.minimum_deployment_target} or higher ` +
-                    'to take advantage of modern APIs and reduce compatibility testing burden.',
+                    `If this is deliberate, ignore it. If not, raising the target to iOS ${DEPLOYMENT_TARGET_HEURISTIC.suggested_minimum} ` +
+                    'gives access to modern APIs and less compatibility testing.',
                 confidence: 80,
             });
         }

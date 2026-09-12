@@ -42,13 +42,16 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['subscription', 'monthly', 'annual', 'yearly', 'plan'],
             },
             {
-                guideline: '2.1(b)',
+                guideline: '2.1',
                 description: 'Apps with first-time in-app purchases or subscriptions must submit complete, reviewable products with a new app version through Apple\'s separate IAP/subscription review flow so reviewers can fetch and test the paywall.',
                 frequency: 'common',
                 trigger_keywords: ['subscription', 'premium', 'paywall', 'in-app purchase', 'iap'],
             },
             {
-                guideline: '5.2.5',
+                // Not 5.2.5, which is about apps that look confusingly like an
+                // Apple product. Financial services licensing is the
+                // highly-regulated-fields guideline.
+                guideline: '5.1.1(ix)',
                 description: 'Financial apps must not provide personal financial advice without proper disclaimers and licensing disclosures.',
                 frequency: 'common',
                 trigger_keywords: ['advice', 'advisor', 'recommend', 'portfolio', 'invest'],
@@ -60,7 +63,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['bank', 'account', 'balance', 'transaction', 'plaid'],
             },
             {
-                guideline: '2.3.1',
+                guideline: '2.3.3',
                 description: 'Financial apps must not use misleading screenshots showing fabricated account balances or returns.',
                 frequency: 'occasional',
                 trigger_keywords: ['return', 'profit', 'gain', 'earnings'],
@@ -108,7 +111,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['weight', 'body', 'blood', 'glucose', 'pressure'],
             },
             {
-                guideline: '2.3.1',
+                guideline: '2.3.3',
                 description: 'Health apps must not show misleading before/after results or unrealistic transformation claims.',
                 frequency: 'occasional',
                 trigger_keywords: ['transform', 'results', 'before', 'after', 'lose weight'],
@@ -167,7 +170,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
             'Regulated medical device status in App Store Connect for EEA, UK, or U.S. distribution when applicable',
         ],
         advisory_notes: [
-            'Medical apps have the highest rejection rate of any category. Plan for extended review times (5-10 days).',
+            'Medical apps draw closer scrutiny than most categories, so allow extra time and have documentation ready. Apple publishes no review-time commitment, so treat any specific number you see as a guess.',
             'FDA regulated apps must include regulatory status in the description.',
             'Consider providing a demo account for Apple reviewers to test clinical features.',
         ],
@@ -196,7 +199,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['location', 'contacts', 'friends', 'nearby', 'discover'],
             },
             {
-                guideline: '4.0',
+                guideline: '4',
                 description: 'Dating apps must implement age verification and safety features including blocking and reporting.',
                 frequency: 'common',
                 trigger_keywords: ['dating', 'match', 'swipe', 'meet'],
@@ -247,7 +250,10 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['loot', 'gacha', 'chest', 'pack', 'random', 'chance', 'odds'],
             },
             {
-                guideline: '5.6.1',
+                // Was cited as 5.6.1, which exists but is "App Store Reviews",
+                // about responding to customer reviews. Real-money gaming
+                // licensing and geo-restriction is 5.3.3.
+                guideline: '5.3.3',
                 description: 'Real-money gambling apps must be geo-restricted and require appropriate licenses.',
                 frequency: 'common',
                 trigger_keywords: ['gamble', 'bet', 'casino', 'poker', 'slot', 'wager'],
@@ -271,7 +277,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['coins', 'gems', 'currency', 'credits', 'tokens'],
             },
             {
-                guideline: '2.1(b)',
+                guideline: '2.1',
                 description: 'Games with first-time IAP products must make those products complete, submitted with a new app version through Apple\'s separate IAP review flow, and fetchable by the reviewer build.',
                 frequency: 'common',
                 trigger_keywords: ['battle pass', 'premium', 'coins', 'gems', 'iap', 'subscription'],
@@ -342,7 +348,7 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['shipping', 'delivery', 'physical', 'product'],
             },
             {
-                guideline: '2.3.1',
+                guideline: '2.3.3',
                 description: 'Shopping app screenshots must accurately represent the app experience, not just product catalogs.',
                 frequency: 'occasional',
             },
@@ -381,12 +387,15 @@ export const CATEGORY_HEURISTICS: Record<string, CategoryHeuristic> = {
                 trigger_keywords: ['face', 'facial', 'recognition', 'beauty', 'filter', 'ar', 'augmented'],
             },
             {
-                guideline: '2.3.1',
+                guideline: '2.3.3',
                 description: 'Photo/video app screenshots must show real app functionality, not sample images that misrepresent capabilities.',
                 frequency: 'occasional',
             },
             {
-                guideline: '1.1.6',
+                // Not 1.1.6, which is false information and features such as
+                // fake location trackers. Filtering generated output is
+                // user-generated-content territory.
+                guideline: '1.2',
                 description: 'Apps that generate or manipulate images using AI must include content filtering to prevent objectionable output.',
                 frequency: 'common',
                 trigger_keywords: ['ai', 'generate', 'deepfake', 'swap', 'artificial'],

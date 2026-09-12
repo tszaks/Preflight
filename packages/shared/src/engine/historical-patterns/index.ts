@@ -136,9 +136,14 @@ function toCheckResult(match: PatternMatch): CheckResult {
         category,
         severity: 'info',
         title: `Historical pattern: ${match.pattern.title}`,
+        // Says whose claim this is. These patterns come from community rejection
+        // reports, not from any Apple page, and rendering them in the same voice
+        // as a quoted guideline is how a guess acquires Apple's authority. The
+        // guideline number is the area the pattern relates to, not a citation
+        // that Apple wrote this rule.
         description:
-            `Apps like yours have been rejected for: ${match.pattern.trigger} ` +
-            `(Guideline ${match.pattern.guideline}). ` +
+            `Preflight pattern, not an Apple rule: apps like yours have been reported rejected for ` +
+            `${match.pattern.trigger} (related guideline ${match.pattern.guideline}). ` +
             `Matched because: ${match.matchReasons.join('; ')}.`,
         guideline_ref: match.pattern.guideline,
         fix_suggestion: match.pattern.fix,

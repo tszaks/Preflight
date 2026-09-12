@@ -15,7 +15,7 @@ export const GAMES_CONTEXT: CategoryContext = {
         'Section 3.1.2 - Auto-renewable subscriptions for game passes must clearly disclose terms',
         'Section 5.3 - Gambling mechanics require proper licensing and geo-restriction',
         'App Store Connect - Fixed-odds betting apps in Brazil require SPA license details and supporting documents in App Review Information',
-        'Section 1.1.7 - Realistic violence must be age-rated appropriately (12+ or 17+)',
+        'Section 1.1.2 - Realistic violence must be age-rated appropriately (12+ or 17+)',
     ],
     false_positive_overrides: [
         'In-game currency amounts (coins, gems) are NOT real monetary values',

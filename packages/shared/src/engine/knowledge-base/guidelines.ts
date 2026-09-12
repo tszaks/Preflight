@@ -176,8 +176,8 @@ export const GUIDELINES: Record<string, Guideline> = {
     },
 
     // Section 4: Design
-    '4.0': {
-        section: '4.0',
+    '4': {
+        section: '4',
         title: 'Design - General',
         summary: 'Apps should provide a unique, high-quality experience. Simple websites repackaged as apps or apps with minimal functionality may be rejected.',
     },
@@ -206,10 +206,21 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Low-Value or Saturated App Categories',
         summary: 'Apps must not be indistinguishable from popular or widely available categories. Dating, flashlight, sound effects, wallpaper, simple timer, and fortune telling apps need a meaningfully different or improved experience, and repeated low-effort submissions can put the developer account at risk.',
     },
+    // Corrected 2026-09-12. This entry previously read: "Strengthened in
+    // November 2025. Apps must not replicate the UI, branding, or core
+    // functionality of existing popular apps. Apple now uses automated
+    // detection for copycat identification."
+    //
+    // None of that is 4.1(c). The automated-detection claim is not something
+    // Apple has said anywhere, and the November 2025 date was invented. Apple
+    // introduced 4.1(c) in the June 2026 revision, and it is narrowly about
+    // using another developer's icon, brand or product name in your own icon or
+    // name. The broader "indistinguishable from what is already available"
+    // language is 4.3(b), which is a separate guideline already covered here.
     '4.1(c)': {
         section: '4.1(c)',
-        title: 'Copycat Enforcement (Strengthened)',
-        summary: 'Strengthened in November 2025. Apps must not replicate the UI, branding, or core functionality of existing popular apps. Apple now uses automated detection for copycat identification.',
+        title: 'Using Another Developer\'s Icon, Brand, or Product Name',
+        summary: 'You may not use another developer\'s icon, brand, or product name in your app\'s icon or name without that developer\'s approval.',
     },
     '4.7': {
         section: '4.7',
@@ -313,10 +324,19 @@ export const GUIDELINES: Record<string, Guideline> = {
         title: 'Mobile Device Management',
         summary: 'MDM apps that offer Mobile Device Management services must request the MDM capability from Apple. MDM must only be used by commercial enterprises, educational institutions, or government agencies. MDM apps may not sell, use, or disclose data to third parties.',
     },
-    '5.5.1': {
-        section: '5.5.1',
-        title: 'EU Digital Services Act',
-        summary: 'Apps distributed in the EU must comply with the Digital Services Act. Developers must declare their trader status and provide required business information in App Store Connect. Non-compliance led to 135,000+ app removals in 2025.',
+    // Was keyed '5.5.1', a section Apple does not have, and it collided with the
+    // real 5.5 (Mobile Device Management). This is not a review guideline at
+    // all: it is an EU regulation Apple enforces through App Store Connect, so
+    // it gets a Preflight key like the other regulatory entries.
+    //
+    // A claim that non-compliance caused "135,000+ app removals in 2025" was
+    // removed with it. No source was recorded and none could be found, and an
+    // unverifiable statistic stated in Apple's voice is the exact thing the
+    // provenance rules exist to stop.
+    'EU-Digital-Services-Act': {
+        section: 'EU-Digital-Services-Act',
+        title: 'EU Digital Services Act trader status',
+        summary: 'Developers distributing apps in the EU must declare trader status and provide the required business contact information in App Store Connect. Apps without a completed declaration are removed from EU storefronts.',
     },
     '5.6': {
         section: '5.6',

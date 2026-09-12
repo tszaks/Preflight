@@ -54,7 +54,10 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'meta-platform-in-name',
-        guideline: '2.3.10',
+        // Apple's 2.3.10 covers names and imagery of OTHER mobile platforms and
+        // alternative marketplaces. Putting Apple's own platform names in your
+        // app name is an app-name/metadata question, which is 2.3.7.
+        guideline: '2.3.7',
         category: 'metadata',
         title: 'Platform reference in name',
         trigger: 'Including "iOS", "iPhone", "iPad", "Apple Watch", or "for iOS" in the app name',
@@ -423,7 +426,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'finance-crypto-compliance',
-        guideline: '3.1.5(b)',
+        guideline: '3.1.5',
         category: 'content_policy',
         title: 'Cryptocurrency regulatory compliance',
         trigger: 'Apps facilitating cryptocurrency exchange or wallet functionality',
@@ -595,7 +598,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'social-login-requirement',
-        guideline: '4.0',
+        guideline: '4',
         category: 'content_policy',
         title: 'Sign in with Apple requirement',
         trigger: 'Apps with third-party login (Google, Facebook) must also offer Sign in with Apple',
@@ -679,7 +682,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'biz-iap-products-not-reviewable',
-        guideline: '2.1(b)',
+        guideline: '2.1',
         category: 'content_policy',
         title: 'In-app purchase products not reviewable',
         trigger: 'App includes in-app purchases or subscriptions, but products are not submitted through Apple\'s IAP/subscription review flow, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
@@ -750,7 +753,7 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'new-app-scrutiny',
-        guideline: '4.0',
+        guideline: '4',
         category: 'content_policy',
         title: 'First submission receives extra scrutiny',
         trigger: 'New apps undergo more detailed review than updates. Common rejection areas: metadata, functionality, design.',
@@ -828,7 +831,9 @@ export const ENHANCED_PATTERNS: EnhancedRejectionPattern[] = [
     },
     {
         id: 'tech-alternate-icons',
-        guideline: '2.3.10',
+        // Not 2.3.10, which is about other mobile platforms. Alternate icon
+        // completeness is general accurate-metadata territory.
+        guideline: '2.3',
         category: 'metadata',
         title: 'Alternate app icon compliance',
         trigger: 'Apps with alternate icons must include all icons in the app bundle and they must match guidelines',

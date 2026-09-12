@@ -27,7 +27,10 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'meta-platform-in-name',
-        guideline: '2.3.10',
+        // Apple's 2.3.10 covers names and imagery of OTHER mobile platforms and
+        // alternative marketplaces. Putting Apple's own platform names in your
+        // app name is an app-name/metadata question, which is 2.3.7.
+        guideline: '2.3.7',
         category: 'metadata',
         title: 'Platform reference in name',
         trigger: 'Including "iOS", "iPhone", "iPad", "Apple Watch", or "for iOS" in the app name',
@@ -311,7 +314,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'biz-iap-products-not-reviewable',
-        guideline: '2.1(b)',
+        guideline: '2.1',
         category: 'content_policy',
         title: 'In-app purchase products not reviewable',
         trigger: 'App includes in-app purchases or subscriptions, but products are not submitted through Apple\'s IAP/subscription review flow, not in a reviewable App Store Connect state, missing review screenshots or metadata, or cannot be fetched by the reviewer build',
@@ -343,7 +346,7 @@ export const REJECTION_PATTERNS: RejectionPattern[] = [
     },
     {
         id: 'biz-eu-dsa-trader',
-        guideline: '5.5.1',
+        guideline: '5.5',
         category: 'content_policy',
         title: 'Missing EU DSA trader status',
         trigger: 'Developer distributes app in the EU but has not declared trader status and provided required business information under the Digital Services Act',

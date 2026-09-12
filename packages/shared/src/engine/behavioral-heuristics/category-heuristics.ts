@@ -66,7 +66,10 @@ export function matchCategoryHeuristics(input: HardRulesInput): CheckResult[] {
             category: 'content_policy',
             severity: 'info',
             title: `${formatCategoryName(key)} apps face elevated review scrutiny`,
-            description: heuristic.advisory_notes.join(' '),
+            // Marked explicitly: advisory notes are Preflight's read of a
+            // category, not text Apple published, and they render next to real
+            // guideline findings.
+            description: `Preflight heuristic, not an Apple rule. ${heuristic.advisory_notes.join(' ')}`,
             confidence: 50,
         });
     }
