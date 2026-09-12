@@ -87,7 +87,7 @@ describe('required keys on a source vs built Info.plist', () => {
         // the document and takes the built-plist marker keys with it, which makes
         // the fixture look like a source plist and quietly tests the wrong thing.
         const withoutOrientations = builtPlist('com.acme.app').replace(
-            /\t<key>UISupportedInterfaceOrientations<\/key>\n\t<array>.*?<\/array>\n/s,
+            /\t<key>UISupportedInterfaceOrientations<\/key>\n\t<array>[\s\S]*?<\/array>\n/,
             ''
         );
         expect(withoutOrientations).toContain('DTPlatformName');
@@ -114,7 +114,7 @@ describe('required keys on a source vs built Info.plist', () => {
 });
 
 describe('URL rules: unasked is not the same as absent', () => {
-    const base: HardRulesInput = { app_name: 'Tracker' };
+    const base: HardRulesInput = { app_name: 'Tracker', screenshot_paths: [] };
 
     it('does not invent a violation when no privacy URL was supplied', () => {
         // This fired CRITICAL on every CLI run for every user, because the CLI
@@ -153,7 +153,7 @@ describe('URL rules: unasked is not the same as absent', () => {
 
 describe('description rule: unasked is not the same as absent', () => {
     it('does not invent a violation when no description was supplied', () => {
-        const results = checkMetadata({ app_name: 'Tracker' });
+        const results = checkMetadata({ app_name: 'Tracker', screenshot_paths: [] });
         const desc = results.filter((r) => r.title.includes('description'));
         expect(desc).toHaveLength(1);
         expect(desc[0].severity).not.toBe('critical');
@@ -161,7 +161,7 @@ describe('description rule: unasked is not the same as absent', () => {
     });
 
     it('reports a critical when the description is known to be absent', () => {
-        const results = checkMetadata({ app_name: 'Tracker', description: null });
+        const results = checkMetadata({ app_name: 'Tracker', screenshot_paths: [], description: null });
         const desc = results.filter((r) => r.title === 'Missing app description');
         expect(desc).toHaveLength(1);
         expect(desc[0].severity).toBe('critical');
