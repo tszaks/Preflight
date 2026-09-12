@@ -10,13 +10,16 @@ optional App Store Connect lookup you have to configure yourself.
 ## Install
 
 ```bash
-npm install -g preflightlaunch
+mkdir -p "$HOME/.local/bin"
+curl -L https://github.com/tszaks/Preflight/releases/latest/download/preflight \
+  -o "$HOME/.local/bin/preflight"
+chmod +x "$HOME/.local/bin/preflight"
 ```
 
-Or run once with:
+Make sure `$HOME/.local/bin` is on your `PATH`, then verify the install:
 
 ```bash
-npx preflightlaunch scan ./MyApp
+preflight --version
 ```
 
 ## Commands

@@ -10,14 +10,20 @@ privacy policy, support, and marketing URLs your project already publishes.
 ## Install
 
 ```bash
-npm install -g preflightlaunch
+mkdir -p "$HOME/.local/bin"
+curl -L https://github.com/tszaks/Preflight/releases/latest/download/preflight \
+  -o "$HOME/.local/bin/preflight"
+chmod +x "$HOME/.local/bin/preflight"
 ```
 
-You can also run it without a global install:
+Make sure `$HOME/.local/bin` is on your `PATH`, then verify the install:
 
 ```bash
-npx preflightlaunch scan ./MyApp
+preflight --version
 ```
+
+The npm package remains an optional distribution channel; GitHub Releases is
+the source of truth for the latest standalone CLI.
 
 ## Usage
 
