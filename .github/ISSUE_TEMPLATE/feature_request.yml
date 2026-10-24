@@ -1,0 +1,30 @@
+name: Feature or rule request
+description: Suggest an improvement or a new check
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a new rule, please include the source: an Apple page, a regulation, or evidence from real rejections. Preflight labels guesses as heuristics, so say which this is.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the problem first. The solution can come after.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like Preflight to do?
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source (for rule requests)
+      description: Links to the Apple guideline, regulation, or rejection reports.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?

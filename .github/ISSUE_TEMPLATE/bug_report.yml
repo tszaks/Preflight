@@ -1,0 +1,56 @@
+name: Bug report
+description: A wrong finding, a crash, or a scan that did not run
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. If Preflight flagged something that is not a problem (a false positive) or missed a real rejection reason, say so in the title. Please remove App Store Connect keys and private project details from anything you paste.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you run, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and output
+      description: The exact `preflight` command, and the relevant part of the output (`--json` is easiest to read).
+      render: shell
+    validations:
+      required: true
+  - type: dropdown
+    id: subject
+    attributes:
+      label: What did you scan?
+      options:
+        - "Project directory"
+        - ".xcarchive"
+        - ".ipa"
+        - "Through the MCP server"
+  - type: input
+    id: version
+    attributes:
+      label: Preflight version
+      description: Output of `preflight --version`
+      placeholder: "1.1.2"
+    validations:
+      required: true
+  - type: input
+    id: install
+    attributes:
+      label: How you installed it
+      placeholder: "GitHub Releases, npm, Homebrew, or from source"
+  - type: input
+    id: os
+    attributes:
+      label: OS and Node version
+      placeholder: "macOS 26.5, Node 22"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
